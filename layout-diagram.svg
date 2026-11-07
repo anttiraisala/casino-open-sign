@@ -1,0 +1,466 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='297mm' height='210mm' viewBox='-40.1423 -90.3683 1490.28 1053.74'>
+<rect x='-40.1423' y='-90.3683' width='1490.28' height='1053.74' fill='#ffffff'/>
+<text x='705' y='30' font-size='18' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Casino sign - layout of the LED strips (to scale, dimensions in cm)</text>
+<text x='705' y='50' font-size='12' text-anchor='middle' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>10 strips, 27 pieces, 238 LEDs in total. LED pitch 16.7 mm (60 LEDs per metre).</text>
+<rect x='345' y='95' width='720' height='648' rx='0' fill='#f6f6f6' stroke='#444444' stroke-width='2.5'/>
+<line x1='345' y1='69' x2='1065' y2='69' stroke='#222222' stroke-width='1.5'/>
+<line x1='345' y1='63' x2='345' y2='75' stroke='#222222' stroke-width='1.5'/>
+<line x1='1065' y1='63' x2='1065' y2='75' stroke='#222222' stroke-width='1.5'/>
+<text x='705' y='62' font-size='14' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>50 cm</text>
+<line x1='317' y1='95' x2='317' y2='743' stroke='#222222' stroke-width='1.5'/>
+<line x1='311' y1='95' x2='323' y2='95' stroke='#222222' stroke-width='1.5'/>
+<line x1='311' y1='743' x2='323' y2='743' stroke='#222222' stroke-width='1.5'/>
+<text x='309' y='419' font-size='14' font-weight='bold' text-anchor='middle' fill='#222222' transform='rotate(-90 309 419)' font-family='DejaVu Sans, Arial, sans-serif'>45 cm</text>
+<rect x='372.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 381 107)'/>
+<rect x='396.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 405 107)'/>
+<rect x='420.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 429 107)'/>
+<rect x='444.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 453 107)'/>
+<rect x='468.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 477 107)'/>
+<rect x='492.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 501 107)'/>
+<rect x='516.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 525 107)'/>
+<rect x='540.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 549 107)'/>
+<rect x='564.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 573 107)'/>
+<rect x='588.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 597 107)'/>
+<rect x='612.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 621 107)'/>
+<rect x='636.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 645 107)'/>
+<rect x='660.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 669 107)'/>
+<rect x='684.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 693 107)'/>
+<rect x='708.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 717 107)'/>
+<rect x='732.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 741 107)'/>
+<rect x='756.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 765 107)'/>
+<rect x='780.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 789 107)'/>
+<rect x='804.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 813 107)'/>
+<rect x='828.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 837 107)'/>
+<rect x='852.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 861 107)'/>
+<rect x='876.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 885 107)'/>
+<rect x='900.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 909 107)'/>
+<rect x='924.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 933 107)'/>
+<rect x='948.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 957 107)'/>
+<rect x='972.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 981 107)'/>
+<rect x='996.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 1005 107)'/>
+<rect x='1020.5' y='98.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(0 1029 107)'/>
+<rect x='1044.5' y='122.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 131)'/>
+<rect x='1044.5' y='146.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 155)'/>
+<rect x='1044.5' y='170.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 179)'/>
+<rect x='1044.5' y='194.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 203)'/>
+<rect x='1044.5' y='218.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 227)'/>
+<rect x='1044.5' y='242.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 251)'/>
+<rect x='1044.5' y='266.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 275)'/>
+<rect x='1044.5' y='290.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 299)'/>
+<rect x='1044.5' y='314.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 323)'/>
+<rect x='1044.5' y='338.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 347)'/>
+<rect x='1044.5' y='362.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 371)'/>
+<rect x='1044.5' y='386.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 395)'/>
+<rect x='1044.5' y='410.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 419)'/>
+<rect x='1044.5' y='434.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 443)'/>
+<rect x='1044.5' y='458.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 467)'/>
+<rect x='1044.5' y='482.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 491)'/>
+<rect x='1044.5' y='506.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 515)'/>
+<rect x='1044.5' y='530.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 539)'/>
+<rect x='1044.5' y='554.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 563)'/>
+<rect x='1044.5' y='578.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 587)'/>
+<rect x='1044.5' y='602.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 611)'/>
+<rect x='1044.5' y='626.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 635)'/>
+<rect x='1044.5' y='650.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 659)'/>
+<rect x='1044.5' y='674.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 683)'/>
+<rect x='1044.5' y='698.5' width='17' height='17' fill='#1e88e5' fill-opacity='0.35' stroke='#1e88e5' stroke-width='1.6' transform='rotate(90 1053 707)'/>
+<line x1='381' y1='107' x2='1029' y2='107' stroke='#222222' stroke-width='1.4'/>
+<path d='M 1042.5 107 L 1030 111 L 1030 103 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<line x1='1029' y1='107' x2='1053' y2='131' stroke='#777777' stroke-width='1.4' stroke-dasharray='4 3'/>
+<line x1='1053' y1='131' x2='1053' y2='707' stroke='#222222' stroke-width='1.4'/>
+<path d='M 1053 720.5 L 1049 708 L 1057 708 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<circle cx='381' cy='107' r='4' fill='#222222'/>
+<rect x='348.5' y='122.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 131)'/>
+<rect x='348.5' y='146.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 155)'/>
+<rect x='348.5' y='170.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 179)'/>
+<rect x='348.5' y='194.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 203)'/>
+<rect x='348.5' y='218.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 227)'/>
+<rect x='348.5' y='242.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 251)'/>
+<rect x='348.5' y='266.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 275)'/>
+<rect x='348.5' y='290.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 299)'/>
+<rect x='348.5' y='314.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 323)'/>
+<rect x='348.5' y='338.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 347)'/>
+<rect x='348.5' y='362.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 371)'/>
+<rect x='348.5' y='386.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 395)'/>
+<rect x='348.5' y='410.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 419)'/>
+<rect x='348.5' y='434.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 443)'/>
+<rect x='348.5' y='458.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 467)'/>
+<rect x='348.5' y='482.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 491)'/>
+<rect x='348.5' y='506.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 515)'/>
+<rect x='348.5' y='530.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 539)'/>
+<rect x='348.5' y='554.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 563)'/>
+<rect x='348.5' y='578.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 587)'/>
+<rect x='348.5' y='602.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 611)'/>
+<rect x='348.5' y='626.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 635)'/>
+<rect x='348.5' y='650.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 659)'/>
+<rect x='348.5' y='674.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 683)'/>
+<rect x='348.5' y='698.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(90 357 707)'/>
+<rect x='372.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 381 731)'/>
+<rect x='396.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 405 731)'/>
+<rect x='420.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 429 731)'/>
+<rect x='444.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 453 731)'/>
+<rect x='468.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 477 731)'/>
+<rect x='492.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 501 731)'/>
+<rect x='516.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 525 731)'/>
+<rect x='540.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 549 731)'/>
+<rect x='564.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 573 731)'/>
+<rect x='588.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 597 731)'/>
+<rect x='612.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 621 731)'/>
+<rect x='636.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 645 731)'/>
+<rect x='660.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 669 731)'/>
+<rect x='684.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 693 731)'/>
+<rect x='708.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 717 731)'/>
+<rect x='732.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 741 731)'/>
+<rect x='756.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 765 731)'/>
+<rect x='780.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 789 731)'/>
+<rect x='804.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 813 731)'/>
+<rect x='828.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 837 731)'/>
+<rect x='852.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 861 731)'/>
+<rect x='876.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 885 731)'/>
+<rect x='900.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 909 731)'/>
+<rect x='924.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 933 731)'/>
+<rect x='948.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 957 731)'/>
+<rect x='972.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 981 731)'/>
+<rect x='996.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 1005 731)'/>
+<rect x='1020.5' y='722.5' width='17' height='17' fill='#8e24aa' fill-opacity='0.35' stroke='#8e24aa' stroke-width='1.6' transform='rotate(0 1029 731)'/>
+<line x1='357' y1='131' x2='357' y2='707' stroke='#222222' stroke-width='1.4'/>
+<path d='M 357 720.5 L 353 708 L 361 708 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<line x1='357' y1='707' x2='381' y2='731' stroke='#777777' stroke-width='1.4' stroke-dasharray='4 3'/>
+<line x1='381' y1='731' x2='1029' y2='731' stroke='#222222' stroke-width='1.4'/>
+<path d='M 1042.5 731 L 1030 735 L 1030 727 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<circle cx='357' cy='131' r='4' fill='#222222'/>
+<rect x='636.5' y='357.092' width='17' height='17' fill='#546e7a' fill-opacity='0.35' stroke='#546e7a' stroke-width='1.6' stroke-dasharray='3 2' transform='rotate(0 645 365.592)'/>
+<rect x='660.5' y='357.092' width='17' height='17' fill='#546e7a' fill-opacity='0.35' stroke='#546e7a' stroke-width='1.6' stroke-dasharray='3 2' transform='rotate(0 669 365.592)'/>
+<rect x='684.5' y='357.092' width='17' height='17' fill='#546e7a' fill-opacity='0.35' stroke='#546e7a' stroke-width='1.6' stroke-dasharray='3 2' transform='rotate(0 693 365.592)'/>
+<rect x='708.5' y='357.092' width='17' height='17' fill='#546e7a' fill-opacity='0.35' stroke='#546e7a' stroke-width='1.6' stroke-dasharray='3 2' transform='rotate(0 717 365.592)'/>
+<rect x='732.5' y='357.092' width='17' height='17' fill='#546e7a' fill-opacity='0.35' stroke='#546e7a' stroke-width='1.6' stroke-dasharray='3 2' transform='rotate(0 741 365.592)'/>
+<rect x='756.5' y='357.092' width='17' height='17' fill='#546e7a' fill-opacity='0.35' stroke='#546e7a' stroke-width='1.6' stroke-dasharray='3 2' transform='rotate(0 765 365.592)'/>
+<line x1='645' y1='365.592' x2='765' y2='365.592' stroke='#222222' stroke-width='1.4'/>
+<path d='M 778.5 365.592 L 766 369.592 L 766 361.592 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<circle cx='645' cy='365.592' r='4' fill='#222222'/>
+<rect x='588.5' y='453.092' width='17' height='17' fill='#43a047' fill-opacity='0.35' stroke='#43a047' stroke-width='1.6' transform='rotate(0 597 461.592)'/>
+<rect x='612.5' y='453.092' width='17' height='17' fill='#43a047' fill-opacity='0.35' stroke='#43a047' stroke-width='1.6' transform='rotate(0 621 461.592)'/>
+<rect x='636.5' y='453.092' width='17' height='17' fill='#43a047' fill-opacity='0.35' stroke='#43a047' stroke-width='1.6' transform='rotate(0 645 461.592)'/>
+<rect x='660.5' y='453.092' width='17' height='17' fill='#43a047' fill-opacity='0.35' stroke='#43a047' stroke-width='1.6' transform='rotate(0 669 461.592)'/>
+<rect x='684.5' y='453.092' width='17' height='17' fill='#43a047' fill-opacity='0.35' stroke='#43a047' stroke-width='1.6' transform='rotate(0 693 461.592)'/>
+<rect x='708.5' y='453.092' width='17' height='17' fill='#43a047' fill-opacity='0.35' stroke='#43a047' stroke-width='1.6' transform='rotate(0 717 461.592)'/>
+<rect x='732.5' y='453.092' width='17' height='17' fill='#43a047' fill-opacity='0.35' stroke='#43a047' stroke-width='1.6' transform='rotate(0 741 461.592)'/>
+<rect x='756.5' y='453.092' width='17' height='17' fill='#43a047' fill-opacity='0.35' stroke='#43a047' stroke-width='1.6' transform='rotate(0 765 461.592)'/>
+<rect x='780.5' y='453.092' width='17' height='17' fill='#43a047' fill-opacity='0.35' stroke='#43a047' stroke-width='1.6' transform='rotate(0 789 461.592)'/>
+<rect x='804.5' y='453.092' width='17' height='17' fill='#43a047' fill-opacity='0.35' stroke='#43a047' stroke-width='1.6' transform='rotate(0 813 461.592)'/>
+<line x1='597' y1='461.592' x2='813' y2='461.592' stroke='#222222' stroke-width='1.4'/>
+<path d='M 826.5 461.592 L 814 465.592 L 814 457.592 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<circle cx='597' cy='461.592' r='4' fill='#222222'/>
+<rect x='588.5' y='573.092' width='17' height='17' fill='#00897b' fill-opacity='0.35' stroke='#00897b' stroke-width='1.6' transform='rotate(0 597 581.592)'/>
+<rect x='612.5' y='573.092' width='17' height='17' fill='#00897b' fill-opacity='0.35' stroke='#00897b' stroke-width='1.6' transform='rotate(0 621 581.592)'/>
+<rect x='636.5' y='573.092' width='17' height='17' fill='#00897b' fill-opacity='0.35' stroke='#00897b' stroke-width='1.6' transform='rotate(0 645 581.592)'/>
+<rect x='660.5' y='573.092' width='17' height='17' fill='#00897b' fill-opacity='0.35' stroke='#00897b' stroke-width='1.6' transform='rotate(0 669 581.592)'/>
+<rect x='684.5' y='573.092' width='17' height='17' fill='#00897b' fill-opacity='0.35' stroke='#00897b' stroke-width='1.6' transform='rotate(0 693 581.592)'/>
+<rect x='708.5' y='573.092' width='17' height='17' fill='#00897b' fill-opacity='0.35' stroke='#00897b' stroke-width='1.6' transform='rotate(0 717 581.592)'/>
+<rect x='732.5' y='573.092' width='17' height='17' fill='#00897b' fill-opacity='0.35' stroke='#00897b' stroke-width='1.6' transform='rotate(0 741 581.592)'/>
+<rect x='756.5' y='573.092' width='17' height='17' fill='#00897b' fill-opacity='0.35' stroke='#00897b' stroke-width='1.6' transform='rotate(0 765 581.592)'/>
+<rect x='780.5' y='573.092' width='17' height='17' fill='#00897b' fill-opacity='0.35' stroke='#00897b' stroke-width='1.6' transform='rotate(0 789 581.592)'/>
+<rect x='804.5' y='573.092' width='17' height='17' fill='#00897b' fill-opacity='0.35' stroke='#00897b' stroke-width='1.6' transform='rotate(0 813 581.592)'/>
+<line x1='597' y1='581.592' x2='813' y2='581.592' stroke='#222222' stroke-width='1.4'/>
+<path d='M 826.5 581.592 L 814 585.592 L 814 577.592 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<circle cx='597' cy='581.592' r='4' fill='#222222'/>
+<rect x='564.5' y='477.092' width='17' height='17' fill='#fb8c00' fill-opacity='0.35' stroke='#fb8c00' stroke-width='1.6' transform='rotate(90 573 485.592)'/>
+<rect x='564.5' y='501.092' width='17' height='17' fill='#fb8c00' fill-opacity='0.35' stroke='#fb8c00' stroke-width='1.6' transform='rotate(90 573 509.592)'/>
+<rect x='564.5' y='525.092' width='17' height='17' fill='#fb8c00' fill-opacity='0.35' stroke='#fb8c00' stroke-width='1.6' transform='rotate(90 573 533.592)'/>
+<rect x='564.5' y='549.092' width='17' height='17' fill='#fb8c00' fill-opacity='0.35' stroke='#fb8c00' stroke-width='1.6' transform='rotate(90 573 557.592)'/>
+<line x1='573' y1='485.592' x2='573' y2='557.592' stroke='#222222' stroke-width='1.4'/>
+<path d='M 573 571.092 L 569 558.592 L 577 558.592 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<circle cx='573' cy='485.592' r='4' fill='#222222'/>
+<rect x='828.5' y='477.092' width='17' height='17' fill='#d84315' fill-opacity='0.35' stroke='#d84315' stroke-width='1.6' transform='rotate(90 837 485.592)'/>
+<rect x='828.5' y='501.092' width='17' height='17' fill='#d84315' fill-opacity='0.35' stroke='#d84315' stroke-width='1.6' transform='rotate(90 837 509.592)'/>
+<rect x='828.5' y='525.092' width='17' height='17' fill='#d84315' fill-opacity='0.35' stroke='#d84315' stroke-width='1.6' transform='rotate(90 837 533.592)'/>
+<rect x='828.5' y='549.092' width='17' height='17' fill='#d84315' fill-opacity='0.35' stroke='#d84315' stroke-width='1.6' transform='rotate(90 837 557.592)'/>
+<line x1='837' y1='485.592' x2='837' y2='557.592' stroke='#222222' stroke-width='1.4'/>
+<path d='M 837 571.092 L 833 558.592 L 841 558.592 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<circle cx='837' cy='485.592' r='4' fill='#222222'/>
+<rect x='564.5' y='429.092' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(-90 573 437.592)'/>
+<rect x='564.5' y='405.092' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(-90 573 413.592)'/>
+<rect x='555.135' y='400.594' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(141.32 563.635 409.094)'/>
+<rect x='536.399' y='415.593' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(141.32 544.899 424.093)'/>
+<rect x='517.663' y='430.593' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(141.32 526.163 439.093)'/>
+<rect x='498.928' y='445.592' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(141.32 507.428 454.092)'/>
+<rect x='480.192' y='460.591' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(141.32 488.692 469.091)'/>
+<rect x='461.457' y='475.59' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(141.32 469.957 484.09)'/>
+<rect x='442.721' y='490.59' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(141.32 451.221 499.09)'/>
+<rect x='423.986' y='505.589' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(141.32 432.486 514.089)'/>
+<rect x='423.986' y='520.594' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(38.68 432.486 529.094)'/>
+<rect x='442.721' y='535.593' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(38.68 451.221 544.093)'/>
+<rect x='461.457' y='550.593' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(38.68 469.957 559.093)'/>
+<rect x='480.192' y='565.592' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(38.68 488.692 574.092)'/>
+<rect x='498.928' y='580.591' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(38.68 507.428 589.091)'/>
+<rect x='517.663' y='595.59' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(38.68 526.163 604.09)'/>
+<rect x='536.399' y='610.59' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(38.68 544.899 619.09)'/>
+<rect x='555.135' y='625.589' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(38.68 563.635 634.089)'/>
+<rect x='564.5' y='621.092' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(-90 573 629.592)'/>
+<rect x='564.5' y='597.092' width='17' height='17' fill='#3949ab' fill-opacity='0.35' stroke='#3949ab' stroke-width='1.6' transform='rotate(-90 573 605.592)'/>
+<line x1='573' y1='437.592' x2='573' y2='413.592' stroke='#222222' stroke-width='1.4'/>
+<path d='M 573 400.092 L 577 412.592 L 569 412.592 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<line x1='573' y1='413.592' x2='563.635' y2='409.094' stroke='#777777' stroke-width='1.4' stroke-dasharray='4 3'/>
+<line x1='563.635' y1='409.094' x2='432.486' y2='514.089' stroke='#222222' stroke-width='1.4'/>
+<path d='M 421.947 522.526 L 429.205 511.591 L 434.205 517.837 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<line x1='432.486' y1='514.089' x2='432.486' y2='529.094' stroke='#777777' stroke-width='1.4' stroke-dasharray='4 3'/>
+<line x1='432.486' y1='529.094' x2='563.635' y2='634.089' stroke='#222222' stroke-width='1.4'/>
+<path d='M 574.173 642.526 L 561.915 637.837 L 566.915 631.591 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<line x1='563.635' y1='634.089' x2='573' y2='629.592' stroke='#777777' stroke-width='1.4' stroke-dasharray='4 3'/>
+<line x1='573' y1='629.592' x2='573' y2='605.592' stroke='#222222' stroke-width='1.4'/>
+<path d='M 573 592.092 L 577 604.592 L 569 604.592 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<circle cx='573' cy='437.592' r='4' fill='#222222'/>
+<rect x='828.5' y='429.092' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(-90 837 437.592)'/>
+<rect x='828.5' y='405.092' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(-90 837 413.592)'/>
+<rect x='837.865' y='400.594' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(38.68 846.365 409.094)'/>
+<rect x='856.601' y='415.593' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(38.68 865.101 424.093)'/>
+<rect x='875.337' y='430.593' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(38.68 883.837 439.093)'/>
+<rect x='894.072' y='445.592' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(38.68 902.572 454.092)'/>
+<rect x='912.808' y='460.591' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(38.68 921.308 469.091)'/>
+<rect x='931.543' y='475.59' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(38.68 940.043 484.09)'/>
+<rect x='950.279' y='490.59' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(38.68 958.779 499.09)'/>
+<rect x='969.014' y='505.589' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(38.68 977.514 514.089)'/>
+<rect x='969.014' y='520.594' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(141.32 977.514 529.094)'/>
+<rect x='950.279' y='535.593' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(141.32 958.779 544.093)'/>
+<rect x='931.543' y='550.593' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(141.32 940.043 559.093)'/>
+<rect x='912.808' y='565.592' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(141.32 921.308 574.092)'/>
+<rect x='894.072' y='580.591' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(141.32 902.572 589.091)'/>
+<rect x='875.337' y='595.59' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(141.32 883.837 604.09)'/>
+<rect x='856.601' y='610.59' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(141.32 865.101 619.09)'/>
+<rect x='837.865' y='625.589' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(141.32 846.365 634.089)'/>
+<rect x='828.5' y='621.092' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(-90 837 629.592)'/>
+<rect x='828.5' y='597.092' width='17' height='17' fill='#6d4c41' fill-opacity='0.35' stroke='#6d4c41' stroke-width='1.6' transform='rotate(-90 837 605.592)'/>
+<line x1='837' y1='437.592' x2='837' y2='413.592' stroke='#222222' stroke-width='1.4'/>
+<path d='M 837 400.092 L 841 412.592 L 833 412.592 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<line x1='837' y1='413.592' x2='846.365' y2='409.094' stroke='#777777' stroke-width='1.4' stroke-dasharray='4 3'/>
+<line x1='846.365' y1='409.094' x2='977.514' y2='514.089' stroke='#222222' stroke-width='1.4'/>
+<path d='M 988.053 522.526 L 975.795 517.837 L 980.795 511.591 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<line x1='977.514' y1='514.089' x2='977.514' y2='529.094' stroke='#777777' stroke-width='1.4' stroke-dasharray='4 3'/>
+<line x1='977.514' y1='529.094' x2='846.365' y2='634.089' stroke='#222222' stroke-width='1.4'/>
+<path d='M 835.827 642.526 L 843.085 631.591 L 848.085 637.837 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<line x1='846.365' y1='634.089' x2='837' y2='629.592' stroke='#777777' stroke-width='1.4' stroke-dasharray='4 3'/>
+<line x1='837' y1='629.592' x2='837' y2='605.592' stroke='#222222' stroke-width='1.4'/>
+<path d='M 837 592.092 L 841 604.592 L 833 604.592 Z' stroke='#222222' stroke-width='1' fill='#222222' stroke-linejoin='round'/>
+<circle cx='837' cy='437.592' r='4' fill='#222222'/>
+<rect x='442.81' y='146.5' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 451.31 155)'/>
+<rect x='467.62' y='160.824' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 476.12 169.324)'/>
+<rect x='467.62' y='189.472' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 476.12 197.972)'/>
+<rect x='442.81' y='203.796' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 451.31 212.296)'/>
+<rect x='418' y='189.472' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 426.5 197.972)'/>
+<rect x='418' y='160.824' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 426.5 169.324)'/>
+<circle cx='451.31' cy='155' r='3.5' fill='#222222'/>
+<text x='451.31' y='184.648' font-size='17' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>C</text>
+<text x='451.31' y='197.648' font-size='10' text-anchor='middle' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>6</text>
+<rect x='548.106' y='146.5' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 556.606 155)'/>
+<rect x='572.915' y='160.824' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 581.415 169.324)'/>
+<rect x='572.915' y='189.472' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 581.415 197.972)'/>
+<rect x='548.106' y='203.796' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 556.606 212.296)'/>
+<rect x='523.296' y='189.472' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 531.796 197.972)'/>
+<rect x='523.296' y='160.824' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 531.796 169.324)'/>
+<circle cx='556.606' cy='155' r='3.5' fill='#222222'/>
+<text x='556.606' y='184.648' font-size='17' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>A</text>
+<text x='556.606' y='197.648' font-size='10' text-anchor='middle' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>6</text>
+<rect x='653.401' y='146.5' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 661.901 155)'/>
+<rect x='678.211' y='160.824' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 686.711 169.324)'/>
+<rect x='678.211' y='189.472' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 686.711 197.972)'/>
+<rect x='653.401' y='203.796' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 661.901 212.296)'/>
+<rect x='628.592' y='189.472' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 637.092 197.972)'/>
+<rect x='628.592' y='160.824' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 637.092 169.324)'/>
+<circle cx='661.901' cy='155' r='3.5' fill='#222222'/>
+<text x='661.901' y='184.648' font-size='17' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>S</text>
+<text x='661.901' y='197.648' font-size='10' text-anchor='middle' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>6</text>
+<rect x='749.148' y='156.049' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 757.648 164.549)'/>
+<rect x='768.246' y='175.148' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 776.746 183.648)'/>
+<rect x='749.148' y='194.246' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 757.648 202.746)'/>
+<rect x='730.049' y='175.148' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 738.549 183.648)'/>
+<circle cx='757.648' cy='164.549' r='3.5' fill='#222222'/>
+<text x='757.648' y='188.648' font-size='15' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>I</text>
+<text x='757.648' y='222.246' font-size='10' text-anchor='middle' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>4</text>
+<rect x='844.894' y='146.5' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 853.394 155)'/>
+<rect x='869.704' y='160.824' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 878.204 169.324)'/>
+<rect x='869.704' y='189.472' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 878.204 197.972)'/>
+<rect x='844.894' y='203.796' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 853.394 212.296)'/>
+<rect x='820.085' y='189.472' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 828.585 197.972)'/>
+<rect x='820.085' y='160.824' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 828.585 169.324)'/>
+<circle cx='853.394' cy='155' r='3.5' fill='#222222'/>
+<text x='853.394' y='184.648' font-size='17' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>N</text>
+<text x='853.394' y='197.648' font-size='10' text-anchor='middle' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>6</text>
+<rect x='950.19' y='146.5' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 958.69 155)'/>
+<rect x='975' y='160.824' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 983.5 169.324)'/>
+<rect x='975' y='189.472' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 983.5 197.972)'/>
+<rect x='950.19' y='203.796' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 958.69 212.296)'/>
+<rect x='925.38' y='189.472' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 933.88 197.972)'/>
+<rect x='925.38' y='160.824' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 933.88 169.324)'/>
+<circle cx='958.69' cy='155' r='3.5' fill='#222222'/>
+<text x='958.69' y='184.648' font-size='17' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>O</text>
+<text x='958.69' y='197.648' font-size='10' text-anchor='middle' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>6</text>
+<rect x='538.556' y='251.796' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 547.056 260.296)'/>
+<rect x='563.366' y='266.12' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 571.866 274.62)'/>
+<rect x='563.366' y='294.768' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 571.866 303.268)'/>
+<rect x='538.556' y='309.092' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 547.056 317.592)'/>
+<rect x='513.747' y='294.768' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 522.247 303.268)'/>
+<rect x='513.747' y='266.12' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 522.247 274.62)'/>
+<circle cx='547.056' cy='260.296' r='3.5' fill='#222222'/>
+<text x='547.056' y='289.944' font-size='17' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>O</text>
+<text x='547.056' y='302.944' font-size='10' text-anchor='middle' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>6</text>
+<rect x='643.852' y='251.796' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 652.352 260.296)'/>
+<rect x='668.662' y='266.12' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 677.162 274.62)'/>
+<rect x='668.662' y='294.768' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 677.162 303.268)'/>
+<rect x='643.852' y='309.092' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 652.352 317.592)'/>
+<rect x='619.042' y='294.768' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 627.542 303.268)'/>
+<rect x='619.042' y='266.12' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 627.542 274.62)'/>
+<circle cx='652.352' cy='260.296' r='3.5' fill='#222222'/>
+<text x='652.352' y='289.944' font-size='17' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>P</text>
+<text x='652.352' y='302.944' font-size='10' text-anchor='middle' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>6</text>
+<rect x='749.148' y='251.796' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 757.648 260.296)'/>
+<rect x='773.958' y='266.12' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 782.458 274.62)'/>
+<rect x='773.958' y='294.768' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 782.458 303.268)'/>
+<rect x='749.148' y='309.092' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 757.648 317.592)'/>
+<rect x='724.338' y='294.768' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 732.838 303.268)'/>
+<rect x='724.338' y='266.12' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 732.838 274.62)'/>
+<circle cx='757.648' cy='260.296' r='3.5' fill='#222222'/>
+<text x='757.648' y='289.944' font-size='17' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>E</text>
+<text x='757.648' y='302.944' font-size='10' text-anchor='middle' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>6</text>
+<rect x='854.444' y='251.796' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 862.944 260.296)'/>
+<rect x='879.253' y='266.12' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 887.753 274.62)'/>
+<rect x='879.253' y='294.768' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 887.753 303.268)'/>
+<rect x='854.444' y='309.092' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 862.944 317.592)'/>
+<rect x='829.634' y='294.768' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 838.134 303.268)'/>
+<rect x='829.634' y='266.12' width='17' height='17' fill='#e53935' fill-opacity='0.35' stroke='#e53935' stroke-width='1.6' transform='rotate(0 838.134 274.62)'/>
+<circle cx='862.944' cy='260.296' r='3.5' fill='#222222'/>
+<text x='862.944' y='289.944' font-size='17' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>N</text>
+<text x='862.944' y='302.944' font-size='10' text-anchor='middle' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>6</text>
+<line x1='426.5' y1='169.324' x2='556.606' y2='155' stroke='#777777' stroke-width='1.2' stroke-dasharray='4 3'/>
+<line x1='531.796' y1='169.324' x2='661.901' y2='155' stroke='#777777' stroke-width='1.2' stroke-dasharray='4 3'/>
+<line x1='637.092' y1='169.324' x2='757.648' y2='164.549' stroke='#777777' stroke-width='1.2' stroke-dasharray='4 3'/>
+<line x1='738.549' y1='183.648' x2='853.394' y2='155' stroke='#777777' stroke-width='1.2' stroke-dasharray='4 3'/>
+<line x1='828.585' y1='169.324' x2='958.69' y2='155' stroke='#777777' stroke-width='1.2' stroke-dasharray='4 3'/>
+<line x1='933.88' y1='169.324' x2='547.056' y2='260.296' stroke='#777777' stroke-width='1.2' stroke-dasharray='4 3'/>
+<line x1='522.247' y1='274.62' x2='652.352' y2='260.296' stroke='#777777' stroke-width='1.2' stroke-dasharray='4 3'/>
+<line x1='627.542' y1='274.62' x2='757.648' y2='260.296' stroke='#777777' stroke-width='1.2' stroke-dasharray='4 3'/>
+<line x1='732.838' y1='274.62' x2='862.944' y2='260.296' stroke='#777777' stroke-width='1.2' stroke-dasharray='4 3'/>
+<text x='705' y='381.592' font-size='46' font-weight='bold' text-anchor='middle' fill='none' stroke='#444444' stroke-width='2' stroke-dasharray='5 3' textLength='161.28' lengthAdjust='spacingAndGlyphs' font-family='DejaVu Sans, Arial, sans-serif'>CLOSED</text>
+<rect x='694' y='77' width='22' height='16' rx='3' fill='#ffffff' stroke='#1e88e5' stroke-width='1.2'/>
+<text x='705' y='89' font-size='11' text-anchor='middle' fill='#1e88e5' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>28</text>
+<rect x='1064' y='411' width='22' height='16' rx='3' fill='#ffffff' stroke='#1e88e5' stroke-width='1.2'/>
+<text x='1075' y='423' font-size='11' text-anchor='middle' fill='#1e88e5' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>25</text>
+<rect x='324' y='411' width='22' height='16' rx='3' fill='#ffffff' stroke='#8e24aa' stroke-width='1.2'/>
+<text x='335' y='423' font-size='11' text-anchor='middle' fill='#8e24aa' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>25</text>
+<rect x='694' y='745' width='22' height='16' rx='3' fill='#ffffff' stroke='#8e24aa' stroke-width='1.2'/>
+<text x='705' y='757' font-size='11' text-anchor='middle' fill='#8e24aa' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>28</text>
+<rect x='694' y='335.592' width='22' height='16' rx='3' fill='#ffffff' stroke='#546e7a' stroke-width='1.2'/>
+<text x='705' y='347.592' font-size='11' text-anchor='middle' fill='#546e7a' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>6</text>
+<rect x='694' y='431.592' width='22' height='16' rx='3' fill='#ffffff' stroke='#43a047' stroke-width='1.2'/>
+<text x='705' y='443.592' font-size='11' text-anchor='middle' fill='#43a047' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>10</text>
+<rect x='694' y='595.592' width='22' height='16' rx='3' fill='#ffffff' stroke='#00897b' stroke-width='1.2'/>
+<text x='705' y='607.592' font-size='11' text-anchor='middle' fill='#00897b' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>10</text>
+<rect x='540' y='513.592' width='22' height='16' rx='3' fill='#ffffff' stroke='#fb8c00' stroke-width='1.2'/>
+<text x='551' y='525.592' font-size='11' text-anchor='middle' fill='#fb8c00' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>4</text>
+<rect x='848' y='513.592' width='22' height='16' rx='3' fill='#ffffff' stroke='#d84315' stroke-width='1.2'/>
+<text x='859' y='525.592' font-size='11' text-anchor='middle' fill='#d84315' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>4</text>
+<rect x='540' y='417.592' width='22' height='16' rx='3' fill='#ffffff' stroke='#3949ab' stroke-width='1.2'/>
+<text x='551' y='429.592' font-size='11' text-anchor='middle' fill='#3949ab' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>2</text>
+<rect x='473.311' y='436.417' width='22' height='16' rx='3' fill='#ffffff' stroke='#3949ab' stroke-width='1.2'/>
+<text x='484.311' y='448.417' font-size='11' text-anchor='middle' fill='#3949ab' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>8</text>
+<rect x='473.311' y='590.766' width='22' height='16' rx='3' fill='#ffffff' stroke='#3949ab' stroke-width='1.2'/>
+<text x='484.311' y='602.766' font-size='11' text-anchor='middle' fill='#3949ab' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>8</text>
+<rect x='540' y='609.592' width='22' height='16' rx='3' fill='#ffffff' stroke='#3949ab' stroke-width='1.2'/>
+<text x='551' y='621.592' font-size='11' text-anchor='middle' fill='#3949ab' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>2</text>
+<rect x='848' y='417.592' width='22' height='16' rx='3' fill='#ffffff' stroke='#6d4c41' stroke-width='1.2'/>
+<text x='859' y='429.592' font-size='11' text-anchor='middle' fill='#6d4c41' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>2</text>
+<rect x='914.689' y='436.417' width='22' height='16' rx='3' fill='#ffffff' stroke='#6d4c41' stroke-width='1.2'/>
+<text x='925.689' y='448.417' font-size='11' text-anchor='middle' fill='#6d4c41' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>8</text>
+<rect x='914.689' y='590.766' width='22' height='16' rx='3' fill='#ffffff' stroke='#6d4c41' stroke-width='1.2'/>
+<text x='925.689' y='602.766' font-size='11' text-anchor='middle' fill='#6d4c41' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>8</text>
+<rect x='848' y='609.592' width='22' height='16' rx='3' fill='#ffffff' stroke='#6d4c41' stroke-width='1.2'/>
+<text x='859' y='621.592' font-size='11' text-anchor='middle' fill='#6d4c41' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>2</text>
+<line x1='423.12' y1='667.592' x2='986.88' y2='667.592' stroke='#222222' stroke-width='1.2'/>
+<line x1='423.12' y1='662.592' x2='423.12' y2='672.592' stroke='#222222' stroke-width='1.2'/>
+<line x1='986.88' y1='662.592' x2='986.88' y2='672.592' stroke='#222222' stroke-width='1.2'/>
+<text x='705' y='683.592' font-size='12' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>arrow 39.1 cm</text>
+<line x1='1012.88' y1='401.592' x2='1012.88' y2='641.592' stroke='#222222' stroke-width='1.2'/>
+<line x1='1007.88' y1='401.592' x2='1017.88' y2='401.592' stroke='#222222' stroke-width='1.2'/>
+<line x1='1007.88' y1='641.592' x2='1017.88' y2='641.592' stroke='#222222' stroke-width='1.2'/>
+<text x='1005.88' y='521.592' font-size='12' font-weight='bold' text-anchor='middle' fill='#222222' transform='rotate(-90 1005.88 521.592)' font-family='DejaVu Sans, Arial, sans-serif'>16.7 cm</text>
+<rect x='14' y='94' width='257' height='74' rx='4' fill='#ffffff' stroke='#8e24aa' stroke-width='2.5'/>
+<text x='24' y='112' font-size='13' text-anchor='start' fill='#8e24aa' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>frameCcw</text>
+<text x='24' y='127' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D7 - 53 LEDs - 2 pieces</text>
+<text x='24' y='142' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>left edge: 25 LEDs (#0-24)</text>
+<text x='24' y='157' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>bottom edge: 28 LEDs (#25-52)</text>
+<line x1='271' y1='131' x2='357' y2='131' stroke='#8e24aa' stroke-width='1.4'/>
+<circle cx='357' cy='131' r='3.5' fill='#8e24aa'/>
+<rect x='14' y='180' width='257' height='74' rx='4' fill='#ffffff' stroke='#e53935' stroke-width='2.5'/>
+<text x='24' y='198' font-size='13' text-anchor='start' fill='#e53935' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>letters</text>
+<text x='24' y='213' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D8 - 58 LEDs - 10 pieces</text>
+<text x='24' y='228' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>one strip, one piece per letter,</text>
+<text x='24' y='243' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>joined in reading order (see table)</text>
+<line x1='271' y1='217' x2='418' y2='183.648' stroke='#e53935' stroke-width='1.4'/>
+<circle cx='418' cy='183.648' r='3.5' fill='#e53935'/>
+<rect x='14' y='456.092' width='257' height='59' rx='4' fill='#ffffff' stroke='#fb8c00' stroke-width='2.5'/>
+<text x='24' y='474.092' font-size='13' text-anchor='start' fill='#fb8c00' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>arrowCapLeft</text>
+<text x='24' y='489.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D4 - 4 LEDs - 1 piece</text>
+<text x='24' y='504.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>end cap: 4 LEDs (#0-3)</text>
+<line x1='271' y1='485.592' x2='573' y2='485.592' stroke='#fb8c00' stroke-width='1.4'/>
+<circle cx='573' cy='485.592' r='3.5' fill='#fb8c00'/>
+<rect x='14' y='527.092' width='257' height='104' rx='4' fill='#ffffff' stroke='#3949ab' stroke-width='2.5'/>
+<text x='24' y='545.092' font-size='13' text-anchor='start' fill='#3949ab' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>arrowHeadLeft</text>
+<text x='24' y='560.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D11 - 20 LEDs - 4 pieces</text>
+<text x='24' y='575.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>upper base piece: 2 LEDs (#0-1)</text>
+<text x='24' y='590.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>upper wing: 8 LEDs (#2-9)</text>
+<text x='24' y='605.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>lower wing: 8 LEDs (#10-17)</text>
+<text x='24' y='620.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>lower base piece: 2 LEDs (#18-19)</text>
+<line x1='271' y1='579.092' x2='432.486' y2='514.089' stroke='#3949ab' stroke-width='1.4'/>
+<circle cx='432.486' cy='514.089' r='3.5' fill='#3949ab'/>
+<rect x='14' y='643.092' width='257' height='59' rx='4' fill='#ffffff' stroke='#00897b' stroke-width='2.5'/>
+<text x='24' y='661.092' font-size='13' text-anchor='start' fill='#00897b' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>arrowBodyBottom</text>
+<text x='24' y='676.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D10 - 10 LEDs - 1 piece</text>
+<text x='24' y='691.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>shaft bottom edge: 10 LEDs (#0-9)</text>
+<line x1='271' y1='672.592' x2='597' y2='581.592' stroke='#00897b' stroke-width='1.4'/>
+<circle cx='597' cy='581.592' r='3.5' fill='#00897b'/>
+<rect x='1139' y='85' width='257' height='74' rx='4' fill='#ffffff' stroke='#1e88e5' stroke-width='2.5'/>
+<text x='1149' y='103' font-size='13' text-anchor='start' fill='#1e88e5' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>frameCw</text>
+<text x='1149' y='118' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D6 - 53 LEDs - 2 pieces</text>
+<text x='1149' y='133' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>top edge: 28 LEDs (#0-27)</text>
+<text x='1149' y='148' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>right edge: 25 LEDs (#28-52)</text>
+<line x1='1139' y1='122' x2='1029' y2='107' stroke='#1e88e5' stroke-width='1.4'/>
+<circle cx='1029' cy='107' r='3.5' fill='#1e88e5'/>
+<rect x='1139' y='313.592' width='257' height='104' rx='4' fill='#ffffff' stroke='#546e7a' stroke-width='2.5'/>
+<text x='1149' y='331.592' font-size='13' text-anchor='start' fill='#546e7a' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>closedLight</text>
+<text x='1149' y='346.592' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D31 - 6 LEDs - 1 piece</text>
+<text x='1149' y='361.592' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>white LEDs BEHIND the plate: they</text>
+<text x='1149' y='376.592' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>light the CLOSED hole text (about</text>
+<text x='1149' y='391.592' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>10 x 2.5 cm) while the casino is closed</text>
+<text x='1149' y='406.592' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>piece: 6 LEDs (#0-5)</text>
+<line x1='1139' y1='365.592' x2='765' y2='365.592' stroke='#546e7a' stroke-width='1.4'/>
+<circle cx='765' cy='365.592' r='3.5' fill='#546e7a'/>
+<rect x='1139' y='432.092' width='257' height='59' rx='4' fill='#ffffff' stroke='#43a047' stroke-width='2.5'/>
+<text x='1149' y='450.092' font-size='13' text-anchor='start' fill='#43a047' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>arrowBodyTop</text>
+<text x='1149' y='465.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D9 - 10 LEDs - 1 piece</text>
+<text x='1149' y='480.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>shaft top edge: 10 LEDs (#0-9)</text>
+<line x1='1139' y1='461.592' x2='813' y2='461.592' stroke='#43a047' stroke-width='1.4'/>
+<circle cx='813' cy='461.592' r='3.5' fill='#43a047'/>
+<rect x='1139' y='503.092' width='257' height='104' rx='4' fill='#ffffff' stroke='#6d4c41' stroke-width='2.5'/>
+<text x='1149' y='521.092' font-size='13' text-anchor='start' fill='#6d4c41' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>arrowHeadRight</text>
+<text x='1149' y='536.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D12 - 20 LEDs - 4 pieces</text>
+<text x='1149' y='551.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>upper base piece: 2 LEDs (#0-1)</text>
+<text x='1149' y='566.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>upper wing: 8 LEDs (#2-9)</text>
+<text x='1149' y='581.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>lower wing: 8 LEDs (#10-17)</text>
+<text x='1149' y='596.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>lower base piece: 2 LEDs (#18-19)</text>
+<line x1='1139' y1='555.092' x2='977.514' y2='514.089' stroke='#6d4c41' stroke-width='1.4'/>
+<circle cx='977.514' cy='514.089' r='3.5' fill='#6d4c41'/>
+<rect x='1139' y='619.092' width='257' height='59' rx='4' fill='#ffffff' stroke='#d84315' stroke-width='2.5'/>
+<text x='1149' y='637.092' font-size='13' text-anchor='start' fill='#d84315' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>arrowCapRight</text>
+<text x='1149' y='652.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D5 - 4 LEDs - 1 piece</text>
+<text x='1149' y='667.092' font-size='10.5' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>end cap: 4 LEDs (#0-3)</text>
+<line x1='1139' y1='648.592' x2='837' y2='557.592' stroke='#d84315' stroke-width='1.4'/>
+<circle cx='837' cy='557.592' r='3.5' fill='#d84315'/>
+<circle cx='353' cy='777' r='4' fill='#222222'/>
+<text x='365' y='781' font-size='11' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>= first LED of the strip (DIN, index #0)</text>
+<line x1='615' y1='777' x2='645' y2='777' stroke='#222222' stroke-width='1.4'/>
+<text x='653' y='781' font-size='11' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>= data direction inside a piece</text>
+<line x1='850' y1='777' x2='880' y2='777' stroke='#777777' stroke-width='1.4' stroke-dasharray='4 3'/>
+<text x='888' y='781' font-size='11' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>= wire jumper between pieces</text>
+<text x='345' y='801' font-size='11' text-anchor='start' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Numbers next to the pieces and inside the letter circles are LED counts. #a-b are LED indexes in the sketch.</text>
+<text x='345' y='817' font-size='11' text-anchor='start' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>The gaps between strips are drawn only for clarity: on the real sign the strips touch each other.</text>
+<text x='345' y='833' font-size='11' text-anchor='start' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>A letter group may be laid out behind its letter in any shape; the circle is only an illustration.</text>
+</svg>

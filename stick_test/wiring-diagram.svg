@@ -1,0 +1,244 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='210mm' height='297mm' viewBox='-38.7629 -110.036 1017.53 1439.07'>
+<rect x='-38.7629' y='-110.036' width='1017.53' height='1439.07' fill='#ffffff'/>
+<text x='470' y='16' font-size='16' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Stick test - wiring (Arduino Mega + 10 Grove RGB LED sticks on a separate 5 V supply)</text>
+<rect x='520' y='44' width='130' height='100' rx='0' fill='#f3f3f3' stroke='#222222' stroke-width='2'/>
+<text x='585' y='70' font-size='12' text-anchor='middle' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Mean Well</text>
+<text x='585' y='88' font-size='13' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>LRS-50-5</text>
+<text x='585' y='105' font-size='12' text-anchor='middle' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>5 V / 10 A</text>
+<text x='585' y='122' font-size='11' text-anchor='middle' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>PSU1</text>
+<line x1='482' y1='60' x2='520' y2='60' stroke='#222222' stroke-width='2'/>
+<text x='476' y='64' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>L</text>
+<line x1='482' y1='88' x2='520' y2='88' stroke='#222222' stroke-width='2'/>
+<text x='476' y='92' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>N</text>
+<line x1='482' y1='116' x2='520' y2='116' stroke='#222222' stroke-width='2'/>
+<text x='476' y='120' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>PE</text>
+<text x='585' y='40' font-size='12' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>230 V AC mains</text>
+<text x='655' y='66' font-size='11' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>V+</text>
+<text x='655' y='126' font-size='11' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>V-</text>
+<line x1='650' y1='72' x2='670' y2='72' stroke='#c62828' stroke-width='2.5'/>
+<rect x='670' y='64' width='50' height='16' rx='0' fill='#ffffff' stroke='#c62828' stroke-width='2'/>
+<text x='695' y='58' font-size='12' text-anchor='middle' fill='#c62828' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>F1  10 A fuse</text>
+<line x1='720' y1='72' x2='840' y2='72' stroke='#c62828' stroke-width='2.5'/>
+<text x='850' y='76' font-size='14' text-anchor='start' fill='#c62828' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>+5 V</text>
+<path d='M 650 112 L 834 112 A 6 6 0 0 1 846 112 L 880 112' stroke='#222222' stroke-width='2.5' fill='none' stroke-linejoin='round'/>
+<text x='890' y='116' font-size='14' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>0 V</text>
+<line x1='780' y1='72' x2='780' y2='86' stroke='#c62828' stroke-width='2'/>
+<line x1='768' y1='86' x2='792' y2='86' stroke='#222222' stroke-width='2.5'/>
+<line x1='768' y1='98' x2='792' y2='98' stroke='#222222' stroke-width='2.5'/>
+<line x1='780' y1='98' x2='780' y2='112' stroke='#222222' stroke-width='2'/>
+<text x='796' y='84' font-size='13' text-anchor='start' fill='#c62828' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>+</text>
+<text x='764' y='96' font-size='11' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>C1  1000 uF 25 V</text>
+<circle cx='780' cy='72' r='4' fill='#c62828'/>
+<circle cx='780' cy='112' r='4' fill='#222222'/>
+<rect x='60' y='150' width='180' height='800' rx='0' fill='#e8f0fe' stroke='#222222' stroke-width='2'/>
+<text x='150' y='176' font-size='15' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Arduino Mega 2560</text>
+<text x='150' y='194' font-size='11' text-anchor='middle' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>+ Grove Base Shield</text>
+<text x='150' y='210' font-size='11' text-anchor='middle' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>powered from USB only</text>
+<text x='232' y='224' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D2</text>
+<line x1='240' y1='220' x2='390' y2='220' stroke='#1565c0' stroke-width='2'/>
+<line x1='390' y1='220' x2='398' y2='220' stroke='#1565c0' stroke-width='2'/>
+<rect x='398' y='212' width='44' height='16' rx='0' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<line x1='442' y1='220' x2='450' y2='220' stroke='#1565c0' stroke-width='2'/>
+<text x='420' y='207' font-size='12' text-anchor='middle' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>R1</text>
+<line x1='450' y1='220' x2='520' y2='220' stroke='#1565c0' stroke-width='2'/>
+<circle cx='520' cy='220' r='3.5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<rect x='520' y='196' width='220' height='48' rx='0' fill='#fff8e1' stroke='#222222' stroke-width='2'/>
+<text x='530' y='214' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Stick 1 - left cap</text>
+<text x='530' y='232' font-size='10' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>yellow = DIN   red = +5 V   black = GND</text>
+<text x='516' y='212' font-size='10' text-anchor='end' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>DIN</text>
+<circle cx='740' cy='210' r='3.5' fill='#ffffff' stroke='#c62828' stroke-width='2'/>
+<circle cx='740' cy='230' r='3.5' fill='#ffffff' stroke='#222222' stroke-width='2'/>
+<line x1='740' y1='210' x2='840' y2='210' stroke='#c62828' stroke-width='2'/>
+<circle cx='840' cy='210' r='3.5' fill='#c62828'/>
+<path d='M 740 230 L 834 230 A 6 6 0 0 1 846 230 L 880 230' stroke='#222222' stroke-width='2' fill='none' stroke-linejoin='round'/>
+<circle cx='880' cy='230' r='3.5' fill='#222222'/>
+<text x='232' y='284' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D3</text>
+<line x1='240' y1='280' x2='390' y2='280' stroke='#1565c0' stroke-width='2'/>
+<line x1='390' y1='280' x2='398' y2='280' stroke='#1565c0' stroke-width='2'/>
+<rect x='398' y='272' width='44' height='16' rx='0' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<line x1='442' y1='280' x2='450' y2='280' stroke='#1565c0' stroke-width='2'/>
+<text x='420' y='267' font-size='12' text-anchor='middle' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>R2</text>
+<line x1='450' y1='280' x2='520' y2='280' stroke='#1565c0' stroke-width='2'/>
+<circle cx='520' cy='280' r='3.5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<rect x='520' y='256' width='220' height='48' rx='0' fill='#fff8e1' stroke='#222222' stroke-width='2'/>
+<text x='530' y='274' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Stick 2 - left upper wing</text>
+<text x='530' y='292' font-size='10' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>yellow = DIN   red = +5 V   black = GND</text>
+<text x='516' y='272' font-size='10' text-anchor='end' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>DIN</text>
+<circle cx='740' cy='270' r='3.5' fill='#ffffff' stroke='#c62828' stroke-width='2'/>
+<circle cx='740' cy='290' r='3.5' fill='#ffffff' stroke='#222222' stroke-width='2'/>
+<line x1='740' y1='270' x2='840' y2='270' stroke='#c62828' stroke-width='2'/>
+<circle cx='840' cy='270' r='3.5' fill='#c62828'/>
+<path d='M 740 290 L 834 290 A 6 6 0 0 1 846 290 L 880 290' stroke='#222222' stroke-width='2' fill='none' stroke-linejoin='round'/>
+<circle cx='880' cy='290' r='3.5' fill='#222222'/>
+<text x='232' y='344' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D4</text>
+<line x1='240' y1='340' x2='390' y2='340' stroke='#1565c0' stroke-width='2'/>
+<line x1='390' y1='340' x2='398' y2='340' stroke='#1565c0' stroke-width='2'/>
+<rect x='398' y='332' width='44' height='16' rx='0' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<line x1='442' y1='340' x2='450' y2='340' stroke='#1565c0' stroke-width='2'/>
+<text x='420' y='327' font-size='12' text-anchor='middle' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>R3</text>
+<line x1='450' y1='340' x2='520' y2='340' stroke='#1565c0' stroke-width='2'/>
+<circle cx='520' cy='340' r='3.5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<rect x='520' y='316' width='220' height='48' rx='0' fill='#fff8e1' stroke='#222222' stroke-width='2'/>
+<text x='530' y='334' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Stick 3 - left lower wing</text>
+<text x='530' y='352' font-size='10' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>yellow = DIN   red = +5 V   black = GND</text>
+<text x='516' y='332' font-size='10' text-anchor='end' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>DIN</text>
+<circle cx='740' cy='330' r='3.5' fill='#ffffff' stroke='#c62828' stroke-width='2'/>
+<circle cx='740' cy='350' r='3.5' fill='#ffffff' stroke='#222222' stroke-width='2'/>
+<line x1='740' y1='330' x2='840' y2='330' stroke='#c62828' stroke-width='2'/>
+<circle cx='840' cy='330' r='3.5' fill='#c62828'/>
+<path d='M 740 350 L 834 350 A 6 6 0 0 1 846 350 L 880 350' stroke='#222222' stroke-width='2' fill='none' stroke-linejoin='round'/>
+<circle cx='880' cy='350' r='3.5' fill='#222222'/>
+<text x='232' y='404' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D5</text>
+<line x1='240' y1='400' x2='390' y2='400' stroke='#1565c0' stroke-width='2'/>
+<line x1='390' y1='400' x2='398' y2='400' stroke='#1565c0' stroke-width='2'/>
+<rect x='398' y='392' width='44' height='16' rx='0' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<line x1='442' y1='400' x2='450' y2='400' stroke='#1565c0' stroke-width='2'/>
+<text x='420' y='387' font-size='12' text-anchor='middle' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>R4</text>
+<line x1='450' y1='400' x2='520' y2='400' stroke='#1565c0' stroke-width='2'/>
+<circle cx='520' cy='400' r='3.5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<rect x='520' y='376' width='220' height='48' rx='0' fill='#fff8e1' stroke='#222222' stroke-width='2'/>
+<text x='530' y='394' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Stick 4 - top rail, left</text>
+<text x='530' y='412' font-size='10' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>yellow = DIN   red = +5 V   black = GND</text>
+<text x='516' y='392' font-size='10' text-anchor='end' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>DIN</text>
+<circle cx='740' cy='390' r='3.5' fill='#ffffff' stroke='#c62828' stroke-width='2'/>
+<circle cx='740' cy='410' r='3.5' fill='#ffffff' stroke='#222222' stroke-width='2'/>
+<line x1='740' y1='390' x2='840' y2='390' stroke='#c62828' stroke-width='2'/>
+<circle cx='840' cy='390' r='3.5' fill='#c62828'/>
+<path d='M 740 410 L 834 410 A 6 6 0 0 1 846 410 L 880 410' stroke='#222222' stroke-width='2' fill='none' stroke-linejoin='round'/>
+<circle cx='880' cy='410' r='3.5' fill='#222222'/>
+<text x='232' y='464' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D6</text>
+<line x1='240' y1='460' x2='390' y2='460' stroke='#1565c0' stroke-width='2'/>
+<line x1='390' y1='460' x2='398' y2='460' stroke='#1565c0' stroke-width='2'/>
+<rect x='398' y='452' width='44' height='16' rx='0' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<line x1='442' y1='460' x2='450' y2='460' stroke='#1565c0' stroke-width='2'/>
+<text x='420' y='447' font-size='12' text-anchor='middle' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>R5</text>
+<line x1='450' y1='460' x2='520' y2='460' stroke='#1565c0' stroke-width='2'/>
+<circle cx='520' cy='460' r='3.5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<rect x='520' y='436' width='220' height='48' rx='0' fill='#fff8e1' stroke='#222222' stroke-width='2'/>
+<text x='530' y='454' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Stick 5 - top rail, right</text>
+<text x='530' y='472' font-size='10' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>yellow = DIN   red = +5 V   black = GND</text>
+<text x='516' y='452' font-size='10' text-anchor='end' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>DIN</text>
+<circle cx='740' cy='450' r='3.5' fill='#ffffff' stroke='#c62828' stroke-width='2'/>
+<circle cx='740' cy='470' r='3.5' fill='#ffffff' stroke='#222222' stroke-width='2'/>
+<line x1='740' y1='450' x2='840' y2='450' stroke='#c62828' stroke-width='2'/>
+<circle cx='840' cy='450' r='3.5' fill='#c62828'/>
+<path d='M 740 470 L 834 470 A 6 6 0 0 1 846 470 L 880 470' stroke='#222222' stroke-width='2' fill='none' stroke-linejoin='round'/>
+<circle cx='880' cy='470' r='3.5' fill='#222222'/>
+<text x='232' y='524' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D7</text>
+<line x1='240' y1='520' x2='390' y2='520' stroke='#1565c0' stroke-width='2'/>
+<line x1='390' y1='520' x2='398' y2='520' stroke='#1565c0' stroke-width='2'/>
+<rect x='398' y='512' width='44' height='16' rx='0' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<line x1='442' y1='520' x2='450' y2='520' stroke='#1565c0' stroke-width='2'/>
+<text x='420' y='507' font-size='12' text-anchor='middle' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>R6</text>
+<line x1='450' y1='520' x2='520' y2='520' stroke='#1565c0' stroke-width='2'/>
+<circle cx='520' cy='520' r='3.5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<rect x='520' y='496' width='220' height='48' rx='0' fill='#fff8e1' stroke='#222222' stroke-width='2'/>
+<text x='530' y='514' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Stick 6 - bottom rail, left</text>
+<text x='530' y='532' font-size='10' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>yellow = DIN   red = +5 V   black = GND</text>
+<text x='516' y='512' font-size='10' text-anchor='end' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>DIN</text>
+<circle cx='740' cy='510' r='3.5' fill='#ffffff' stroke='#c62828' stroke-width='2'/>
+<circle cx='740' cy='530' r='3.5' fill='#ffffff' stroke='#222222' stroke-width='2'/>
+<line x1='740' y1='510' x2='840' y2='510' stroke='#c62828' stroke-width='2'/>
+<circle cx='840' cy='510' r='3.5' fill='#c62828'/>
+<path d='M 740 530 L 834 530 A 6 6 0 0 1 846 530 L 880 530' stroke='#222222' stroke-width='2' fill='none' stroke-linejoin='round'/>
+<circle cx='880' cy='530' r='3.5' fill='#222222'/>
+<text x='232' y='584' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D8</text>
+<line x1='240' y1='580' x2='390' y2='580' stroke='#1565c0' stroke-width='2'/>
+<line x1='390' y1='580' x2='398' y2='580' stroke='#1565c0' stroke-width='2'/>
+<rect x='398' y='572' width='44' height='16' rx='0' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<line x1='442' y1='580' x2='450' y2='580' stroke='#1565c0' stroke-width='2'/>
+<text x='420' y='567' font-size='12' text-anchor='middle' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>R7</text>
+<line x1='450' y1='580' x2='520' y2='580' stroke='#1565c0' stroke-width='2'/>
+<circle cx='520' cy='580' r='3.5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<rect x='520' y='556' width='220' height='48' rx='0' fill='#fff8e1' stroke='#222222' stroke-width='2'/>
+<text x='530' y='574' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Stick 7 - bottom rail, right</text>
+<text x='530' y='592' font-size='10' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>yellow = DIN   red = +5 V   black = GND</text>
+<text x='516' y='572' font-size='10' text-anchor='end' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>DIN</text>
+<circle cx='740' cy='570' r='3.5' fill='#ffffff' stroke='#c62828' stroke-width='2'/>
+<circle cx='740' cy='590' r='3.5' fill='#ffffff' stroke='#222222' stroke-width='2'/>
+<line x1='740' y1='570' x2='840' y2='570' stroke='#c62828' stroke-width='2'/>
+<circle cx='840' cy='570' r='3.5' fill='#c62828'/>
+<path d='M 740 590 L 834 590 A 6 6 0 0 1 846 590 L 880 590' stroke='#222222' stroke-width='2' fill='none' stroke-linejoin='round'/>
+<circle cx='880' cy='590' r='3.5' fill='#222222'/>
+<text x='232' y='644' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>A0</text>
+<line x1='240' y1='640' x2='390' y2='640' stroke='#1565c0' stroke-width='2'/>
+<line x1='390' y1='640' x2='398' y2='640' stroke='#1565c0' stroke-width='2'/>
+<rect x='398' y='632' width='44' height='16' rx='0' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<line x1='442' y1='640' x2='450' y2='640' stroke='#1565c0' stroke-width='2'/>
+<text x='420' y='627' font-size='12' text-anchor='middle' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>R8</text>
+<line x1='450' y1='640' x2='520' y2='640' stroke='#1565c0' stroke-width='2'/>
+<circle cx='520' cy='640' r='3.5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<rect x='520' y='616' width='220' height='48' rx='0' fill='#fff8e1' stroke='#222222' stroke-width='2'/>
+<text x='530' y='634' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Stick 8 - right cap</text>
+<text x='530' y='652' font-size='10' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>yellow = DIN   red = +5 V   black = GND</text>
+<text x='516' y='632' font-size='10' text-anchor='end' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>DIN</text>
+<circle cx='740' cy='630' r='3.5' fill='#ffffff' stroke='#c62828' stroke-width='2'/>
+<circle cx='740' cy='650' r='3.5' fill='#ffffff' stroke='#222222' stroke-width='2'/>
+<line x1='740' y1='630' x2='840' y2='630' stroke='#c62828' stroke-width='2'/>
+<circle cx='840' cy='630' r='3.5' fill='#c62828'/>
+<path d='M 740 650 L 834 650 A 6 6 0 0 1 846 650 L 880 650' stroke='#222222' stroke-width='2' fill='none' stroke-linejoin='round'/>
+<circle cx='880' cy='650' r='3.5' fill='#222222'/>
+<text x='232' y='704' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>A1</text>
+<line x1='240' y1='700' x2='390' y2='700' stroke='#1565c0' stroke-width='2'/>
+<line x1='390' y1='700' x2='398' y2='700' stroke='#1565c0' stroke-width='2'/>
+<rect x='398' y='692' width='44' height='16' rx='0' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<line x1='442' y1='700' x2='450' y2='700' stroke='#1565c0' stroke-width='2'/>
+<text x='420' y='687' font-size='12' text-anchor='middle' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>R9</text>
+<line x1='450' y1='700' x2='520' y2='700' stroke='#1565c0' stroke-width='2'/>
+<circle cx='520' cy='700' r='3.5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<rect x='520' y='676' width='220' height='48' rx='0' fill='#fff8e1' stroke='#222222' stroke-width='2'/>
+<text x='530' y='694' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Stick 9 - right upper wing</text>
+<text x='530' y='712' font-size='10' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>yellow = DIN   red = +5 V   black = GND</text>
+<text x='516' y='692' font-size='10' text-anchor='end' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>DIN</text>
+<circle cx='740' cy='690' r='3.5' fill='#ffffff' stroke='#c62828' stroke-width='2'/>
+<circle cx='740' cy='710' r='3.5' fill='#ffffff' stroke='#222222' stroke-width='2'/>
+<line x1='740' y1='690' x2='840' y2='690' stroke='#c62828' stroke-width='2'/>
+<circle cx='840' cy='690' r='3.5' fill='#c62828'/>
+<path d='M 740 710 L 834 710 A 6 6 0 0 1 846 710 L 880 710' stroke='#222222' stroke-width='2' fill='none' stroke-linejoin='round'/>
+<circle cx='880' cy='710' r='3.5' fill='#222222'/>
+<text x='232' y='764' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>A2</text>
+<line x1='240' y1='760' x2='390' y2='760' stroke='#1565c0' stroke-width='2'/>
+<line x1='390' y1='760' x2='398' y2='760' stroke='#1565c0' stroke-width='2'/>
+<rect x='398' y='752' width='44' height='16' rx='0' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<line x1='442' y1='760' x2='450' y2='760' stroke='#1565c0' stroke-width='2'/>
+<text x='420' y='747' font-size='12' text-anchor='middle' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>R10</text>
+<line x1='450' y1='760' x2='520' y2='760' stroke='#1565c0' stroke-width='2'/>
+<circle cx='520' cy='760' r='3.5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
+<rect x='520' y='736' width='220' height='48' rx='0' fill='#fff8e1' stroke='#222222' stroke-width='2'/>
+<text x='530' y='754' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Stick 10 - right lower wing</text>
+<text x='530' y='772' font-size='10' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>yellow = DIN   red = +5 V   black = GND</text>
+<text x='516' y='752' font-size='10' text-anchor='end' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>DIN</text>
+<circle cx='740' cy='750' r='3.5' fill='#ffffff' stroke='#c62828' stroke-width='2'/>
+<circle cx='740' cy='770' r='3.5' fill='#ffffff' stroke='#222222' stroke-width='2'/>
+<line x1='740' y1='750' x2='840' y2='750' stroke='#c62828' stroke-width='2'/>
+<circle cx='840' cy='750' r='3.5' fill='#c62828'/>
+<path d='M 740 770 L 834 770 A 6 6 0 0 1 846 770 L 880 770' stroke='#222222' stroke-width='2' fill='none' stroke-linejoin='round'/>
+<circle cx='880' cy='770' r='3.5' fill='#222222'/>
+<line x1='840' y1='72' x2='840' y2='750' stroke='#c62828' stroke-width='2.5'/>
+<line x1='880' y1='112' x2='880' y2='900' stroke='#222222' stroke-width='2.5'/>
+<text x='232' y='854' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D22</text>
+<line x1='240' y1='850' x2='330' y2='850' stroke='#ef6c00' stroke-width='2'/>
+<circle cx='330' cy='850' r='3.5' fill='#ffffff' stroke='#ef6c00' stroke-width='2'/>
+<line x1='334' y1='838' x2='416' y2='838' stroke='#222222' stroke-width='2.5'/>
+<line x1='375' y1='838' x2='375' y2='824' stroke='#222222' stroke-width='2'/>
+<circle cx='420' cy='850' r='3.5' fill='#ffffff' stroke='#ef6c00' stroke-width='2'/>
+<line x1='420' y1='850' x2='440' y2='850' stroke='#ef6c00' stroke-width='2'/>
+<line x1='440' y1='850' x2='440' y2='900' stroke='#ef6c00' stroke-width='2'/>
+<circle cx='440' cy='900' r='4' fill='#222222'/>
+<text x='330' y='814' font-size='11' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>optional push button (skip phase)</text>
+<text x='232' y='904' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>GND</text>
+<line x1='240' y1='900' x2='880' y2='900' stroke='#222222' stroke-width='2.5'/>
+<circle cx='880' cy='900' r='4' fill='#222222'/>
+<text x='560' y='892' font-size='11' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>the only ground link: Arduino GND to the 0 V rail</text>
+<text x='40' y='990' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Connections</text>
+<text x='40' y='1009' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>1. The sticks are powered from the separate 5 V supply PSU1 through the 10 A fuse F1. The Arduino 5V pin does NOT power the sticks.</text>
+<text x='40' y='1028' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>2. Each stick: red wire = +5 V rail, black wire = 0 V rail (thick wire for the rails). Only the yellow wire goes to the Arduino.</text>
+<text x='40' y='1047' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>3. Take the red and black wire terminals out of the shield-side Grove connector of every stick cable (see README.txt),</text>
+<text x='40' y='1066' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>   so that the shield and the stick supply are not connected to each other through the cables.</text>
+<text x='40' y='1085' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>4. Data: Arduino pin -> 330 ohm resistor (recommended) -> yellow wire (DIN). Stick n goes to the n-th pin: D2..D8, A0..A2.</text>
+<text x='40' y='1104' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>5. The Arduino and the 5 V supply share ground through ONE wire: Arduino GND to the 0 V rail.</text>
+<text x='40' y='1123' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>6. C1: 1000 uF, 25 V electrolytic capacitor across the rails (plus = +5 V, stripe = minus), close to the sticks.</text>
+<text x='40' y='1142' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>7. Switch the 5 V supply ON first, then plug in the USB cable. The USB cable powers only the Arduino.</text>
+<text x='40' y='1161' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>8. Optional push button between D22 and GND: skips to the next phase.</text>
+<text x='40' y='1180' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>9. The mains side of the supply must be in an enclosure and wired by a person who knows how (nothing here is mains).</text>
+</svg>

@@ -1,0 +1,150 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='297mm' height='210mm' viewBox='-31.3167 -54.532 1162.63 822.064'>
+<rect x='-31.3167' y='-54.532' width='1162.63' height='822.064' fill='#ffffff'/>
+<text x='550' y='32' font-size='19' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Stick test - layout of the 10-stick arrow (design B, barbed head)</text>
+<text x='550' y='50' font-size='12' text-anchor='middle' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>The test needs only the 10 sticks connected; they do not have to be fixed in this shape.</text>
+<g transform='translate(130 130)'><path d='M 192.846 255 L 192.846 15 L 222.846 15 L 222.846 255 Z' stroke='#546e7a' stroke-width='1.6' fill='#ffcdd2' stroke-linejoin='round'/></g>
+<g transform='translate(130 130)'><circle cx='207.846' cy='243' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='207.846' cy='219' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='207.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='207.846' cy='171' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='207.846' cy='147' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='207.846' cy='123' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='207.846' cy='99' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='207.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='207.846' cy='51' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='207.846' cy='27' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><text x='207.846' y='140' font-size='18' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>1</text></g>
+<g transform='translate(130 130)'><circle cx='207.846' cy='255' r='5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/></g>
+<g transform='translate(130 130)'><path d='M -7.5 122.01 L 200.346 2.00962 L 215.346 27.9904 L 7.5 147.99 Z' stroke='#546e7a' stroke-width='1.6' fill='#fff8e1' stroke-linejoin='round'/></g>
+<g transform='translate(130 130)'><circle cx='10.3923' cy='129' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='31.1769' cy='117' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='51.9615' cy='105' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='72.7461' cy='93' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='93.5307' cy='81' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='114.315' cy='69' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='135.1' cy='57' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='155.885' cy='45' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='176.669' cy='33' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='197.454' cy='21' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><text x='103.923' y='80' font-size='18' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>2</text></g>
+<g transform='translate(130 130)'><circle cx='0' cy='135' r='5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/></g>
+<g transform='translate(130 130)'><path d='M 7.5 122.01 L 215.346 242.01 L 200.346 267.99 L -7.5 147.99 Z' stroke='#546e7a' stroke-width='1.6' fill='#fff8e1' stroke-linejoin='round'/></g>
+<g transform='translate(130 130)'><circle cx='10.3923' cy='141' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='31.1769' cy='153' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='51.9615' cy='165' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='72.7461' cy='177' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='93.5307' cy='189' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='114.315' cy='201' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='135.1' cy='213' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='155.885' cy='225' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='176.669' cy='237' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='197.454' cy='249' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><text x='103.923' y='200' font-size='18' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>3</text></g>
+<g transform='translate(130 130)'><circle cx='0' cy='135' r='5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/></g>
+<g transform='translate(130 130)'><path d='M 222.846 60 L 462.846 60 L 462.846 90 L 222.846 90 Z' stroke='#546e7a' stroke-width='1.6' fill='#ffcdd2' stroke-linejoin='round'/></g>
+<g transform='translate(130 130)'><circle cx='234.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='258.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='282.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='306.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='330.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='354.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='378.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='402.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='426.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='450.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><text x='342.846' y='80' font-size='18' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>4</text></g>
+<g transform='translate(130 130)'><circle cx='222.846' cy='75' r='5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/></g>
+<g transform='translate(130 130)'><path d='M 468.846 60 L 708.846 60 L 708.846 90 L 468.846 90 Z' stroke='#546e7a' stroke-width='1.6' fill='#ffcdd2' stroke-linejoin='round'/></g>
+<g transform='translate(130 130)'><circle cx='480.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='504.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='528.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='552.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='576.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='600.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='624.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='648.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='672.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='696.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><text x='588.846' y='80' font-size='18' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>5</text></g>
+<g transform='translate(130 130)'><circle cx='468.846' cy='75' r='5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/></g>
+<g transform='translate(130 130)'><path d='M 222.846 180 L 462.846 180 L 462.846 210 L 222.846 210 Z' stroke='#546e7a' stroke-width='1.6' fill='#ffcdd2' stroke-linejoin='round'/></g>
+<g transform='translate(130 130)'><circle cx='234.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='258.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='282.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='306.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='330.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='354.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='378.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='402.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='426.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='450.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><text x='342.846' y='200' font-size='18' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>6</text></g>
+<g transform='translate(130 130)'><circle cx='222.846' cy='195' r='5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/></g>
+<g transform='translate(130 130)'><path d='M 468.846 180 L 708.846 180 L 708.846 210 L 468.846 210 Z' stroke='#546e7a' stroke-width='1.6' fill='#ffcdd2' stroke-linejoin='round'/></g>
+<g transform='translate(130 130)'><circle cx='480.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='504.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='528.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='552.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='576.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='600.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='624.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='648.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='672.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='696.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><text x='588.846' y='200' font-size='18' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>7</text></g>
+<g transform='translate(130 130)'><circle cx='468.846' cy='195' r='5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/></g>
+<g transform='translate(130 130)'><path d='M 708.846 255 L 708.846 15 L 738.846 15 L 738.846 255 Z' stroke='#546e7a' stroke-width='1.6' fill='#ffcdd2' stroke-linejoin='round'/></g>
+<g transform='translate(130 130)'><circle cx='723.846' cy='243' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='723.846' cy='219' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='723.846' cy='195' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='723.846' cy='171' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='723.846' cy='147' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='723.846' cy='123' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='723.846' cy='99' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='723.846' cy='75' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='723.846' cy='51' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='723.846' cy='27' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><text x='723.846' y='140' font-size='18' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>8</text></g>
+<g transform='translate(130 130)'><circle cx='723.846' cy='255' r='5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/></g>
+<g transform='translate(130 130)'><path d='M 731.346 2.00962 L 939.192 122.01 L 924.192 147.99 L 716.346 27.9904 Z' stroke='#546e7a' stroke-width='1.6' fill='#fff8e1' stroke-linejoin='round'/></g>
+<g transform='translate(130 130)'><circle cx='734.238' cy='21' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='755.023' cy='33' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='775.808' cy='45' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='796.592' cy='57' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='817.377' cy='69' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='838.161' cy='81' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='858.946' cy='93' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='879.731' cy='105' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='900.515' cy='117' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='921.3' cy='129' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><text x='827.769' y='80' font-size='18' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>9</text></g>
+<g transform='translate(130 130)'><circle cx='723.846' cy='15' r='5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/></g>
+<g transform='translate(130 130)'><path d='M 716.346 242.01 L 924.192 122.01 L 939.192 147.99 L 731.346 267.99 Z' stroke='#546e7a' stroke-width='1.6' fill='#fff8e1' stroke-linejoin='round'/></g>
+<g transform='translate(130 130)'><circle cx='734.238' cy='249' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='755.023' cy='237' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='775.808' cy='225' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='796.592' cy='213' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='817.377' cy='201' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='838.161' cy='189' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='858.946' cy='177' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='879.731' cy='165' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='900.515' cy='153' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><circle cx='921.3' cy='141' r='2.6' fill='#ffffff' stroke='#78909c' stroke-width='2'/></g>
+<g transform='translate(130 130)'><text x='827.769' y='200' font-size='18' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>10</text></g>
+<g transform='translate(130 130)'><circle cx='723.846' cy='255' r='5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/></g>
+<line x1='130' y1='445' x2='1061.69' y2='445' stroke='#222222' stroke-width='1.4'/>
+<text x='595.846' y='463' font-size='12' text-anchor='middle' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>about 31 cm wide, 9 cm high (the exact size depends on the gaps)</text>
+<text x='130' y='485' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Blue dot = data-in end (LED 1) of the stick. Each stick: 80 x 10 x 10 mm, 10 LEDs.</text>
+<text x='24' y='523' font-size='14' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Stick -> Arduino data pin (sketch order)</text>
+<text x='40' y='549' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Stick  1  D2    left cap</text>
+<text x='40' y='571' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Stick  2  D3    left upper wing</text>
+<text x='40' y='593' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Stick  3  D4    left lower wing</text>
+<text x='40' y='615' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Stick  4  D5    top rail, left</text>
+<text x='40' y='637' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Stick  5  D6    top rail, right</text>
+<text x='560' y='549' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Stick  6  D7    bottom rail, left</text>
+<text x='560' y='571' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Stick  7  D8    bottom rail, right</text>
+<text x='560' y='593' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Stick  8  A0    right cap</text>
+<text x='560' y='615' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Stick  9  A1    right upper wing</text>
+<text x='560' y='637' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Stick 10  A2    right lower wing</text>
+<text x='24' y='683' font-size='12' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Wings are at 30 degrees: with 80 mm sticks the wing spans 69 mm along the shaft and 40 mm across it.</text>
+</svg>
