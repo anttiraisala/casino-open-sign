@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LED brightness curve</title>
+<style>
+:root{--bg:#14161a;--card:#1f2228;--fg:#eceff4;--mut:#9aa3b2;--acc:#ffb020;--ok:#5ad38b;--bad:#ff6b6b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%}
+main{max-width:560px;margin:0 auto;padding:14px 14px 40px}
+h1{font-size:19px;margin:6px 0 2px}
+p.sub{margin:0 0 12px;color:var(--mut);font-size:13px}
+.card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px}
+canvas{width:100%;height:auto;aspect-ratio:2/1;display:block;border-radius:8px;background:#101216;touch-action:none}
+.row{margin:14px 0}
+.row .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.row label{font-size:14px;font-weight:bold}
+.row .val{font-size:20px;font-weight:bold;color:var(--acc);font-variant-numeric:tabular-nums}
+.hint{font-size:12px;color:var(--mut);margin-top:2px}
+input[type=range]{width:100%;height:44px;margin:0;accent-color:var(--acc);touch-action:pan-y}
+.strip{display:flex;height:34px;border-radius:6px;overflow:hidden;margin-top:6px}
+.strip div{flex:1}
+.lab{font-size:12px;color:var(--mut);margin:10px 0 2px}
+.sw{display:flex;align-items:center;gap:10px;font-size:14px;margin-top:12px;min-height:44px}
+.sw input{width:24px;height:24px;accent-color:var(--acc)}
+button{background:var(--acc);color:#1a1200;border:0;border-radius:8px;padding:12px 14px;font-size:15px;font-weight:bold;min-height:44px}
+button.sec{background:#363b46;color:var(--fg)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+textarea{width:100%;background:#101216;color:var(--fg);border:1px solid #363b46;border-radius:8px;padding:8px;font:12px/1.35 Consolas,Menlo,monospace;resize:vertical}
+#top{position:sticky;top:0;z-index:5;box-shadow:0 6px 12px rgba(0,0,0,.5);padding:8px}
+#top .lab{margin:6px 0 2px}
+#top .strip{height:20px;margin-top:2px}
+.warn{color:var(--bad);font-size:13px;min-height:16px;margin-top:4px}
+.stat{font-size:12px;color:var(--mut)}
+</style></head><body><main>
+<h1>LED brightness curve</h1>
+<p class="sub">out = min + (max-min) &middot; ((1-mix)&middot;t + mix&middot;t<sup>exp</sup>), t = in/255. Drag the sliders; the table is rebuilt instantly.</p>
+
+<div class="card" id="top">
+  <canvas id="cv" width="1000" height="500"></canvas>
+  <div class="stat" style="margin:4px 0 0">Drag the green line on the graph to see how one input becomes an output.</div>
+  <div class="lab">Ramp 0..255 after the curve (what the LEDs show)</div>
+  <div class="strip" id="ramp"></div>
+  <div class="lab">Same ramp without the curve (linear)</div>
+  <div class="strip" id="lin"></div>
+  <div class="warn" id="warn"></div>
+</div>
+
+<div class="card">
+  <div class="row"><div class="top"><label for="min">1. Minimum</label><span class="val" id="vmin"></span></div>
+    <input type="range" id="min" min="0" max="255" step="1"><div class="hint">Output of the dimmest lit LED (input 1)</div></div>
+  <div class="row"><div class="top"><label for="max">2. Maximum</label><span class="val" id="vmax"></span></div>
+    <input type="range" id="max" min="0" max="255" step="1"><div class="hint">Output at input 255</div></div>
+  <div class="row"><div class="top"><label for="exp">3. Exponent</label><span class="val" id="vexp"></span></div>
+    <input type="range" id="exp" min="0" max="1000" step="1"><div class="hint">0.1 &larr; 1 (linear, middle) &rarr; 20, logarithmic slider</div></div>
+  <div class="row"><div class="top"><label for="mix">4. Mix</label><span class="val" id="vmix"></span></div>
+    <input type="range" id="mix" min="0" max="100" step="1"><div class="hint">0 = linear, 100 = full power curve</div></div>
+  <label class="sw"><input type="checkbox" id="kz"> Keep input 0 dark (unlit LEDs stay off)</label>
+  <div class="btns"><button class="sec" id="reset">Reset</button></div>
+</div>
+
+<div class="card">
+  <div class="lab" style="margin-top:0">Values (copy these back to me)</div>
+  <textarea id="vals" rows="2" readonly></textarea>
+  <div class="btns"><button id="c1">Copy values</button></div>
+  <div class="lab">Lookup table for the sketch</div>
+  <textarea id="lut" rows="12" readonly></textarea>
+  <div class="btns"><button id="c2">Copy table</button></div>
+  <div class="stat" id="msg" style="margin-top:8px"></div>
+</div>
+</main>
+<script>
+(function(){
+var DEF={min:0,max:80,exp:2.67,mix:100,kz:1,probe:128};
+var st=Object.assign({},DEF);
+try{var s=JSON.parse(localStorage.getItem('ledcurve')||'null'); if(s&&typeof s==='object') for(var k in DEF) if(typeof s[k]==='number') st[k]=s[k];}catch(e){}
+var $=function(i){return document.getElementById(i)};
+function posToExp(p){return p<=500?Math.pow(10,-1*(500-p)/500):Math.pow(20,(p-500)/500)}
+function expToPos(e){return e<=1?Math.round(500-500*Math.log10(1/e)):Math.round(500+500*Math.log(e)/Math.log(20))}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function table(){
+  var mix=st.mix/100,out=[];
+  for(var x=0;x<256;x++){
+    var t=x/255,c=(1-mix)*t+mix*Math.pow(t,st.exp);
+    var v=(st.kz&&x===0)?0:st.min+(st.max-st.min)*c;
+    out.push(clamp(Math.round(v),0,255));
+  }
+  return out;
+}
+function strip(el,fn){
+  if(!el.children.length) for(var i=0;i<32;i++) el.appendChild(document.createElement('div'));
+  for(var i=0;i<32;i++){var g=fn(Math.round(i*255/31));el.children[i].style.background='rgb('+g+','+g+','+g+')';}
+}
+var G={};  // plot geometry shared with the pointer handler
+function draw(out){
+  var cv=$('cv'),g=cv.getContext('2d'),W=cv.width,H=cv.height,L=70,B=44,T=14,R=16,PW=W-L-R,PH=H-B-T;
+  G={W:W,L:L,PW:PW};
+  g.fillStyle='#101216';g.fillRect(0,0,W,H);
+  g.strokeStyle='#2a2f38';g.lineWidth=1.5;g.fillStyle='#7d8696';g.font='28px Arial';
+  for(var i=0;i<=4;i++){var p=L+PW*i/4,q=H-B-PH*i/4;
+    g.beginPath();g.moveTo(p,T);g.lineTo(p,H-B);g.stroke();
+    g.beginPath();g.moveTo(L,q);g.lineTo(W-R,q);g.stroke();
+    g.fillText(Math.round(255*i/4),i==4?p-40:p-18,H-10);g.fillText(Math.round(255*i/4),2,q+8);}
+  g.setLineDash([10,10]);g.strokeStyle='#6b7380';g.lineWidth=3;g.beginPath();g.moveTo(L,H-B);g.lineTo(W-R,T);g.stroke();g.setLineDash([]);
+  g.strokeStyle='#ffb020';g.lineWidth=6;g.beginPath();
+  for(var x=0;x<256;x++){var px=L+PW*x/255,py=H-B-PH*out[x]/255;x?g.lineTo(px,py):g.moveTo(px,py);}
+  g.stroke();
+  // draggable probe: vertical line = input, number beside it = output
+  var pi=clamp(Math.round(st.probe),0,255),po=out[pi],lx=L+PW*pi/255,ly=H-B-PH*po/255;
+  g.strokeStyle='#5ad38b';g.lineWidth=5;g.beginPath();g.moveTo(lx,T);g.lineTo(lx,H-B);g.stroke();
+  g.fillStyle='#5ad38b';g.beginPath();g.arc(lx,ly,11,0,6.2832);g.fill();
+  g.font='bold 36px Arial';
+  var tIn='in '+pi,tOut='out '+po,right=lx<W*0.72;
+  g.fillStyle='#101216';g.globalAlpha=.75;
+  g.fillRect(right?lx+10:lx-10-150,T+4,150,84);g.globalAlpha=1;
+  g.fillStyle='#5ad38b';g.textAlign=right?'left':'right';
+  g.fillText(tOut,right?lx+18:lx-18,T+40);
+  g.fillStyle='#d6dbe4';g.fillText(tIn,right?lx+18:lx-18,T+80);
+  g.textAlign='left';
+}
+function fmt(){return '{"min":'+st.min+',"max":'+st.max+',"exponent":'+st.exp.toFixed(2)+',"mix":'+(st.mix/100).toFixed(2)+',"keepZeroDark":'+(st.kz?1:0)+'}'}
+function render(){
+  var out=table();
+  $('vmin').textContent=st.min;$('vmax').textContent=st.max;$('vexp').textContent=st.exp.toFixed(2);$('vmix').textContent=(st.mix/100).toFixed(2);
+  $('min').value=st.min;$('max').value=st.max;$('exp').value=expToPos(st.exp);$('mix').value=st.mix;$('kz').checked=!!st.kz;
+  $('warn').textContent=st.min>st.max?'Minimum is above maximum: the curve runs downwards.':'';
+  strip($('ramp'),function(x){return out[x]});strip($('lin'),function(x){return x});
+  draw(out);
+  $('vals').value=fmt();
+  var l='const uint8_t BRIGHTNESS_LUT[256] PROGMEM = {\n';
+  for(var r=0;r<16;r++) l+='  '+out.slice(r*16,r*16+16).join(', ')+(r<15?',':'')+'\n';
+  $('lut').value=l+'};';
+  try{localStorage.setItem('ledcurve',JSON.stringify(st))}catch(e){}
+}
+$('min').oninput=function(){st.min=+this.value;render()};
+$('max').oninput=function(){st.max=+this.value;render()};
+$('exp').oninput=function(){st.exp=posToExp(+this.value);render()};
+$('mix').oninput=function(){st.mix=+this.value;render()};
+$('kz').onchange=function(){st.kz=this.checked?1:0;render()};
+(function(){var cv=$('cv'),down=false;
+  function move(e){var r=cv.getBoundingClientRect(),cx=(e.clientX-r.left)/r.width*cv.width;st.probe=clamp(Math.round((cx-G.L)/G.PW*255),0,255);render();}
+  cv.addEventListener('pointerdown',function(e){down=true;try{cv.setPointerCapture(e.pointerId)}catch(x){}move(e);e.preventDefault();});
+  cv.addEventListener('pointermove',function(e){if(down)move(e);});
+  cv.addEventListener('pointerup',function(){down=false});cv.addEventListener('pointercancel',function(){down=false});})();
+$('reset').onclick=function(){st=Object.assign({},DEF);render()};
+function cp(id){var t=$(id);t.focus();t.select();t.setSelectionRange(0,99999);
+  var done=function(){$('msg').textContent='Copied.'};
+  var fail=function(){$('msg').textContent='Copy not allowed here: the text is selected, use your phone’s Copy.'};
+  try{navigator.clipboard.writeText(t.value).then(done,fail)}catch(e){fail()}}
+$('c1').onclick=function(){cp('vals')};$('c2').onclick=function(){cp('lut')};
+render();
+})();
+</script></body></html>

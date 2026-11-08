@@ -17,25 +17,11 @@ def strip_info(cfg):
     counts = cfg["LETTER_LEDS"]
     top = cfg["FRAME_TOP_LEDS"]
     side = cfg["FRAME_HALF_LEDS"] - top
-    cap = cfg["ARROW_CAP_LEDS"]
-    body = cfg["ARROW_BODY_LEDS"]
-    base, wing = cfg["ARROW_HEAD_BASE_LEDS"], cfg["ARROW_HEAD_WING_LEDS"]
-
     first = len(texts[0])
     letter_summary = "groups: %s | %s" % (" ".join(str(n) for n in counts[:first]),
                                           " ".join(str(n) for n in counts[first:]))
 
-    head_pieces = [("upper base piece", base), ("upper wing", wing), ("lower wing", wing), ("lower base piece", base)]
-    head_summary = "pieces " + " + ".join(str(n) for _, n in head_pieces)
-
     rows = [
-        dict(pin=cfg["PIN_CLOSED_LIGHT"], name="closedLight", desc="white light behind the CLOSED hole text",
-             feed="feed: start", pieces=[("white LED piece", cfg["CLOSED_LIGHT_LEDS"])],
-             summary="behind the plate, always white"),
-        dict(pin=cfg["PIN_ARROW_CAP_LEFT"], name="arrowCapLeft", desc="arrow, left end cap",
-             feed="feed: start", pieces=[("end cap", cap)], summary="arrow, left end cap"),
-        dict(pin=cfg["PIN_ARROW_CAP_RIGHT"], name="arrowCapRight", desc="arrow, right end cap",
-             feed="feed: start", pieces=[("end cap", cap)], summary="arrow, right end cap"),
         dict(pin=cfg["PIN_FRAME_CW"], name="frameCw", desc="frame, clockwise half",
              feed="feed: start and end", pieces=[("top edge", top), ("right edge", side)],
              summary="top edge %d + right edge %d" % (top, side)),
@@ -45,18 +31,36 @@ def strip_info(cfg):
         dict(pin=cfg["PIN_LETTERS"], name="letters", desc="%s, then %s" % texts,
              feed="feed: every group", pieces=[(ch, n) for ch, n in zip(letters, counts)],
              summary=letter_summary),
-        dict(pin=cfg["PIN_ARROW_BODY_TOP"], name="arrowBodyTop", desc="arrow, shaft top edge",
-             feed="feed: start", pieces=[("shaft top edge", body)], summary="arrow, shaft top edge"),
-        dict(pin=cfg["PIN_ARROW_BODY_BOTTOM"], name="arrowBodyBottom", desc="arrow, shaft bottom edge",
-             feed="feed: start", pieces=[("shaft bottom edge", body)], summary="arrow, shaft bottom edge"),
-        dict(pin=cfg["PIN_ARROW_HEAD_LEFT"], name="arrowHeadLeft", desc="arrow, left arrowhead",
-             feed="feed: start and end", pieces=list(head_pieces), summary=head_summary),
-        dict(pin=cfg["PIN_ARROW_HEAD_RIGHT"], name="arrowHeadRight", desc="arrow, right arrowhead",
-             feed="feed: start and end", pieces=list(head_pieces), summary=head_summary),
     ]
     for row in rows:
         row["leds"] = sum(n for _, n in row["pieces"])
     return sorted(rows, key=lambda r: r["pin"])
+
+
+def stick_info(cfg):
+    """One dict per arrow stick (Grove RGB LED stick), in the order of STICK_PINS: name, desc, connector, leds.
+
+    The names, descriptions and shield connectors come from tools/arrow_geometry.py (the single source of the
+    arrow); the sketch must agree with it (checked here)."""
+    import arrow_geometry as ag
+    out = []
+    for definition, pin in zip(ag.STICK_DEFS, cfg["STICK_PINS"]):
+        name, desc, _colours, connector = definition
+        if connector.lstrip("D") != pin:
+            raise SystemExit("STICK_PINS in sketch.ino disagrees with arrow_geometry.py for %s" % name)
+        out.append(dict(name=name, desc=desc, connector=connector, pin=pin, leds=cfg["LEDS_PER_STICK"]))
+    return out
+
+
+def closed_stick_info(cfg):
+    """The 11th Grove stick: the white CLOSED light behind the plate (shield connector A3). Not part of the arrow."""
+    return dict(name="CLOSED", desc="CLOSED light, behind the plate", connector=cfg["PIN_CLOSED_LIGHT"],
+                pin=cfg["PIN_CLOSED_LIGHT"], leds=cfg["CLOSED_LIGHT_LEDS"])
+
+
+def all_stick_info(cfg):
+    """The 10 arrow sticks followed by the CLOSED light stick (the 11 sticks of the Grove Base Shield)."""
+    return stick_info(cfg) + [closed_stick_info(cfg)]
 
 
 def with_ranges(pieces):

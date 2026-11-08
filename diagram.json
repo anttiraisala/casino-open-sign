@@ -698,17 +698,6 @@
       "type": "wokwi-led-strip",
       "id": "closed_light",
       "top": 192.4,
-      "left": 672.0,
-      "attrs": {
-        "pixels": "6",
-        "pixelShape": "square",
-        "pixelSize": "3535"
-      }
-    },
-    {
-      "type": "wokwi-led-strip",
-      "id": "arrow_body_top",
-      "top": 256.4,
       "left": 640.0,
       "attrs": {
         "pixels": "10",
@@ -718,9 +707,45 @@
     },
     {
       "type": "wokwi-led-strip",
-      "id": "arrow_body_bottom",
-      "top": 336.4,
-      "left": 640.0,
+      "id": "stick_l_cap",
+      "top": 744.6,
+      "left": 443.2,
+      "attrs": {
+        "pixels": "10",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      },
+      "rotate": 90.0
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "stick_l_wing_up",
+      "top": 688.2,
+      "left": 345.0,
+      "attrs": {
+        "pixels": "10",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      },
+      "rotate": 330.0
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "stick_l_wing_dn",
+      "top": 801.0,
+      "left": 345.0,
+      "attrs": {
+        "pixels": "10",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      },
+      "rotate": 30.0
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "stick_rail_up_l",
+      "top": 704.6,
+      "left": 548.1,
       "attrs": {
         "pixels": "10",
         "pixelShape": "square",
@@ -729,123 +754,74 @@
     },
     {
       "type": "wokwi-led-strip",
-      "id": "arrow_cap_left",
-      "top": 296.4,
-      "left": 600.0,
+      "id": "stick_rail_up_r",
+      "top": 704.6,
+      "left": 731.9,
       "attrs": {
-        "pixels": "4",
+        "pixels": "10",
         "pixelShape": "square",
         "pixelSize": "3535"
       },
-      "rotate": 90
+      "rotate": 180.0
     },
     {
       "type": "wokwi-led-strip",
-      "id": "arrow_cap_right",
-      "top": 296.4,
-      "left": 776.0,
+      "id": "stick_rail_dn_l",
+      "top": 784.6,
+      "left": 548.1,
       "attrs": {
-        "pixels": "4",
+        "pixels": "10",
         "pixelShape": "square",
         "pixelSize": "3535"
-      },
-      "rotate": 90
+      }
     },
     {
       "type": "wokwi-led-strip",
-      "id": "arrow_head_left_upper_base",
-      "top": 232.4,
-      "left": 616.0,
+      "id": "stick_rail_dn_r",
+      "top": 784.6,
+      "left": 731.9,
       "attrs": {
-        "pixels": "2",
+        "pixels": "10",
         "pixelShape": "square",
         "pixelSize": "3535"
       },
-      "rotate": -90.0
+      "rotate": 180.0
     },
     {
       "type": "wokwi-led-strip",
-      "id": "arrow_head_left_upper_wing",
-      "top": 256.4,
-      "left": 518.0,
+      "id": "stick_r_cap",
+      "top": 744.6,
+      "left": 836.8,
       "attrs": {
-        "pixels": "8",
+        "pixels": "10",
         "pixelShape": "square",
         "pixelSize": "3535"
       },
-      "rotate": 141.32
+      "rotate": 90.0
     },
     {
       "type": "wokwi-led-strip",
-      "id": "arrow_head_left_lower_wing",
-      "top": 336.4,
-      "left": 518.0,
+      "id": "stick_r_wing_up",
+      "top": 688.2,
+      "left": 935.0,
       "attrs": {
-        "pixels": "8",
+        "pixels": "10",
         "pixelShape": "square",
         "pixelSize": "3535"
       },
-      "rotate": 38.68
+      "rotate": 210.0
     },
     {
       "type": "wokwi-led-strip",
-      "id": "arrow_head_left_lower_base",
-      "top": 360.4,
-      "left": 616.0,
+      "id": "stick_r_wing_dn",
+      "top": 801.0,
+      "left": 935.0,
       "attrs": {
-        "pixels": "2",
+        "pixels": "10",
         "pixelShape": "square",
         "pixelSize": "3535"
       },
-      "rotate": -90.0
-    },
-    {
-      "type": "wokwi-led-strip",
-      "id": "arrow_head_right_upper_base",
-      "top": 232.4,
-      "left": 792.0,
-      "attrs": {
-        "pixels": "2",
-        "pixelShape": "square",
-        "pixelSize": "3535"
-      },
-      "rotate": -90.0
-    },
-    {
-      "type": "wokwi-led-strip",
-      "id": "arrow_head_right_upper_wing",
-      "top": 256.4,
-      "left": 794.0,
-      "attrs": {
-        "pixels": "8",
-        "pixelShape": "square",
-        "pixelSize": "3535"
-      },
-      "rotate": 38.68
-    },
-    {
-      "type": "wokwi-led-strip",
-      "id": "arrow_head_right_lower_wing",
-      "top": 336.4,
-      "left": 794.0,
-      "attrs": {
-        "pixels": "8",
-        "pixelShape": "square",
-        "pixelSize": "3535"
-      },
-      "rotate": 141.32
-    },
-    {
-      "type": "wokwi-led-strip",
-      "id": "arrow_head_right_lower_base",
-      "top": 360.4,
-      "left": 792.0,
-      "attrs": {
-        "pixels": "2",
-        "pixelShape": "square",
-        "pixelSize": "3535"
-      },
-      "rotate": -90.0
+      "rotate": 150.0
     },
     {
       "type": "wokwi-text",
@@ -862,7 +838,7 @@
       "top": 42,
       "left": 1000,
       "attrs": {
-        "text": "D6 frameCw: top edge, then right edge"
+        "text": "D9 frameCw: top edge, then right edge"
       }
     },
     {
@@ -871,7 +847,7 @@
       "top": 64,
       "left": 1000,
       "attrs": {
-        "text": "D7 frameCcw: left edge, then bottom edge"
+        "text": "D10 frameCcw: left edge, then bottom edge"
       }
     },
     {
@@ -880,7 +856,7 @@
       "top": 86,
       "left": 1000,
       "attrs": {
-        "text": "D8 letters: CASINO, then OPEN (one LED circle per letter)"
+        "text": "D11 letters: CASINO, then OPEN (one LED circle per letter)"
       }
     },
     {
@@ -889,7 +865,7 @@
       "top": 108,
       "left": 1000,
       "attrs": {
-        "text": "D9 arrowBodyTop: shaft top edge"
+        "text": "Arrow sticks in the Grove Base Shield (drawn below the sign):"
       }
     },
     {
@@ -898,7 +874,7 @@
       "top": 130,
       "left": 1000,
       "attrs": {
-        "text": "D10 arrowBodyBottom: shaft bottom edge"
+        "text": "  D2 L-CAP, D3 L-WING-UP, D4 L-WING-DN, D5 RAIL-UP-L,"
       }
     },
     {
@@ -907,7 +883,7 @@
       "top": 152,
       "left": 1000,
       "attrs": {
-        "text": "D4 arrowCapLeft / D5 arrowCapRight: shaft ends"
+        "text": "  D6 RAIL-UP-R, D7 RAIL-DN-L, D8 RAIL-DN-R,"
       }
     },
     {
@@ -916,7 +892,7 @@
       "top": 174,
       "left": 1000,
       "attrs": {
-        "text": "D11 arrowHeadLeft / D12 arrowHeadRight: arrowheads"
+        "text": "  A0 R-CAP, A1 R-WING-UP, A2 R-WING-DN"
       }
     },
     {
@@ -925,7 +901,7 @@
       "top": 196,
       "left": 1000,
       "attrs": {
-        "text": "D31 closedLight: 6 white LEDs behind the CLOSED hole text"
+        "text": "A3 closedLight: 11th Grove stick, 10 white LEDs behind the CLOSED hole text"
       }
     },
     {
@@ -961,13 +937,22 @@
       "top": 284,
       "left": 1000,
       "attrs": {
-        "text": "Gaps between strips are drawn only for clarity;"
+        "text": "D13 (LED L on the board): sign of life; Serial Monitor 115200 baud"
       }
     },
     {
       "type": "wokwi-text",
       "id": "legend_13",
       "top": 306,
+      "left": 1000,
+      "attrs": {
+        "text": "Gaps between strips are drawn only for clarity;"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "legend_14",
+      "top": 328,
       "left": 1000,
       "attrs": {
         "text": "on the real sign the strips touch each other."
@@ -979,7 +964,7 @@
       "top": 482,
       "left": 480,
       "attrs": {
-        "text": "Letter modes (button D3 steps through them, after 10 it wraps to 0):"
+        "text": "Letter modes (button D33 steps through them, after 10 it wraps to 0):"
       }
     },
     {
@@ -1020,11 +1005,101 @@
     },
     {
       "type": "wokwi-text",
+      "id": "stick_label_1",
+      "top": 743.6,
+      "left": 441.2,
+      "attrs": {
+        "text": "L-CAP D2"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_2",
+      "top": 664.7,
+      "left": 316.0,
+      "attrs": {
+        "text": "L-WING-UP D3"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_3",
+      "top": 822.5,
+      "left": 316.0,
+      "attrs": {
+        "text": "L-WING-DN D4"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_4",
+      "top": 679.6,
+      "left": 580.1,
+      "attrs": {
+        "text": "RAIL-UP-L D5"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_5",
+      "top": 679.6,
+      "left": 763.9,
+      "attrs": {
+        "text": "RAIL-UP-R D6"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_6",
+      "top": 807.6,
+      "left": 580.1,
+      "attrs": {
+        "text": "RAIL-DN-L D7"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_7",
+      "top": 807.6,
+      "left": 763.9,
+      "attrs": {
+        "text": "RAIL-DN-R D8"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_8",
+      "top": 743.6,
+      "left": 934.8,
+      "attrs": {
+        "text": "R-CAP A0"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_9",
+      "top": 664.7,
+      "left": 1028.0,
+      "attrs": {
+        "text": "R-WING-UP A1"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_10",
+      "top": 822.5,
+      "left": 1028.0,
+      "attrs": {
+        "text": "R-WING-DN A2"
+      }
+    },
+    {
+      "type": "wokwi-text",
       "id": "closed_label",
       "top": 191.4,
-      "left": 778.0,
+      "left": 810.0,
       "attrs": {
-        "text": "<- CLOSED hole text"
+        "text": "<- CLOSED hole text (stick on A3)"
       }
     },
     {
@@ -1123,7 +1198,7 @@
       "top": 38,
       "left": 20,
       "attrs": {
-        "text": "D2: arrow direction"
+        "text": "D32: arrow direction"
       }
     },
     {
@@ -1139,7 +1214,7 @@
       "top": 38,
       "left": 170,
       "attrs": {
-        "text": "D3: letter mode"
+        "text": "D33: letter mode"
       }
     },
     {
@@ -1284,7 +1359,7 @@
       []
     ],
     [
-      "mega:2",
+      "mega:32",
       "arrow_switch:2",
       "orange",
       []
@@ -1308,7 +1383,7 @@
       []
     ],
     [
-      "mega:3",
+      "mega:33",
       "mode_button:1.r",
       "orange",
       []
@@ -1416,7 +1491,7 @@
       []
     ],
     [
-      "mega:6",
+      "mega:9",
       "frame_cw_top:DIN",
       "green",
       []
@@ -1452,7 +1527,7 @@
       []
     ],
     [
-      "mega:7",
+      "mega:10",
       "frame_ccw_left:DIN",
       "green",
       []
@@ -1488,7 +1563,7 @@
       []
     ],
     [
-      "mega:8",
+      "mega:11",
       "letter_1_C_1:DIN",
       "green",
       []
@@ -2532,7 +2607,7 @@
       []
     ],
     [
-      "mega:31",
+      "mega:A3",
       "closed_light:DIN",
       "green",
       []
@@ -2550,218 +2625,182 @@
       []
     ],
     [
-      "mega:9",
-      "arrow_body_top:DIN",
+      "mega:2",
+      "stick_l_cap:DIN",
       "green",
       []
     ],
     [
       "mega:5V",
-      "arrow_body_top:VDD",
+      "stick_l_cap:VDD",
       "red",
       []
     ],
     [
       "mega:GND.1",
-      "arrow_body_top:VSS",
+      "stick_l_cap:VSS",
       "black",
       []
     ],
     [
-      "mega:10",
-      "arrow_body_bottom:DIN",
+      "mega:3",
+      "stick_l_wing_up:DIN",
       "green",
       []
     ],
     [
       "mega:5V",
-      "arrow_body_bottom:VDD",
+      "stick_l_wing_up:VDD",
       "red",
       []
     ],
     [
       "mega:GND.1",
-      "arrow_body_bottom:VSS",
+      "stick_l_wing_up:VSS",
       "black",
       []
     ],
     [
       "mega:4",
-      "arrow_cap_left:DIN",
+      "stick_l_wing_dn:DIN",
       "green",
       []
     ],
     [
       "mega:5V",
-      "arrow_cap_left:VDD",
+      "stick_l_wing_dn:VDD",
       "red",
       []
     ],
     [
       "mega:GND.1",
-      "arrow_cap_left:VSS",
+      "stick_l_wing_dn:VSS",
       "black",
       []
     ],
     [
       "mega:5",
-      "arrow_cap_right:DIN",
+      "stick_rail_up_l:DIN",
       "green",
       []
     ],
     [
       "mega:5V",
-      "arrow_cap_right:VDD",
+      "stick_rail_up_l:VDD",
       "red",
       []
     ],
     [
       "mega:GND.1",
-      "arrow_cap_right:VSS",
+      "stick_rail_up_l:VSS",
       "black",
       []
     ],
     [
-      "mega:11",
-      "arrow_head_left_upper_base:DIN",
+      "mega:6",
+      "stick_rail_up_r:DIN",
       "green",
       []
     ],
     [
       "mega:5V",
-      "arrow_head_left_upper_base:VDD",
+      "stick_rail_up_r:VDD",
       "red",
       []
     ],
     [
       "mega:GND.1",
-      "arrow_head_left_upper_base:VSS",
+      "stick_rail_up_r:VSS",
       "black",
       []
     ],
     [
-      "arrow_head_left_upper_base:DOUT",
-      "arrow_head_left_upper_wing:DIN",
-      "green",
-      []
-    ],
-    [
-      "arrow_head_left_upper_base:VDD.2",
-      "arrow_head_left_upper_wing:VDD",
-      "red",
-      []
-    ],
-    [
-      "arrow_head_left_upper_base:VSS.2",
-      "arrow_head_left_upper_wing:VSS",
-      "black",
-      []
-    ],
-    [
-      "arrow_head_left_upper_wing:DOUT",
-      "arrow_head_left_lower_wing:DIN",
-      "green",
-      []
-    ],
-    [
-      "arrow_head_left_upper_wing:VDD.2",
-      "arrow_head_left_lower_wing:VDD",
-      "red",
-      []
-    ],
-    [
-      "arrow_head_left_upper_wing:VSS.2",
-      "arrow_head_left_lower_wing:VSS",
-      "black",
-      []
-    ],
-    [
-      "arrow_head_left_lower_wing:DOUT",
-      "arrow_head_left_lower_base:DIN",
-      "green",
-      []
-    ],
-    [
-      "arrow_head_left_lower_wing:VDD.2",
-      "arrow_head_left_lower_base:VDD",
-      "red",
-      []
-    ],
-    [
-      "arrow_head_left_lower_wing:VSS.2",
-      "arrow_head_left_lower_base:VSS",
-      "black",
-      []
-    ],
-    [
-      "mega:12",
-      "arrow_head_right_upper_base:DIN",
+      "mega:7",
+      "stick_rail_dn_l:DIN",
       "green",
       []
     ],
     [
       "mega:5V",
-      "arrow_head_right_upper_base:VDD",
+      "stick_rail_dn_l:VDD",
       "red",
       []
     ],
     [
       "mega:GND.1",
-      "arrow_head_right_upper_base:VSS",
+      "stick_rail_dn_l:VSS",
       "black",
       []
     ],
     [
-      "arrow_head_right_upper_base:DOUT",
-      "arrow_head_right_upper_wing:DIN",
+      "mega:8",
+      "stick_rail_dn_r:DIN",
       "green",
       []
     ],
     [
-      "arrow_head_right_upper_base:VDD.2",
-      "arrow_head_right_upper_wing:VDD",
+      "mega:5V",
+      "stick_rail_dn_r:VDD",
       "red",
       []
     ],
     [
-      "arrow_head_right_upper_base:VSS.2",
-      "arrow_head_right_upper_wing:VSS",
+      "mega:GND.1",
+      "stick_rail_dn_r:VSS",
       "black",
       []
     ],
     [
-      "arrow_head_right_upper_wing:DOUT",
-      "arrow_head_right_lower_wing:DIN",
+      "mega:A0",
+      "stick_r_cap:DIN",
       "green",
       []
     ],
     [
-      "arrow_head_right_upper_wing:VDD.2",
-      "arrow_head_right_lower_wing:VDD",
+      "mega:5V",
+      "stick_r_cap:VDD",
       "red",
       []
     ],
     [
-      "arrow_head_right_upper_wing:VSS.2",
-      "arrow_head_right_lower_wing:VSS",
+      "mega:GND.1",
+      "stick_r_cap:VSS",
       "black",
       []
     ],
     [
-      "arrow_head_right_lower_wing:DOUT",
-      "arrow_head_right_lower_base:DIN",
+      "mega:A1",
+      "stick_r_wing_up:DIN",
       "green",
       []
     ],
     [
-      "arrow_head_right_lower_wing:VDD.2",
-      "arrow_head_right_lower_base:VDD",
+      "mega:5V",
+      "stick_r_wing_up:VDD",
       "red",
       []
     ],
     [
-      "arrow_head_right_lower_wing:VSS.2",
-      "arrow_head_right_lower_base:VSS",
+      "mega:GND.1",
+      "stick_r_wing_up:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:A2",
+      "stick_r_wing_dn:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "stick_r_wing_dn:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "stick_r_wing_dn:VSS",
       "black",
       []
     ]

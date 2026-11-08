@@ -1,5 +1,5 @@
 /*
- * Casino sign "CASINO OPEN" - Arduino Mega 2560 + 10 WS2812B LED strips (Wokwi project)
+ * Casino sign "CASINO OPEN" - Arduino Mega 2560 + WS2812B LED strips + an arrow of 10 Grove RGB LED sticks (Wokwi project)
  *
  * Physical sign:
  *   - Black rectangular plate with an LED frame around its edge (2 strips,
@@ -10,29 +10,32 @@
  *     plate. Behind each letter sits a small group of LEDs (any number per
  *     letter, set in LETTER_LEDS). The groups are cut from the strip and joined
  *     with wire jumpers into one data chain, so no LEDs are wasted between letters.
- *   - A hole text "CLOSED" cut into the plate under the OPEN row; six white LEDs behind the
+ *   - A hole text "CLOSED" cut into the plate under the OPEN row; the 11th Grove stick (10 white LEDs) behind the
  *     plate light it up while the casino is closed (and then the OPEN letters are off).
- *   - A left/right arrow under that. Its shaft is a rectangle (top edge,
- *     bottom edge and a cap at each end) that is closed at the tail and open
- *     toward the head. A triangular head sits on each end: its base is the shaft
- *     cap plus one short strip piece above and below it. Only the head the arrow
- *     points at is lit, and only the cap at the tail end is lit.
+ *   - A left/right arrow under that, made of 10 Grove RGB LED sticks (10 LEDs each, plugged into the
+ *     connectors of the Grove Base Shield; exact geometry and drill template in arrow_sticks/): a vertical
+ *     cap stick at each end, four rail sticks between the caps (two upper, two lower) and four wing
+ *     sticks (30 degrees) that form an arrowhead at each end. Only the head the arrow points at is lit.
+ *     The cap at the tail lights its middle 6 LEDs (2 dark at each end), the cap at the head lights
+ *     only the 3 LEDs at each end (middle 4 dark). (The older arrow made of six LED strips is kept as a
+ *     backup in backup/old_arrow_strips/; it is not wired any more.)
  *
  * Strip overview (one Adafruit_NeoPixel object and one data pin each):
- *   frameCw          D6   frame, clockwise half (top edge, then right edge)
- *   frameCcw         D7   frame, counter-clockwise half (left edge, then bottom edge)
- *   letters          D8   backlight behind all letters, line 1 then line 2
- *   arrowBodyTop     D9   shaft, top edge
- *   arrowBodyBottom  D10  shaft, bottom edge
- *   arrowHeadLeft    D11  left arrowhead  (upper base piece, upper wing, lower wing, lower base piece)
- *   arrowHeadRight   D12  right arrowhead (same order)
- *   arrowCapLeft     D4   shaft, left end cap  (top to bottom)
- *   arrowCapRight    D5   shaft, right end cap (top to bottom)
- *   closedLight      D31  6 white LEDs behind the plate that light the "CLOSED" hole text
+ *   frameCw          D9   frame, clockwise half (top edge, then right edge)
+ *   frameCcw         D10  frame, counter-clockwise half (left edge, then bottom edge)
+ *   letters          D11  backlight behind all letters, line 1 then line 2
+ *   closedLight      A3   the 11th Grove stick (connector A3 of the shield): 10 white LEDs behind the plate
+ *                         that light the "CLOSED" hole text
+ *   Arrow sticks (Grove Base Shield connectors; LED 1 of a stick is its DIN end):
+ *   L-CAP D2   L-WING-UP D3   L-WING-DN D4   RAIL-UP-L D5   RAIL-UP-R D6   RAIL-DN-L D7   RAIL-DN-R D8
+ *   R-CAP A0   R-WING-UP A1   R-WING-DN A2   (connector A3: the CLOSED light stick)
  *
  * Inputs (both use the internal pull-up resistor, the switch pulls the pin to GND):
- *   D2  slide switch  arrow direction (handle left = LOW = arrow points left)
- *   D3  push button   next letter lighting mode
+ *   D32 slide switch  arrow direction (handle on the GND side = LOW = the arrow points to the customer's LEFT,
+ *                     seen from the front). The switch is on the back of the sign: mount it so that, seen from
+ *                     the back, the GND contact (1) is on the right-hand side; then the handle points the same
+ *                     way as the arrow does in real space (toward the customer's left = the back's right).
+ *   D33 push button   next letter lighting mode
  *   D30 slide switch  SW5 "casino closed" (handle on the GND side = LOW = closed): the OPEN
  *                     letters go dark and the CLOSED light turns on
  *   D22-D25  SW3  16-position hex rotary switch (0..F, pins 1, 2, 4, 8): speed of the
@@ -44,7 +47,13 @@
  * Power-on LED test: for 10 s after power-up all strips run a short window of lit LEDs from the first
  * to the last LED at the same time (2 passes: white, then red-green-blue), so every LED and the
  * colour order can be checked. The LCD shows the seconds in a progress bar and a scrolling
- * "press D3 to skip" (the two rows swap places every 2.5 s). Pressing D3 skips the test.
+ * "press D33 to skip" (the two rows swap places every 2.5 s). Pressing D33 skips the test.
+ *
+ * SIGN OF LIFE: the LED on pin 13 blinks all the time while the program runs (every HEARTBEAT_MS, twice as
+ * fast while many state changes happen; it is shortly inverted on every state change: arrow direction,
+ * letter mode, casino open/closed, speed switch). Once per second (DEBUG_MS) the Serial Monitor (115200
+ * baud, SERIAL_BAUD) gets a line "DBG up=.. loops=.. mode=.. arrow=R|L (customer view) closed=.. sw3=.. sw4=.. events=..
+ * beats=.. tick=..", so the values change from line to line. The baud rate is also printed at start-up.
  *
  * LCD display (I2C, SDA = D20, SCL = D21, 5 V, GND): four rotating pages with the current
  * settings (mode, SW3/SW4 position and speed, casino open/closed, arrow direction). A changed
@@ -58,6 +67,9 @@
  *
  * To change strip lengths edit ONLY the CONFIGURATION section below and, for
  * Wokwi, regenerate diagram.json with: python3 tools/generate_diagram.py
+ *
+ * Arrow sticks: see arrow_sticks/README.txt (drill template, layout, wiring). Sketch settings are
+ * STICK_PINS and LEDS_PER_STICK below.
  *
  * Note: the Arduino build inserts function prototypes at the top of this file,
  * so function signatures only use types that exist before the first function
@@ -89,31 +101,55 @@ constexpr char LINE_2_TEXT[] = "OPEN";
 // any shape. "I" is narrow, so it gets only 4.
 constexpr uint8_t LETTER_LEDS[] = {6, 6, 6, 4, 6, 6,   6, 6, 6, 6};
 
-constexpr uint16_t ARROW_BODY_LEDS = 10;   // LEDs in EACH shaft edge strip (top and bottom)
-constexpr uint16_t ARROW_CAP_LEDS = 4;     // LEDs in EACH shaft end cap (must be even)
-constexpr uint16_t ARROW_HEAD_BASE_LEDS = 2;  // LEDs in each base piece of an arrowhead (above and
-                                              // below the cap, so 2 pieces per head)
-constexpr uint16_t ARROW_HEAD_WING_LEDS = 8;  // LEDs in each wing of an arrowhead (2 wings per head)
+// The arrow: 10 Grove RGB LED sticks of 10 LEDs each (see arrow_sticks/README.txt for the geometry).
+constexpr uint8_t STICK_COUNT = 10;
+constexpr uint16_t LEDS_PER_STICK = 10;    // must be even (the caps are split into an upper and a lower half)
 
-// The white light behind the "CLOSED" hole text: one short piece of strip, always white.
-constexpr uint16_t CLOSED_LIGHT_LEDS = 6;
+// Which end of a real Grove stick carries the "ball" (the round marker on the stick's board). The layout and
+// drill drawings (layout-diagram, arrow_sticks/) show a black dot on every stick: that is where the BALL of the
+// real stick goes. Every stick is mounted exactly as drawn, with its ball at the dot.
+//   true  = the ball of a real stick is at its DIN end (LED 1, where the data goes in). The LEDs are numbered
+//           from the dot, so the program uses the LED numbers as they are.
+//   false = the ball is at the OTHER end of the stick (LED 10). The program counts the LEDs of every stick from
+//           the other end, so the animation still runs the right way although the sticks stay as drawn.
+// If the animation runs backwards along the sticks on the real sign, flip this value (do not re-mount the sticks).
+// The CLOSED light stick is always white, so this value does not matter for it.
+constexpr bool STICK_BALL_AT_DIN_END = true;
+
+// The white light behind the "CLOSED" hole text: the 11th Grove RGB LED stick (10 LEDs, connector A3 of the
+// Grove Base Shield), always white. It sits behind the plate; its LED window is 74 x 4 mm.
+constexpr uint16_t CLOSED_LIGHT_LEDS = 10;
 
 // --- Data pins -------------------------------------------------------------
-constexpr uint8_t PIN_FRAME_CW = 6;
-constexpr uint8_t PIN_FRAME_CCW = 7;
-constexpr uint8_t PIN_LETTERS = 8;
-constexpr uint8_t PIN_ARROW_BODY_TOP = 9;
-constexpr uint8_t PIN_ARROW_BODY_BOTTOM = 10;
-constexpr uint8_t PIN_ARROW_HEAD_LEFT = 11;
-constexpr uint8_t PIN_ARROW_HEAD_RIGHT = 12;
-constexpr uint8_t PIN_ARROW_CAP_LEFT = 4;
-constexpr uint8_t PIN_ARROW_CAP_RIGHT = 5;
-constexpr uint8_t PIN_CLOSED_LIGHT = 31;
+constexpr uint8_t PIN_FRAME_CW = 9;
+constexpr uint8_t PIN_FRAME_CCW = 10;
+constexpr uint8_t PIN_LETTERS = 11;
+constexpr uint8_t PIN_CLOSED_LIGHT = A3;   // Grove Base Shield connector A3 (the 11th stick)
+
+// Arrow sticks. The data pins are the signal pins of the Grove Base Shield connectors D2..D8 and
+// A0..A2 (the connector A3 carries the CLOSED light stick). Stick numbers = positions in this list.
+constexpr uint8_t STICK_PINS[STICK_COUNT] = {2, 3, 4, 5, 6, 7, 8, A0, A1, A2};
+constexpr uint8_t STICK_L_CAP = 0;       // vertical bar, left end        (D2)
+constexpr uint8_t STICK_L_WING_UP = 1;   // left arrowhead, upper wing    (D3)
+constexpr uint8_t STICK_L_WING_DN = 2;   // left arrowhead, lower wing    (D4)
+constexpr uint8_t STICK_RAIL_UP_L = 3;   // upper rail, left stick        (D5)
+constexpr uint8_t STICK_RAIL_UP_R = 4;   // upper rail, right stick       (D6)
+constexpr uint8_t STICK_RAIL_DN_L = 5;   // lower rail, left stick        (D7)
+constexpr uint8_t STICK_RAIL_DN_R = 6;   // lower rail, right stick       (D8)
+constexpr uint8_t STICK_R_CAP = 7;       // vertical bar, right end       (A0)
+constexpr uint8_t STICK_R_WING_UP = 8;   // right arrowhead, upper wing   (A1)
+constexpr uint8_t STICK_R_WING_DN = 9;   // right arrowhead, lower wing   (A2)
+// Logical LED 0 of a stick is its BALL end (the black dot in the drawings); see STICK_BALL_AT_DIN_END.
 
 // --- Input pins ------------------------------------------------------------
-constexpr uint8_t PIN_ARROW_SWITCH = 2;    // slide switch: arrow direction
-constexpr uint8_t PIN_MODE_BUTTON = 3;     // push button: next letter mode
-constexpr bool ARROW_POINTS_LEFT_WHEN_LOW = true;  // false would reverse the switch
+constexpr uint8_t PIN_ARROW_SWITCH = 32;   // slide switch: arrow direction
+constexpr uint8_t PIN_MODE_BUTTON = 33;    // push button: next letter mode
+// Direction of the arrow switch (D32, slide switch, internal pull-up). It depends on how the mechanical switch
+// is wired and mounted, so it is a source-code setting:
+//   true  = pin LOW (handle on the GND side) -> the arrow points to the customer's LEFT, pin HIGH -> RIGHT
+//   false = reversed: pin LOW -> the arrow points to the customer's RIGHT, pin HIGH -> LEFT
+// If the arrow points the wrong way for a handle position, flip this one constant.
+constexpr bool ARROW_POINTS_LEFT_WHEN_LOW = true;
 constexpr uint8_t PIN_CASINO_CLOSED_SWITCH = 30;   // slide switch SW5: casino closed
 constexpr bool CASINO_CLOSED_WHEN_LOW = true;      // handle on the GND side = closed (false: reverse)
 constexpr uint8_t DEBOUNCE_MS = 30;        // an input must stay stable this long
@@ -126,6 +162,14 @@ constexpr bool SPEED_BIT_IS_LOW = true;    // a bit counts as set when its pin r
                                            // connects it to the common pin = GND). Set to false if
                                            // your switch is complement coded (reads 15 - position).
 
+// --- Sign of life (see the top of this file) ---------------------------------
+constexpr uint8_t PIN_STATUS_LED = 13;       // debug LED on the Mega board
+constexpr uint32_t SERIAL_BAUD = 115200;     // Serial Monitor speed (stated here, at the top, and printed at start-up)
+constexpr uint32_t DEBUG_MS = 1000;          // interval of the "DBG" line
+constexpr uint32_t HEARTBEAT_MS = 250;       // LED toggle interval
+constexpr uint32_t HEARTBEAT_FAST_MS = 125;  // LED toggle interval while many state changes happen
+constexpr uint32_t INVERT_MS = 120;          // the LED is inverted this long after a state change
+
 // --- LCD display: 2x16 character LCD with an I2C backpack (PCF8574), SDA = D20, SCL = D21 ---
 constexpr uint8_t LCD_I2C_ADDRESS = 0x27;  // Wokwi uses 0x27; if a real display stays blank try 0x3F
 constexpr uint16_t LCD_PAGE_MS = 3000;     // time one page is shown while the pages rotate
@@ -136,15 +180,35 @@ constexpr uint8_t LCD_CHARS_PER_LOOP = 4;  // characters sent per loop() pass, s
 
 // --- Power-on LED test -----------------------------------------------------
 // At power-up every LED is lit once per pass (all strips at the same time, each with a short
-// moving window) so wiring and colours can be checked. Pressing D3 skips the test.
+// moving window) so wiring and colours can be checked. Pressing D33 skips the test.
 constexpr uint32_t STARTUP_TEST_MS = 10000;      // length of the test (0 = no test)
 constexpr uint8_t STARTUP_TEST_PASSES = 2;       // pass 1 is white, the other passes red-green-blue
 constexpr uint8_t STARTUP_TEST_WINDOW_LEDS = 5;  // LEDs lit at the same time in each strip
 constexpr uint16_t LCD_TEST_SWAP_MS = 2500;      // the two LCD rows swap places this often during the test
-constexpr uint16_t LCD_TEST_SCROLL_MS = 250;     // the "press D3 to skip" text scrolls one character per step
+constexpr uint16_t LCD_TEST_SCROLL_MS = 250;     // the "press D33 to skip" text scrolls one character per step
 
 // --- Look and timing -------------------------------------------------------
-constexpr uint8_t BRIGHTNESS = 80;         // global brightness 0..255
+// There is no global brightness: the library brightness stays at 255 and the maximum of each brightness curve
+// below is the brightness limit of its LED type (default 80 of 255 = the same limit as the old global setting).
+
+// --- Brightness curves (post-processing of the brightness of every LED) -----
+// The colours are computed as before; the brightness of each colour (its largest channel) is then mapped through a
+// 256-entry lookup table, one table per LED type, so every type can be tuned on its own. A new LED type needs one new
+// LED_TYPE_* constant (and a bigger LED_TYPE_COUNT) and one more value in each array below.
+//   out = min + (max - min) * ((1 - mix) * t + mix * t^exponent),  t = in / 255,  rounded to 0..255
+// If keepZero is true, an input of 0 always stays 0 (unlit LEDs stay dark even when min > 0).
+// The tables are built at start-up and rebuilt by setBrightnessCurve() whenever a value is changed.
+constexpr uint8_t LED_TYPE_STRIP = 0;  // LED strips: the frame and the letters
+constexpr uint8_t LED_TYPE_STICK = 1;  // Grove RGB LED sticks: the arrow and the CLOSED light
+constexpr uint8_t LED_TYPE_COUNT = 2;
+// Defaults (same values for every type for now):
+constexpr uint8_t CURVE_DEFAULT_MIN[LED_TYPE_COUNT] = {0, 0};              // 0..255, output for the dimmest lit LED
+constexpr uint8_t CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 80};              // 0..255, output for input 255 = the brightness limit
+constexpr float CURVE_DEFAULT_EXPONENT[LED_TYPE_COUNT] = {2.67f, 2.67f};   // 0.1..20, 1 = linear
+constexpr float CURVE_DEFAULT_MIX[LED_TYPE_COUNT] = {1.0f, 1.0f};          // 0..1, 0 = linear, 1 = full power curve
+constexpr bool CURVE_DEFAULT_KEEP_ZERO[LED_TYPE_COUNT] = {true, true};
+constexpr float CURVE_EXPONENT_MIN = 0.1f;
+constexpr float CURVE_EXPONENT_MAX = 20.0f;
 
 // Speed range of the two speed switches. The multiplier grows geometrically from
 // position 0 to position F; all the times below are the times at multiplier 1.0.
@@ -197,12 +261,19 @@ constexpr uint8_t LETTER_COUNT = sizeof(LETTER_LEDS) / sizeof(LETTER_LEDS[0]);
 constexpr uint8_t FIRST_WORD_LETTERS = sizeof(LINE_1_TEXT) - 1;  // letters in line 1
 constexpr uint16_t FRAME_SIDE_LEDS = FRAME_HALF_LEDS - FRAME_TOP_LEDS;  // left and right edge
 
-constexpr uint16_t ARROW_CAP_HALF = ARROW_CAP_LEDS / 2;     // LEDs per cap half
-constexpr uint16_t ARROW_HEAD_HALF = ARROW_HEAD_BASE_LEDS + ARROW_HEAD_WING_LEDS;  // one side of a head
-constexpr uint16_t ARROW_HEAD_LEDS = 2 * ARROW_HEAD_HALF;   // LEDs in EACH arrowhead
-constexpr uint16_t ARROW_HEAD_START = ARROW_CAP_HALF + ARROW_BODY_LEDS;  // flow coordinate of the head side
-constexpr uint16_t ARROW_PATH_LEDS = ARROW_HEAD_START + ARROW_HEAD_HALF;
-constexpr uint16_t ARROW_SPARKLE_CYCLE = ARROW_PATH_LEDS + 8;  // sparkle travel incl. pause
+// The rails are attached to LED 3 and LED 8 of a cap (index 2 and 7). The tail cap lights the LEDs between
+// and including those two (the middle 6); the head cap lights the 3 LEDs at each of its ends (the rail LED and
+// the two beyond it) and leaves the middle 4 dark.
+constexpr uint16_t ARROW_TAIL_DARK_ENDS = 2;                // dark LEDs at each end of the tail cap
+constexpr uint16_t ARROW_HEAD_CAP_LIT = 3;                  // lit LEDs at each end of the head cap
+constexpr uint16_t ARROW_TAIL_HALF = LEDS_PER_STICK / 2 - ARROW_TAIL_DARK_ENDS;  // lit tail cap LEDs per lane (3)
+constexpr uint16_t ARROW_RAIL_LEDS = 2 * LEDS_PER_STICK;    // LEDs of one rail lane (two sticks in a row)
+constexpr uint16_t ARROW_HEAD_START = ARROW_TAIL_HALF + ARROW_RAIL_LEDS;  // flow coordinate of the first head cap LED
+constexpr uint16_t ARROW_WING_START = ARROW_HEAD_START + ARROW_HEAD_CAP_LIT;  // flow coordinate where a wing starts
+constexpr uint16_t ARROW_PATH_LEDS = ARROW_WING_START + LEDS_PER_STICK;  // whole path per lane (36), tail to wing tip
+constexpr uint16_t ARROW_PULSE_TURN = ARROW_PATH_LEDS;      // the lower pulse starts when the upper one reaches the tip
+constexpr uint16_t ARROW_PULSE_PERIOD = 2 * ARROW_PULSE_TURN;  // upper pulse, then lower pulse, then again
+constexpr uint8_t ARROW_PULSE_TAIL = 5;                     // LEDs of a pulse (head plus tail)
 constexpr uint8_t FRAME_PERIOD = 2 * FRAME_BAR_LEDS;
 
 // Letter modes
@@ -227,8 +298,7 @@ constexpr uint32_t IGNITE_HOLD_END_MS =
     IGNITE_FIRST_MS + (uint32_t)LETTER_COUNT * LETTER_IGNITE_STEP_MS + IGNITE_FLICKER_MS + 3000UL;
 constexpr uint32_t IGNITE_PERIOD_MS = IGNITE_HOLD_END_MS + 1500UL;
 
-static_assert(ARROW_HEAD_BASE_LEDS > 0 && ARROW_HEAD_WING_LEDS > 0, "arrowhead pieces need at least one LED");
-static_assert(ARROW_CAP_LEDS % 2 == 0, "ARROW_CAP_LEDS must be even");
+static_assert(LEDS_PER_STICK % 2 == 0, "LEDS_PER_STICK must be even");
 static_assert(LETTER_COUNT > 1, "At least two letters are required");
 static_assert(sizeof(LINE_1_TEXT) - 1 + sizeof(LINE_2_TEXT) - 1 == LETTER_COUNT,
               "LETTER_LEDS needs one entry per letter of LINE_1_TEXT and LINE_2_TEXT");
@@ -245,18 +315,29 @@ static_assert(FRAME_TOP_LEDS > 0 && FRAME_TOP_LEDS < FRAME_HALF_LEDS,
 Adafruit_NeoPixel frameCw(FRAME_HALF_LEDS, PIN_FRAME_CW, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel frameCcw(FRAME_HALF_LEDS, PIN_FRAME_CCW, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel letters(0, PIN_LETTERS, NEO_GRB + NEO_KHZ800);  // length is set in setup()
-Adafruit_NeoPixel arrowBodyTop(ARROW_BODY_LEDS, PIN_ARROW_BODY_TOP, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel arrowBodyBottom(ARROW_BODY_LEDS, PIN_ARROW_BODY_BOTTOM, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel arrowHeadLeft(ARROW_HEAD_LEDS, PIN_ARROW_HEAD_LEFT, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel arrowHeadRight(ARROW_HEAD_LEDS, PIN_ARROW_HEAD_RIGHT, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel arrowCapLeft(ARROW_CAP_LEDS, PIN_ARROW_CAP_LEFT, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel arrowCapRight(ARROW_CAP_LEDS, PIN_ARROW_CAP_RIGHT, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel closedLight(CLOSED_LIGHT_LEDS, PIN_CLOSED_LIGHT, NEO_GRB + NEO_KHZ800);
 
-constexpr uint8_t STRIP_COUNT = 10;
-Adafruit_NeoPixel *const allStrips[STRIP_COUNT] = {&frameCw,         &frameCcw,      &letters,        &arrowBodyTop,
-                                                   &arrowBodyBottom, &arrowHeadLeft, &arrowHeadRight, &arrowCapLeft,
-                                                   &arrowCapRight,   &closedLight};
+// The arrow sticks (Grove RGB LED sticks, WS2813 mini: green-red-blue order like the strips).
+Adafruit_NeoPixel stickLCap(LEDS_PER_STICK, STICK_PINS[STICK_L_CAP], NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel stickLWingUp(LEDS_PER_STICK, STICK_PINS[STICK_L_WING_UP], NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel stickLWingDn(LEDS_PER_STICK, STICK_PINS[STICK_L_WING_DN], NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel stickRailUpL(LEDS_PER_STICK, STICK_PINS[STICK_RAIL_UP_L], NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel stickRailUpR(LEDS_PER_STICK, STICK_PINS[STICK_RAIL_UP_R], NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel stickRailDnL(LEDS_PER_STICK, STICK_PINS[STICK_RAIL_DN_L], NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel stickRailDnR(LEDS_PER_STICK, STICK_PINS[STICK_RAIL_DN_R], NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel stickRCap(LEDS_PER_STICK, STICK_PINS[STICK_R_CAP], NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel stickRWingUp(LEDS_PER_STICK, STICK_PINS[STICK_R_WING_UP], NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel stickRWingDn(LEDS_PER_STICK, STICK_PINS[STICK_R_WING_DN], NEO_GRB + NEO_KHZ800);
+
+// The sticks in the order of STICK_PINS (NeoPixel objects must not be copied: pointers only).
+Adafruit_NeoPixel *const sticks[STICK_COUNT] = {&stickLCap,    &stickLWingUp, &stickLWingDn, &stickRailUpL, &stickRailUpR,
+                                                &stickRailDnL, &stickRailDnR, &stickRCap,    &stickRWingUp, &stickRWingDn};
+
+constexpr uint8_t STRIP_COUNT = 4 + STICK_COUNT;
+Adafruit_NeoPixel *const allStrips[STRIP_COUNT] = {&frameCw,       &frameCcw,     &letters,      &closedLight,
+                                                   &stickLCap,     &stickLWingUp, &stickLWingDn, &stickRailUpL,
+                                                   &stickRailUpR,  &stickRailDnL, &stickRailDnR, &stickRCap,
+                                                   &stickRWingUp,  &stickRWingDn};
 
 // =============================== SHARED STATE ==============================
 
@@ -478,9 +559,51 @@ uint16_t frameDistance(bool cwStrip, uint16_t i, bool mirrored) {
                              : (FRAME_SIDE_LEDS + (FRAME_TOP_LEDS - 1 - (i - FRAME_SIDE_LEDS)));  // bottom edge
 }
 
+// ---- Brightness curves ----
+uint8_t brightnessLut[LED_TYPE_COUNT][256];  // the lookup tables (RAM: 512 bytes)
+
+// Builds the lookup table of one LED type from the given curve values (all clamped to their ranges).
+// 256 powf() calls: fine at start-up and when a value is changed, far too slow to do per LED per frame.
+void setBrightnessCurve(uint8_t type, uint8_t minValue, uint8_t maxValue, float exponent, float mix, bool keepZero) {
+  if (type >= LED_TYPE_COUNT) return;
+  if (exponent < CURVE_EXPONENT_MIN) exponent = CURVE_EXPONENT_MIN;
+  if (exponent > CURVE_EXPONENT_MAX) exponent = CURVE_EXPONENT_MAX;
+  if (mix < 0.0f) mix = 0.0f;
+  if (mix > 1.0f) mix = 1.0f;
+  for (uint16_t in = 0; in < 256; in++) {
+    const float t = in / 255.0f;
+    const float curve = (1.0f - mix) * t + mix * powf(t, exponent);
+    float out = (keepZero && in == 0) ? 0.0f : minValue + ((float)maxValue - (float)minValue) * curve;
+    if (out < 0.0f) out = 0.0f;
+    if (out > 255.0f) out = 255.0f;
+    brightnessLut[type][in] = (uint8_t)(out + 0.5f);
+  }
+}
+
+// Builds the tables of all LED types from the defaults.
+void buildDefaultBrightnessCurves() {
+  for (uint8_t type = 0; type < LED_TYPE_COUNT; type++) {
+    setBrightnessCurve(type, CURVE_DEFAULT_MIN[type], CURVE_DEFAULT_MAX[type], CURVE_DEFAULT_EXPONENT[type],
+                       CURVE_DEFAULT_MIX[type], CURVE_DEFAULT_KEEP_ZERO[type]);
+  }
+}
+
+// Maps the brightness (largest channel) of a packed 0xRRGGBB colour through the table of the LED type;
+// the three channels are scaled by the same factor, so the hue stays the same.
+uint32_t shapeColor(uint8_t type, uint32_t color) {
+  const uint8_t r = (uint8_t)(color >> 16), g = (uint8_t)(color >> 8), b = (uint8_t)color;
+  uint8_t v = r > g ? r : g;
+  if (b > v) v = b;
+  if (v == 0) return 0;
+  const uint8_t out = brightnessLut[type][v];
+  if (out == v) return color;
+  const uint16_t rr = ((uint16_t)r * out + v / 2) / v, gg = ((uint16_t)g * out + v / 2) / v, bb = ((uint16_t)b * out + v / 2) / v;
+  return ((uint32_t)rr << 16) | ((uint32_t)gg << 8) | (uint32_t)bb;
+}
+
 void drawFrameHalf(Adafruit_NeoPixel &strip, bool cwStrip, bool mirrored, uint8_t phase) {
   const uint16_t count = strip.numPixels();
-  const uint32_t white = strip.Color(255, 255, 255);
+  const uint32_t white = shapeColor(LED_TYPE_STRIP, strip.Color(255, 255, 255));
   for (uint16_t i = 0; i < count; i++) {
     const uint16_t distance = frameDistance(cwStrip, i, mirrored);
     const uint8_t pos = (uint8_t)((distance % FRAME_PERIOD + FRAME_PERIOD - phase) % FRAME_PERIOD);
@@ -698,7 +821,7 @@ void drawLetters() {
   uint16_t pos = 0;
   for (uint8_t letter = 0; letter < LETTER_COUNT; letter++) {
     const uint8_t level = letterLevel(letter);
-    const uint32_t color = letters.Color(level, level / 12, 0);  // deep red, slightly warm
+    const uint32_t color = shapeColor(LED_TYPE_STRIP, letters.Color(level, level / 12, 0));  // deep red, slightly warm
     for (uint8_t k = 0; k < LETTER_LEDS[letter]; k++) {
       letters.setPixelColor(pos + k, color);
     }
@@ -707,7 +830,7 @@ void drawLetters() {
 }
 
 // ============================== CLOSED LIGHT ===============================
-// Six white LEDs behind the plate light the "CLOSED" hole text while the casino is closed.
+// The 11th Grove stick (10 white LEDs) behind the plate light the "CLOSED" hole text while the casino is closed.
 // They behave like a faulty fluorescent tube:
 //   startup  the tube tries to start: quick flashes, more and more of them stay on
 //   steady   full white for a random time
@@ -724,7 +847,7 @@ uint8_t closedState = CL_OFF;
 unsigned long closedStateStart = 0;    // pattern clock when the state began
 unsigned long closedStateLength = 0;   // how long the state lasts (pattern ms)
 unsigned long closedHoldUntil = 0;     // pattern clock until the current brightness is held
-uint8_t closedLevel = 0;               // brightness of the six LEDs
+uint8_t closedLevel = 0;               // brightness of the 10 LEDs
 
 void enterClosedState(uint8_t state, unsigned long length) {
   closedState = state;
@@ -772,7 +895,7 @@ void updateClosedLight() {
       closedHoldUntil = letterClockMs + (unsigned long)random((long)CLOSED_HOLD_MIN_MS, (long)CLOSED_HOLD_MAX_MS + 1);
     }
   }
-  const uint32_t white = closedLight.Color(closedLevel, closedLevel, closedLevel);  // always white
+  const uint32_t white = shapeColor(LED_TYPE_STICK, closedLight.Color(closedLevel, closedLevel, closedLevel));  // always white
   for (uint16_t i = 0; i < CLOSED_LIGHT_LEDS; i++) {
     closedLight.setPixelColor(i, white);
   }
@@ -797,31 +920,30 @@ void updateLetters(unsigned long now) {
 }
 
 // ================================= ARROW ===================================
-// The arrow is one flowing light. Every pixel gets a "flow coordinate" s that
-// says how far along the path the light has travelled:
+// The arrow is one flowing light. Every LED gets a "flow coordinate" s that says how far along
+// the path the light has travelled (for the direction "points right"):
 //
-//   tail cap     0 .. CAP_HALF-1      from the cap middle out to its corners
-//   shaft edges  CAP_HALF .. +BODY    along the shaft toward the arrowhead
-//   arrowhead    HEAD_START ..        from the shaft corners up the base pieces and along
-//                                     the wings to the tip
+//   tail cap (L-CAP)   0 .. TAIL_HALF-1      the middle 6 LEDs, from the middle of the cap out to the rail LEDs
+//   rails              TAIL_HALF .. +20      left rail stick, then right rail stick, toward the head
+//   head cap (R-CAP)   HEAD_START .. +3      the 3 LEDs at each end, from the rail LED outward (middle 4 dark)
+//   wing (R-WING-*)    WING_START .. +10     from the cap side out to the tip
 //
-// The top lane (top edge, upper cap half, upper base piece and wing) and the bottom lane run
-// with different colour phases for a layered, 3D look.
+// The arrow is two routes, an upper and a lower one, 36 LEDs each, bent into the shape of the arrow.
+// Both carry a slowly moving colour wave (with different phases for a layered look), and a bright pulse
+// runs from the tail to the wing tip first on the upper route and then on the lower route, taking turns.
+// "Points left" is the mirror image (tail cap R-CAP, the rails run right to left, the left cap and the left
+// wings carry the head). The wings of the other head stay dark. The direction comes from the slide switch.
 //
-// Strip layout (physical wiring order):
-//   shaft edges  left to right
-//   caps         top to bottom
-//   arrowheads   upper base piece (starting next to the cap), upper wing to the
-//                tip, lower wing from the tip, lower base piece ending next to
-//                the cap
-// The shaft is closed at the tail by the tail cap and open toward the head, so the
-// cap at the head end stays dark. Only the arrowhead the arrow points at is lit; the
-// other head stays dark. The direction comes from the slide switch.
+// LED 1 (index 0) of every stick is its DIN end (see STICK_* above), so the index order is:
+//   caps    top to bottom        left rails   left to right      right rails   right to left
+//   wings   from the tip to the cap   (the black dots of the drawings: left half dots point left, right half
+//   dots point right, the caps point up; see STICK_BALL_AT_DIN_END)
+// The caps are symmetric top to bottom, so the end of a cap does not matter.
 
 // Palette stops as 0xRRGGBB: blue, cyan, violet, ice white.
 const uint32_t PALETTE[4] = {0x143CFF, 0x00DCFF, 0x9628FF, 0xC8DCFF};
 
-bool arrowDarkDirty = true;  // the unlit head and cap must be cleared and shown
+bool arrowDarkDirty = true;  // the unlit sticks must be cleared and shown
 uint16_t arrowTick = 0;
 
 // Colour for t = 0..255, cycling through the palette. Returns 0xRRGGBB.
@@ -852,11 +974,12 @@ uint32_t arrowPixel(Adafruit_NeoPixel &strip, uint16_t s, bool bottomLane) {
   g = (uint8_t)(((uint16_t)g * gain) / 255);
   b = (uint8_t)(((uint16_t)b * gain) / 255);
 
-  // White sparkle with a short tail; the bottom lane is half a cycle behind.
-  const uint16_t offset = bottomLane ? ARROW_SPARKLE_CYCLE / 2 : 0;
-  const uint16_t sparkle = (arrowTick + offset) % ARROW_SPARKLE_CYCLE;
-  if (s <= sparkle && sparkle - s < 3) {
-    const uint8_t strength = (sparkle - s == 0) ? 255 : (sparkle - s == 1 ? 170 : 90);
+  // White pulse with a tail (head 255, then 200, 150, 100, 55): the upper route is first, the lower route
+  // starts when the upper pulse reaches the tip, so exactly one pulse head is on the arrow at a time.
+  const uint16_t pulse = (arrowTick + (bottomLane ? ARROW_PULSE_TURN : 0)) % ARROW_PULSE_PERIOD;
+  if (s <= pulse && pulse - s < ARROW_PULSE_TAIL) {
+    static const uint8_t PULSE_STRENGTH[ARROW_PULSE_TAIL] = {255, 200, 150, 100, 55};
+    const uint8_t strength = PULSE_STRENGTH[pulse - s];
     r = mixChannel(r, 255, strength);
     g = mixChannel(g, 255, strength);
     b = mixChannel(b, 255, strength);
@@ -864,37 +987,61 @@ uint32_t arrowPixel(Adafruit_NeoPixel &strip, uint16_t s, bool bottomLane) {
   return strip.Color(r, g, b);
 }
 
-// Flow coordinate of tail cap LED j (0 = top corner): the light starts in the middle
-// of the cap and runs out to both corners, where the shaft edges continue.
-uint16_t capFlow(uint16_t j) {
-  const bool lower = j >= ARROW_CAP_HALF;
-  const uint16_t fromCorner = lower ? (ARROW_CAP_LEDS - 1 - j) : j;  // 0 at the corner
-  return ARROW_CAP_HALF - 1 - fromCorner;
+constexpr uint16_t NO_FLOW = 0xFFFF;  // the LED (stick) is dark in the current direction
+
+// Flow coordinate of LED `led` (0 = DIN end) of stick number `stick` for the current arrow direction,
+// or NO_FLOW when that stick stays dark.
+uint16_t stickFlow(uint8_t stick, uint8_t led) {
+  const uint16_t last = LEDS_PER_STICK - 1;
+  if (stick == STICK_L_CAP || stick == STICK_R_CAP) {
+    const bool tailCap = (stick == STICK_L_CAP) == arrowPointsRight;
+    const uint16_t half = LEDS_PER_STICK / 2;
+    if (tailCap) {
+      // The light starts in the middle of the cap and runs out to the rail LEDs; the ends stay dark.
+      const uint16_t fromMiddle = led >= half ? (led - half) : (half - 1 - led);  // 0 at the two middle LEDs
+      return fromMiddle < ARROW_TAIL_HALF ? fromMiddle : NO_FLOW;
+    }
+    // Head cap: from the rail LED outward to the cap ends (the rail LED is the third from each end).
+    if (led < ARROW_HEAD_CAP_LIT) return ARROW_HEAD_START + (ARROW_HEAD_CAP_LIT - 1 - led);
+    if (led > last - ARROW_HEAD_CAP_LIT) return ARROW_HEAD_START + (led - (last - ARROW_HEAD_CAP_LIT + 1));
+    return NO_FLOW;
+  }
+  if (stick == STICK_RAIL_UP_L || stick == STICK_RAIL_DN_L || stick == STICK_RAIL_UP_R || stick == STICK_RAIL_DN_R) {
+    const bool leftStick = (stick == STICK_RAIL_UP_L || stick == STICK_RAIL_DN_L);
+    // The stick next to the tail cap comes first on the path. LED 0 (the ball end) of a left rail stick is at
+    // its left end and of a right rail stick at its right end, so on the first stick the light runs from LED 0
+    // and on the second stick it runs towards LED 0.
+    const bool first = (leftStick == arrowPointsRight);
+    return ARROW_TAIL_HALF + (first ? 0 : LEDS_PER_STICK) + (first ? led : last - led);
+  }
+  // Wings: only the two wings of the head the arrow points at are lit; the light runs to the tip.
+  const bool rightWing = (stick == STICK_R_WING_UP || stick == STICK_R_WING_DN);
+  if (rightWing != arrowPointsRight) return NO_FLOW;
+  return ARROW_WING_START + (last - led);  // LED 0 (the ball end) of a wing is at its tip, the light runs to the tip
 }
 
-void drawArrowCap(Adafruit_NeoPixel &cap) {
-  for (uint16_t j = 0; j < ARROW_CAP_LEDS; j++) {
-    cap.setPixelColor(j, arrowPixel(cap, capFlow(j), j >= ARROW_CAP_HALF));
-  }
+// True for the sticks that have at least one lit LED in the current direction (both caps and all rails
+// always do; of the wings only the pair at the head).
+bool stickActive(uint8_t stick) {
+  if (stick == STICK_L_WING_UP || stick == STICK_L_WING_DN) return !arrowPointsRight;
+  if (stick == STICK_R_WING_UP || stick == STICK_R_WING_DN) return arrowPointsRight;
+  return true;
+}
+
+// True for the LEDs of the lower lane (they run half a colour cycle behind the upper lane).
+bool stickLowerLane(uint8_t stick, uint8_t led) {
+  if (stick == STICK_L_CAP || stick == STICK_R_CAP) return led >= LEDS_PER_STICK / 2;
+  return stick == STICK_L_WING_DN || stick == STICK_RAIL_DN_L || stick == STICK_RAIL_DN_R || stick == STICK_R_WING_DN;
 }
 
 void drawArrow() {
-  for (uint16_t i = 0; i < ARROW_BODY_LEDS; i++) {
-    const uint16_t s = ARROW_CAP_HALF + (arrowPointsRight ? i : (ARROW_BODY_LEDS - 1 - i));
-    arrowBodyTop.setPixelColor(i, arrowPixel(arrowBodyTop, s, false));
-    arrowBodyBottom.setPixelColor(i, arrowPixel(arrowBodyBottom, s, true));
-  }
-
-  // The cap at the tail end is lit; the cap at the head end stays dark.
-  drawArrowCap(arrowPointsRight ? arrowCapLeft : arrowCapRight);
-
-  Adafruit_NeoPixel &litHead = arrowPointsRight ? arrowHeadRight : arrowHeadLeft;
-  for (uint16_t j = 0; j < ARROW_HEAD_LEDS; j++) {
-    // Both sides of the head flow toward the tip, which sits between index HALF-1 and HALF.
-    const bool lowerSide = j >= ARROW_HEAD_HALF;
-    const uint16_t s = lowerSide ? (ARROW_HEAD_START + ARROW_HEAD_LEDS - 1 - j)
-                                 : (ARROW_HEAD_START + j);
-    litHead.setPixelColor(j, arrowPixel(litHead, s, lowerSide));
+  for (uint8_t k = 0; k < STICK_COUNT; k++) {
+    for (uint8_t led = 0; led < LEDS_PER_STICK; led++) {
+      const uint16_t s = stickFlow(k, led);
+      // `led` counts from the ball (the black dot of the drawings); the physical index follows STICK_BALL_AT_DIN_END.
+      const uint8_t physical = STICK_BALL_AT_DIN_END ? led : (uint8_t)(LEDS_PER_STICK - 1 - led);
+      sticks[k]->setPixelColor(physical, s == NO_FLOW ? 0 : shapeColor(LED_TYPE_STICK, arrowPixel(*sticks[k], s, stickLowerLane(k, led))));
+    }
   }
 }
 
@@ -905,26 +1052,22 @@ void applyArrowSwitch() {
     arrowPointsRight = !pointsLeft;
     arrowDarkDirty = true;
     framePhase = 0;  // the frame light restarts from its new start corner
-    Serial.println(arrowPointsRight ? F("Arrow points right") : F("Arrow points left"));
+    Serial.println(arrowPointsRight ? F("Arrow points to customer right") : F("Arrow points to customer left"));
   }
 }
 
 void updateArrow() {
   drawArrow();
-  arrowBodyTop.show();
-  arrowBodyBottom.show();
-
-  Adafruit_NeoPixel &litHead = arrowPointsRight ? arrowHeadRight : arrowHeadLeft;
-  Adafruit_NeoPixel &darkHead = arrowPointsRight ? arrowHeadLeft : arrowHeadRight;
-  Adafruit_NeoPixel &litCap = arrowPointsRight ? arrowCapLeft : arrowCapRight;
-  Adafruit_NeoPixel &darkCap = arrowPointsRight ? arrowCapRight : arrowCapLeft;
-  litHead.show();
-  litCap.show();
-  if (arrowDarkDirty) {  // only touch the unlit head and cap when the direction changed
-    darkHead.clear();
-    darkHead.show();
-    darkCap.clear();
-    darkCap.show();
+  for (uint8_t k = 0; k < STICK_COUNT; k++) {
+    if (stickActive(k)) sticks[k]->show();
+  }
+  if (arrowDarkDirty) {  // only touch the unlit sticks when the direction changed
+    for (uint8_t k = 0; k < STICK_COUNT; k++) {
+      if (!stickActive(k)) {
+        sticks[k]->clear();
+        sticks[k]->show();
+      }
+    }
     arrowDarkDirty = false;
   }
 
@@ -937,7 +1080,7 @@ void updateArrow() {
 // slower than a long one). The test has STARTUP_TEST_PASSES passes: pass 1 is white, the others
 // light the LEDs red, green, blue, red, ... (by LED number) so a wrong colour order shows.
 // At most STRIP_COUNT x STARTUP_TEST_WINDOW_LEDS LEDs are lit at a time, which keeps the current low.
-// The LCD shows the time and a progress bar (see the LCD DISPLAY section). The push button D3
+// The LCD shows the time and a progress bar (see the LCD DISPLAY section). The push button D33
 // skips the test (only a new press counts, so a button held during power-up does not skip it).
 // The other inputs are read again when the test ends, so they take effect only after it.
 
@@ -976,7 +1119,7 @@ void beginStartupTest(unsigned long now) {
   startupTestActive = true;
   startupTestStart = now;
   for (uint8_t k = 0; k < STRIP_COUNT; k++) startupLast[k] = 0xFFFFFFFFUL;
-  Serial.println(F("Power-on LED test (press D3 to skip)"));
+  Serial.println(F("Power-on LED test (press D33 to skip)"));
 }
 
 // Draws one step of the test; ends the test when the time is up.
@@ -1146,12 +1289,14 @@ void lcdBuildText() {
     }
     default:
       lcdPut(0, casinoClosed ? "Casino: CLOSED" : "Casino: OPEN");
-      lcdPut(1, arrowPointsRight ? "Arrow: RIGHT ->" : "Arrow: <- LEFT");
+      // The text is the customer's view of the sign (from the front). The LCD is behind the sign, so the arrow
+      // symbol shows the direction the light really points as seen from the back: it is the mirror image.
+      lcdPut(1, arrowPointsRight ? "<-Customer right" : "->Customer left");
       break;
   }
 }
 
-// The LCD during the power-on test: one row scrolls "press D3 to skip", the other shows the
+// The LCD during the power-on test: one row scrolls "press D33 to skip", the other shows the
 // elapsed seconds in the middle of a progress bar. The rows swap places every LCD_TEST_SWAP_MS,
 // so every character gets shown on both rows.
 void lcdBuildTestText(unsigned long now) {
@@ -1161,7 +1306,7 @@ void lcdBuildTestText(unsigned long now) {
   const uint8_t skipRow = 1 - counterRow;
 
   // Scrolling text: the text and three spaces repeat around the row.
-  const char marquee[] = "press D3 to skip   ";
+  const char marquee[] = "press D33 to skip   ";
   const uint8_t marqueeLen = sizeof(marquee) - 1;
   const uint8_t shift = (uint8_t)((elapsed / LCD_TEST_SCROLL_MS) % marqueeLen);
   char line[LCD_COLS + 1];
@@ -1230,21 +1375,94 @@ void updateLcd(unsigned long now) {
   lcdSendChanges();
 }
 
+// ============================== SIGN OF LIFE ===============================
+// The debug LED on pin 13 blinks while the program runs; it is shortly inverted on every state change
+// and blinks faster while many changes happen. Once per second a "DBG" line goes to the Serial Monitor.
+
+unsigned long lastBeat = 0;
+bool beatOn = false;
+unsigned long beatCount = 0;      // LED toggles since power-up
+unsigned long lastDebug = 0;
+unsigned long loopCount = 0;      // loop() passes since the last debug line
+unsigned long lastEventAt = 0;    // when the last state change happened
+bool anyEvent = false;
+unsigned int eventsNow = 0;       // state changes in the current second
+unsigned int eventsPrev = 0;      // state changes in the second before
+unsigned long eventWindowStart = 0;
+unsigned long eventsShown = 0;    // total state changes since power-up
+
+// Records a state change (arrow direction, letter mode, casino open/closed, speed switch).
+void noteEvent(unsigned long now) {
+  anyEvent = true;
+  lastEventAt = now;
+  eventsNow++;
+  eventsShown++;
+}
+
+// Prints the once-per-second debug line (uptime, loops, beats and tick change every time).
+void printDebug(unsigned long now) {
+  Serial.print(F("DBG up="));
+  Serial.print(now / 1000UL);
+  Serial.print(F("s loops="));
+  Serial.print(loopCount);
+  Serial.print(F(" mode="));
+  Serial.print((unsigned int)letterMode);
+  Serial.print(F(" arrow="));
+  Serial.print(arrowPointsRight ? F("R") : F("L"));
+  Serial.print(F(" closed="));
+  Serial.print(casinoClosed ? 1 : 0);
+  Serial.print(F(" sw3="));
+  Serial.print(speedStable[SLOT_SPEED_MAIN], HEX);
+  Serial.print(F(" sw4="));
+  Serial.print(speedStable[SLOT_SPEED_LETTERS], HEX);
+  Serial.print(F(" events="));
+  Serial.print(eventsShown);
+  Serial.print(F(" beats="));
+  Serial.print(beatCount);
+  Serial.print(F(" tick="));
+  Serial.println((unsigned int)arrowTick);
+}
+
+// Called on every loop() pass, also during the power-on test.
+void signOfLife(unsigned long now) {
+  loopCount++;
+  if (now - eventWindowStart >= 1000) {  // sliding one-second window of state changes
+    eventsPrev = eventsNow;
+    eventsNow = 0;
+    eventWindowStart = now;
+  }
+  if (now - lastDebug >= DEBUG_MS) {
+    lastDebug = now;
+    printDebug(now);
+    loopCount = 0;
+  }
+  const bool busy = (eventsNow + eventsPrev >= 2);
+  const unsigned long beatMs = busy ? HEARTBEAT_FAST_MS : HEARTBEAT_MS;
+  if (now - lastBeat >= beatMs) {  // the LED blinks all the time, faster when busy
+    lastBeat = now;
+    beatOn = !beatOn;
+    beatCount++;
+  }
+  const bool inverted = anyEvent && (now - lastEventAt < INVERT_MS);  // shortly inverted after a state change
+  digitalWrite(PIN_STATUS_LED, (beatOn != inverted) ? HIGH : LOW);
+}
+
 // ============================== SETUP / LOOP ===============================
 
 void setup() {
-  Serial.begin(115200);
-  randomSeed(analogRead(A0));
+  Serial.begin(SERIAL_BAUD);
+  pinMode(PIN_STATUS_LED, OUTPUT);
+  randomSeed(analogRead(A15));  // a floating pin that is not used for anything else
 
   for (uint16_t i = 0; i < 256; i++) {
     sineTable[i] = (uint8_t)(128.0f + 127.0f * sin(i * 6.2831853f / 256.0f) + 0.5f);
   }
 
+  buildDefaultBrightnessCurves();
   letters.updateLength(lettersTotalLeds());
 
   for (uint8_t k = 0; k < STRIP_COUNT; k++) {
     allStrips[k]->begin();
-    allStrips[k]->setBrightness(BRIGHTNESS);
     allStrips[k]->clear();
     allStrips[k]->show();
   }
@@ -1256,6 +1474,14 @@ void setup() {
   Wire.setClock(400000UL);
   lcdInit();
 
+  Serial.println(F("Casino sign: see the top of sketch.ino."));
+  Serial.print(F("Serial speed "));
+  Serial.print(SERIAL_BAUD);
+  Serial.println(F(" baud; a DBG line is printed every second."));
+  lastBeat = millis();
+  lastDebug = lastBeat;
+  eventWindowStart = lastBeat;
+
   // The other inputs and the patterns are started by finishStartup(), after the LED test.
   if (STARTUP_TEST_MS > 0) {
     beginStartupTest(millis());
@@ -1266,11 +1492,13 @@ void setup() {
 
 void loop() {
   const unsigned long now = millis();
+  signOfLife(now);
   const bool buttonChanged = pollInput(INPUT_MODE, PIN_MODE_BUTTON, now);
 
   // Power-on LED test: only the button (skip) is watched; everything else waits for the end.
   if (startupTestActive) {
     if (buttonChanged && inputStable[INPUT_MODE] == LOW) {
+      noteEvent(now);
       finishStartup(now, true);  // this press only skips the test, it does not change the mode
     } else {
       updateStartupTest(now);
@@ -1283,24 +1511,29 @@ void loop() {
   // through the letter modes.
   if (pollInput(INPUT_ARROW, PIN_ARROW_SWITCH, now)) {
     applyArrowSwitch();
+    noteEvent(now);
     lcdShowPage(LCD_PAGE_STATUS, now, true);
   }
   if (buttonChanged && inputStable[INPUT_MODE] == LOW) {
     setLetterMode(letterMode + 1, now);
+    noteEvent(now);
     lcdShowPage(LCD_PAGE_MODE, now, true);
   }
   if (pollInput(INPUT_CLOSED, PIN_CASINO_CLOSED_SWITCH, now)) {
     setCasinoClosed(closedFromSwitch());
+    noteEvent(now);
     lcdShowPage(LCD_PAGE_STATUS, now, true);
   }
 
   // Speed switches: SW3 sets the frame and arrow speed, SW4 the letter speed.
   if (pollSpeedSwitch(SLOT_SPEED_MAIN, PIN_SPEED_FRAME_ARROW, now)) {
     applyMainSpeed();
+    noteEvent(now);
     lcdShowPage(LCD_PAGE_SW3, now, true);
   }
   if (pollSpeedSwitch(SLOT_SPEED_LETTERS, PIN_SPEED_LETTERS, now)) {
     applyLettersSpeed();
+    noteEvent(now);
     lcdShowPage(LCD_PAGE_SW4, now, true);
   }
 

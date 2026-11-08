@@ -106,23 +106,33 @@ class Svg:
 def main():
     cfg = gd.read_config(gd.SKETCH.read_text())
     strips = sign_data.strip_info(cfg)
-    n = len(strips)
+    sticks = sign_data.all_stick_info(cfg)       # the 10 arrow sticks + the CLOSED light stick (11 shield connectors)
     total_strips, total_pieces, total_leds = sign_data.totals(strips)
+    stick_leds = sum(st["leds"] for st in sticks)
+    # One row per data line: the sticks first (shield connectors D2..D8, A0..A2), then the strips.
+    rows = []
+    for st in sticks:
+        rows.append(dict(label=st["connector"], name=st["name"], leds=st["leds"], is_stick=True,
+                         summary="Grove stick: %s" % st["desc"], feed="feed: Grove cable"))
+    for strip in strips:
+        rows.append(dict(label="D%d" % strip["pin"], name=strip["name"], leds=strip["leds"], is_stick=False,
+                         summary=strip["summary"], feed=strip["feed"]))
+    n = len(rows)
 
     pin_y0, pin_dy = 250, 66                     # y of the first data pin and the pin spacing
     last_y = pin_y0 + (n - 1) * pin_dy
     ard_x0, ard_x1 = 300, 500                    # Arduino block
-    ard_y0, ard_y1 = 195, max(last_y + 45, 1390)
+    ard_y0, ard_y1 = 195, max(last_y + 45 + 600, 1390)
     res_x = 540
     blk_x0, blk_x1 = 690, 940                    # LED strip blocks
     v5_x, gnd_x = 995, 1035                      # vertical +5 V and GND buses
     rail5_y, railg_y = 72, 112
-    height = ard_y1 + 160
+    height = ard_y1 + 176
     width = 1200
     svg = Svg(width, height)
 
-    svg.text(width / 2, 26, "Casino sign - electrical schematic (Arduino Mega 2560 + %d WS2812B strips)" % n,
-             size=17, anchor="middle", weight="bold")
+    svg.text(720, 26, "Casino sign - electrical schematic (Mega 2560 + Grove shield with %d LED sticks, %d WS2812B strips)"
+             % (len(sticks), len(strips)), size=16, anchor="middle", weight="bold")
 
     # ---- Power supply, fuse, capacitor, rails -----------------------------------------
     svg.rect(90, 38, 130, 112, fill="#f3f3f3")
@@ -148,7 +158,7 @@ def main():
     svg.text(v5_x + 10, rail5_y + 4, "+5 V", size=14, color=RED, weight="bold")
 
     # GND rail from PSU V- to the GND bus (hops over the +5 V bus)
-    svg.hline_hop(220, gnd_x, railg_y, [v5_x], BLACK, 2.5)
+    svg.hline_hop(220, gnd_x, railg_y, [360, v5_x], BLACK, 2.5)
     svg.text(gnd_x + 10, railg_y + 4, "GND", size=14, weight="bold")
 
     # Capacitor C1 between the rails
@@ -172,22 +182,40 @@ def main():
     svg.line(gx, ard_y0, gx, railg_y, BLACK)
     svg.dot(gx, railg_y)
     svg.text(gx + 8, ard_y0 - 8, "any GND pin", size=10, color=GREY)
+    # 5V pins on the top edge: the LED supply feeds the Mega 5V pins (the sticks get their power through the shield)
+    fx5 = 360
+    svg.text(fx5, ard_y0 + 60, "5V", size=12, anchor="middle")
+    svg.line(fx5, ard_y0, fx5, rail5_y, RED, 2.5)
+    svg.dot(fx5, rail5_y, RED)
+    svg.text(fx5 - 8, ard_y0 - 8, "both 5V pins (long header)", size=10, color=GREY, anchor="end")
 
     # ---- Data pins -> resistors -> strips ------------------------------------------------
-    for i, strip in enumerate(strips):
-        pin, name, leds, desc, feed = strip["pin"], strip["name"], strip["leds"], strip["summary"], strip["feed"]
+    resistor_no = 0
+    for i, row in enumerate(rows):
+        label, name, leds, desc, feed = row["label"], row["name"], row["leds"], row["summary"], row["feed"]
         y = pin_y0 + i * pin_dy
-        svg.text(ard_x1 - 8, y + 4, "D%d" % pin, size=12, anchor="end")
-        svg.line(ard_x1, y, res_x, y, BLUE)
-        svg.resistor(res_x, y, "R%d  330 ohm" % (i + 1))
-        svg.line(res_x + 60, y, blk_x0, y, BLUE)
+        svg.text(ard_x1 - 8, y + 4, label, size=12, anchor="end")
+        if row["is_stick"]:
+            # Grove connector of the shield: the signal wire goes straight to the stick (no resistor)
+            svg.line(ard_x1, y, blk_x0, y, BLUE)
+            svg.text(res_x, y - 8, "Grove SIG, no resistor", size=10, color=GREY)
+        else:
+            resistor_no += 1
+            svg.line(ard_x1, y, res_x, y, BLUE)
+            svg.resistor(res_x, y, "R%d  330 ohm" % resistor_no)
+            svg.line(res_x + 60, y, blk_x0, y, BLUE)
         svg.circle(blk_x0, y, 3.5, BLUE)
 
         svg.rect(blk_x0, y - 27, blk_x1 - blk_x0, 54, fill="#fff8e1")
         svg.text(blk_x0 + 12, y - 8, "%s" % name, size=13, weight="bold")
-        svg.text(blk_x0 + 12, y + 8, "%d LEDs, %s" % (leds, "WS2812B"), size=11)
+        svg.text(blk_x0 + 12, y + 8, "%d LEDs, %s" % (leds, "WS2813 (stick)" if row["is_stick"] else "WS2812B"), size=11)
         svg.text(blk_x0 + 12, y + 22, desc, size=10, color=GREY)
         svg.text(blk_x0 - 8, y - 7, "DIN", size=10, anchor="end", color=BLUE)
+        if row["is_stick"]:
+            # The sticks take +5 V and GND only through the Grove cable of the shield: no wire to the supply buses.
+            svg.text(blk_x1 - 4, y - 14, "+5V, GND: via the shield", size=10, anchor="end", color=GREY)
+            svg.text(blk_x1 - 4, y + 3, "(Grove cable)", size=9, anchor="end", color=GREY, italic=True)
+            continue
         svg.text(blk_x1 - 4, y - 14, "+5V", size=10, anchor="end", color=RED)
         svg.text(blk_x1 - 4, y + 19, "GND", size=10, anchor="end")
         svg.text(blk_x1 - 4, y + 3, feed, size=9, anchor="end", color=GREY, italic=True)
@@ -225,7 +253,7 @@ def main():
         svg.text(40, sw_y + 90, "pin 3 stays unconnected", size=10, color=GREY)
 
     slide_switch(345, cfg["PIN_ARROW_SWITCH"], "SW1  slide switch (SPDT)",
-                 ["arrow direction: handle on the GND side", "= LOW = arrow points left"])
+                 ["arrow direction: handle on the GND side", "= LOW = arrow points left", "mount: back view, GND contact on the right"])
     slide_switch(1090, cfg["PIN_CASINO_CLOSED_SWITCH"], "SW5  slide switch (SPDT)",
                  ["casino closed: handle on the GND side = LOW =", "CLOSED (OPEN letters off, CLOSED light on);",
                   "handle on the other side = casino open"])
@@ -287,13 +315,14 @@ def main():
                      size=12)
 
     # ---- USB note ---------------------------------------------------------------------------
-    svg.rect(ard_x0, ard_y1 + 18, 340, 62, fill="#ffffff", stroke=GREY, dash="5 4")
-    svg.text(ard_x0 + 10, ard_y1 + 38, "USB-B cable to a computer or USB charger", size=11)
-    svg.text(ard_x0 + 10, ard_y1 + 53, "powers ONLY the Arduino. The LED supply +5 V", size=11)
-    svg.text(ard_x0 + 10, ard_y1 + 68, "is NOT connected to the Arduino 5V pin.", size=11)
+    svg.rect(ard_x0, ard_y1 + 18, 420, 78, fill="#ffffff", stroke=RED, dash="5 4")
+    svg.text(ard_x0 + 10, ard_y1 + 38, "USB-B cable (upload, Serial Monitor): ONLY while the LED supply", size=11, weight="bold")
+    svg.text(ard_x0 + 10, ard_y1 + 53, "is switched OFF. The supply feeds the Mega 5V pins (the sticks", size=11)
+    svg.text(ard_x0 + 10, ard_y1 + 68, "get their power through the Grove shield), so with USB plugged in", size=11)
+    svg.text(ard_x0 + 10, ard_y1 + 83, "as well two 5 V sources would be connected together.", size=11)
 
     # ---- Legend and notes -----------------------------------------------------------------
-    ny = ard_y1 + 108
+    ny = ard_y1 + 124
     svg.line(40, ny - 4, 80, ny - 4, RED, 2.5)
     svg.text(88, ny, "+5 V power", size=11)
     svg.line(190, ny - 4, 230, ny - 4, BLACK, 2.5)
@@ -309,27 +338,30 @@ def main():
 
     # Notes go into the empty space right of the Arduino, below the strip blocks.
     notes = [
-        "Total: %d LEDs in %d strips (%d pieces). The positions and LED index ranges are in layout-diagram.svg." % (total_leds, total_strips, total_pieces),
-        "1. Common ground: PSU V-, Arduino GND and the GND of every LED strip piece are connected together.",
-        "2. Put each 330 ohm resistor close to the first LED of its strip. Keep data wires short.",
+        "Total: %d LEDs in %d WS2812B strips (%d pieces) plus %d Grove sticks with %d LEDs each (10 arrow sticks + the CLOSED light). Positions: layout-diagram.svg, arrow_sticks/." % (total_leds, total_strips, total_pieces, len(sticks), cfg["LEDS_PER_STICK"]),
+        "1. Common ground: PSU V-, Arduino GND (and the shield) and the GND of every LED strip piece and stick are connected together.",
+        "2. Put each 330 ohm resistor close to the first LED of its strip. Keep data wires short. The sticks plug straight into the Grove shield (no resistors).",
         "3. Feed +5 V and GND into every strip piece from the buses (thick wire, at least 1 mm2). Where the diagram says "
         "'start and end', feed the strip at both ends. The DIN end of a strip is the end the arrow printed on the strip points away from.",
-        "4. Strips made of several pieces (frame edges, arrowhead pieces, letter groups) are chained: DOUT of one piece to DIN of the next, "
+        "4. Strips made of several pieces (frame edges, letter groups) are chained: DOUT of one piece to DIN of the next, "
         "and each piece gets its own +5 V and GND connection.",
-        "5. The Mega's 5 V logic drives WS2812B directly: no level shifter. Fit F1 right after the supply.",
+        "5. The Mega's 5 V logic drives WS2812B and the sticks directly: no level shifter. Fit F1 right after the supply.",
         "6. SW3 and SW4: pins 1, 2, 4, 8 go to D22-D25 and D26-D29, the common pin C goes to GND. A position counts in binary (0..F). "
         "If your switch gives the complement (15 - position), set SPEED_BIT_IS_LOW to false in sketch.ino.",
         "7. All inputs (SW1 to SW5) use the internal pull-ups (INPUT_PULLUP), so no resistors are needed for them.",
-        "8. closedLight (6 white LEDs) sits BEHIND the plate under the CLOSED hole text and is lit only while SW5 says closed.",
-        "9. LCD1 (I2C backpack) uses the Mega's I2C pins D20 (SDA) and D21 (SCL) plus the Arduino 5V and GND pins "
-        "(about 30 mA with the backlight). Do not connect the Arduino 5V pin to the LED supply.",
+        "8. CLOSED (the 11th Grove stick, 10 white LEDs, shield connector A3) sits BEHIND the plate under the CLOSED hole text and is lit only while SW5 says closed. Like all sticks it is plugged into the shield: no wire from the supply to it.",
+        "9. LCD1 (I2C backpack) uses the Mega's I2C pins D20 (SDA) and D21 (SCL) plus the Mega 5V and GND pins (about 30 mA with the backlight).",
+        "10. Arrow sticks: the 10 Grove RGB LED sticks go into the Grove Base Shield connectors D2-D8 and A0-A2 (A3 carries the CLOSED light stick; the shield's 3V3/5V switch "
+        "must be on 5 V). Connect the +5 V bus to BOTH 5V pins of the Mega's long header and the GND bus to the Mega GND pins, as in stick_test_direct "
+        "(tested on real hardware). The Mega 5V pin therefore carries the stick current: keep the brightness curve max moderate.",
+        "11. Pin 13 (the LED on the Mega board) blinks while the program runs; the Serial Monitor (115200 baud) shows one line per second.",
     ]
     import textwrap
-    note_x, note_y = ard_x1 + 40, last_y + 75
+    note_x, note_y = ard_x1 + 40, last_y + 60
     svg.text(note_x, note_y, "Notes", size=12, weight="bold")
     line_no = 0
     for note in notes:
-        for k, line in enumerate(textwrap.wrap(note, 92, subsequent_indent="    ")):
+        for k, line in enumerate(textwrap.wrap(note, 100, subsequent_indent="    ")):
             svg.text(note_x, note_y + 22 + line_no * 16, line, size=11.5)
             line_no += 1
         line_no += 0.4

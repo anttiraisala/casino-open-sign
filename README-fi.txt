@@ -3,15 +3,21 @@ KASINOKYLTTI "CASINO OPEN" - Arduino Mega 2560 + 10 WS2812B-LED-nauhaa (Wokwi-pr
 
 PROJEKTIN TILA (6.11.2026)
 --------------------------
-- Kyltin ohjelma (sketch.ino) kuvaa vielä ensimmäisen suunnitelman: 10 WS2812B-ledinauhaa nastoissa D4-D12 ja D31.
-  Suunniteltu mutta EI toteutettu: 12 V:n WS2811-nauhat, 60 x 30 cm levy ja nuoli 10 Grove-ledi-tikusta (malli B).
+- VAIHE 1 VALMIS (7.11.2026): kyltin ohjelma (sketch.ino) ja diagram.json käyttävät nyt tikkunuolta: 10 Grove RGB
+  LED -tikkua Grove Base Shieldin liittimissä D2-D8 ja A0-A2, yksinkertainen virtaava nuolianimaatio. Kehys, kirjaimet,
+  kytkin ja painike siirrettiin vapaisiin pinneihin (kehys D9/D10, kirjaimet D11, nuolikytkin D32,
+  painike D33). Vanha kuudesta ledinauhasta tehty nuoli on varmuuskopiona kansiossa backup/old_arrow_strips/
+  (ei enää kytkettynä). Ei vielä käännetty oikealle Arduinolle eikä ajettu Wokwissa minun toimestani: aja se
+  Wokwissa ja kerro mitä näet.
+  Suunniteltu mutta EI toteutettu: 12 V:n WS2811-nauhat, 60 x 30 cm levy (alla olevat osiot kuvaavat vielä
+  kehyksen ja kirjainten 5 V:n nauhasuunnitelman).
 - Käyttäjän oikealla laitteella testaama: stick_test_direct. Kaikki 11 Grove RGB LED -tikkua muuttamattomina
   Grove Base Shieldissä (liittimet D2..D8, A0..A3), Arduino + shield ulkoisesta 5 V:n virtalähteestä, kaikissa tikuissa
   pyörivät liikkuvat kuviot. Virta ja data riittävät siis 11 tikulle (stick_test, muokatuilla kaapeleilla,
   ei siksi ollut tarpeen).
 - Ei vielä testattu oikealla laitteella: strip_test (WS2812B-nauha) ja itse kyltin ohjelma.
-- Sign of life -sääntö (pin 13 -ledi + yksi Serial-rivi sekunnissa) on vain stick_test_direct-ohjelmassa; muihin se
-  tulee kun ne seuraavan kerran päivitetään (katso AI_CONTEXT.md).
+- Sign of life -sääntö (pin 13 -ledi + yksi Serial-rivi sekunnissa, 115200 baudia) on ohjelmassa sketch.ino ja
+  stick_test_direct; strip_test ja stick_test saavat sen seuraavassa päivityksessä (vaihe 2, katso AI_CONTEXT.md).
 - Osalistat ovat tilannekuva 2.11.2026 (hintoja, saatavuutta ja linkkejä ei päivitetä itsestään).
 
 Tämä on README.txt:n suomennos. Jos tiedostot poikkeavat toisistaan, englanninkielinen
@@ -42,11 +48,20 @@ tools/generate_parts_list.py  Tekee kolme osalistatiedostoa.
 strip_test/                Erillinen pieni testiprojekti LED-nauhalle: leikkaa nauhasta lyhyt pätkä, aja
                            strip_test/sketch.ino (Arduino tai Wokwi tiedostolla strip_test/diagram.json) ja kerro, mitä
                            näet (värijärjestys, bittinopeus, LEDejä per pikseli). Katso strip_test/README-fi.txt.
+strip_single_led_test/     Testi: kolme 12 V WS2811 -nauhaa pinneissä D9/D10/D11; yksi pikseli kulkee nauhaa pitkin, jotta
+                           oikea pikselimäärä selviää (150 LEDiä = luultavasti 50 pikseliä) ja värijärjestys tarkistuu. Katso strip_single_led_test/README-fi.txt.
+strip_knight_rider_test/    Demo: kolme 12 V WS2811 -nauhaa à 50 pikseliä; yksi valo pomppii edestakaisin (D9 punainen 1 pikseli/s,
+                           D10 sininen 4/s, D11 vihreä 10/s). Katso strip_knight_rider_test/README-fi.txt.
+sticks_11_test/             Testi "11 sticks": nuolen 10 tikkua + CLOSED-valotikku (A3) Grove-shieldissä, pidetään päällä, jotta
+                           nähdään lämpeneekö mikään. Katso sticks_11_test/README-fi.txt.
 stick_test/                Erillinen testi 10 Grove RGB LED -tikulle (suunniteltu tikkunuoli) erillisellä 5 V:n virtalähteellä:
                            lataa stick_test/sketch.ino Arduino IDE:llä. Katso stick_test/README-fi.txt.
 stick_test_direct/        Toinen tikkutesti: enintään 11 tikkua muuttamattomina Grove-shieldiin, jatkuvasti liikkuvat kuviot,
                            ulkoinen 5 V Megan 5V/GND-napoihin.
+arrow_sticks/              Tikkunuoli: porausmalli 1:1 (PDF), asettelu ja johdotus. Katso arrow_sticks/README-fi.txt.
                            Katso stick_test_direct/README-fi.txt.
+backup/old_arrow_strips/   Edellinen kyltti (nuoli kuudesta ledinauhasta nastoissa D4, D5, D9-D12): ohjelma, diagram.json ja
+                           poistettujen osien lista. Varmuuskopio, ei enää kytkettynä.
 tools/export_pdf.py        Tekee kolme PDF:ää kolmesta SVG:stä (tarvitsee Playwrightin).
 tools/generate_schematic.py  Piirtää wiring-diagram.svg:n uudelleen sketch.ino:n asetuksista.
 tools/generate_layout.py   Piirtää layout-diagram.svg:n ja layout-parts.svg:n uudelleen sketch.ino:n asetuksista.
@@ -64,7 +79,23 @@ Sisältö
  6. Nauhat, LEDien järjestys ja leikkuulista
  7. Koon tai tekstin muuttaminen
  8. Animaatiot ja syötteet
- 9. Huomioita oikeasta laitteistosta
+ Kirkkauskäyrät (sketch.ino, "Brightness curves")
+-------------------------------------------------
+Värit lasketaan kuten ennenkin. Kunkin värin kirkkaus (suurin kanava) kuljetetaan sitten 256 arvon hakutaulukon
+läpi, yksi taulukko per ledityyppi: LED_TYPE_STRIP (kehys, kirjaimet) ja LED_TYPE_STICK (nuoli, CLOSED-valo).
+Kaikki kolme kanavaa skaalataan samalla kertoimella, joten sävy säilyy.
+  ulos = min + (max - min) * ((1 - mix) * t + mix * t^eksponentti),  t = sisään / 255,  pyöristetty 0..255
+Per tyyppi: min (0..255), max (0..255), eksponentti (0,1..20, 1 = lineaarinen), mix (0..1, 0 = lineaarinen,
+1 = täysi potenssikäyrä) ja keepZero (syöte 0 pysyy nollana). Oletukset (CURVE_DEFAULT_* sketchin alussa),
+samat molemmille tyypeille: min 0, max 80, eksponentti 2,67, mix 1,0, keepZero true. Taulukot rakennetaan
+käynnistyksessä; setBrightnessCurve(tyyppi, min, max, eksponentti, mix, keepZero) rakentaa yhden taulukon heti
+uudelleen (256 powf-kutsua, vain kun arvo muuttuu). Uusi ledityyppi tarvitsee uuden LED_TYPE_*-vakion,
+suuremman LED_TYPE_COUNTin ja yhden arvon lisää jokaiseen oletustaulukkoon.
+Globaalia kirkkautta ei enää ole: kirjaston kirkkaus pysyy arvossa 255, ja kunkin käyrän max on ledityypin
+kirkkausraja (oletus 80/255, sama raja kuin vanhalla globaalilla asetuksella; nosta sitä vasta kun olet
+tarkistanut virtalähteen, katso Virta-kappale luvussa 2). Käyrän arvoille ei ole vielä käyttöliittymää (suunnitteilla: valikko ja enkooderit).
+
+9. Huomioita oikeasta laitteistosta
 
 
 1. Projektin avaaminen Wokwissa
@@ -92,9 +123,12 @@ kyltissä:
     LEDejä, jotka on piirretty ympyräksi, ja kirjain on kirjoitettu keskelle (Wokwin
     tekstikyltti; sen kokoa ei voi säätää, joten se ei välttämättä mahdu ympyrään
     täsmälleen),
-  - OPEN-rivin alla on lyhyt valkoinen nauha (CLOSED-valo, 6 LEDiä) tekstikyltin kanssa;
-    oikeassa kyltissä se on levyn takana reikätekstin "CLOSED" alla,
-  - nuoli on suorakaide, jonka kummassakin päässä on kolmionmuotoinen kärki,
+  - OPEN-rivin alla on valkoinen 10 LEDin nauhaosa (CLOSED-valo = 11. Grove-tikku liittimessä A3) tekstikyltin
+    kanssa; oikeassa kyltissä se on levyn takana reikätekstin "CLOSED" alla,
+  - 10 Grove-tikusta tehty nuoli on piirretty kehyksen ALLE (levyalueen ulkopuolelle) kymmenenä
+    16 pikseliä/LED -nauhaosana, joissa on tikkujen nimet (L-CAP, RAIL-UP-L ...). Wokwissa ei ole Grove-
+    tikkua, joten se on piirretty Wokwin LED-koolla (16 px/LED); oikea nuoli on levyllä 349,76 x 102,32 mm
+    (katso layout-diagram.svg ja arrow_sticks/),
   - syötteet (kytkimet, painike, DIP-rivi) ovat Arduinon yläpuolella selitteet niiden yläpuolella,
     ja I2C-LCD on Arduinon alapuolella.
 Wokwissa 60 LEDiä/m -nauha on piirretty 16 pikselillä per LED, eli 16 pikseliä
@@ -122,7 +156,8 @@ ja aja se uudestaan.
 Lähtökohta (voi vielä muuttua):
   LED-nauha        WS2812B, 5 V, 60 LEDiä metrillä (LEDien väli 16,7 mm)
   kyltti (levy)    leveys 50 cm, korkeus 40 cm
-  nuoli            leveys 40 cm, korkeus 15 cm
+  nuoli            10 Grove RGB LED -tikkua, 349,76 x 102,32 mm (arrow_sticks/); alla olevat vanhan
+                   nauhanuolen luvut ovat vain varmuuskopiota varten
 
 Tuloksena LED-määrät (pyöristetty kokonaisiin LEDeihin):
   kehys            2 x 53 = 106 LEDiä   (ylä- ja alareuna 28 LEDiä, vasen ja oikea reuna 25)
@@ -132,14 +167,14 @@ Tuloksena LED-määrät (pyöristetty kokonaisiin LEDeihin):
                                          kärjet 2 x 2 x (2 + 8))
                    koko: 39,1 x 16,7 cm (täsmälleen 15 cm korkeaa nuolta ei saa kokonaisilla
                    LEDeillä ja parillisella päädyllä; toinen vaihtoehto olisi 13,3 cm)
-  CLOSED-valo     6 LEDiä              (valkoinen, oma datapinni; palaa vain kasinon ollessa suljettu)
+  CLOSED-valo     10 LEDiä             (11. Grove-tikku liittimessä A3, valkoinen; palaa vain kasinon ollessa suljettu)
   yhteensä         238 LEDiä = 3,97 m nauhaa, joten yksi 5 m kela (300 LEDiä) riittää.
 
 Virta: WS2812B-LED ottaa enintään 60 mA (täysi valkoinen, täysi kirkkaus). 238 LEDiä
-ottaisi enintään 14,3 A, mihin ohjelma ei lähelläkään pääse: BRIGHTNESS on 80/255, joten
+ottaisi enintään 14,3 A, mihin ohjelma ei lähelläkään pääse: kirkkausraja (käyrän max) on 80/255, joten
 vaikka kaikki LEDit olisivat valkoisia, kulutus olisi 4,5 A, ja animaatiot sytyttävät
 vain osan LEDeistä. 5 V / 10 A -virtalähteessä on siis reilusti varaa. Älä nosta
-BRIGHTNESSiä yli noin 150:n tällä virtalähteellä.
+käyrän maxia yli noin 150:n tällä virtalähteellä.
 
 Muille koille aja
     python3 tools/size_calculator.py --width 60 --height 45 --arrow-width 45 --arrow-height 18
@@ -168,30 +203,44 @@ Yleiskuva (5 V:n virta ja data):
          |                                      |
          +--> jokaisen LED-nauhapalan +5 V      +--> jokaisen LED-nauhapalan GND
 
-    Arduino Mega 2560 <--- USB-kaapeli (tietokone tai USB-laturi) : tämä antaa virran vain Arduinolle
-    Arduinon 5 V -pinniä EI yhdistetä LEDien virtalähteeseen.
+    Tikkunuoli (Grove Base Shield Megan päällä, shieldin kytkin asennossa 5 V): shield välittää Megan 5V/GND:n
+    tikuille, joten LED-virtalähteen +5 V -kiskon PITÄÄ syöttää myös MOLEMPIA Megan 5V-pinnejä (pitkän
+    pinnirivin pää) ja GND-kiskon molempia Megan GND-pinnejä (kuten stick_test_directissä). Mega saa silloin
+    virtansa virtalähteestä. ÄLÄ kytke USB:tä kun virtalähde on päällä. Ohjelman lataus: kytke virtalähde pois,
+    kytke USB, lataa, irrota USB, kytke virtalähde takaisin päälle.
 
 Datajohdot (Arduinon pinni -> 330 ohmin vastus -> nauhan ensimmäisen LEDin DIN):
 
     Pinni  Vastus    Menee                         Nauha (LEDejä)
-    D4     330 ohm   arrowCapLeft DIN              nuoli, vasen pääty (4)
-    D5     330 ohm   arrowCapRight DIN             nuoli, oikea pääty (4)
-    D6     330 ohm   frameCw DIN                   kehys, yläreuna ja sitten oikea reuna (53)
-    D7     330 ohm   frameCcw DIN                  kehys, vasen reuna ja sitten alareuna (53)
-    D8     330 ohm   ensimmäisen kirjaimen DIN     kirjaimet, C ... O, sitten O P E N (58)
-    D9     330 ohm   arrowBodyTop DIN              nuoli, vartalon yläreuna (10)
-    D10    330 ohm   arrowBodyBottom DIN           nuoli, vartalon alareuna (10)
-    D11    330 ohm   arrowHeadLeft DIN             nuoli, vasen kärki (20)
-    D12    330 ohm   arrowHeadRight DIN            nuoli, oikea kärki (20)
-    D31    330 ohm   closedLight DIN               CLOSED-valo, 6 valkoista LEDiä levyn takana (6)
+    D9     330 ohm   frameCw DIN                   kehys, yläreuna ja sitten oikea reuna (53)
+    D10    330 ohm   frameCcw DIN                  kehys, vasen reuna ja sitten alareuna (53)
+    D11    330 ohm   ensimmäisen kirjaimen DIN     kirjaimet, C ... O, sitten O P E N (58)
+
+Nuolitikut (ei vastusta, ei juottamista: jokainen tikku kytketään omalla Grove-kaapelillaan
+Grove Base Shieldin liittimeen; tikun LED 1 on sen DIN-pää):
+
+    Liitin  Tikku       Paikka
+    D2      L-CAP       vasen pystypalkki
+    D3      L-WING-UP   vasen yläsiipi
+    D4      L-WING-DN   vasen alasiipi
+    D5      RAIL-UP-L   yläkisko, vasen tikku
+    D6      RAIL-UP-R   yläkisko, oikea tikku
+    D7      RAIL-DN-L   alakisko, vasen tikku
+    D8      RAIL-DN-R   alakisko, oikea tikku
+    A0      R-CAP       oikea pystypalkki
+    A1      R-WING-UP   oikea yläsiipi
+    A2      R-WING-DN   oikea alasiipi
+    A3      CLOSED      CLOSED-valo: 10 valkoista LEDiä levyn takana (ei kuulu nuoleen)
 
 Syötteet (sisäinen ylösvetovastus, ohjelma käyttää INPUT_PULLUP-tilaa):
 
-    D2   -> liukukytkimen keskimmäinen (yhteinen) kontakti
+    D32  -> liukukytkimen keskimmäinen (yhteinen) kontakti
             liukukytkimen toinen ulkokontakti -> Arduinon GND
             (kahva GND-puolella = pinni LOW = nuoli osoittaa vasemmalle;
              kahva toisella puolella = pinni HIGH = nuoli osoittaa oikealle)
-    D3   -> painikkeen yksi kontakti
+            Asennus: kahva osoittaa samaan suuntaan kuin nuoli oikeassa tilassa. Kilven
+            TAKAA katsottuna GND-kontakti (1) tulee oikeanpuoleiseksi.
+    D33  -> painikkeen yksi kontakti
             painikkeen toinen kontakti -> Arduinon GND
             (jokainen painallus = seuraava kirjainmoodi)
     D30  -> liukukytkimen SW5 "kasino suljettu" keskimmäinen (yhteinen) kontakti
@@ -221,13 +270,8 @@ Virta jokaiselle LED-nauhalle (kaikki nauhat saavat virran samasta 5 V:n lähtee
     frameCw            yläreunan alku JA oikean reunan loppu
     frameCcw           vasemman reunan alku JA alareunan loppu
     letters            jokainen kirjainryhmä (syötä jokainen ryhmä kiskosta)
-    arrowBodyTop       alku
-    arrowBodyBottom    alku
-    arrowCapLeft       alku
-    arrowCapRight      alku
-    arrowHeadLeft      ensimmäisen palan alku JA viimeisen palan loppu
-    arrowHeadRight     ensimmäisen palan alku JA viimeisen palan loppu
-    closedLight        alku
+    nuolitikut         Grove Base Shieldin kautta (Megan 5V/GND, katso yleiskuva yllä)
+    CLOSED-valotikku   sekin Grove Base Shieldin kautta (ei johtoa virtalähteestä yhteenkään tikkuun)
 
 Kun nauha koostuu useasta palasta (kehysnauhan kaksi reunaa, kärjen neljä palaa,
 kirjainryhmät), yhdistä peräkkäiset palat kolmella johdolla: edellisen palan DOUT ->
@@ -356,24 +400,21 @@ Nuoli      Vartalon reunat kulkevat vasemmalta oikealle ja päädyt ylhäältä 
            kaksi pohjapalaa muodostavat pohjan loput.
            Nauhaa ei voi taivuttaa jyrkästi sen tasossa, joten leikkaa kärki neljään
            palaan ja yhdistä palat johdoilla siipien päissä ja kärjessä.
-CLOSED-    closedLight: yksi 6 LEDin pala pinnissä D31. Se on levyn TAKANA OPEN-rivin alla ja
-valo       valaisee reikätekstin CLOSED (noin 10 x 2,5 cm, leikattu levyyn). Laita LEDien ja
-           reiän väliin huurrettua muovia, muuten kuusi LEDiä näkyy kuutena kirkkaana pisteenä.
-           Toisin kuin muut nauhat, nämä LEDit osoittavat levyn takapuolelle.
+CLOSED-    closedLight: 11. Grove-tikku (runko 83 x 10 mm, LED-ikkuna 74 x 4 mm, 10 valkoista LEDiä)
+valo       shieldin liittimessä A3; sitä ei leikata. Se on levyn TAKANA OPEN-rivin alla ja
+           valaisee reikätekstin CLOSED (noin 10 x 2,5 cm, leikattu levyyn). Laita tikun ja
+           reiän väliin huurrettua muovia, muuten LEDit näkyvät pisteinä. LED-ikkuna (74 mm) on
+           kapeampi kuin teksti (noin 100 mm): uloimmat kirjaimet saavat valoa vain diffuusorin
+           kautta (jätä tikun ja muovin väliin rako tai tee reikäteksti kapeammaksi). Toisin kuin
+           muut LEDit nämä osoittavat levyn takapuolelle.
 
 Leikkuulista oletuskoilla (leikkaa nauha vain merkityistä leikkauskohdista kahden LEDin
 välistä, 16,7 mm välein):
   frameCw          28 (yläreuna) + 25 (oikea reuna)         2 palaa, 1 liitos
   frameCcw         25 (vasen reuna) + 28 (alareuna)         2 palaa, 1 liitos
   letters          6 6 6 4 6 6   6 6 6 6                    10 palaa, 9 liitosta
-  arrowBodyTop     10                                       1 pala
-  arrowBodyBottom  10                                       1 pala
-  arrowCapLeft     4                                        1 pala
-  arrowCapRight    4                                        1 pala
-  arrowHeadLeft    2 + 8 + 8 + 2                            4 palaa, 3 liitosta
-  arrowHeadRight   2 + 8 + 8 + 2                            4 palaa, 3 liitosta
-  closedLight      6                                        1 pala
-  Yhteensä 27 palaa ja 238 LEDiä.
+  (kuusi nuolinauhaa on poistettu: nuoli on nyt 10 Grove-tikkua, joita ei leikata)
+  Yhteensä 14 palaa ja 164 LEDiä nauhaa (kehys, kirjaimet) sekä 11 tikkua à 10 LEDiä (nuoli + CLOSED-valo).
 
 
 7. Koon tai tekstin muuttaminen
@@ -401,8 +442,8 @@ Muokkaa sketch.ino:n alun CONFIGURATION-osaa:
   LETTER_START_MODE     moodi käynnistyksen jälkeen (oletus 0)
   LETTER_RANDOM_AUTO_MS random auto -moodin vaihtoväli (oletus 120000 = 2 min)
   LETTER_SCANNER_MS, LETTER_SPARKLE_STEP_MS, LETTER_CHASE_STEP_MS, LETTER_PULSE_MS   uusien moodien ajat
-  CLOSED_LIGHT_LEDS     LEDejä CLOSED-valossa (oletus 6)
-  PIN_CLOSED_LIGHT      CLOSED-valon datapinni (oletus D31)
+  CLOSED_LIGHT_LEDS     LEDejä CLOSED-valotikussa (oletus 10)
+  PIN_CLOSED_LIGHT      CLOSED-valotikun shield-liitin (oletus A3)
   PIN_CASINO_CLOSED_SWITCH  kasino suljettu -kytkimen SW5 pinni (oletus D30)
   CASINO_CLOSED_WHEN_LOW    true (oletus): kahva GND-puolella = suljettu; false kääntää sen
   CLOSED_STARTUP_MS, CLOSED_STEADY_MIN_MS / _MAX_MS, CLOSED_FLICKER_MIN_MS / _MAX_MS,
@@ -429,13 +470,14 @@ kehykseen tai jos kärjen siivet ovat liian lyhyet yltääkseen kärkeen.
 8. Animaatiot ja syötteet
 -------------------------
 Syötteet (sisäiset ylösvetovastukset, joten kukin syöte tarvitsee vain johdon GND:hen):
-  D2  liukukytkin   nuolen suunta ja kehyksen suunta. Kahva vasemmalla = pinni 1 oikosulussa
+  D32 liukukytkin   nuolen suunta ja kehyksen suunta. Kahva vasemmalla = pinni 1 oikosulussa
                     yhteisen kanssa = LOW = nuoli osoittaa vasemmalle. Kahva oikealla = auki
                     = HIGH = nuoli osoittaa oikealle. Kytkin pysyy siinä asennossa, johon
                     sen klikkaat; jokainen klikkaus siirtää kahvan toiselle puolelle.
-                    (Aseta ARROW_POINTS_LEFT_WHEN_LOW arvoon false, jos haluat
+                    (Asennus: takaa katsottuna GND-kontakti (1) on oikealla, jolloin kahvan suunta
+                    = nuolen todellinen suunta. Aseta ARROW_POINTS_LEFT_WHEN_LOW arvoon false, jos haluat
                     kääntää sen.)
-  D3  painike       jokainen painallus valitsee seuraavan kirjainmoodin.
+  D33 painike       jokainen painallus valitsee seuraavan kirjainmoodin.
   D30 liukukytkin   kasino suljettu (SW5). Kahva GND-puolella = pinni LOW = kasino suljettu;
                     kahva toisella puolella = kasino auki (aseta CASINO_CLOSED_WHEN_LOW arvoon
                     false kääntääksesi). Kasinon ollessa suljettu OPEN-kirjaimet ovat pimeinä
@@ -481,9 +523,9 @@ LED-testi   kyltti ajaa LED-testin normaalien animaatioiden sijaan. Kaikki 10 na
             värijärjestys, vaihtunut nauha tai rikkinäinen LEDi näkyy helposti. Kerrallaan palaa
             enintään 5 LEDiä nauhaa kohden (yhteensä noin 50, noin 0,9 A kirkkaudella 80).
             LCD näyttää kaksi riviä, jotka vaihtavat paikkaa 2,5 sekunnin välein, jolloin jokainen
-            merkki nähdään molemmilla riveillä: toisella rivillä vierii "press D3 to skip" ja
+            merkki nähdään molemmilla riveillä: toisella rivillä vierii "press D33 to skip" ja
             toisella näkyy kulunut aika sekunteina #-merkeistä tehdyn etenemispalkin keskellä,
-            esimerkiksi "#####4/10 s.....". Painikkeen D3 painallus testin aikana ohittaa testin;
+            esimerkiksi "#####4/10 s.....". Painikkeen D33 painallus testin aikana ohittaa testin;
             se painallus ei vaihda kirjainmoodia. Jo virtaa kytkettäessä pohjassa oleva painike ei
             ohita testiä: se pitää päästää ylös ja painaa uudestaan. Muut kytkimet (nuoli,
             kasino suljettu, nopeudet) luetaan uudestaan testin päätyttyä, joten ne vaikuttavat vasta
@@ -535,7 +577,7 @@ LCD        2x16 I2C-näyttö näyttää samat tiedot kuin sarjamonitori neljäll
              sivu 1  SW3:     "SW3:8  x1.10" / "Fr91ms Ar30ms"   (asento, nopeuskerroin, frame- ja
                               arrow-askeleen aika millisekunteina)
              sivu 2  SW4:     "SW4:8  x1.10" / "Letter patterns"  (asento ja kirjainten nopeuskerroin)
-             sivu 3  tila:    "Casino: CLOSED" (tai OPEN) / "Arrow: <- LEFT" (tai "Arrow: RIGHT ->")
+             sivu 3  tila:    "Casino: CLOSED" (tai OPEN) / "<-Customer right" (tai "->Customer left"); asiakas = edestä katsottuna, LCD on kilven takana, joten symboli on peilattu
            Heti kun muutat jotain, sen sivu tulee näkyviin ja pysyy 6 sekuntia (LCD_HOLD_MS) viimeisestä
            muutoksesta: painike ja moodin vaihto näyttävät sivun 0, SW3 sivun 1, SW4 sivun 2 sekä nuoli-
            ja kasinokytkimet sivun 3. Pidon jälkeen sivut kiertävät taas seuraavasta sivusta. Random auton
@@ -549,15 +591,20 @@ valo       suljettu, ja ne ovat sammuksissa kasinon ollessa auki. Valo käyttäy
            se palaa tasaisesti 5–14 sekuntia, välkkyy sitten epäsäännöllisesti (täysi, himmeä ja
            pimeä vaihe) 0,4–1,5 sekuntia, palaa taas tasaisesti ja niin edelleen. Se on aina valkoinen.
            Ajastus seuraa kirjainnopeuden kytkintä SW4. Ajat ovat sketch.ino:n alun CLOSED_*-vakiot.
-Nuoli      Vartalo on suljettu hännän päästä päädyllä ja avoin kärkeen päin: vain hännän
-           puoleinen pääty palaa, kärjen puoleinen pääty on sammutettu. Yksi valo virtaa
-           hännän päädyn keskeltä vartalon reunoja pitkin, pohjapaloja ylös ja kärjen
-           siipiä pitkin kärkeen: sinisiä, syaaneja, violetteja ja jäävalkoisia väriaaltoja,
-           väreilyä ja valkoisia välähdyksiä. Ylä- ja alakaista ovat eri vaiheessa. Vain se
-           kärki palaa, johon nuoli osoittaa. Suunta seuraa liukukytkintä.
+Nuoli      Nuoli on kaksi reittiä, ylä- ja alareitti (36 LEDiä kumpikin), väännettynä nuolen
+           muotoon. Kumpikin reitti alkaa hännän capin keskeltä (sen keskimmäiset 6 LEDiä
+           palavat, 2 LEDiä kummassakin päässä pysyy pimeänä), kulkee kahden kisko-tikun
+           läpi, ylös (tai alas) kärjen capin 3 päätyLEDiä pitkin (sen keskimmäiset 4 LEDiä
+           pysyvät pimeinä) ja nuolenkärjen siipeä pitkin kärkeen. Sinisiä, syaaneja,
+           violetteja ja jäävalkoisia väriaaltoja ja väreilyä kulkee molemmilla reiteillä
+           (eri vaiheessa); häntäinen valkoinen pulssi kulkee hännästä kärkeen ensin
+           yläreittiä ja sitten alareittiä, vuorotellen (aina täsmälleen yksi pulssin kärki
+           kerrallaan). Vain se kärki palaa, johon nuoli osoittaa. Suunta seuraa
+           liukukytkintä: kun nuoli osoittaa vasemmalle, vasen cap on kärjen cap ja oikea
+           cap on hännän cap.
 
 Nopeudet ja värit ovat vakioita CONFIGURATION-osassa (FRAME_SPEED_MS,
-LETTERS_SPEED_MS, ARROW_SPEED_MS, BRIGHTNESS, ...). Kaikki ajastus käyttää millis()-funktiota;
+LETTERS_SPEED_MS, ARROW_SPEED_MS, CURVE_DEFAULT_*, ...). Kaikki ajastus käyttää millis()-funktiota;
 ohjelma ei koskaan kutsu delay()-funktiota. Huomaa, että Adafruit_NeoPixel::show() on
 synkroninen, joten nauhat päivitetään peräkkäin. Noin 30 mikrosekuntia per LED: päivityksen
 kokonaisaika kasvaa LED-määrän mukana (noin 7 ms kaikille 238 oletus-LEDille); paljon
@@ -567,7 +614,7 @@ isoilla kylteillä nopeimpia animaationopeuksia ei enää saavuteta.
 9. Huomioita oikeasta laitteistosta
 -----------------------------------
 - Syötä nauhat erillisestä 5 V:n virtalähteestä, älä koskaan Arduinosta. Laske enintään
-  60 mA per LED täydellä valkoisella; BRIGHTNESS ja pimeät LEDit pienentävät todellista
+  60 mA per LED täydellä valkoisella; käyrän max ja pimeät LEDit pienentävät todellista
   kulutusta.
 - Yhdistä virtalähteen GND Arduinon GND:hen.
 - Syötä virta jokaiseen nauhaan molemmista päistä tai useasta kohdasta pitkillä nauhoilla
@@ -580,3 +627,21 @@ isoilla kylteillä nopeimpia animaationopeuksia ei enää saavuteta.
   ylösvetovastuksia, joten niille ei tarvita vastuksia.
 - Virtalähteessä on verkkojännitteellä toimivat liittimet. Asenna se koteloon ja anna
   verkkopuolen johdotus sähköasennuksen osaavan tehtäväksi.
+
+
+Suuntakytkimen suunta-asetus (sketch.ino)
+-----------------------------------------
+ARROW_POINTS_LEFT_WHEN_LOW: true = kytkimen pinni D32 LOW (kahva GND-puolella) saa nuolen osoittamaan asiakkaan
+vasemmalle; false = päinvastoin. Mekaanisen kytkimen toiminnasta ja asennuksesta riippuen voit kääntää tämän
+yhden vakion ja vaihtaa, mikä kahvan asento antaa minkä nuolen suunnan (ei uudelleenjohdotusta).
+
+Tikun pallo-asetus (sketch.ino)
+-------------------------------
+Asettelu- ja poraus­kuvien musta piste on oikean tikun PALLO. Asenna jokainen tikku pallo pisteessä
+(vasemman puoliskon tikut osoittavat vasemmalle, oikean oikealle, molemmat päätytikut ylös).
+Vakio STICK_BALL_AT_DIN_END kertoo ohjelmalle, missä oikea pallo on: true = DIN-päässä (LED 1), LED-numeroita
+käytetään sellaisenaan; false = toisessa päässä, ohjelma laskee ledit toisesta päästä. Jos animaatio kulkee
+oikeilla tikuilla väärään suuntaan, käännä tämä yksi vakio (Wokwi-generaattori seuraa sitä myös).
+Poraussapluuna on kilven ETUPUOLELLE (tulosta peilattuna, jos poraat takaa).
+Wokwissa kytkimen kahva osoittaa kuten nuoli edestä katsottuna; LCD:n nuoli näyttää ruudulla tarkoituksella
+päinvastaiselta (LCD on kilven takana ja näyttää asiakkaan näkymän).

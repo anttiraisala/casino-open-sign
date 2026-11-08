@@ -3,15 +3,21 @@ CASINO SIGN "CASINO OPEN" - Arduino Mega 2560 + 10 WS2812B LED strips (Wokwi pro
 
 PROJECT STATUS (2026-11-06)
 ---------------------------
-- The sign sketch (sketch.ino) still describes the first design: 10 WS2812B LED strips on pins D4-D12 and D31.
-  Planned but NOT built: 12 V WS2811 strips, 60 x 30 cm plate and the arrow made of 10 Grove LED sticks (design B).
+- PHASE 1 DONE (2026-11-07): the sign sketch (sketch.ino) and diagram.json now use the stick arrow: 10 Grove RGB LED
+  sticks in the Grove Base Shield connectors D2-D8 and A0-A2, with a simple flowing arrow animation. The frame, letters,
+  switch and button moved to free pins (frame D9/D10, letters D11, arrow switch D32, button D33). The CLOSED light is now the 11th Grove
+  stick, plugged into the shield connector A3 (10 white LEDs); D31 is free.
+  The old arrow made of six LED strips is kept as a backup in backup/old_arrow_strips/ (not wired any more).
+  Not yet compiled for the real Arduino and not yet run in Wokwi by me: run it in Wokwi and report what you see.
+  Planned but NOT built: 12 V WS2811 strips, 60 x 30 cm plate (the sections below still describe the 5 V strip
+  design for the frame and letters).
 - Tested on real hardware by the user: stick_test_direct. All 11 Grove RGB LED sticks plugged unmodified into the
   Grove Base Shield (connectors D2..D8, A0..A3), Arduino + shield fed from the external 5 V supply, all sticks show
   their moving patterns. So the power and the data are enough for 11 sticks (stick_test, the version with modified
   cables, was therefore not needed).
 - Not yet tested on real hardware: strip_test (WS2812B strip), the sign sketch itself.
-- Sign of life rule (pin 13 LED + one Serial line per second) is in stick_test_direct only; the other sketches get
-  it when they are next updated (see AI_CONTEXT.md).
+- Sign of life rule (pin 13 LED + one Serial line per second, 115200 baud) is in sketch.ino and stick_test_direct;
+  strip_test and stick_test get it when they are next updated (phase 2, see AI_CONTEXT.md).
 - The parts lists are a snapshot of 2026-11-02 (prices, stock and links are not refreshed on their own).
 
 Files
@@ -41,10 +47,19 @@ tools/generate_parts_list.py  Makes the three parts list files.
 strip_test/                A separate small test project for the LED strip: cut a short piece of the strip, run
                            strip_test/sketch.ino (Arduino or Wokwi with strip_test/diagram.json) and tell what you
                            see (colour order, bit speed, LEDs per pixel). See strip_test/README.txt.
+strip_single_led_test/     Test: three 12 V WS2811 strips on D9/D10/D11; one pixel walks along the strip to count the real
+                           pixels (150 LEDs = probably 50 pixels) and check the colour order. See strip_single_led_test/README.txt.
+strip_knight_rider_test/    Demo: three 12 V WS2811 strips of 50 pixels; one light bounces back and forth (D9 red 1 pixel/s, D10 blue
+                           4/s, D11 green 10/s). See strip_knight_rider_test/README.txt.
+sticks_11_test/             Test "11 sticks": the 10 arrow sticks + the CLOSED light stick (A3) in the Grove shield, kept lit to see
+                           whether anything gets hot. See sticks_11_test/README.txt.
 stick_test/                A separate test for 10 Grove RGB LED sticks (planned stick arrow) on a separate 5 V supply:
                            upload stick_test/sketch.ino with the Arduino IDE. See stick_test/README.txt.
 stick_test_direct/        Second stick test: up to 11 sticks plugged unmodified into the Grove shield, always-moving patterns,
                            external 5 V on the Mega 5V/GND pins. See stick_test_direct/README.txt.
+arrow_sticks/              The stick arrow: 1:1 drill template (PDF), layout and wiring. See arrow_sticks/README.txt.
+backup/old_arrow_strips/   The previous sign (arrow made of six LED strips on D4, D5, D9-D12): sketch, diagram.json and the
+                           list of retired parts. Kept as a backup, not wired any more.
 tools/export_pdf.py        Makes the three PDFs from the three SVGs (needs Playwright).
 tools/generate_schematic.py  Redraws wiring-diagram.svg from the settings in sketch.ino.
 tools/generate_layout.py   Redraws layout-diagram.svg and layout-parts.svg from sketch.ino.
@@ -62,7 +77,22 @@ Contents
  6. Strips, LED order and cutting list
  7. Changing the sizes or the text
  8. Animations and inputs
- 9. Real hardware notes
+ Brightness curves (sketch.ino, "Brightness curves")
+---------------------------------------------------
+The colours are computed as before. The brightness of each colour (its largest channel) is then mapped through a
+256-entry lookup table, one table per LED type: LED_TYPE_STRIP (frame, letters) and LED_TYPE_STICK (arrow, CLOSED
+light). The three channels are scaled by the same factor, so the hue stays the same.
+  out = min + (max - min) * ((1 - mix) * t + mix * t^exponent),  t = input / 255,  rounded to 0..255
+Per type: min (0..255), max (0..255), exponent (0.1..20, 1 = linear), mix (0..1, 0 = linear, 1 = full power curve)
+and keepZero (an input of 0 stays 0). Defaults (CURVE_DEFAULT_* at the top of the sketch), the same for both types:
+min 0, max 80, exponent 2.67, mix 1.0, keepZero true. The tables are built at start-up; setBrightnessCurve(type,
+min, max, exponent, mix, keepZero) rebuilds one table at once (256 powf calls, only when a value changes). A new LED
+type needs a new LED_TYPE_* constant, a bigger LED_TYPE_COUNT and one more value in each default array.
+There is no global brightness any more: the library brightness stays at 255 and the max of each curve is the
+brightness limit of its LED type (default 80 of 255, the same limit as the old global setting; raise it only after
+checking the power supply, see the Current paragraph in section 2). There is no user interface for the curve values yet (planned: menu and encoders).
+
+9. Real hardware notes
 
 
 1. Opening the project in Wokwi
@@ -89,9 +119,12 @@ strips themselves. Each strip part sits where it would be on the real sign:
   - "CASINO" is above "OPEN"; behind each letter sits a group of single LEDs drawn as
     a circle, with the letter written in the middle (a Wokwi text label; its size is
     fixed by Wokwi and may not fit the circle exactly),
-  - under the OPEN row a short white strip (the CLOSED light, 6 LEDs) with a text label; on the
-    real sign it sits behind the plate under a hole text "CLOSED",
-  - the arrow is a rectangle with a triangular head on each end,
+  - under the OPEN row a white 10-LED strip part (the CLOSED light = the 11th Grove stick on A3) with a
+    text label; on the real sign it sits behind the plate under a hole text "CLOSED",
+  - the arrow of 10 Grove LED sticks is drawn BELOW the frame (outside the plate area), as ten
+    16-pixel-per-LED strip parts with their stick names (L-CAP, RAIL-UP-L ...). Wokwi has no Grove
+    stick, so it is drawn at the Wokwi LED size (16 px per LED); the real arrow is 349.76 x 102.32 mm
+    on the plate (see layout-diagram.svg and arrow_sticks/),
   - the inputs (switches, button, DIP bank) are above the Arduino with their captions above them,
     and the I2C LCD is below the Arduino.
 In Wokwi the 60 LEDs per metre strip is drawn at 16 pixels per LED, so 16 pixels in
@@ -114,8 +147,9 @@ THICKNESS and LENGTH_PADDING at the top of tools/generate_diagram.py and run it 
 Starting point (it may still change):
   LED strip        WS2812B, 5 V, 60 LEDs per metre (LED pitch 16.7 mm)
   sign (plate)     50 cm wide, 45 cm high
-  arrow            40 cm wide, 15 cm high
-  CLOSED light     6 white LEDs behind the plate, hole text "CLOSED" about 10 x 2.5 cm
+  arrow            10 Grove RGB LED sticks, 349.76 x 102.32 mm (arrow_sticks/); the numbers below for the
+                   old strip arrow are kept for the backup only
+  CLOSED light     the 11th Grove stick (10 white LEDs) behind the plate, hole text "CLOSED" about 10 x 2.5 cm
 
 Resulting LED counts (rounded to whole LEDs):
   frame            2 x 53 = 106 LEDs   (top and bottom edge 28 LEDs, left and right edge 25)
@@ -124,7 +158,7 @@ Resulting LED counts (rounded to whole LEDs):
   arrow            68 LEDs             (shaft edges 2 x 10, end caps 2 x 4, arrowheads 2 x 2 x (2 + 8))
                    size: 39.1 x 16.7 cm (an arrow of exactly 15 cm is not possible with whole LEDs
                    and an even cap; 13.3 cm would be the other choice)
-  CLOSED light     6 LEDs              (white, own data pin; lit only while the casino is closed)
+  CLOSED light     10 LEDs             (an 11th Grove stick on A3, white; lit only while the casino is closed)
   total            238 LEDs = 3.97 m of strip, so one 5 m reel (300 LEDs) is enough.
 
 Vertical layout of the 45 cm plate, from the top: frame edge, the two text rows (CASINO,
@@ -132,10 +166,10 @@ OPEN), the CLOSED hole text (about 2.5 cm tall and 10 cm wide), the arrow (16.7 
 the frame edge. About 5 cm of free space is left under the arrow.
 
 Current: a WS2812B LED takes up to 60 mA (full white, full brightness). 238 LEDs would
-take up to 14.3 A, which the sketch never comes close to: BRIGHTNESS is 80 of 255, so
+take up to 14.3 A, which the sketch never comes close to: the brightness limit (curve max) is 80 of 255, so
 even with every LED white the draw would be 4.5 A, and the animations light only part
 of the LEDs. A 5 V / 10 A supply therefore has plenty of margin. Do not raise
-BRIGHTNESS above about 150 with this supply.
+the curve max above about 150 with this supply.
 
 For other sizes run
     python3 tools/size_calculator.py --width 60 --height 45 --arrow-width 45 --arrow-height 18
@@ -163,30 +197,44 @@ Overview (5 V power and data):
          |                                      |
          +--> +5 V of every LED strip piece     +--> GND of every LED strip piece
 
-    Arduino Mega 2560 <--- USB cable (computer or USB charger) : this powers only the Arduino
-    Arduino 5 V pin is NOT connected to the LED supply.
+    Stick arrow (Grove Base Shield on the Mega, shield switch on 5 V): the shield passes the Mega 5V/GND on to
+    the sticks, so the LED supply +5 V bus MUST also feed BOTH Mega 5V pins (end of the long header) and its GND
+    both Mega GND pins (as in stick_test_direct). The Mega is then powered from the supply.
+    DO NOT connect USB while the supply is on. To upload a sketch: switch the supply off, plug USB,
+    upload, unplug USB, switch the supply on again.
 
 Data lines (Arduino pin -> 330 ohm resistor -> DIN of the first LED of the strip):
 
     Pin   Resistor   Goes to                     Strip (LEDs)
-    D4    330 ohm    DIN of arrowCapLeft         arrow, left end cap (4)
-    D5    330 ohm    DIN of arrowCapRight        arrow, right end cap (4)
-    D6    330 ohm    DIN of frameCw              frame, top edge then right edge (53)
-    D7    330 ohm    DIN of frameCcw             frame, left edge then bottom edge (53)
-    D8    330 ohm    DIN of the first letter     letters, C ... O, then O P E N (58)
-    D9    330 ohm    DIN of arrowBodyTop         arrow, shaft top edge (10)
-    D10   330 ohm    DIN of arrowBodyBottom      arrow, shaft bottom edge (10)
-    D11   330 ohm    DIN of arrowHeadLeft        arrow, left head (20)
-    D12   330 ohm    DIN of arrowHeadRight       arrow, right head (20)
-    D31   330 ohm    DIN of closedLight          CLOSED light, 6 white LEDs behind the plate (6)
+    D9    330 ohm    DIN of frameCw              frame, top edge then right edge (53)
+    D10   330 ohm    DIN of frameCcw             frame, left edge then bottom edge (53)
+    D11   330 ohm    DIN of the first letter     letters, C ... O, then O P E N (58)
+
+Arrow sticks (no resistor, no soldering: each stick is plugged with its own Grove cable into the
+Grove Base Shield connector; the black dot in the drawings is the BALL of the real stick; see STICK_BALL_AT_DIN_END in the sketch):
+
+    Connector  Stick       Position
+    D2         L-CAP       left vertical bar
+    D3         L-WING-UP   left upper wing
+    D4         L-WING-DN   left lower wing
+    D5         RAIL-UP-L   upper rail, left stick
+    D6         RAIL-UP-R   upper rail, right stick
+    D7         RAIL-DN-L   lower rail, left stick
+    D8         RAIL-DN-R   lower rail, right stick
+    A0         R-CAP       right vertical bar
+    A1         R-WING-UP   right upper wing
+    A2         R-WING-DN   right lower wing
+    A3         CLOSED      the CLOSED light: 10 white LEDs behind the plate (not part of the arrow)
 
 Inputs (internal pull-up, the sketch uses INPUT_PULLUP):
 
-    D2   -> middle (common) contact of the slide switch
+    D32  -> middle (common) contact of the slide switch
             one outer contact of the slide switch -> Arduino GND
             (handle on the GND side = pin LOW = arrow points left;
              handle on the other side = pin HIGH = arrow points right)
-    D3   -> one contact of the push button
+            Mounting: the handle points the same way as the arrow in real space. Seen from
+            the BACK of the sign, the GND contact (1) goes on the right-hand side.
+    D33  -> one contact of the push button
             the other contact of the push button -> Arduino GND
             (each press = next letter mode)
     D30  -> middle (common) contact of the slide switch SW5 "casino closed"
@@ -216,13 +264,8 @@ Power for each LED strip (all strips run from the same 5 V supply):
     frameCw            start of the top edge AND end of the right edge
     frameCcw           start of the left edge AND end of the bottom edge
     letters            every letter group (feed each group from the bus)
-    arrowBodyTop       start
-    arrowBodyBottom    start
-    arrowCapLeft       start
-    arrowCapRight      start
-    arrowHeadLeft      start of the first piece AND end of the last piece
-    arrowHeadRight     start of the first piece AND end of the last piece
-    closedLight        start
+    arrow sticks       through the Grove Base Shield (Mega 5V/GND, see the overview above)
+    CLOSED light stick through the Grove Base Shield too (no wire from the supply to any stick)
 
 Where a strip is made of several pieces (the two edges of a frame strip, the four
 pieces of an arrowhead, the letter groups), join consecutive pieces with three wires:
@@ -235,7 +278,10 @@ Notes
   - Put the 330 ohm resistors close to the first LED of each strip.
   - Use thick wire for the +5 V / GND bus (at least 1 mm2, shorter is better) and
     keep the data wires short.
-  - Never connect the LED supply +5 V to the Arduino 5 V pin while USB is connected.
+  - With the stick arrow the supply +5 V DOES go to the Mega 5V pins (the shield needs it), so never
+    connect USB while the supply is on.
+  - The Grove Base Shield pins used: D2-D8, A0-A2. The frame, letters, switches and button use
+    D9, D10, D11, D30, D32, D33, D22-D29, so nothing collides with the shield connectors (D31 is free).
   - Always connect the supply GND to the Arduino GND, otherwise the data lines do
     not work.
 
@@ -348,24 +394,21 @@ Arrow      Shaft edges run left to right, the end caps run top to bottom. Each
            A strip cannot be bent sharply in its plane, so cut an arrowhead into its four
            pieces and join them with wires at the barbs and at the tip.
 
-CLOSED     closedLight: one piece of 6 LEDs on pin D31. It sits BEHIND the plate under the OPEN
-light      row and lights the hole text CLOSED (about 10 x 2.5 cm, cut out of the plate). Put
-           frosted plastic between the LEDs and the hole, otherwise the six LEDs show as six
-           bright dots. Unlike all other strips these LEDs face the back of the plate.
+CLOSED     closedLight: the 11th Grove stick (83 x 10 mm body, 74 x 4 mm LED window, 10 white
+light      LEDs) in the shield connector A3; it is not cut. It sits BEHIND the plate under the OPEN
+           row and lights the hole text CLOSED (about 10 x 2.5 cm, cut out of the plate). Put
+           frosted plastic between the stick and the hole, otherwise the LEDs show as dots. The
+           LED window (74 mm) is narrower than the text (about 100 mm): the outer letters get light
+           only through the diffuser (leave a gap between the stick and the plastic, or make the
+           hole text narrower). Unlike the other LEDs these face the back of the plate.
 
 Cutting list with the default sizes (cut the strip only at the marked cut lines
 between two LEDs, every 16.7 mm):
   frameCw          28 (top edge) + 25 (right edge)          2 pieces, 1 joint
   frameCcw         25 (left edge) + 28 (bottom edge)        2 pieces, 1 joint
   letters          6 6 6 4 6 6   6 6 6 6                    10 pieces, 9 joints
-  arrowBodyTop     10                                       1 piece
-  arrowBodyBottom  10                                       1 piece
-  arrowCapLeft     4                                        1 piece
-  arrowCapRight    4                                        1 piece
-  arrowHeadLeft    2 + 8 + 8 + 2                            4 pieces, 3 joints
-  arrowHeadRight   2 + 8 + 8 + 2                            4 pieces, 3 joints
-  closedLight      6                                        1 piece
-  Together 27 pieces and 238 LEDs.
+  (the six arrow strips are retired: the arrow is now 10 Grove sticks that are not cut)
+  Together 14 pieces and 164 LEDs of strip (frame, letters) plus 11 sticks of 10 LEDs (arrow + CLOSED light).
 
 
 7. Changing the sizes or the text
@@ -392,7 +435,7 @@ Edit the CONFIGURATION section at the top of sketch.ino:
   MIN_UPDATE_MS         the frame and the arrow never update more often than this (default 8 ms)
   PIN_CASINO_CLOSED_SWITCH  pin of the casino closed switch SW5 (default D30)
   CASINO_CLOSED_WHEN_LOW    true (default): handle on the GND side = closed; false reverses it
-  PIN_CLOSED_LIGHT      data pin of the CLOSED light (default D31)
+  PIN_CLOSED_LIGHT      shield connector of the CLOSED light stick (default A3)
   STARTUP_TEST_MS       length of the power-on LED test (default 10000; 0 = no test)
   STARTUP_TEST_PASSES   passes of the test (default 2: white, then red-green-blue)
   STARTUP_TEST_WINDOW_LEDS  LEDs lit at the same time in each strip (default 5)
@@ -403,7 +446,7 @@ Edit the CONFIGURATION section at the top of sketch.ino:
   LETTER_START_MODE     letter mode after power-up (default 0)
   LETTER_RANDOM_AUTO_MS time between the random picks of mode 10 (default 120000 = 2 minutes)
   LETTER_SCANNER_MS, LETTER_SPARKLE_STEP_MS, LETTER_CHASE_STEP_MS, LETTER_PULSE_MS   timing of the new modes
-  CLOSED_LIGHT_LEDS     LEDs of the CLOSED light (default 6)
+  CLOSED_LIGHT_LEDS     LEDs of the CLOSED light stick (default 10)
   CLOSED_STARTUP_MS, CLOSED_STEADY_MIN_MS / _MAX_MS, CLOSED_FLICKER_MIN_MS / _MAX_MS,
   CLOSED_HOLD_MIN_MS / _MAX_MS    timing of the CLOSED light (pattern milliseconds, see section 8)
 
@@ -421,12 +464,14 @@ the tip.
 8. Animations and inputs
 ------------------------
 Inputs (internal pull-up resistors, so each input only needs a wire to GND):
-  D2  slide switch  arrow direction and frame direction. Handle left = pin 1 shorted to
+  D32 slide switch  arrow direction and frame direction. Handle left = pin 1 shorted to
                     common = LOW = arrow points left. Handle right = open = HIGH =
                     arrow points right. The switch stays in the position you click it
                     to; each click moves the handle to the other side.
                     (Set ARROW_POINTS_LEFT_WHEN_LOW to false to reverse it.)
-  D3  push button   each press selects the next letter mode.
+                    Mounting: seen from the back, the GND contact (1) is on the right; then
+                    the handle direction = the real arrow direction.
+  D33 push button   each press selects the next letter mode.
   D30 slide switch  casino closed (SW5). Handle on the GND side = pin LOW = casino closed;
                     handle on the other side = casino open (set CASINO_CLOSED_WHEN_LOW to
                     false to reverse it). While the casino is closed the OPEN letters are
@@ -469,11 +514,11 @@ LED test  an LED test instead of the normal animations. All 10 strips run at the
           finish together (a short strip moves slower than a long one). There are 2 passes of
           5 seconds: pass 1 is white, pass 2 lights the LEDs red, green, blue, red, ... (by LED
           number), so a wrong colour order, a swapped strip or a dead LED is easy to see. At most
-          5 LEDs per strip (about 50 in total, roughly 0.9 A at BRIGHTNESS 80) are lit at once.
+          5 LEDs per strip (about 50 in total, roughly 0.9 A at curve max 80) are lit at once.
           The LCD shows two rows that swap places every 2.5 seconds, so every character is seen
-          on both rows: one row scrolls "press D3 to skip", the other shows the elapsed seconds
+          on both rows: one row scrolls "press D33 to skip", the other shows the elapsed seconds
           in the middle of a progress bar made of # characters, for example "#####4/10 s.....".
-          Pressing the push button D3 during the test skips it; that press does not change the
+          Pressing the push button D33 during the test skips it; that press does not change the
           letter mode. A button that is already held down at power-up does not skip the test: it
           has to be released and pressed again. The other switches (arrow, casino closed, speeds)
           are read again when the test ends, so they take effect only afterwards, and during the
@@ -523,7 +568,7 @@ LCD        The 2x16 I2C display shows the same information as the Serial Monitor
              page 1  SW3:     "SW3:8  x1.10" / "Fr91ms Ar30ms"   (position, speed multiplier, frame and
                               arrow step time in milliseconds)
              page 2  SW4:     "SW4:8  x1.10" / "Letter patterns"  (position and letter speed multiplier)
-             page 3  status:  "Casino: CLOSED" (or OPEN) / "Arrow: <- LEFT" (or "Arrow: RIGHT ->")
+             page 3  status:  "Casino: CLOSED" (or OPEN) / "<-Customer right" (or "->Customer left"); customer = seen from the front, the LCD is behind the sign, so the symbol is mirrored
            As soon as you change something, its page is shown at once and held for 6 seconds
            (LCD_HOLD_MS) after the last change; the push button and a mode change show page 0, SW3 page
            1, SW4 page 2, the arrow and casino switches page 3. After the hold the pages rotate again
@@ -539,16 +584,19 @@ light      closed and are off while it is open. The light behaves like a faulty 
            for 0.4 to 1.5 seconds, then burns steadily again, and so on. It is always white.
            The timing follows the letter speed switch SW4. The times are the CLOSED_*
            constants at the top of sketch.ino.
-Arrow      The shaft is closed at the tail by its end cap and open toward the head: only
-           the cap at the tail end is lit, the cap at the head end stays dark. One
-           light flows from the middle of the tail cap along the shaft edges, up the
-           base pieces and along the wings of the arrowhead into the tip: blue, cyan,
-           violet and ice-white colour waves, a shimmer and white sparkles. The top and
-           bottom lanes are out of phase. Only the arrowhead the arrow points at is
-           lit. The direction follows the slide switch.
+Arrow      The arrow is two routes, an upper and a lower one (36 LEDs each), bent into the
+           shape of the arrow. Each route runs from the middle of the tail cap (its middle
+           6 LEDs are lit, the 2 LEDs at each end stay dark) along the two rail sticks, up
+           (or down) the 3 end LEDs of the head cap (its middle 4 LEDs stay dark) and along
+           the wing of the arrowhead into the tip. Blue, cyan, violet and ice-white colour
+           waves and a shimmer run on both routes (out of phase); a white pulse with a tail
+           runs from the tail to the tip first on the upper route and then on the lower
+           route, taking turns (exactly one pulse head at a time). Only the arrowhead the
+           arrow points at is lit. The direction follows the slide switch: pointing left
+           the left cap is the head cap and the right cap is the tail cap.
 
 Speeds and colours are constants in the CONFIGURATION section (FRAME_SPEED_MS,
-LETTERS_SPEED_MS, ARROW_SPEED_MS, BRIGHTNESS, ...). All timing uses millis(); the
+LETTERS_SPEED_MS, ARROW_SPEED_MS, CURVE_DEFAULT_*, ...). All timing uses millis(); the
 sketch never calls delay(). Note that Adafruit_NeoPixel::show() is synchronous, so
 the strips are updated one after another. At roughly 30 microseconds per LED the
 total update time grows with the LED count (about 7 ms for all 238 default LEDs);
@@ -558,7 +606,7 @@ with much larger signs the fastest animation speeds cannot be reached any more.
 9. Real hardware notes
 ----------------------
 - Power the strips from the separate 5 V supply, never from the Arduino. Budget up to
-  60 mA per LED at full white; BRIGHTNESS and the dark LEDs reduce the real draw.
+  60 mA per LED at full white; the curve max and the dark LEDs reduce the real draw.
 - Connect the supply GND to the Arduino GND.
 - Feed power into each strip at both ends or at several points on long strips (see
   the power table in section 4).
@@ -570,3 +618,21 @@ with much larger signs the fastest animation speeds cannot be reached any more.
   pull-ups, so no resistors are needed for them.
 - The supply has mains-voltage terminals. Mount it in an enclosure and have the
   mains side wired by someone who knows how to do it safely.
+
+
+Arrow switch direction setting (sketch.ino)
+-------------------------------------------
+ARROW_POINTS_LEFT_WHEN_LOW: true = switch pin D32 LOW (handle on the GND side) makes the arrow point to the
+customer's left; false = reversed. Depending on how the mechanical switch works and is mounted, flip this one
+constant to change which handle position gives which arrow direction (no rewiring needed).
+
+Stick ball setting (sketch.ino)
+-------------------------------
+The black dot in the layout and drill drawings is the BALL of the real stick. Mount every stick with its
+ball at the dot (left-half sticks point left, right-half sticks point right, both caps point up). The constant
+STICK_BALL_AT_DIN_END tells the program where the real ball is: true = at the DIN end (LED 1), LED numbers are
+used as they are; false = at the other end, the program counts the LEDs from the other end. If the animation
+runs backwards on the real sticks, flip this one constant (the Wokwi diagram.json generator follows it too).
+The drill template is for the FRONT of the plate (print it mirrored if you drill from the back).
+In Wokwi the switch handle points like the arrow seen from the front; the LCD arrow looks opposite on screen
+on purpose (the LCD is behind the sign and shows the customer view).

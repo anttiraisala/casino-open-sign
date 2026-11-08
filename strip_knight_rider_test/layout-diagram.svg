@@ -1,0 +1,79 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='297mm' height='210mm' viewBox='-31.3167 -61.032 1162.63 822.064'>
+<rect x='-31.3167' y='-61.032' width='1162.63' height='822.064' fill='#ffffff'/>
+<text x='550' y='32' font-size='19' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>LED strip knight rider - what you should see</text>
+<text x='550' y='50' font-size='12' text-anchor='middle' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Three strips of 50 pixels (each pixel = one control chip = 3 LEDs = 10 cm). One light runs back and forth.</text>
+<text x='24' y='96' font-size='14' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>D9: RED light, 1 pixel per second (one cycle (end to end and back) = 98 s)</text>
+<rect x='50' y='124' width='800' height='62' rx='4' fill='#fff8e1' stroke='#8d6e63' stroke-width='1.6'/>
+<rect x='72' y='140' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='108' y='140' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='144' y='140' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='202' y='140' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='238' y='140' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='274' y='140' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='332' y='140' width='30' height='26' rx='3' fill='#e53935' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='368' y='140' width='30' height='26' rx='3' fill='#e53935' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='404' y='140' width='30' height='26' rx='3' fill='#e53935' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='462' y='140' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='498' y='140' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='534' y='140' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='592' y='140' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='628' y='140' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='664' y='140' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='722' y='140' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='758' y='140' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='794' y='140' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<line x1='80' y1='206' x2='820' y2='206' stroke='#666666' stroke-width='2'/>
+<path d='M80,206 l12,-6 v12 z' stroke='#666666' stroke-width='1' fill='#666666' stroke-linejoin='round'/>
+<path d='M820,206 l-12,-6 v12 z' stroke='#666666' stroke-width='1' fill='#666666' stroke-linejoin='round'/>
+<text x='450' y='226' font-size='11' text-anchor='middle' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>pixel 1  &lt;->  pixel 50 (only 6 of the 50 pixels are drawn)</text>
+<text x='24' y='286' font-size='14' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>D10: BLUE light, 4 pixels per second (one cycle = 24.5 s)</text>
+<rect x='50' y='314' width='800' height='62' rx='4' fill='#fff8e1' stroke='#8d6e63' stroke-width='1.6'/>
+<rect x='72' y='330' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='108' y='330' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='144' y='330' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='202' y='330' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='238' y='330' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='274' y='330' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='332' y='330' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='368' y='330' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='404' y='330' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='462' y='330' width='30' height='26' rx='3' fill='#1e88e5' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='498' y='330' width='30' height='26' rx='3' fill='#1e88e5' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='534' y='330' width='30' height='26' rx='3' fill='#1e88e5' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='592' y='330' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='628' y='330' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='664' y='330' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='722' y='330' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='758' y='330' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='794' y='330' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<line x1='80' y1='396' x2='820' y2='396' stroke='#666666' stroke-width='2'/>
+<path d='M80,396 l12,-6 v12 z' stroke='#666666' stroke-width='1' fill='#666666' stroke-linejoin='round'/>
+<path d='M820,396 l-12,-6 v12 z' stroke='#666666' stroke-width='1' fill='#666666' stroke-linejoin='round'/>
+<text x='450' y='416' font-size='11' text-anchor='middle' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>pixel 1  &lt;->  pixel 50 (only 6 of the 50 pixels are drawn)</text>
+<text x='24' y='476' font-size='14' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>D11: GREEN light, 10 pixels per second (one cycle = 9.8 s)</text>
+<rect x='50' y='504' width='800' height='62' rx='4' fill='#fff8e1' stroke='#8d6e63' stroke-width='1.6'/>
+<rect x='72' y='520' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='108' y='520' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='144' y='520' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='202' y='520' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='238' y='520' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='274' y='520' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='332' y='520' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='368' y='520' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='404' y='520' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='462' y='520' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='498' y='520' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='534' y='520' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='592' y='520' width='30' height='26' rx='3' fill='#43a047' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='628' y='520' width='30' height='26' rx='3' fill='#43a047' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='664' y='520' width='30' height='26' rx='3' fill='#43a047' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='722' y='520' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='758' y='520' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='794' y='520' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<line x1='80' y1='586' x2='820' y2='586' stroke='#666666' stroke-width='2'/>
+<path d='M80,586 l12,-6 v12 z' stroke='#666666' stroke-width='1' fill='#666666' stroke-linejoin='round'/>
+<path d='M820,586 l-12,-6 v12 z' stroke='#666666' stroke-width='1' fill='#666666' stroke-linejoin='round'/>
+<text x='450' y='606' font-size='11' text-anchor='middle' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>pixel 1  &lt;->  pixel 50 (only 6 of the 50 pixels are drawn)</text>
+<text x='24' y='690' font-size='11' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>At each end the light turns around at once (the end pixel is lit only once per turn). The LED on pin 13 is shortly inverted at a turnaround.</text>
+<text x='24' y='708' font-size='11' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>If your strip has a different number of pixels, change STRIP_PIXELS in the sketch. Wrong colours: change COLOR_ORDER (see README).</text>
+</svg>

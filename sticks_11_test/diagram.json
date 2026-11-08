@@ -1,0 +1,376 @@
+{
+  "version": 1,
+  "author": "Casino sign project - 11 sticks test",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-arduino-mega",
+      "id": "mega",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-text",
+      "id": "t1",
+      "top": -60,
+      "left": 140,
+      "attrs": {
+        "text": "11 sticks test: 10 arrow sticks flow + the CLOSED light stick on A3 steady; pin 13 LED blinks all the time"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "t2",
+      "top": -42,
+      "left": 140,
+      "attrs": {
+        "text": "Real hardware: sticks in the Grove shield, external 5 V to the Mega 5V/GND pins"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn",
+      "top": -110,
+      "left": -70,
+      "attrs": {
+        "color": "green",
+        "label": "Mode (D33)"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "s1",
+      "top": 232,
+      "left": 60,
+      "rotate": 0,
+      "attrs": {
+        "pixels": "10",
+        "pixelSize": "5050"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "s2",
+      "top": 302,
+      "left": 60,
+      "rotate": 0,
+      "attrs": {
+        "pixels": "10",
+        "pixelSize": "5050"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "s3",
+      "top": 372,
+      "left": 60,
+      "rotate": 0,
+      "attrs": {
+        "pixels": "10",
+        "pixelSize": "5050"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "s4",
+      "top": 442,
+      "left": 60,
+      "rotate": 0,
+      "attrs": {
+        "pixels": "10",
+        "pixelSize": "5050"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "s5",
+      "top": 512,
+      "left": 60,
+      "rotate": 0,
+      "attrs": {
+        "pixels": "10",
+        "pixelSize": "5050"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "s6",
+      "top": 582,
+      "left": 60,
+      "rotate": 0,
+      "attrs": {
+        "pixels": "10",
+        "pixelSize": "5050"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "s7",
+      "top": 652,
+      "left": 60,
+      "rotate": 0,
+      "attrs": {
+        "pixels": "10",
+        "pixelSize": "5050"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "s8",
+      "top": 722,
+      "left": 60,
+      "rotate": 0,
+      "attrs": {
+        "pixels": "10",
+        "pixelSize": "5050"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "s9",
+      "top": 792,
+      "left": 60,
+      "rotate": 0,
+      "attrs": {
+        "pixels": "10",
+        "pixelSize": "5050"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "s10",
+      "top": 862,
+      "left": 60,
+      "rotate": 0,
+      "attrs": {
+        "pixels": "10",
+        "pixelSize": "5050"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "s11",
+      "top": 932,
+      "left": 60,
+      "rotate": 0,
+      "attrs": {
+        "pixels": "10",
+        "pixelSize": "5050"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "mega:33",
+      "btn:1.r",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "btn:2.r",
+      "black",
+      []
+    ],
+    [
+      "mega:2",
+      "s1:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "s1:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "s1:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:3",
+      "s2:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "s2:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "s2:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:4",
+      "s3:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "s3:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "s3:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:5",
+      "s4:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "s4:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "s4:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:6",
+      "s5:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "s5:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "s5:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:7",
+      "s6:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "s6:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "s6:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:8",
+      "s7:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "s7:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "s7:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:A0",
+      "s8:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "s8:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "s8:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:A1",
+      "s9:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "s9:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "s9:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:A2",
+      "s10:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "s10:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "s10:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:A3",
+      "s11:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "s11:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "s11:VSS",
+      "black",
+      []
+    ]
+  ],
+  "dependencies": {}
+}

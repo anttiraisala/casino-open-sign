@@ -21,13 +21,14 @@ Layout (screen coordinates, y grows downwards, 1 LED = PITCH pixels):
   * Letters: "CASINO" above "OPEN". Behind every letter sits a group of single
     LEDs (any number per letter) drawn as a circle, with the letter written in
     the middle as a text label. All LEDs form one chain on one data pin.
-  * CLOSED light: a short strip of white LEDs under the OPEN row, behind the plate (the plate
+  * CLOSED light: the 11th Grove stick (10 white LEDs, shield connector A3) under the OPEN row, behind the plate (the plate
     has a hole text "CLOSED" there).
-  * Arrow: a rectangular shaft (top edge, bottom edge, two end caps) with an
-    empty corner cell between the strips. A triangular head sits on each end:
-    one strip going base piece -> wing -> wing -> base piece, so the cap forms
-    the middle of the triangle's base. The sketch lights only the head the arrow
-    points at and only the cap at the tail end.
+  * Arrow: 10 Grove RGB LED sticks (10 LEDs each), drawn as 10-pixel strip parts in the real arrow shape
+    (tools/arrow_geometry.py): two vertical caps, four rails and four wings at 30 degrees. Wokwi's LEDs are
+    bigger than the real sticks' LEDs (16 px per LED against a 7.4 mm pitch), so the arrow is drawn BELOW the
+    frame at Wokwi's LED size instead of inside it. On the real sign (50 cm wide) the arrow, 35 cm wide, sits
+    inside the frame under the CLOSED text. The sketch lights only the head the arrow points at and only
+    the cap at the tail end.
 """
 
 import json
@@ -35,6 +36,9 @@ import math
 import re
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import arrow_geometry as ag  # the arrow sticks: names, connectors and exact geometry
 
 # ---- Geometry tuning (adjust if parts overlap or leave gaps in Wokwi) ------
 PITCH = 16               # pixels per LED; matches pixelSize "3535" (16 px) and 60 LEDs/m (16.7 mm)
@@ -49,6 +53,8 @@ LABEL_OFFSET = (-4, -9)  # top-left corner of a letter label relative to the cir
 MARGIN = 16              # space around the blocks inside the frame
 CLOSED_GAP = 12          # space above and below the CLOSED hole text
 CLOSED_TEXT_HEIGHT = 24  # height of the CLOSED hole text (about 2.5 cm)
+CLOSED_TEXT_WIDTH_LEDS = 6  # width of the CLOSED hole text in LED pitches (about 10 cm)
+ARROW_BELOW = 190        # gap between the frame and the arrow drawn below it (room for the mode list)
 SIGN_LEFT = 480          # x of the sign's top-left corner
 SIGN_TOP = 20            # y of the sign's top-left corner
 MEGA_WIDTH = 388         # approximate size of the Arduino Mega part (px)
@@ -60,19 +66,31 @@ OUTPUT = Path(__file__).resolve().parent.parent / "diagram.json"
 def read_config(text):
     """Extract the constants the layout needs from the sketch."""
     config = {}
-    for name in ("FRAME_HALF_LEDS", "FRAME_TOP_LEDS",
-                 "ARROW_BODY_LEDS", "ARROW_CAP_LEDS",
-                 "ARROW_HEAD_BASE_LEDS", "ARROW_HEAD_WING_LEDS", "CLOSED_LIGHT_LEDS",
-                 "PIN_CLOSED_LIGHT", "PIN_CASINO_CLOSED_SWITCH",
+    for name in ("FRAME_HALF_LEDS", "FRAME_TOP_LEDS", "LEDS_PER_STICK", "STICK_COUNT",
+                 "CLOSED_LIGHT_LEDS", "PIN_CASINO_CLOSED_SWITCH",
                  "PIN_FRAME_CW", "PIN_FRAME_CCW", "PIN_LETTERS",
-                 "PIN_ARROW_BODY_TOP", "PIN_ARROW_BODY_BOTTOM",
-                 "PIN_ARROW_HEAD_LEFT", "PIN_ARROW_HEAD_RIGHT",
-                 "PIN_ARROW_CAP_LEFT", "PIN_ARROW_CAP_RIGHT",
-                 "PIN_ARROW_SWITCH", "PIN_MODE_BUTTON"):
+                 "PIN_ARROW_SWITCH", "PIN_MODE_BUTTON", "PIN_STATUS_LED"):
         match = re.search(r"constexpr\s+\w+\s+%s\s*=\s*(\d+)\s*;" % name, text)
         if not match:
             sys.exit("Could not find constant %s in sketch.ino" % name)
         config[name] = int(match.group(1))
+    # The CLOSED light is the 11th Grove stick: its pin is a shield connector name such as A3 (Wokwi pin name "A3").
+    match = re.search(r"constexpr\s+uint8_t\s+PIN_CLOSED_LIGHT\s*=\s*(A\d+|\d+)\s*;", text)
+    if not match:
+        sys.exit("Could not find constant PIN_CLOSED_LIGHT in sketch.ino")
+    config["PIN_CLOSED_LIGHT"] = match.group(1)
+    # Which end of a real stick carries the ball (the black dot of the drawings): true = the DIN end.
+    match = re.search(r"constexpr\s+bool\s+STICK_BALL_AT_DIN_END\s*=\s*(true|false)\s*;", text)
+    if not match:
+        sys.exit("Could not find constant STICK_BALL_AT_DIN_END in sketch.ino")
+    config["STICK_BALL_AT_DIN_END"] = match.group(1) == "true"
+    # Arrow stick pins: "2, 3, ..., A0, A1, A2" -> Wokwi pin names "2", "3", ..., "A0", "A1", "A2"
+    match = re.search(r"constexpr\s+uint8_t\s+STICK_PINS\[[^\]]*\]\s*=\s*\{([^}]*)\}", text)
+    if not match:
+        sys.exit("Could not find STICK_PINS in sketch.ino")
+    config["STICK_PINS"] = [v.strip() for v in match.group(1).split(",") if v.strip()]
+    if len(config["STICK_PINS"]) != config["STICK_COUNT"]:
+        sys.exit("STICK_PINS has %d entries but STICK_COUNT is %d" % (len(config["STICK_PINS"]), config["STICK_COUNT"]))
     for name in ("LINE_1_TEXT", "LINE_2_TEXT"):
         match = re.search(r'constexpr\s+char\s+%s\[\]\s*=\s*"([^"]*)"\s*;' % name, text)
         if not match:
@@ -204,52 +222,55 @@ class Layout:
         closed_id = self.add("closed_light", closed_leds, centre_x, closed_cy)
         self.chains.append(("closedLight", [closed_id], c["PIN_CLOSED_LIGHT"]))
         self.expected["closedLight"] = closed_leds
-        self.closed_box = (centre_x, closed_cy, closed_leds * P)
+        # The hole text is about 10 cm wide (6 LED pitches); the stick behind it has closed_leds LEDs.
+        self.closed_box = (centre_x, closed_cy, CLOSED_TEXT_WIDTH_LEDS * P)
+        self.closed_strip_width = closed_leds * P
         closed_block = 2 * CLOSED_GAP + CLOSED_TEXT_HEIGHT
 
-        # Arrow: rectangular shaft with a triangular head on each end.
-        body, cap = c["ARROW_BODY_LEDS"], c["ARROW_CAP_LEDS"]
-        base, wing = c["ARROW_HEAD_BASE_LEDS"], c["ARROW_HEAD_WING_LEDS"]
-        half_base = cap * P / 2 + GAP + base * P      # barb distance from the centre line
-        wing_len = wing * P + LENGTH_PADDING
-        if wing_len <= half_base:
-            self.warnings.append("ARROW_HEAD_WING_LEDS is too small: the wing cannot reach the "
-                                 "tip. Use at least %d LEDs." % (math.floor(half_base / P) + 1))
-            reach = P
-        else:
-            reach = math.sqrt(wing_len ** 2 - half_base ** 2)   # horizontal distance base -> tip
-        arrow_cy = text_bottom + closed_block + half_base
-        shaft_half = (cap + 1) * P / 2                # edge strips sit this far from the centre line
-        cap_dx = (body + 1) * P / 2                   # cap columns sit this far from the centre
-
-        top_edge = self.add("arrow_body_top", body, centre_x, arrow_cy - shaft_half)
-        bottom_edge = self.add("arrow_body_bottom", body, centre_x, arrow_cy + shaft_half)
-        cap_left = self.add("arrow_cap_left", cap, centre_x - cap_dx, arrow_cy, rotate=90)
-        cap_right = self.add("arrow_cap_right", cap, centre_x + cap_dx, arrow_cy, rotate=90)
-        self.chains.append(("arrowBodyTop", [top_edge], c["PIN_ARROW_BODY_TOP"]))
-        self.chains.append(("arrowBodyBottom", [bottom_edge], c["PIN_ARROW_BODY_BOTTOM"]))
-        self.chains.append(("arrowCapLeft", [cap_left], c["PIN_ARROW_CAP_LEFT"]))
-        self.chains.append(("arrowCapRight", [cap_right], c["PIN_ARROW_CAP_RIGHT"]))
-        self.expected["arrowBodyTop"] = self.expected["arrowBodyBottom"] = body
-        self.expected["arrowCapLeft"] = self.expected["arrowCapRight"] = cap
-
-        for name, tag, xc, sign, pin in (
-                ("arrowHeadLeft", "left", centre_x - cap_dx, -1, c["PIN_ARROW_HEAD_LEFT"]),
-                ("arrowHeadRight", "right", centre_x + cap_dx, 1, c["PIN_ARROW_HEAD_RIGHT"])):
-            cap_end = cap * P / 2 + GAP
-            tip = (xc + sign * reach, arrow_cy)
-            pieces = [
-                ("upper_base", base, (xc, arrow_cy - cap_end), (xc, arrow_cy - half_base)),
-                ("upper_wing", wing, (xc, arrow_cy - half_base), tip),
-                ("lower_wing", wing, tip, (xc, arrow_cy + half_base)),
-                ("lower_base", base, (xc, arrow_cy + half_base), (xc, arrow_cy + cap_end)),
-            ]
-            ids = [self.segment("arrow_head_%s_%s" % (tag, label), n, a, b) for label, n, a, b in pieces]
-            self.chains.append((name, ids, pin))
-            self.expected[name] = 2 * (base + wing)
-
-        self.arrow_extent = (centre_x - cap_dx - reach, centre_x + cap_dx + reach,
-                             arrow_cy - half_base, arrow_cy + half_base)
+        # Arrow: 10 Grove RGB LED sticks in the real arrow shape (geometry from arrow_geometry.py, in mm), drawn
+        # below the frame at Wokwi's LED size (see the docstring). Stick n sits on the n-th pin of STICK_PINS.
+        geo_sticks, geo_w, geo_h = ag.shifted(ag.build())
+        by_geo = {st.name: st for st in geo_sticks}
+        if c["LEDS_PER_STICK"] != ag.LEDS or c["STICK_COUNT"] != len(ag.STICK_DEFS):
+            sys.exit("The sketch (LEDS_PER_STICK / STICK_COUNT) and tools/arrow_geometry.py disagree")
+        k = P / ag.LED_PITCH                          # Wokwi pixels per mm (one LED = one pitch)
+        arrow_left = centre_x - geo_w * k / 2
+        arrow_top = fy + rows * P + ARROW_BELOW
+        self.stick_labels = []
+        for idx, definition in enumerate(ag.STICK_DEFS):
+            name = definition[0]
+            geo = by_geo[name]
+            pin = c["STICK_PINS"][idx]
+            if pin != geo.connector.lstrip("D"):
+                sys.exit("STICK_PINS[%d] is %s but the geometry says %s is on connector %s"
+                         % (idx, pin, name, geo.connector))
+            sx, sy = arrow_left + geo.cx * k, arrow_top + geo.cy * k
+            part_id = "stick_" + name.lower().replace("-", "_")
+            # A Wokwi strip part has its first LED (DIN) at the start of the part. With the ball at the DIN end the
+            # part runs from the dot (geo.theta); otherwise the real DIN end is the opposite one: turn it by 180
+            # degrees (the sketch then counts the LEDs from the other end, so the animation looks the same).
+            turn = 0.0 if c["STICK_BALL_AT_DIN_END"] else 180.0
+            self.add(part_id, c["LEDS_PER_STICK"], sx, sy, rotate=(geo.theta + turn) % 360.0)
+            self.chains.append((name, [part_id], pin))
+            self.expected[name] = c["LEDS_PER_STICK"]
+            # label: outside the arrow, on the side of the stick that faces away from the arrow's middle
+            ux, uy = math.cos(math.radians(geo.theta)), math.sin(math.radians(geo.theta))
+            nx, ny = -uy, ux
+            mid_x, mid_y = arrow_left + geo_w * k / 2, arrow_top + geo_h * k / 2
+            if (sx - mid_x) * nx + (sy - mid_y) * ny < 0:
+                nx, ny = -nx, -ny
+            text = "%s %s" % (name, geo.connector)
+            half_w = 4.0 * len(text)                  # Wokwi text is about 8 px per character
+            if name.endswith("CAP"):                  # beside the cap, left or right of it
+                lx = sx + nx * (THICKNESS / 2 + 10) + (half_w if nx > 0 else -half_w)
+                ly = sy
+            elif "WING" in name:                      # beyond the wing, shifted outwards along the text line
+                lx = sx + nx * 26 + (half_w if nx > 0 else -half_w)
+                ly = sy + ny * 26
+            else:                                     # above or below the rail
+                lx, ly = sx, sy + ny * 24
+            self.stick_labels.append((text, lx, ly, nx))
+        self.arrow_extent = (arrow_left, arrow_left + geo_w * k, arrow_top, arrow_top + geo_h * k)
         self.text_extent = (widest, text_bottom)
         self.interior = (interior_top, interior_bottom, interior_width)
 
@@ -267,12 +288,6 @@ class Layout:
         widest, _ = self.text_extent
         if widest > interior_width - 2 * MARGIN:
             problems.append("The text is wider than the frame interior. Increase FRAME_TOP_LEDS.")
-        left, right, top, bottom = self.arrow_extent
-        if right - left > interior_width - 2 * MARGIN:
-            problems.append("The arrow is wider than the frame interior. Increase FRAME_TOP_LEDS.")
-        if bottom > interior_bottom - MARGIN / 2:
-            problems.append("The text and the arrow do not fit vertically. Increase "
-                            "FRAME_HALF_LEDS (the side edges get FRAME_HALF_LEDS - FRAME_TOP_LEDS LEDs).")
         return problems
 
     def legend(self):
@@ -284,14 +299,15 @@ class Layout:
             "D%d frameCw: top edge, then right edge" % c["PIN_FRAME_CW"],
             "D%d frameCcw: left edge, then bottom edge" % c["PIN_FRAME_CCW"],
             "D%d letters: %s, then %s (one LED circle per letter)" % (c["PIN_LETTERS"], c["LINE_1_TEXT"], c["LINE_2_TEXT"]),
-            "D%d arrowBodyTop: shaft top edge" % c["PIN_ARROW_BODY_TOP"],
-            "D%d arrowBodyBottom: shaft bottom edge" % c["PIN_ARROW_BODY_BOTTOM"],
-            "D%d arrowCapLeft / D%d arrowCapRight: shaft ends" % (c["PIN_ARROW_CAP_LEFT"], c["PIN_ARROW_CAP_RIGHT"]),
-            "D%d arrowHeadLeft / D%d arrowHeadRight: arrowheads" % (c["PIN_ARROW_HEAD_LEFT"], c["PIN_ARROW_HEAD_RIGHT"]),
-            "D%d closedLight: 6 white LEDs behind the CLOSED hole text" % c["PIN_CLOSED_LIGHT"],
+            "Arrow sticks in the Grove Base Shield (drawn below the sign):",
+            "  D2 L-CAP, D3 L-WING-UP, D4 L-WING-DN, D5 RAIL-UP-L,",
+            "  D6 RAIL-UP-R, D7 RAIL-DN-L, D8 RAIL-DN-R,",
+            "  A0 R-CAP, A1 R-WING-UP, A2 R-WING-DN",
+            "%s closedLight: 11th Grove stick, %d white LEDs behind the CLOSED hole text" % (c["PIN_CLOSED_LIGHT"], c["CLOSED_LIGHT_LEDS"]),
             "D%d: casino closed switch SW5 (handle toward GND = closed)" % c["PIN_CASINO_CLOSED_SWITCH"],
             "D%d-D%d: speed of frame + arrow (hex switch SW3)" % (c["PIN_SPEED_FRAME_ARROW"][0], c["PIN_SPEED_FRAME_ARROW"][3]),
             "D%d-D%d: speed of letters (hex switch SW4)" % (c["PIN_SPEED_LETTERS"][0], c["PIN_SPEED_LETTERS"][3]),
+            "D%d (LED L on the board): sign of life; Serial Monitor 115200 baud" % c["PIN_STATUS_LED"],
             "Gaps between strips are drawn only for clarity;",
             "on the real sign the strips touch each other.",
         ]
@@ -328,9 +344,14 @@ class Layout:
             parts.append({"type": "wokwi-text", "id": "mode_list_%d" % (i + 1),
                           "top": round(fy + height + 30 + i * 20, 1), "left": round(fx, 1),
                           "attrs": {"text": line}})
+        for n, (text, lx, ly, nx) in enumerate(self.stick_labels):
+            parts.append({"type": "wokwi-text", "id": "stick_label_%d" % (n + 1),
+                          "top": round(ly - 9, 1), "left": round(lx - 4 * len(text), 1),
+                          "attrs": {"text": text}})
         ccx, ccy, cwidth = self.closed_box
         parts.append({"type": "wokwi-text", "id": "closed_label", "top": round(ccy - 9, 1),
-                      "left": round(ccx + cwidth / 2 + 10, 1), "attrs": {"text": "<- CLOSED hole text"}})
+                      "left": round(ccx + max(cwidth, self.closed_strip_width) / 2 + 10, 1),
+                      "attrs": {"text": "<- CLOSED hole text (stick on A3)"}})
         for n, (ch, cx, cy) in enumerate(self.letter_labels):
             parts.append({"type": "wokwi-text", "id": "letter_label_%d" % (n + 1),
                           "top": round(cy + LABEL_OFFSET[1], 1), "left": round(cx + LABEL_OFFSET[0], 1),
@@ -395,9 +416,9 @@ class Layout:
         for k, pin in enumerate(speed_pins, start=1):
             connections.append(["mega:%d" % pin, "speed_switches:%da" % k, "orange", []])
             connections.append(["speed_switches:%db" % k, "mega:GND.1", "black", []])
-        for _name, ids, pin in self.chains:
+        for _name, ids, pin in self.chains:   # pin: a number for the strips, "A0".. for the sticks on A0..A2
             first = ids[0]
-            connections.append(["mega:%d" % pin, "%s:DIN" % first, "green", []])
+            connections.append(["mega:%s" % pin, "%s:DIN" % first, "green", []])
             connections.append(["mega:5V", "%s:VDD" % first, "red", []])
             connections.append(["mega:GND.1", "%s:VSS" % first, "black", []])
             for prev, nxt in zip(ids, ids[1:]):

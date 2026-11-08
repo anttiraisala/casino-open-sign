@@ -16,10 +16,10 @@ the strip lengths and the wiring can be tested on a screen first.
   the frame from one corner to the opposite corner. The direction follows the arrow.
 - Red plexiglass letters, "CASINO" above "OPEN", floating a little in front of the plate.
   Behind each letter is a small group of LEDs (4 to 8 per letter).
-- A hole text "CLOSED" cut into the plate, under the OPEN row. Six white LEDs behind the plate,
+- A hole text "CLOSED" cut into the plate, under the OPEN row. A white Grove LED stick (10 LEDs, the 11th stick on shield connector A3) behind the plate,
   with frosted plastic in between, light it up.
-- A left/right arrow under that, about 40 x 15 cm: a rectangular shaft with a triangular head
-  at each end. Only the head the arrow points at is lit. The light flows from the tail towards
+- A left/right arrow under that, made of 10 Grove RGB LED sticks (349.76 x 102.32 mm, plugged into the Grove
+  Base Shield): a cap at each end, four rail sticks and a barbed head of two wing sticks at each end. Only the head the arrow points at is lit. The light flows from the tail towards
   the tip in blue, cyan, violet and ice-white waves.
 
 ## What the sign does
@@ -33,7 +33,8 @@ the strip lengths and the wiring can be tested on a screen first.
   0..9 and changes to another one every 2 minutes).
   In every mode one random letter occasionally flickers like a faulty neon tube.
 - **Arrow direction.** A slide switch selects left or right. The arrow, the head that is lit
-  and the direction of the frame animation all follow it.
+  and the direction of the frame animation all follow it. The LCD shows the customer view, e.g. "<-Customer right".
+- **Brightness curves.** The brightness of every LED goes through a lookup table of its own LED type (strips, sticks), built from min, max, exponent and mix; the defaults are in the source and the tables are rebuilt whenever a value changes.
 - **Casino closed.** A second slide switch tells the sign that the casino is closed. The OPEN
   letters then go dark and the CLOSED light turns on. It behaves like a faulty fluorescent tube:
   it flashes a few times, burns steadily for 5-14 seconds, flickers for about a second, and so on.

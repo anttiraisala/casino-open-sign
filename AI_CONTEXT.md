@@ -65,6 +65,9 @@ tests run on the host with mock Arduino headers (section 8).
 | `stick_test_direct/` | Second stick test: up to 11 Grove sticks (shield connectors D2..D8, A0..A3) plugged UNMODIFIED, always-moving patterns from power-up (spotlight stick, 11 patterns, button = load test) into the Grove shield, Arduino+shield fed from the external 5 V supply on the Mega 5V/GND pins (no USB while running). Same pins as stick_test plus A3; sign-of-life LED and DBG serial line. Generators `tools/generate_stick_test_direct_{diagram,schematic}.py` (layout comes from generate_stick_test_layout.py); host test `tests/stick_test_direct_harness.cpp`. |
 | `stick_test/` | Separate small project: sketch + Wokwi diagram + A4 schematic + layout + READMEs for testing 10 Grove RGB LED sticks (10x WS2813) on a separate 5 V supply. Generators: `tools/generate_stick_test_{diagram,schematic,layout}.py`; host test `tests/stick_test_harness.cpp`. Chosen arrow design B (10 sticks: 4 shaft, 2 caps, 4 wings at 30 deg); NOT yet applied to the main sketch (user said 9 sticks earlier, 10 now: open). |
 | `strip_test/` | Separate small project: sketch + Wokwi diagram + A4 schematic + READMEs for testing a short piece of the candidate 12 V WS2811 strip. Schematic made by `tools/generate_strip_test_schematic.py`. |
+| `strip_single_led_test/` | Test "LED strip single LED": 3 x 12 V WS2811 strips (D9 walking white pixel, D10 coloured walking pixel, D11 ruler), 150 steps (probably only 50 real pixels). Files made by `tools/generate_strip_single_led_test.py`; tests `tests/strip_single_led_test_harness.cpp`, `tests/mutate_strip_single_led.py`. |
+| `strip_knight_rider_test/` | Demo "LED strip knight rider": 3 x 12 V WS2811 strips of 50 pixels, one light bounces (D9 red 1 px/s, D10 blue 4 px/s, D11 green 10 px/s; 98 steps per cycle). Files by `tools/generate_strip_knight_rider_test.py`; tests `tests/strip_knight_rider_test_harness.cpp`, `tests/mutate_strip_knight_rider.py`. |
+| `sticks_11_test/` | Test "11 sticks": 10 arrow sticks (D2-D8, A0-A2, sign order) + the CLOSED light stick on A3, steady CLOSED light + flowing white arrow (button D33: flow <-> all on), heat check. Files by `tools/generate_sticks_11_test_{diagram,schematic,layout}.py`; tests `tests/sticks_11_test_harness.cpp`, `tests/mutate_sticks_11.py`. |
 
 Regenerate everything after changing the config or geometry:
 
@@ -77,27 +80,31 @@ Regenerate everything after changing the config or geometry:
 
 ## 4. Hardware and pins (must match `sketch.ino`, README.txt, both SVGs)
 
-Data pins (each through a 330 ohm resistor R1..R10 to the first LED's DIN):
+Strips (each through a 330 ohm resistor R1..R3 to the first LED's DIN):
 
 | Pin | Strip | LEDs | What |
 |---|---|---|---|
-| D4 | arrowCapLeft | 4 | shaft left end cap |
-| D5 | arrowCapRight | 4 | shaft right end cap |
-| D6 | frameCw | 53 | frame: top edge (28) then right edge (25) |
-| D7 | frameCcw | 53 | frame: left edge (25) then bottom edge (28) |
-| D8 | letters | 58 | letters in reading order C A S I N O, O P E N: 6 6 6 4 6 6, 6 6 6 6 |
-| D9 | arrowBodyTop | 10 | shaft top edge |
-| D10 | arrowBodyBottom | 10 | shaft bottom edge |
-| D11 | arrowHeadLeft | 20 | 2 + 8 + 8 + 2 (upper base, upper wing, lower wing, lower base) |
-| D12 | arrowHeadRight | 20 | same |
-| D31 | closedLight | 6 | white, behind the plate, lights the CLOSED hole text |
+| D9 | frameCw | 53 | frame: top edge (28) then right edge (25) |
+| D10 | frameCcw | 53 | frame: left edge (25) then bottom edge (28) |
+| D11 | letters | 58 | letters in reading order C A S I N O, O P E N: 6 6 6 4 6 6, 6 6 6 6 |
+
+Grove sticks (plugged into the Grove Base Shield connectors, no resistor, power ONLY through the shield):
+
+| Connector | Stick | LEDs | What |
+|---|---|---|---|
+| D2 D3 D4 | L-CAP, L-WING-UP, L-WING-DN | 10 each | left cap and the left arrowhead wings |
+| D5 D6 D7 D8 | RAIL-UP-L, RAIL-UP-R, RAIL-DN-L, RAIL-DN-R | 10 each | the four rail sticks |
+| A0 A1 A2 | R-CAP, R-WING-UP, R-WING-DN | 10 each | right cap and the right arrowhead wings |
+| A3 (57) | closedLight | 10 | the 11th stick: white light behind the plate, lights the CLOSED hole text |
+
+D31 is free (the CLOSED light used to be a 6-LED strip there).
 
 Inputs (INPUT_PULLUP; a switch pulls the pin to GND):
 
 | Pin | Part | Meaning |
 |---|---|---|
-| D2 | slide switch SW1 | arrow direction: LOW (handle on GND side) = points left |
-| D3 | push button | each press = next letter mode |
+| D32 | slide switch SW1 | arrow direction: LOW (handle on GND side) = points left |
+| D33 | push button | each press = next letter mode |
 | D30 | slide switch SW5 | casino closed: LOW = closed |
 | D22-D25 | hex rotary switch SW3 (bits 1,2,4,8) | speed of frame + arrow |
 | D26-D29 | hex rotary switch SW4 (bits 1,2,4,8) | speed of the letter patterns |
@@ -108,8 +115,8 @@ bit pins + common to GND. `SPEED_BIT_IS_LOW = true`. Speed multiplier grows geom
 0.25 (position 0) to 4.0 (position F).
 
 Power: 5 V / 10 A supply (Mean Well LRS-50-5), 10 A fuse, 1000 uF capacitor, common GND with the
-Arduino; the Arduino 5 V pin is NOT connected to the LED supply. Worst case 238 x 60 mA = 14.3 A;
-`BRIGHTNESS = 80` gives about 4.5 A when all LEDs are white.
+Arduino. The supply feeds the Arduino through BOTH Mega 5V pins (no USB while the supply is on), and the Grove shield passes that 5 V to the 11 sticks; no wire goes from the supply to any stick. The strips are fed directly from the supply bus. Worst case 164 strip LEDs + 110 stick LEDs = 274 x 60 mA = 16.4 A;
+Brightness curves: per LED type (STRIP: frame+letters, STICK: arrow+CLOSED) a 256-byte lookup table built by setBrightnessCurve(type,min,max,exponent,mix,keepZero) (defaults CURVE_DEFAULT_*: min 0, max 80, exponent 2.67, mix 1.0, keepZero true); shapeColor() maps the largest channel through the table and keeps the hue; applied where colours are written (not in the power-on test); the harness runs the old tests with an identity curve and tests the curves with hard-coded values. There is no global BRIGHTNESS any more (library brightness 255); curve max 80 gives about 4.5 A when all LEDs are white.
 
 Geometry (60 LEDs/m, pitch 16.7 mm): plate 50 x 45 cm, arrow about 39.1 x 16.7 cm (the 40 x 15
 target cannot be hit exactly with whole LEDs and an even cap), CLOSED hole text about 10 x 2.5 cm,
@@ -163,8 +170,7 @@ about 5 cm free under the arrow. Total 3.97 m of strip in 27 pieces (one 5 m ree
   start-up (`lcdOk` false) the display is skipped. Backpack mapping: P0 RS, P1 RW, P2 E, P3 backlight,
   P4-P7 D4-D7. Address `LCD_I2C_ADDRESS` 0x27 (the partco page says 0x27, but PCF8574AT chips are
   often 0x3F; unverified on real hardware).
-- Arrow: only the head the arrow points at and only the tail-end cap are lit; one light flows
-  tail cap -> shaft edges -> base pieces -> wings -> tip in blue/cyan/violet/ice-white.
+- Arrow (10 Grove sticks): only the head the arrow points at is lit; tail cap = middle 6 LEDs, head cap = 3 + 3 end LEDs; two routes (upper, lower) tail -> rails -> head cap -> wing -> tip in blue/cyan/violet/ice-white, with a white pulse taking turns on the two routes (see section "Phase 1 sign rebuild").
 
 ### Pitfall: Arduino auto-prototypes
 
@@ -289,8 +295,19 @@ its own sketch.ino, diagram.json, libraries.txt, README.txt + README-fi.txt (wir
 
 
 ## Sign of life rule (project-wide)
-While an Arduino program runs, the debug LED on pin 13 must blink and the Serial Monitor must get one line per second with changing values (uptime, fps/loop count, state, beats). The speed (115200 baud) is stated in the comment at the top of the sketch, printed at start-up and written in the README. The LED reflects the load: normal toggle interval, shortly inverted when a state change happens, twice as fast when many state changes happen. Skip the LED and/or the serial line if the project uses that pin or the serial port for something else. Reference implementation: stick_test_direct/sketch.ino (loop(), printDebug()) and tests/stick_test_direct_harness.cpp. Only stick_test_direct has it now; add it to sketch.ino, strip_test/ and stick_test/ the next time they are updated (user decision).
+While an Arduino program runs, the debug LED on pin 13 must blink and the Serial Monitor must get one line per second with changing values (uptime, fps/loop count, state, beats). The speed (115200 baud) is stated in the comment at the top of the sketch, printed at start-up and written in the README. The LED reflects the load: normal toggle interval, shortly inverted when a state change happens, twice as fast when many state changes happen. Skip the LED and/or the serial line if the project uses that pin or the serial port for something else. Reference implementation: stick_test_direct/sketch.ino (loop(), printDebug()) and tests/stick_test_direct_harness.cpp. stick_test_direct and sketch.ino have it now (sketch.ino: signOfLife/noteEvent/printDebug before setup(); 115200 baud); add it to strip_test/ and stick_test/ the next time they are updated (user decision).
+
+## Stick arrow geometry (2026-11-07)
+See `arrow_sticks/README.txt` and `tools/arrow_geometry.py` (single source for the drill template, layout and wiring drawings; `tests/arrow_geometry_test.py` checks it). Owner's inputs: stick body 83 x 10 mm, LED window 74 x 4 mm, 2 mm between sticks, Grove connector in the middle of the stick, rails' LED rows on the 3rd LED from the top and the 3rd from the bottom of the vertical bars, drill template exact to the millimetre as a landscape PDF, layout drawing indicative. Assumptions to confirm on a real stick: LED pitch 7.4 mm, ball end (STICK_BALL_AT_DIN_END), cable hole diameter 8 mm. The stick_test* layout drawings still show the older 80 mm sketch.
+
+## Phase 1 sign rebuild (2026-11-07)
+- sketch.ino drives the 10 sticks (STICK_PINS = D2-D8, A0-A2; names in arrow_sticks/README.txt) with two routes (upper, lower) of 36 LEDs each: tail cap middle 6 LEDs (index 2..7, 3 per lane, ends dark) -> 20 rail LEDs -> 3 end LEDs of the head cap (index 2,1,0 / 7,8,9; middle 4 dark) -> 10 wing LEDs to the tip (stickFlow(), stickActive()). Pointing right: L-CAP is the tail cap, R-CAP the head cap, R-WING-* lit; pointing left: mirrored. Both caps are therefore always partly lit; only the wings of the other head are dark. Logical stick LED 0 = the BALL end (the black dot in the drawings; left-half sticks point left, right-half right, caps up). STICK_BALL_AT_DIN_END (true = ball at the DIN end, LED numbers as they are; false = the program counts from the other end) corrects the LED order for the real sticks; the sticks are mounted exactly as drawn. LCD status page shows the customer view with the arrow symbol first ("<-Customer right" / "->Customer left"; mirrored because the LCD is behind the sign). Switch D32 (ARROW_POINTS_LEFT_WHEN_LOW reverses it; harness variant + mutants cover both values): handle direction = real arrow direction; back view, GND contact on the right. Animation: palette wave + shimmer on both routes, plus a white 5-LED pulse (255,200,150,100,55) that runs tail -> tip on the upper route, then on the lower route (ARROW_PULSE_TURN = 36, period 72 ticks, exactly one pulse head at a time).
+- Moved pins: frame D9/D10, letters D11, CLOSED light moved from D31 to the 11th stick on A3, arrow switch D32, button D33, casino-closed D30, speed switches D22-D29.
+- Power: the Grove shield passes the Mega 5V/GND to the sticks, so the PSU +5 V feeds both Mega 5V pins; no USB while the supply is on.
+- Wokwi: the arrow is drawn below the frame at the Wokwi LED size (16 px per LED); diagram.json comes from tools/generate_diagram.py. Host harness tests/harness.cpp checks pins and the flow mapping with hard-coded expectations (mutation-tested with `python3 tests/mutate.py`: 34 mutants, all detected).
+- CLOSED light (2026-11-07): the 11th Grove stick, PIN_CLOSED_LIGHT = A3 (57), CLOSED_LIGHT_LEDS = 10, always white; D31 is free. Sticks only through the shield: the supply never has a wire to any stick (wiring-diagram shows "+5V, GND via the shield"). The LED window (74 mm) is narrower than the ~100 mm hole text: diffuser needed.
+- Old strip arrow: backup/old_arrow_strips/ (sketch, diagram, README with the retired parts). Phase 2 is in PROGRESS.md.
 
 ## Results from the user (2026-11-06)
-- stick_test_direct on real hardware: all 11 Grove sticks plugged unmodified into the Grove Base Shield with the Arduino + shield fed from the external 5 V supply work, all show the moving patterns. The user has at least 11 sticks. This settles the stick count for the arrow (10 for design B, an 11th spare).
+- stick_test_direct on real hardware: all 11 Grove sticks plugged unmodified into the Grove Base Shield with the Arduino + shield fed from the external 5 V supply work, all show the moving patterns. The user has at least 11 sticks. This settles the stick count for the arrow (10 for design B, an 11th: now the CLOSED light).
 - The directory is not a git repository inside the AI workspace; the user commits the files to version control himself (a .gitignore for __pycache__ is included). No GitHub repository for this project was found on the user's account by the AI.

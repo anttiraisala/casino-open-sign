@@ -1,0 +1,112 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='297mm' height='210mm' viewBox='-45.5309 -32.0825 1191.06 842.165'>
+<rect x='-45.5309' y='-32.0825' width='1191.06' height='842.165' fill='#ffffff'/>
+<text x='550' y='32' font-size='19' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>LED strip single LED - what to look for</text>
+<text x='550' y='50' font-size='12' text-anchor='middle' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Three tests run at the same time, one per data pin. Each segment (10 cm) has 3 LEDs.</text>
+<text x='24' y='86' font-size='14' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Test 1 (D9): one white pixel walks along the strip, one step every 150 ms, 150 steps, then again</text>
+<rect x='50' y='114' width='800' height='62' rx='4' fill='#fff8e1' stroke='#8d6e63' stroke-width='1.6'/>
+<rect x='72' y='130' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='108' y='130' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='144' y='130' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='202' y='130' width='30' height='26' rx='3' fill='#ffffff' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='238' y='130' width='30' height='26' rx='3' fill='#ffffff' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='274' y='130' width='30' height='26' rx='3' fill='#ffffff' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='332' y='130' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='368' y='130' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='404' y='130' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='462' y='130' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='498' y='130' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='534' y='130' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='592' y='130' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='628' y='130' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='664' y='130' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='722' y='130' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='758' y='130' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='794' y='130' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<text x='255' y='200' font-size='12' text-anchor='middle' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>lit pixel = one step</text>
+<text x='24' y='226' font-size='11' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>If one chip drives 3 LEDs, the lit spot is a whole 10 cm segment and only the first 50 steps light something.</text>
+<text x='24' y='242' font-size='11' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Note after which step (Serial Monitor: t1=n/150) the strip stays dark: that is the real number of pixels.</text>
+<text x='24' y='296' font-size='14' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Test 2 (D10): one pixel walks (60 ms per step), the colour changes every pass: red, green, blue, white</text>
+<rect x='50' y='324' width='800' height='62' rx='4' fill='#fff8e1' stroke='#8d6e63' stroke-width='1.6'/>
+<rect x='72' y='340' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='108' y='340' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='144' y='340' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='202' y='340' width='30' height='26' rx='3' fill='#e53935' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='238' y='340' width='30' height='26' rx='3' fill='#e53935' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='274' y='340' width='30' height='26' rx='3' fill='#e53935' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='332' y='340' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='368' y='340' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='404' y='340' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='462' y='340' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='498' y='340' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='534' y='340' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='592' y='340' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='628' y='340' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='664' y='340' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='722' y='340' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='758' y='340' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='794' y='340' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='50' y='400' width='800' height='62' rx='4' fill='#fff8e1' stroke='#8d6e63' stroke-width='1.6'/>
+<rect x='72' y='416' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='108' y='416' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='144' y='416' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='202' y='416' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='238' y='416' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='274' y='416' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='332' y='416' width='30' height='26' rx='3' fill='#43a047' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='368' y='416' width='30' height='26' rx='3' fill='#43a047' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='404' y='416' width='30' height='26' rx='3' fill='#43a047' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='462' y='416' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='498' y='416' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='534' y='416' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='592' y='416' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='628' y='416' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='664' y='416' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='722' y='416' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='758' y='416' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='794' y='416' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='50' y='476' width='800' height='62' rx='4' fill='#fff8e1' stroke='#8d6e63' stroke-width='1.6'/>
+<rect x='72' y='492' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='108' y='492' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='144' y='492' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='202' y='492' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='238' y='492' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='274' y='492' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='332' y='492' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='368' y='492' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='404' y='492' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='462' y='492' width='30' height='26' rx='3' fill='#1e88e5' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='498' y='492' width='30' height='26' rx='3' fill='#1e88e5' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='534' y='492' width='30' height='26' rx='3' fill='#1e88e5' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='592' y='492' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='628' y='492' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='664' y='492' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='722' y='492' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='758' y='492' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='794' y='492' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<text x='860' y='360' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>pass 1: red</text>
+<text x='860' y='436' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>pass 2: green</text>
+<text x='860' y='512' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>pass 3: blue (pass 4: white)</text>
+<text x='24' y='554' font-size='11' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>If pass 1 looks green or blue, the colour order is wrong: change COLOR_ORDER at the top of the sketch (see README).</text>
+<text x='24' y='620' font-size='14' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Test 3 (D11): ruler, blinking every 500 ms: every 10th pixel blue, every 50th pixel white</text>
+<rect x='50' y='644' width='800' height='62' rx='4' fill='#fff8e1' stroke='#8d6e63' stroke-width='1.6'/>
+<rect x='72' y='660' width='30' height='26' rx='3' fill='#ffffff' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='108' y='660' width='30' height='26' rx='3' fill='#ffffff' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='144' y='660' width='30' height='26' rx='3' fill='#ffffff' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='202' y='660' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='238' y='660' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='274' y='660' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='332' y='660' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='368' y='660' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='404' y='660' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='462' y='660' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='498' y='660' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='534' y='660' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='592' y='660' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='628' y='660' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='664' y='660' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='722' y='660' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='758' y='660' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<rect x='794' y='660' width='30' height='26' rx='3' fill='#cfd8dc' stroke='#546e7a' stroke-width='1.4'/>
+<text x='125' y='730' font-size='12' text-anchor='middle' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>pixel 1, 51, 101: white</text>
+<text x='515' y='730' font-size='12' text-anchor='middle' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>pixels 11, 21, 31 ... blue (not drawn)</text>
+</svg>

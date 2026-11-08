@@ -36,7 +36,7 @@ def main():
                         help="LEDs behind each letter, comma separated (default 6,6,6,4,6,6,6,6,6,6)")
     parser.add_argument("--closed-leds", type=int, default=6,
                         help="white LEDs of the CLOSED light behind the plate (default 6)")
-    parser.add_argument("--brightness", type=int, default=80, help="BRIGHTNESS used in the sketch (default 80)")
+    parser.add_argument("--brightness", type=int, default=80, help="brightness limit (curve max) used in the sketch (default 80)")
     args = parser.parse_args()
     if args.cap < 2 or args.cap % 2:
         parser.error("--cap must be an even number of at least 2")

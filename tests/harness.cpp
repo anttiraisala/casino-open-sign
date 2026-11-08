@@ -4,24 +4,37 @@
 unsigned long g_millis = 0;
 uint8_t g_pinLevel[64];
 MockSerial Serial;
+uint8_t g_pinOut[64];
 TwoWire Wire;
 std::vector<Adafruit_NeoPixel*> g_strips;
 #include SKETCH_PATH
 #include <cstring>
+// Expected value of STICK_BALL_AT_DIN_END in the sketch under test (hard-coded here; tests/mutate.py builds a
+// variant with the bit false and defines EXPECT_BALL_AT_DIN=0). The logical LED number counts from the ball.
+#ifndef EXPECT_BALL_AT_DIN
+#define EXPECT_BALL_AT_DIN 1
+#endif
+// Expected value of ARROW_POINTS_LEFT_WHEN_LOW (hard-coded; mutate.py builds a variant with false and defines
+// EXPECT_LOW_IS_LEFT=0). SW_LEFT / SW_RIGHT are the pin levels that must make the arrow point left / right.
+#ifndef EXPECT_LOW_IS_LEFT
+#define EXPECT_LOW_IS_LEFT 1
+#endif
+#define SW_LEFT (EXPECT_LOW_IS_LEFT ? LOW : HIGH)
+#define SW_RIGHT (EXPECT_LOW_IS_LEFT ? HIGH : LOW)
+#define PHYS(ld) (EXPECT_BALL_AT_DIN ? (ld) : 9 - (ld))
 #include <string>
 
-static const char* nameOf(int pin) {
-  switch (pin) { case PIN_FRAME_CW: return "frameCw"; case PIN_FRAME_CCW: return "frameCcw";
-    case PIN_LETTERS: return "letters"; case PIN_ARROW_BODY_TOP: return "arrowBodyTop";
-    case PIN_ARROW_BODY_BOTTOM: return "arrowBodyBottom"; case PIN_ARROW_HEAD_LEFT: return "arrowHeadLeft";
-    case PIN_ARROW_CAP_LEFT: return "arrowCapLeft"; case PIN_ARROW_CAP_RIGHT: return "arrowCapRight";
-    case PIN_CLOSED_LIGHT: return "closedLight";
-    default: return "arrowHeadRight"; }
+// Names of the strips in the order they are created in the sketch (= order in g_strips).
+static const char* kStripNames[] = {"frameCw", "frameCcw", "letters", "closedLight", "L-CAP", "L-WING-UP", "L-WING-DN",
+                                    "RAIL-UP-L", "RAIL-UP-R", "RAIL-DN-L", "RAIL-DN-R", "R-CAP", "R-WING-UP", "R-WING-DN"};
+static const char* nameOf(Adafruit_NeoPixel *st) {
+  for (size_t k = 0; k < g_strips.size(); k++) if (g_strips[k] == st) return kStripNames[k];
+  return "?";
 }
 static void dump(FILE *f) {
   fprintf(f, "{\"t\":%lu,\"mode\":%d", g_millis, (int)letterMode);
   for (auto *s : g_strips) {
-    fprintf(f, ",\"%s\":[", nameOf(s->pin_));
+    fprintf(f, ",\"%s\":[", nameOf(s));
     for (size_t i = 0; i < s->shown_.size(); i++) fprintf(f, "%s\"%06x\"", i ? "," : "", s->shown_[i]);
     fprintf(f, "]");
   }
@@ -38,8 +51,9 @@ static uint8_t shownLevel(Adafruit_NeoPixel *let, uint8_t l) {
 
 int main(int argc, char **argv) {
   FILE *out = argc > 1 ? fopen(argv[1], "w") : nullptr;
+  Serial.capture = true;                                // everything printed is kept for the sign-of-life checks
   memset(g_pinLevel, HIGH, sizeof g_pinLevel);          // pull-ups: open switch/button read HIGH
-  g_pinLevel[PIN_ARROW_SWITCH] = HIGH;                  // slide switch handle right -> arrow points right
+  g_pinLevel[PIN_ARROW_SWITCH] = SW_RIGHT;             // slide switch handle right -> arrow points right
   auto setCode = [&](const uint8_t *pins, int code) {
     for (int b = 0; b < 4; b++) g_pinLevel[pins[b]] = (((code >> b) & 1) == 1) == SPEED_BIT_IS_LOW ? LOW : HIGH;
   };
@@ -47,24 +61,44 @@ int main(int argc, char **argv) {
   setCode(PIN_SPEED_LETTERS, 8);
   setup();
   CHECK(startupTestActive, "the power-on LED test starts at power-up");
+  // The older tests below check the colours the sketch computes, so they run with an identity curve (min 0,
+  // max 255, exponent 1, mix 0). The default curves are tested separately at the end.
+  CHECK(brightnessLut[0][128] == 13 && brightnessLut[1][128] == 13 && brightnessLut[0][255] == 80 && brightnessLut[1][192] == 38, "setup() builds the default tables");
+  for (auto *s : g_strips) CHECK(s->brightness_ == 255, "no global library brightness: the curve maximum is the limit");
+  CHECK(CURVE_DEFAULT_MIN[0] == 0 && CURVE_DEFAULT_MIN[1] == 0 && CURVE_DEFAULT_MAX[0] == 80 && CURVE_DEFAULT_MAX[1] == 80 &&
+        CURVE_DEFAULT_EXPONENT[0] == 2.67f && CURVE_DEFAULT_EXPONENT[1] == 2.67f && CURVE_DEFAULT_MIX[0] == 1.0f && CURVE_DEFAULT_MIX[1] == 1.0f &&
+        CURVE_DEFAULT_KEEP_ZERO[0] && CURVE_DEFAULT_KEEP_ZERO[1], "default curve values: min 0, max 80, exponent 2.67, mix 1, keep zero dark");
+  const uint8_t IDENT_TYPES[2] = {0, 1};
+  for (uint8_t ty : IDENT_TYPES) setBrightnessCurve(ty, 0, 255, 1.0f, 0.0f, true);
   finishStartup(g_millis, true);   // the older tests below start from the normal operation
-  Adafruit_NeoPixel *fcw=nullptr,*fccw=nullptr,*let=nullptr,*bt=nullptr,*bb=nullptr,*hl=nullptr,*hr=nullptr,*cl=nullptr,*cr=nullptr,*clo=nullptr;
-  for (auto *s : g_strips) { switch (s->pin_) { case PIN_FRAME_CW: fcw=s; break; case PIN_FRAME_CCW: fccw=s; break;
-    case PIN_LETTERS: let=s; break; case PIN_ARROW_BODY_TOP: bt=s; break; case PIN_ARROW_BODY_BOTTOM: bb=s; break;
-    case PIN_ARROW_HEAD_LEFT: hl=s; break; case PIN_ARROW_CAP_LEFT: cl=s; break;
-    case PIN_ARROW_CAP_RIGHT: cr=s; break; case PIN_CLOSED_LIGHT: clo=s; break; default: hr=s; } }
-  CHECK(clo && clo->numPixels() == CLOSED_LIGHT_LEDS, "closed light strip length");
+  // Pins hard-coded here (not taken from the sketch): frame D9/D10, letters D11, CLOSED light = 11th stick on A3 (57),
+  // sticks D2..D8 and A0..A2 (A0 = 54 on the Mega), arrow switch D32, mode button D33.
+  CHECK(PIN_FRAME_CW == 9 && PIN_FRAME_CCW == 10 && PIN_LETTERS == 11 && PIN_CLOSED_LIGHT == 57, "strip pins");
+  for (auto *s : g_strips) CHECK(s->pin_ != 31, "pin 31 is free: nothing is on D31 any more");
+  CHECK(PIN_ARROW_SWITCH == 32 && PIN_MODE_BUTTON == 33 && PIN_CASINO_CLOSED_SWITCH == 30, "input pins");
+  const int wantStickPins[10] = {2, 3, 4, 5, 6, 7, 8, 54, 55, 56};
+  Adafruit_NeoPixel *fcw=nullptr,*fccw=nullptr,*let=nullptr,*clo=nullptr;
+  Adafruit_NeoPixel *st[10] = {};          // the sticks in the order L-CAP, L-WING-UP, L-WING-DN, RAIL-UP-L, RAIL-UP-R,
+                                           // RAIL-DN-L, RAIL-DN-R, R-CAP, R-WING-UP, R-WING-DN
+  for (auto *s : g_strips) {
+    if (s->pin_ == 9) fcw = s; else if (s->pin_ == 10) fccw = s; else if (s->pin_ == 11) let = s; else if (s->pin_ == 57) clo = s;
+    for (int k = 0; k < 10; k++) if (s->pin_ == wantStickPins[k]) st[k] = s;
+  }
+  { bool allThere = fcw && fccw && let && clo; for (int k = 0; k < 10; k++) allThere = allThere && st[k];
+    if (!allThere) { printf("RESULT: pins do not match, stopping (1 failures)\n"); return 1; } }
+  CHECK(g_strips.size() == 14 && STRIP_COUNT == 14, "14 strips: frame x2, letters, CLOSED light stick (A3), 10 arrow sticks");
+  CHECK(fcw && fccw && let && clo, "frame, letters and CLOSED strips exist on the expected pins");
+  for (int k = 0; k < 10; k++) CHECK(st[k] != nullptr && st[k]->numPixels() == 10, "every stick exists on its pin and has 10 LEDs");
+  CHECK(clo && clo->numPixels() == 10 && CLOSED_LIGHT_LEDS == 10, "closed light is a 10-LED Grove stick");
   CHECK(fcw->numPixels()==FRAME_HALF_LEDS && fccw->numPixels()==FRAME_HALF_LEDS, "frame strip lengths");
   CHECK(let->numPixels()==lettersTotalLeds(), "letters length");
-  CHECK(bt->numPixels()==ARROW_BODY_LEDS && bb->numPixels()==ARROW_BODY_LEDS, "arrow body lengths");
-  CHECK(hl->numPixels()==ARROW_HEAD_LEDS && hr->numPixels()==ARROW_HEAD_LEDS, "arrow head lengths");
-  CHECK(cl->numPixels()==ARROW_CAP_LEDS && cr->numPixels()==ARROW_CAP_LEDS, "arrow cap lengths");
   CHECK(arrowPointsRight, "arrow starts pointing right with the switch released (HIGH)");
+  CHECK(g_analogPin == 69, "the random seed is read from the free pin A15 (A0 is a stick pin now)");
 
   // Timeline: mode k is active from MODE_MS*k. The button is pressed (with contact bounce) just before.
   const unsigned long MODE_MS = 14000, END = MODE_MS * LETTER_MODE_COUNT + 2000;
   // Arrow switch: LOW (left) at 5 s, HIGH (right) at 25 s, short glitch at 45 s, bouncing change at 60 s.
-  long lastFrameShows = fcw->shows;
+  long lastFrameShows = fcw->shows, lastArrowShows = 0; long arrowFlowChecks = 0;
   std::vector<int> prevPath; bool prevMirrored = false, sawMirrored = false, sawNormal = false;
   long modeChanges = 0; int lastMode = letterMode;
   bool minMax[LETTER_MODE_COUNT][4] = {};   // per mode: sawAllOff, sawAllLit, sawSpread, sawWordBlink
@@ -79,12 +113,12 @@ int main(int argc, char **argv) {
       if (g_millis >= t0 && g_millis < t0 + 120) g_pinLevel[PIN_MODE_BUTTON] = (g_millis < t0 + 8 && (g_millis & 1)) ? HIGH : LOW;
       else if (g_millis == t0 + 120) g_pinLevel[PIN_MODE_BUTTON] = HIGH;
     }
-    if (g_millis == 5000) g_pinLevel[PIN_ARROW_SWITCH] = LOW;
-    if (g_millis == 25000) g_pinLevel[PIN_ARROW_SWITCH] = HIGH;
-    if (g_millis == 45000) g_pinLevel[PIN_ARROW_SWITCH] = LOW;     // 10 ms glitch: must be ignored
-    if (g_millis == 45010) g_pinLevel[PIN_ARROW_SWITCH] = HIGH;
+    if (g_millis == 5000) g_pinLevel[PIN_ARROW_SWITCH] = SW_LEFT;
+    if (g_millis == 25000) g_pinLevel[PIN_ARROW_SWITCH] = SW_RIGHT;
+    if (g_millis == 45000) g_pinLevel[PIN_ARROW_SWITCH] = SW_LEFT;    // 10 ms glitch: must be ignored
+    if (g_millis == 45010) g_pinLevel[PIN_ARROW_SWITCH] = SW_RIGHT;
     if (g_millis >= 60000 && g_millis < 60012) g_pinLevel[PIN_ARROW_SWITCH] = (g_millis & 1) ? HIGH : LOW;  // bounce
-    if (g_millis == 60012) g_pinLevel[PIN_ARROW_SWITCH] = LOW;      // settles LOW -> left
+    if (g_millis == 60012) g_pinLevel[PIN_ARROW_SWITCH] = SW_LEFT;     // settles LOW -> left
 
     loop();
 
@@ -151,30 +185,68 @@ int main(int argc, char **argv) {
     }
     // Casino open: the CLOSED light stays dark.
     for (auto c : clo->shown_) CHECK(c == 0, "CLOSED light is off while the casino is open");
-    // Arrow: shaft/caps lit; only the pointed head lit; direction follows the switch.
-    bool leftLit=false, rightLit=false;
-    for (auto c : hl->shown_) if (c) leftLit = true;
-    for (auto c : hr->shown_) if (c) rightLit = true;
-    if (g_millis > 1000) {
-      for (auto c : bt->shown_) CHECK(c != 0, "top shaft always lit");
-      for (auto c : bb->shown_) CHECK(c != 0, "bottom shaft always lit");
-    }
-    bool capLeftLit = false, capRightLit = false;
-    for (auto c : cl->shown_) if (c) capLeftLit = true;
-    for (auto c : cr->shown_) if (c) capRightLit = true;
+    // Arrow: which LEDs are lit follows the switch (hard-coded lists; stick numbers: L-CAP 0, L-WING-UP 1, L-WING-DN 2,
+    // RAIL-UP-L 3, RAIL-UP-R 4, RAIL-DN-L 5, RAIL-DN-R 6, R-CAP 7, R-WING-UP 8, R-WING-DN 9).
+    //   points right: tail cap L-CAP lit on LEDs 2..7 only; head cap R-CAP lit on LEDs 0,1,2,7,8,9 only;
+    //                 rails and R-WING-UP/DN fully lit; L-WING-UP/DN dark
+    //   points left:  tail cap R-CAP lit on LEDs 2..7 only; head cap L-CAP lit on LEDs 0,1,2,7,8,9 only;
+    //                 rails and L-WING-UP/DN fully lit; R-WING-UP/DN dark
     auto expectDir = [&](unsigned long from, unsigned long to, bool right, const char *msg) {
       if (g_millis > from && g_millis < to) {
-        CHECK(right ? (rightLit && !leftLit) : (leftLit && !rightLit), msg);
-        // Only the cap at the tail end is lit; the head-end cap is dark (the shaft opens into the head).
-        CHECK(right ? (capLeftLit && !capRightLit) : (capRightLit && !capLeftLit), "only the tail-end cap is lit");
-        // Every LED of the lit cap is on.
-        for (auto c : (right ? cl : cr)->shown_) CHECK(c != 0, "tail cap LEDs all lit");
+        const bool tailLit[10] = {0, 0, 1, 1, 1, 1, 1, 1, 0, 0}, headLit[10] = {1, 1, 1, 0, 0, 0, 0, 1, 1, 1};
+        const int tailCap = right ? 0 : 7, headCap = right ? 7 : 0;
+        for (int i = 0; i < 10; i++) {
+          CHECK((st[tailCap]->shown_[i] != 0) == (tailLit[i] != 0), msg);
+          CHECK((st[headCap]->shown_[i] != 0) == (headLit[i] != 0), msg);
+        }
+        const int rails[4] = {3, 4, 5, 6};
+        for (int i = 0; i < 4; i++) for (auto c : st[rails[i]]->shown_) CHECK(c != 0, msg);
+        for (int w : {right ? 8 : 1, right ? 9 : 2}) for (auto c : st[w]->shown_) CHECK(c != 0, msg);
+        for (int w : {right ? 1 : 8, right ? 2 : 9}) for (auto c : st[w]->shown_) CHECK(c == 0, msg);
       } };
-    expectDir(1000, 4900, true, "before the switch moves: right head only");
-    expectDir(5200, 24900, false, "switch LOW: left head only");
-    expectDir(25200, 44900, true, "switch HIGH: right head only");
-    expectDir(45000, 59900, true, "10 ms glitch ignored: still right head only");   // 45000..: glitch
-    expectDir(60200, END, false, "bouncing switch settles LOW: left head only");
+    expectDir(1000, 4900, true, "before the switch moves: right head, tail cap L-CAP middle 6, head cap R-CAP ends 3+3");
+    expectDir(5200, 24900, false, "switch LOW: left head, tail cap R-CAP middle 6, head cap L-CAP ends 3+3");
+    expectDir(25200, 44900, true, "switch HIGH: right head, tail cap L-CAP middle 6, head cap R-CAP ends 3+3");
+    expectDir(45000, 59900, true, "10 ms glitch ignored: still the right head");   // 45000..: glitch
+    expectDir(60200, END, false, "bouncing switch settles LOW: left head");
+
+    // Flow check with the white pulse head: at every arrow update exactly one LED is pure white, the LED whose flow
+    // coordinate equals the pulse position. The upper route's pulse position is tick % 72, the lower route's is
+    // (tick + 36) % 72; a pulse head exists on a route only while its position is 0..35. The map flow coordinate ->
+    // (stick, LED) is hard-coded here (36 LEDs per route):
+    //   points right: upper s0-2 L-CAP LEDs 4,3,2; s3-12 RAIL-UP-L 0..9; s13-22 RAIL-UP-R 9..0; s23-25 R-CAP LEDs 2,1,0;
+    //                 s26-35 R-WING-UP 9..0
+    //                 lower s0-2 L-CAP LEDs 5,6,7; s3-12 RAIL-DN-L 0..9; s13-22 RAIL-DN-R 9..0; s23-25 R-CAP LEDs 7,8,9;
+    //                 s26-35 R-WING-DN 9..0
+    //   points left:  upper s0-2 R-CAP LEDs 4,3,2; s3-12 RAIL-UP-R 0..9; s13-22 RAIL-UP-L 9..0; s23-25 L-CAP LEDs 2,1,0;
+    //                 s26-35 L-WING-UP 9..0
+    //                 lower s0-2 R-CAP LEDs 5,6,7; s3-12 RAIL-DN-R 0..9; s13-22 RAIL-DN-L 9..0; s23-25 L-CAP LEDs 7,8,9;
+    //                 s26-35 L-WING-DN 9..0
+    CHECK(ARROW_POINTS_LEFT_WHEN_LOW == (EXPECT_LOW_IS_LEFT != 0), "ARROW_POINTS_LEFT_WHEN_LOW has the expected value");
+    CHECK(STICK_BALL_AT_DIN_END == (EXPECT_BALL_AT_DIN != 0), "STICK_BALL_AT_DIN_END has the expected value");
+    if (st[3]->shows != lastArrowShows && g_millis > 1000) {
+      lastArrowShows = st[3]->shows;
+      const bool right = arrowPointsRight;
+      const int tickDrawn = (int)arrowTick - 1;
+      auto where = [&](bool lower, int s, int &stick, int &led) {
+        if (s < 3) { stick = right ? 0 : 7; led = lower ? 5 + s : 4 - s; }
+        else if (s < 13) { stick = lower ? (right ? 5 : 6) : (right ? 3 : 4); led = s - 3; }
+        else if (s < 23) { stick = lower ? (right ? 6 : 5) : (right ? 4 : 3); led = 22 - s; }
+        else if (s < 26) { stick = right ? 7 : 0; led = lower ? s - 16 : 25 - s; }
+        else { stick = lower ? (right ? 9 : 2) : (right ? 8 : 1); led = 35 - s; }
+      };
+      int want = 0; bool found[2] = {false, false};
+      for (int lane = 0; lane < 2; lane++) {
+        const int pulse = (tickDrawn + (lane ? 36 : 0)) % 72;
+        if (pulse <= 35) { int sk, ld; where(lane == 1, pulse, sk, ld); want++;
+          found[lane] = (st[sk]->shown_[PHYS(ld)] & 0xFFFFFF) == 0xFFFFFF; }
+      }
+      int whites = 0;
+      for (int k = 0; k < 10; k++) for (auto c : st[k]->shown_) if ((c & 0xFFFFFF) == 0xFFFFFF) whites++;
+      CHECK(want == 1 && whites == 1, "arrow: exactly one white pulse head on the arrow");
+      for (int lane = 0; lane < 2; lane++) if ((tickDrawn + (lane ? 36 : 0)) % 72 <= 35) CHECK(found[lane], "arrow: the white pulse head is on the LED with the right flow coordinate");
+      arrowFlowChecks++;
+    }
     if (out && g_millis - lastDump >= 250) { dump(out); lastDump = g_millis; }
   }
   // ---- Speed switch tests (continue running the same sketch) ----
@@ -192,10 +264,10 @@ int main(int argc, char **argv) {
     if (wantArrow < MIN_UPDATE_MS) wantArrow = MIN_UPDATE_MS;
     CHECK(fabs((double)frameIntervalMs - wantFrame) <= 1.0, "frame interval follows the speed switch");
     CHECK(fabs((double)arrowIntervalMs - wantArrow) <= 1.0, "arrow interval follows the speed switch");
-    const long f0 = fcw->shows, a0 = bt->shows, l0 = let->shows;
+    const long f0 = fcw->shows, a0 = st[3]->shows, l0 = let->shows;
     const unsigned long clk0 = letterClockMs;
     run(6000);
-    const double gotFrame = 6000.0 / (fcw->shows - f0), gotArrow = 6000.0 / (bt->shows - a0);
+    const double gotFrame = 6000.0 / (fcw->shows - f0), gotArrow = 6000.0 / (st[3]->shows - a0);
     CHECK(fabs(gotFrame - wantFrame) <= 0.03 * wantFrame + 1.5, "measured frame update period matches");
     CHECK(fabs(gotArrow - wantArrow) <= 0.03 * wantArrow + 1.5, "measured arrow update period matches");
     const double clockRate = (double)(letterClockMs - clk0) / 6000.0;
@@ -417,13 +489,13 @@ int main(int argc, char **argv) {
     run(3500);
     g_pinLevel[PIN_ARROW_SWITCH] = arrowPin == LOW ? HIGH : LOW; run(120);
     const bool nowLeft = !arrowPointsRight;
-    CHECK(line0().rfind("Casino", 0) == 0 && line1() == (nowLeft ? "Arrow: <- LEFT" : "Arrow: RIGHT ->"), "LCD: status page follows the arrow switch");
+    CHECK(line0().rfind("Casino", 0) == 0 && line1() == (nowLeft ? "->Customer left" : "<-Customer right"), "LCD: status page follows the arrow switch");
     g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = LOW; run(120);
     CHECK(line0() == "Casino: CLOSED", "LCD: status page shows CLOSED");
     g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; run(120);
     CHECK(line0() == "Casino: OPEN", "LCD: status page shows OPEN");
     g_pinLevel[PIN_ARROW_SWITCH] = arrowPin; g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = closedPin; run(200);
-    CHECK(line1() == (arrowPointsRight ? "Arrow: RIGHT ->" : "Arrow: <- LEFT"), "LCD: status page arrow text matches the arrow");
+    CHECK(line1() == (arrowPointsRight ? "<-Customer right" : "->Customer left"), "LCD: status page arrow text matches the arrow");
 
     // rotation: all four pages appear, 3 seconds each
     run(7000);                                           // hold over
@@ -478,7 +550,7 @@ int main(int argc, char **argv) {
     int maxLit = 0; bool wrongColour = false, onlyTestPattern = true;
     bool charsRow[2][256] = {};
     bool lcdExact = true; int lcdSamples = 0; std::string firstBad;
-    const std::string marquee = "press D3 to skip   ";
+    const std::string marquee = "press D33 to skip   ";
     unsigned long endedAt = 0;
     for (unsigned long k = 0; k < STARTUP_TEST_MS + 200 && startupTestActive; k++) {
       if (k == 2000) g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = LOW;      // changed during the test: takes effect afterwards
@@ -531,11 +603,11 @@ int main(int argc, char **argv) {
     g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; run(100);
     CHECK(!casinoClosed, "casino open again");
 
-    // D3 skips the test and the same press does not change the mode
+    // D33 skips the test and the same press does not change the mode
     run(300); beginStartupTest(g_millis); run(500);
     CHECK(startupTestActive, "LED test: still running after 0.5 s");
     g_pinLevel[PIN_MODE_BUTTON] = LOW; run(100); g_pinLevel[PIN_MODE_BUTTON] = HIGH; run(100);
-    CHECK(!startupTestActive, "LED test: D3 skips the test");
+    CHECK(!startupTestActive, "LED test: D33 skips the test");
     CHECK(letterMode == MODE_BREATHE, "LED test: the skipping press does not change the letter mode");
     run(400); CHECK(line0() == "Mode 0", "LED test: after a skip the LCD shows the mode page");
 
@@ -568,8 +640,121 @@ int main(int argc, char **argv) {
   CHECK(secondWordHi >= 250 && secondWordLo <= 30, "word blink: second word toggles bright/dim");
   CHECK(firstWordLo >= 200, "word blink: first word stays steady");
   CHECK(altDiffer, "alternate: odd and even letters differ");
+  CHECK(arrowFlowChecks > 3000, "the arrow flow check ran on thousands of arrow updates");
+
+  // ---- Sign of life: pin 13 LED and the once-per-second Serial line (115200 baud) ----
+  {
+    CHECK(SERIAL_BAUD == 115200 && Serial.baud == 115200, "serial speed is 115200 baud");
+    CHECK(PIN_STATUS_LED == 13, "the debug LED is on pin 13");
+    CHECK(Serial.captured.find("Serial speed 115200 baud") != std::string::npos, "the baud rate is printed at start-up");
+    g_pinLevel[PIN_MODE_BUTTON] = HIGH; run(3000);                // calm: no state change for a while
+    // calm: the heartbeat toggles every 250 ms (3 or 4 toggles in 800 ms)
+    { const unsigned long b0 = beatCount; run(800); const unsigned long d = beatCount - b0;
+      CHECK(d >= 3 && d <= 4, "calm: the LED toggles every 250 ms (3-4 times in 800 ms)"); }
+    // one state change (arrow switch): the LED is shortly inverted, then back to the normal heartbeat
+    const uint8_t sw = g_pinLevel[PIN_ARROW_SWITCH];
+    g_pinLevel[PIN_ARROW_SWITCH] = sw == LOW ? HIGH : LOW; run(45);
+    CHECK(g_pinOut[13] != (beatOn ? HIGH : LOW), "a state change inverts the LED for a moment");
+    run(250);
+    CHECK(g_pinOut[13] == (beatOn ? HIGH : LOW), "after 120 ms the LED follows the heartbeat again");
+    // many state changes: the heartbeat gets twice as fast
+    g_pinLevel[PIN_ARROW_SWITCH] = sw; run(100);
+    { const unsigned long b0 = beatCount; run(500); const unsigned long d = beatCount - b0;
+      CHECK(d >= 4 && d <= 5, "busy: the LED toggles every 125 ms (4-5 times in 500 ms; calm would give 2-3)"); }
+    run(3500);
+    { const unsigned long b0 = beatCount; run(800); const unsigned long d = beatCount - b0;
+      CHECK(d >= 3 && d <= 4, "calm again: back to every 250 ms"); }
+    // Serial Monitor: one DBG line per second, the values change
+    const std::string &log = Serial.captured;
+    int dbg = 0; size_t pos = 0;
+    while ((pos = log.find("DBG up=", pos)) != std::string::npos) { dbg++; pos++; }
+    CHECK(dbg == (int)(g_millis / 1000), "one DBG line per second since power-up");
+    CHECK(log.find("DBG up=1s loops=1001 mode=0 arrow=R closed=0 sw3=8 sw4=8 events=0 beats=3 tick=") != std::string::npos,
+          "DBG line at 1 s with all fields");
+    CHECK(log.find("DBG up=2s loops=1000 ") != std::string::npos && log.find("DBG up=3s loops=1000 ") != std::string::npos,
+          "the uptime counts up and the loop runs 1000 times a second here");
+    CHECK(log.find(" arrow=L ") != std::string::npos && log.find(" arrow=R ") != std::string::npos, "the DBG line shows the arrow direction");
+    CHECK(log.find(" closed=1 ") != std::string::npos, "the DBG line shows casino closed during the test");
+    CHECK(log.find(" mode=10 ") != std::string::npos && log.find(" mode=5 ") != std::string::npos, "the DBG line shows the letter mode");
+    CHECK(log.find(" sw3=0 ") != std::string::npos && log.find(" sw4=F ") != std::string::npos, "the DBG line shows the speed switch positions");
+    // the beat counter and the tick change from line to line
+    { size_t a = log.find("DBG up=30s"), b = log.find("DBG up=31s");
+      if (a == std::string::npos || b == std::string::npos) CHECK(false, "DBG lines at 30 s and 31 s exist");
+      else {
+        std::string l30 = log.substr(a, log.find('\n', a) - a), l31 = log.substr(b, log.find('\n', b) - b);
+        auto field = [](const std::string &l, const char *key) { size_t k = l.find(key); return k == std::string::npos ? -1L : std::stol(l.substr(k + strlen(key))); };
+        CHECK(field(l31, " beats=") > field(l30, " beats=") && field(l31, " tick=") != field(l30, " tick="), "beats and tick change every second");
+      } }
+    CHECK(log.find("DBG up=4s loops=1000 mode=0 arrow=R closed=0 sw3=8 sw4=8 events=0 ") != std::string::npos, "events=0 before the first change");
+    CHECK(log.find("DBG up=6s loops=1000 mode=0 arrow=L closed=0 sw3=8 sw4=8 events=1 ") != std::string::npos,
+          "after the arrow switch moved at 5 s: arrow=L, events=1");
+  }
+  // ---- Brightness curves (expected values hard-coded; see the formula in the sketch) ----
+  {
+    CHECK(LED_TYPE_COUNT == 2 && LED_TYPE_STRIP == 0 && LED_TYPE_STICK == 1, "two LED types: strip 0, stick 1");
+    // defaults: min 0, max 255, exponent 1.97, mix 1, keep zero dark, for both types
+    buildDefaultBrightnessCurves();
+    const int in[10] = {0, 1, 2, 16, 32, 64, 128, 192, 254, 255}, want[10] = {0, 0, 0, 0, 0, 2, 13, 38, 79, 80};
+    for (int ty = 0; ty < 2; ty++) for (int i = 0; i < 10; i++) CHECK(brightnessLut[ty][in[i]] == want[i], "default curve value");
+    bool mono = true; for (int ty = 0; ty < 2; ty++) for (int i = 1; i < 256; i++) if (brightnessLut[ty][i] < brightnessLut[ty][i - 1]) mono = false;
+    CHECK(mono, "default curve never decreases");
+    // custom curve: min 20, max 200, exponent 1, mix 0 (linear), keep zero dark
+    setBrightnessCurve(0, 20, 200, 1.0f, 0.0f, true);
+    CHECK(brightnessLut[0][0] == 0 && brightnessLut[0][1] == 21 && brightnessLut[0][128] == 110 && brightnessLut[0][255] == 200, "min/max linear curve");
+    setBrightnessCurve(0, 20, 200, 1.0f, 0.0f, false);
+    CHECK(brightnessLut[0][0] == 20, "keep zero dark off: input 0 gives min");
+    // mix 0 ignores the exponent; mix 0.5 is halfway between linear and the power curve
+    setBrightnessCurve(0, 0, 255, 8.0f, 0.0f, true);
+    CHECK(brightnessLut[0][128] == 128, "mix 0 is linear whatever the exponent");
+    setBrightnessCurve(0, 0, 255, 2.0f, 0.5f, true);
+    CHECK(brightnessLut[0][128] == 96, "mix 0.5 with exponent 2 at 128 (0.5*0.502+0.5*0.252)");
+    // exponent below 1 brightens the dark end
+    setBrightnessCurve(0, 0, 255, 0.5f, 1.0f, true);
+    CHECK(brightnessLut[0][64] == 128 && brightnessLut[0][255] == 255, "exponent 0.5 at 64");
+    // out-of-range values are clamped: exponent 100 -> 20, exponent 0 -> 0.1, mix 5 -> 1, min above max works downwards
+    setBrightnessCurve(0, 0, 255, 100.0f, 1.0f, true);
+    CHECK(brightnessLut[0][254] == 236 && brightnessLut[0][128] == 0 && brightnessLut[0][255] == 255, "exponent clamped to 20 (254 -> 236)");
+    setBrightnessCurve(0, 0, 255, 0.0f, 1.0f, true);
+    CHECK(brightnessLut[0][1] == 147, "exponent clamped to 0.1 (255 * (1/255)^0.1 = 146.5)");
+    setBrightnessCurve(0, 0, 255, 2.0f, 5.0f, true);
+    CHECK(brightnessLut[0][128] == 64, "mix clamped to 1");
+    setBrightnessCurve(0, 200, 50, 1.0f, 0.0f, true);
+    CHECK(brightnessLut[0][255] == 50 && brightnessLut[0][1] == 199, "min above max runs downwards");
+    // a call for a type that does not exist changes nothing
+    setBrightnessCurve(0, 0, 255, 1.0f, 0.0f, true); const uint8_t keep = brightnessLut[1][128]; setBrightnessCurve(7, 0, 10, 1.0f, 0.0f, true);
+    CHECK(brightnessLut[1][128] == keep, "unknown LED type ignored");
+    // shapeColor keeps the hue: max 100 curve, linear
+    setBrightnessCurve(0, 0, 100, 1.0f, 0.0f, true);
+    CHECK(shapeColor(0, 0) == 0, "black stays black");
+    CHECK(shapeColor(0, 0xFFFFFF) == 0x646464, "white 255 -> 100");
+    CHECK(shapeColor(0, 0xFF3300) == 0x641400, "orange keeps its ratio (255,51,0 -> 100,20,0)");
+    setBrightnessCurve(1, 0, 255, 1.0f, 0.0f, true);
+    CHECK(shapeColor(1, 0x123456) == 0x123456, "the stick table is separate (identity here)");
+    // each LED type has its own table in the running sketch: strips (frame, letters) vs sticks (arrow, CLOSED)
+    setBrightnessCurve(0, 0, 50, 1.0f, 0.0f, true);     // strips: at most 50
+    setBrightnessCurve(1, 0, 100, 1.0f, 0.0f, true);    // sticks: at most 100
+    run(3000);
+    auto chmax = [](uint32_t c) { unsigned r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255; unsigned m = r > g ? r : g; return b > m ? b : m; };
+    unsigned fmax = 0, lmax = 0, amax = 0;
+    for (auto *s : {fcw, fccw}) for (auto c : s->shown_) fmax = (chmax(c) > fmax ? chmax(c) : fmax);
+    for (auto c : let->shown_) lmax = (chmax(c) > lmax ? chmax(c) : lmax);
+    for (int k = 0; k < 10; k++) for (auto c : st[k]->shown_) amax = (chmax(c) > amax ? chmax(c) : amax);
+    CHECK(fmax == 50, "frame LEDs reach exactly the strip maximum 50 (white 255 mapped)");
+    CHECK(lmax <= 50 && lmax >= 30, "letters stay within the strip maximum 50 and use most of it");
+    CHECK(amax <= 100 && amax >= 90, "arrow sticks stay within the stick maximum 100 and use most of it");
+    const uint8_t closedPin = g_pinLevel[PIN_CASINO_CLOSED_SWITCH];
+    g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = LOW;   // casino closed: the CLOSED light is on and flickers
+    unsigned cmax = 0;
+    for (int k = 0; k < 600; k++) { run(10); for (auto c : clo->shown_) cmax = (c & 255u) > cmax ? (c & 255u) : cmax; }
+    CHECK(cmax == 100, "the CLOSED stick follows the stick table (its full white 255 shows as 100)");
+    g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = closedPin; run(500);
+    // the lookup table is rebuilt at once when a value changes: a new maximum shows within one frame
+    setBrightnessCurve(0, 0, 255, 1.0f, 0.0f, true); run(200);
+    unsigned fmax2 = 0; for (auto *s : {fcw, fccw}) for (auto c : s->shown_) fmax2 = (c & 255u) > fmax2 ? (c & 255u) : fmax2;
+    CHECK(fmax2 == 255, "after setBrightnessCurve the frame shows full white again");
+  }
   for (auto *s : g_strips) CHECK(s->overflow == 0, "no setPixelColor beyond strip length");
-  printf("mode changes: %ld; letters %u LEDs; shows: frame %ld letters %ld body %ld\n", modeChanges, (unsigned)let->numPixels(), fcw->shows, let->shows, bt->shows);
+  printf("mode changes: %ld; letters %u LEDs; shows: frame %ld letters %ld rail %ld\n", modeChanges, (unsigned)let->numPixels(), fcw->shows, let->shows, st[3]->shows);
   printf(fails ? "RESULT: %d failures\n" : "RESULT: all checks passed\n", fails);
   return fails ? 1 : 0;
 }

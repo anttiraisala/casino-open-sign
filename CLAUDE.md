@@ -11,6 +11,7 @@ files (Finnish translation of the README.txt next to them) and product names tha
 - Flag contradictions in a request before building.
 - Hardware/Arduino work always comes with: `README.txt` and `README-fi.txt` containing exact wiring (component to pin)
   and a parts-to-buy list from partco.fi; an SVG electrical schematic in circuit-diagram style (symbols).
+- Every wiring diagram and layout drawing is delivered as SVG and as PDF (same name). `python3 tools/export_pdf.py` creates the PDFs from the SVGs; run it after regenerating any SVG.
 - Deliver project files together in ONE zip (the whole folder), sent as an attachment.
 - Any test the AI asks the owner to run lives in its own sub-folder, self-contained (own layouts, wirings,
   `sketch.ino`, `diagram.json`, README and README-fi).
@@ -19,13 +20,16 @@ files (Finnish translation of the README.txt next to them) and product names tha
   state changes, faster when many changes happen) and the Serial Monitor gets one line per second with changing values;
   the baud rate (115200) is stated at the top of the sketch, printed at start-up and written in the README. Skip the
   LED or serial output only if the project uses that pin or port for something else. Reference: `stick_test_direct/sketch.ino`.
-  The sign sketch, `strip_test/` and `stick_test/` do not have it yet: add it when they are next updated.
+  The sign sketch has it; `strip_test/` and `stick_test/` do not yet: add it when they are next updated.
 - Arduino pitfalls: function signatures only with built-in types (automatic prototypes); NeoPixel objects must not be
   copied (named objects + a pointer array); non-blocking `millis()` timing.
 - Host tests hard-code the expected values (not taken from the sketch constants) and are checked with mutation tests.
 
 ## Decisions
 
-- Arrow design B (barbed head) with 10 Grove RGB LED sticks plus a spare 11th; the arrow is about 31 x 9 cm. Not applied to the sign sketch yet.
+- Arrow design B (barbed head) with 10 Grove RGB LED sticks (the 11th shield connector A3 carries the CLOSED light, a white Grove stick behind the plate; D31 is free). Real stick size 83 x 10 mm, LED window 74 x 4 mm, 2 mm between sticks, rails on LED 3 and LED 8 of the bars, wings 30 degrees: the arrow is 349.76 x 102.32 mm. Single geometry source `tools/arrow_geometry.py`; drawings and drill template in `arrow_sticks/`. Stick names: L-CAP, L-WING-UP, L-WING-DN, RAIL-UP-L, RAIL-UP-R, RAIL-DN-L, RAIL-DN-R, R-CAP, R-WING-UP, R-WING-DN (connectors D2-D8, A0-A2). The sign sketch drives the arrow (phase 1, simple flow animation); the frame/letters/switch/button pins moved to D9/D10, D11, D32, D33; the CLOSED light is the 11th stick on A3; the old strip arrow is a backup in `backup/old_arrow_strips/`.
+- Ball/dot rule: the black dot in layout/drill drawings is the BALL of the real stick (left half left, right half right, caps up; CLOSED stick unchanged). `STICK_BALL_AT_DIN_END` in the sketch (true/false) corrects the LED order; the Wokwi generator follows it. LCD status page shows the customer view, arrow symbol first ("<-Customer right"/"->Customer left"). Switch D32 handle = real arrow direction (reversible with `ARROW_POINTS_LEFT_WHEN_LOW`) (back view: GND contact on the right). Drill template is for the FRONT of the plate.
+- Brightness curves: per LED type (strip, stick) a lookup table from min/max/exponent/mix/keepZero (`CURVE_DEFAULT_*`: min 0, max 80, exponent 2.67, mix 1.0, keepZero true; formula in the sketch), rebuilt by `setBrightnessCurve()`; hue-preserving `shapeColor()`. No global brightness: the curve max (default 80) is the limit. The phone tool `tools/brightness-tool/index.html` (artifact "LED brightness curve", same link) is republished and included in every zip; its defaults must equal the sketch defaults (`tests/brightness_tool_test.py`); no Excel. Menu + 4 encoders + 3 buttons + EEPROM UI is planned, not applied.
 - Planned but not applied: 12 V WS2811 strips, 60 x 30 cm plate, versioned releases (current state = v1).
+- Test folders so far: `strip_test/`, `stick_test/`, `stick_test_direct/`, `strip_single_led_test/`, `strip_knight_rider_test/`, `sticks_11_test/` (the last three not yet run on hardware); each is self-contained with its own README.txt/README-fi.txt, generators in `tools/` and host harness + mutation script in `tests/`.
 - Details: `AI_CONTEXT.md` (technical description, section 8 tests) and `DESCRIPTION.md`.

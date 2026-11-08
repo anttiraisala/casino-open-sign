@@ -20,6 +20,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import arrow_geometry as ag
 import generate_diagram as gd
 import sign_data
 from generate_schematic import Svg
@@ -32,9 +33,7 @@ LED = 17           # side of one LED square in SVG units
 GREY, DARK = "#777777", "#222222"
 COLORS = {
     "frameCw": "#1e88e5", "frameCcw": "#8e24aa", "letters": "#e53935",
-    "arrowBodyTop": "#43a047", "arrowBodyBottom": "#00897b",
-    "arrowCapLeft": "#fb8c00", "arrowCapRight": "#d84315",
-    "arrowHeadLeft": "#3949ab", "arrowHeadRight": "#6d4c41",
+    "arrowSticks": "#2e7d32",
     "closedLight": "#546e7a",
 }
 PANEL_W = 285      # width of the callout panels left and right of the plate
@@ -49,6 +48,10 @@ def main():
     cfg = gd.read_config(gd.SKETCH.read_text())
     lay = gd.Layout(cfg)
     info = sign_data.strip_info(cfg)
+    stick_rows = sign_data.stick_info(cfg)             # the 10 arrow sticks
+    closed_stick = sign_data.closed_stick_info(cfg)    # the 11th stick: the CLOSED light behind the plate
+    all_sticks = sign_data.all_stick_info(cfg)
+    stick_names = {r["name"] for r in stick_rows}
     by_name = {row["name"]: row for row in info}
     total_strips, total_pieces, total_leds = sign_data.totals(info)
 
@@ -80,8 +83,9 @@ def main():
 
     svg.text(width / 2, 30, "Casino sign - layout of the LED strips (to scale, dimensions in cm)",
              size=18, anchor="middle", weight="bold")
-    svg.text(width / 2, 50, "%d strips, %d pieces, %d LEDs in total. LED pitch %.1f mm (%g LEDs per metre)."
-             % (total_strips, total_pieces, total_leds, cm_per_px * gd.PITCH * 10, args.leds_per_m),
+    svg.text(width / 2, 50, "%d strips, %d pieces, %d LEDs (LED pitch %.1f mm, %g LEDs per metre) + the arrow: %d Grove sticks of %d LEDs + the CLOSED light: stick %d."
+             % (total_strips, total_pieces, total_leds, cm_per_px * gd.PITCH * 10, args.leds_per_m,
+                len(stick_rows), cfg["LEDS_PER_STICK"], len(all_sticks)),
              size=12, anchor="middle", color=GREY)
 
     # ---- plate and dimensions -----------------------------------------------------------
@@ -104,7 +108,23 @@ def main():
 
     # ---- LED strips ---------------------------------------------------------------------------
     plate_centre = (X(fx + fw / 2), Y(fy + fh / 2))
-    left, right, top_, bottom = lay.arrow_extent
+    # The arrow: the 10 sticks at their real size (arrow_geometry.py, mm) on the plate, centred under the CLOSED
+    # text. (The Wokwi diagram draws the arrow bigger and below the frame, see generate_diagram.py.)
+    mm_per_px = cm_per_px * 10.0
+    geo_sticks, geo_w, geo_h = ag.shifted(ag.build())
+    ccx0, ccy0, _cw0 = lay.closed_box
+    interior_top, interior_bottom, _iw = lay.interior
+    arrow_top_free = ccy0 + gd.CLOSED_TEXT_HEIGHT / 2 + gd.CLOSED_GAP
+    arrow_h_px, arrow_w_px = geo_h / mm_per_px, geo_w / mm_per_px
+    free = interior_bottom - gd.MARGIN / 2 - arrow_top_free
+    if arrow_h_px > free:
+        print("WARNING: the arrow (%.1f px high) does not fit below the CLOSED text (%.1f px free)" % (arrow_h_px, free))
+    left = ccx0 - arrow_w_px / 2
+    right = left + arrow_w_px
+    top_ = arrow_top_free + max(free - arrow_h_px, 0) / 2
+    bottom = top_ + arrow_h_px
+    if right - left > _iw - 2 * gd.MARGIN:
+        print("WARNING: the arrow is wider than the frame interior")
     arrow_centre = (X((left + right) / 2), Y((top_ + bottom) / 2))
 
     centres = {}                                  # part id -> list of LED centres
@@ -121,6 +141,8 @@ def main():
     piece_labels = []                             # (centre, outward normal, text)
     callout_targets = {}
     for name, ids, _pin in lay.chains:
+        if name in stick_names or name == "closedLight":   # the sticks are drawn separately, at real size
+            continue
         color = COLORS[name]
         row = by_name[name]
         if name == "letters":
@@ -194,6 +216,40 @@ def main():
             "lengthAdjust='spacingAndGlyphs' %s>CLOSED</text>"
             % (X(ccx), Y(ccy) + 16, cwidth * S * 1.12, gd_font()))
 
+    # The arrow sticks at their real size: body, LED window, the 10 LEDs, the DIN end and the stick number.
+    def svg_pt(mm_x, mm_y):
+        return X(left + mm_x / mm_per_px), Y(top_ + mm_y / mm_per_px)
+
+    for number, st in enumerate(geo_sticks, start=1):
+        body = [svg_pt(*pt) for pt in st.body()]
+        svg.path("M " + " L ".join("%g %g" % pt for pt in body) + " Z", st.stroke, 1.5, fill=st.fill)
+        win = [svg_pt(*pt) for pt in st.window()]
+        svg.path("M " + " L ".join("%g %g" % pt for pt in win) + " Z", st.stroke, 0.8, fill="#ffffff")
+        for k in range(1, ag.LEDS + 1):
+            lx, ly = svg_pt(*st.led_centre(k))
+            svg.dot(lx, ly, st.stroke, 1.6)
+        dx_, dy_ = svg_pt(st.cx + st.din_dir[0] * (ag.BODY_L / 2 - 2.5), st.cy + st.din_dir[1] * (ag.BODY_L / 2 - 2.5))
+        svg.dot(dx_, dy_, DARK, 3)
+        mx, my = svg_pt(st.cx, st.cy)
+        svg.rect(mx - 8, my - 7, 16, 14, fill="#ffffff", stroke=st.stroke, width=1.2, rx=3)
+        svg.text(mx, my + 4, "%d" % number, size=10, anchor="middle", weight="bold", color=DARK)
+
+    # The CLOSED light stick (11th stick) BEHIND the plate, at real size, centred on the hole text (dashed: hidden).
+    per_mm = S / mm_per_px                                   # SVG units per mm
+    cx_s, cy_s = X(ccx), Y(ccy)
+    half_l, half_w = ag.BODY_L / 2 * per_mm, ag.BODY_W / 2 * per_mm
+    ccol = COLORS["closedLight"]
+    svg.add("<rect x='%g' y='%g' width='%g' height='%g' fill='%s' fill-opacity='0.25' stroke='%s' stroke-width='1.5' "
+            "stroke-dasharray='5 3'/>" % (cx_s - half_l, cy_s - half_w, 2 * half_l, 2 * half_w, ccol, ccol))
+    wl, ww = ag.LED_L / 2 * per_mm, ag.LED_W / 2 * per_mm
+    svg.add("<rect x='%g' y='%g' width='%g' height='%g' fill='#ffffff' stroke='%s' stroke-width='0.8'/>"
+            % (cx_s - wl, cy_s - ww, 2 * wl, 2 * ww, ccol))
+    for k in range(1, ag.LEDS + 1):
+        svg.dot(cx_s - wl + (k - 0.5) * ag.LED_PITCH * per_mm, cy_s, ccol, 1.6)
+    svg.dot(cx_s - half_l + 2.5 * per_mm, cy_s, DARK, 3)     # DIN end on the left
+    svg.rect(cx_s - 8, cy_s - 7, 16, 14, fill="#ffffff", stroke=ccol, width=1.2, rx=3)
+    svg.text(cx_s, cy_s + 4, "%d" % len(all_sticks), size=10, anchor="middle", weight="bold", color=DARK)
+
     # piece labels drawn last so that they stay on top
     for (mid, (nx, ny), text, color) in piece_labels:
         lx, ly = mid[0] + nx * 22, mid[1] + ny * 22
@@ -225,21 +281,21 @@ def main():
         if name == "letters":
             cx, cy, pts = group_centres[0]
             return (min(p[0] for p in pts) - LED / 2, cy), "L"
-        if name == "closedLight":
-            return centres["closed_light"][-1], "R"
-        if name == "arrowBodyTop":
-            return centres["arrow_body_top"][-1], "R"
-        if name == "arrowBodyBottom":
-            return centres["arrow_body_bottom"][0], "L"
-        if name == "arrowCapLeft":
-            return centres["arrow_cap_left"][0], "L"
-        if name == "arrowCapRight":
-            return centres["arrow_cap_right"][-1], "R"
-        if name == "arrowHeadLeft":
-            return centres["arrow_head_left_upper_wing"][-1], "L"
-        return centres["arrow_head_right_upper_wing"][-1], "R"
+        raise KeyError(name)
 
     boxes = {"L": [], "R": []}
+    stick_lines = ["arrowSticks", "%d Grove RGB LED sticks, %d LEDs each" % (len(stick_rows), cfg["LEDS_PER_STICK"]),
+                   "(shield connector; number as on the drawing)"]
+    for number, srow in enumerate(stick_rows, start=1):
+        stick_lines.append("%d  %s: %s" % (number, srow["name"], srow["connector"]))
+    stick_lines.append("dot = the ball of the stick, real size")
+    stick_pt = (X(right) - 6, Y((top_ + bottom) / 2))
+    boxes["R"].append([dict(name="arrowSticks"), stick_pt, stick_lines])
+    closed_lines = ["closedLight", "stick %d, %s - %d white LEDs" % (len(all_sticks), closed_stick["connector"], closed_stick["leds"]),
+                    "Grove stick BEHIND the plate (real size,", "dashed): its 74 x 4 mm LED window lights",
+                    "the CLOSED hole text (about 10 x 2.5 cm)", "while the casino is closed; put frosted",
+                    "plastic between the stick and the hole"]
+    boxes["R"].append([dict(name="closedLight"), (cx_s + half_l, cy_s), closed_lines])
     for row in info:
         pt, side = target(row["name"])
         lines = ["%s" % row["name"], "D%d - %d LEDs - %s" % (row["pin"], row["leds"],
@@ -248,11 +304,6 @@ def main():
         if row["name"] == "letters":
             lines.append("one strip, one piece per letter,")
             lines.append("joined in reading order (see table)")
-        elif row["name"] == "closedLight":
-            lines.append("white LEDs BEHIND the plate: they")
-            lines.append("light the CLOSED hole text (about")
-            lines.append("10 x 2.5 cm) while the casino is closed")
-            lines.append("piece: %d LEDs (#0-%d)" % (row["leds"], row["leds"] - 1))
         else:
             for label, n, a, b in sign_data.with_ranges(row["pieces"]):
                 lines.append("%s: %d LEDs (#%d-%d)" % (label, n, a, b) if n > 1 else "%s: 1 LED (#%d)" % (label, a))
@@ -300,7 +351,7 @@ def main():
     # ---- tables ------------------------------------------------------------------------------------------
     pw_ = 760
     table_y = 120
-    height2 = int(table_y + 24 + n_rows * 22 + 3 * 16 + 24 + 60 + 72 + 90 + 150)
+    height2 = int(table_y + 24 + n_rows * 22 + 3 * 16 + 24 + 60 + 72 + 90 + 150 + 60 + len(all_sticks) * 20)
     ps = Svg(pw_, height2)
     ps.text(pw_ / 2, 34, "Casino sign - parts list: strips, LED counts and cutting list", size=18,
             anchor="middle", weight="bold")
@@ -369,6 +420,24 @@ def main():
     ps.text(40, lt + 94, "The letter pieces are joined in reading order (CASINO, then OPEN) with wire jumpers;",
             size=11, color=GREY)
     ps.text(40, lt + 110, "together they are the one strip 'letters' on pin D%d." % by_name["letters"]["pin"],
+            size=11, color=GREY)
+
+    # arrow sticks: plug-in parts, not cut
+    sy0 = lt + 150
+    ps.text(40, sy0 - 12, "Grove sticks: 10 arrow sticks + the CLOSED light (in the shield, not cut)",
+            size=15, weight="bold")
+    scols = [40, 190, 280, 340]
+    ps.rect(30, sy0, pw_ - 60, 24, fill="#eeeeee", stroke="#bbbbbb", width=1)
+    for x, h in zip(scols, ("Stick", "Connector", "LEDs", "Position")):
+        ps.text(x, sy0 + 17, h, size=12, weight="bold")
+    for i, srow in enumerate(all_sticks):
+        yy = sy0 + 24 + i * 20
+        ps.rect(30, yy, pw_ - 60, 20, fill="#ffffff" if i % 2 == 0 else "#fafafa", stroke="#dddddd", width=1)
+        ps.text(scols[0], yy + 14, "%d  %s" % (i + 1, srow["name"]), size=12, weight="bold", color=COLORS["arrowSticks"])
+        ps.text(scols[1], yy + 14, srow["connector"], size=12)
+        ps.text(scols[2], yy + 14, "%d" % srow["leds"], size=12)
+        ps.text(scols[3], yy + 14, srow["desc"], size=12)
+    ps.text(40, sy0 + 24 + len(all_sticks) * 20 + 18, "Stick body 83 x 10 mm, LED window 74 x 4 mm; arrow geometry and drill template: arrow_sticks/.",
             size=11, color=GREY)
 
     OUTPUT_PARTS.write_text(ps.render_a4(landscape=False))

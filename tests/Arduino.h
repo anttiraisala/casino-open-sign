@@ -11,6 +11,7 @@
 #define A1 55
 #define A2 56
 #define A3 57
+#define A15 69
 #define HIGH 1
 #define LOW 0
 #define INPUT_PULLUP 2
@@ -26,7 +27,8 @@ inline void delay(unsigned long) {}
 inline void randomSeed(unsigned long s) { srand((unsigned)s); }
 inline long random(long max) { return rand() % max; }
 inline long random(long min, long max) { return min + rand() % (max - min); }
-inline int analogRead(int) { return 42; }
+inline int g_analogPin = -1;              // pin of the last analogRead() (checked by the harness)
+inline int analogRead(int pin) { g_analogPin = pin; return 42; }
 inline void pinMode(uint8_t, uint8_t) {}
 inline int digitalRead(uint8_t pin) { return g_pinLevel[pin]; }
 extern uint8_t g_pinOut[64];         // levels written by the sketch with digitalWrite()
