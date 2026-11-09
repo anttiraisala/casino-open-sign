@@ -316,7 +316,7 @@ function scene() {
 // ---- JSON
 {
   const d = core.defaultState();
-  check(d.plate.w === 960 && d.plate.h === 300 && d.texts.open.x === 580 && d.texts.closed.x === 540 && d.holeD === 10 && d.texts.casino.text === 'CASINO' && d.texts.open.text === 'OPEN' && d.texts.closed.text === 'CLOSED', 'defaults: plate 960 x 300, OPEN at 580 (fits the plate), hole 10 mm, texts');
+  check(d.plate.w === 600 && d.plate.h === 300 && d.frameWidth === 30 && d.texts.casino.x === 30 && d.texts.casino.y === 10 && d.texts.open.x === 120 && d.texts.open.y === 112 && d.texts.closed.x === 20 && d.texts.closed.y === 245 && d.arrow.x === 125 && d.arrow.y === 198 && d.holeD === 10 && d.texts.casino.text === 'CASINO' && d.texts.open.text === 'OPEN' && d.texts.closed.text === 'CLOSED', 'defaults: plate 600 x 300, frame 30 mm, text and arrow positions, hole 10 mm, texts');
   check(d.texts.closed.h === d.texts.casino.h / 2 && d.texts.open.sameFont && d.texts.closed.sameFont, 'CLOSED is half as high; OPEN and CLOSED use the CASINO font by default');
   const back = core.fromJson(core.toJson(d));
   check(JSON.stringify(back) === JSON.stringify(d), 'JSON round trip keeps the state');
@@ -339,6 +339,34 @@ function finish() {
   console.log(fails ? 'RESULT: ' + fails + ' failures' : 'RESULT: all checks passed');
   process.exit(fails ? 1 : 0);
 }
+
+// ---- frame material
+(function () {
+  var fb = core.frameBars({ w: 600, h: 300 }, 30);
+  check(fb.bars.length === 4 && fb.bars[0].name === 'Top' && fb.bars[0].long === 660 && fb.bars[0].short === 600 && fb.bars[1].name === 'Bottom' && fb.bars[1].long === 660 && fb.bars[2].name === 'Left' && fb.bars[2].long === 360 && fb.bars[2].short === 300 && fb.bars[3].name === 'Right' && fb.bars[3].long === 360, 'frame bars 600 x 300, width 30: 660/600 and 360/300');
+  check(fb.inner === 1800 && fb.plateEdge === 1800 && fb.outer === 2040 && fb.material === 2040 && fb.width === 30, 'frame totals: inner 1800, outer 2040, material 2040');
+  var f2 = core.frameBars({ w: 960, h: 300 }, 100);
+  check(f2.outer === 3320, 'frame outer 960 x 300, width 100 is 3320, got ' + f2.outer);
+  check(f2.bars[0].long === 1160 && f2.bars[2].long === 500 && f2.material === 3320, 'bar lengths 1160 and 500 at width 100');
+  var f0 = core.frameBars({ w: 600, h: 300 }, 0);
+  check(f0.bars.length === 0 && f0.material === 0 && f0.inner === 1800 && f0.outer === 1800, 'width 0: no bars, no material, plate perimeter 1800');
+  var sh = core.frameSheet({ w: 600, h: 300 }, 30, 'T');
+  check(sh.w === 297 && sh.h === 210 && sh.cs.indexOf('(Top bar: long edge 660 mm, short edge 600 mm, width 30 mm, 45 deg mitres) Tj') >= 0 && sh.cs.indexOf('(Left bar: long edge 360 mm, short edge 300 mm, width 30 mm, 45 deg mitres) Tj') >= 0 && sh.cs.indexOf('material needed \\(sum of the long edges\\) 2040 mm') >= 0 && sh.cs.indexOf('Plate edge \\(frame inner edge\\) 1800 mm; frame outer edge 2040 mm') >= 0 && sh.cs.indexOf('Scale 1:2.383') >= 0, 'frame sheet: A4 landscape, bar labels and totals');
+  check((sh.cs.match(/ B\n/g) || []).length === 4, 'frame sheet draws four bars');
+  check(core.frameSheet({ w: 600, h: 300 }, 0, 'T').cs.indexOf('No frame') >= 0, 'frame sheet with width 0 says no frame');
+  var thin = core.frameSheet({ w: 1000, h: 1000 }, 1, 'T');
+  check(thin.cs.indexOf('width drawn at least 2 mm') >= 0, 'very thin frame is drawn at least 2 mm and says so');
+  var pdf = core.pdfTiles([], { w: 100, h: 100 }, 'A4', 't', [], [sh]);
+  check(pdf.pages === 2 && pdf.tilePages === 1 && pdf.text.indexOf('/MediaBox [0 0 841.89') >= 0, 'extra page is appended with its own A4 landscape media box');
+  var a3 = core.pdfTiles([], { w: 100, h: 100 }, 'A3', 't', [], [sh]);
+  check(/MediaBox \[0 0 1190\.551 841\.89\][\s\S]*MediaBox \[0 0 841\.89 595\.276\]/.test(a3.text), 'A3 tile page and the A4 landscape frame page keep their own sizes');
+  var ty = /([\d.]+) Td \(Top bar:/.exec(thin.cs); var yExp = (210 - (10 + 6 + 2 + 5.5)) * 72 / 25.4 - 7.5 * 0.35;
+  check(ty && Math.abs(parseFloat(ty[1]) - yExp) < 0.05, 'a very thin frame is drawn 2 mm thick (label position), got ' + (ty && ty[1]) + ' want ' + yExp.toFixed(2));
+  var only = core.pdfTiles(null, { w: 600, h: 300 }, 'A4', 't', [], [sh]);
+  check(only.pages === 1 && only.tilePages === 0, 'items null: only the extra page');
+  var j = core.fromJson(JSON.stringify({ version: 1, frameWidth: 250 })), j2 = core.fromJson(JSON.stringify({ version: 1, frameWidth: -5 })), j3 = core.fromJson('{"version":1}'), j4 = core.fromJson(JSON.stringify({ version: 1, frameWidth: 12.5 }));
+  check(j.frameWidth === 100 && j2.frameWidth === 0 && j3.frameWidth === 30 && j4.frameWidth === 12.5, 'frameWidth json: clamp 0-100, default 30');
+})();
 setTimeout(finish, 3000);
 
 // resizing the plate around its centre

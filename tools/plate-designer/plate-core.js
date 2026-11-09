@@ -546,9 +546,9 @@
 
   // ref (optional): reference drawing under the drill pattern, so the sheet doubles as a layout drawing:
   //   {kind:'poly', loops:[[[x,y],...],...], fill:0..1, stroke:0..1} (even-odd fill) and {kind:'text', x, y, s, size} (centred).
-  function pdfTiles(items, plate, paper, title, ref) {
+  function pdfTiles(items, plate, paper, title, ref, extras) {
     var pw = PAPER[paper][0], ph = PAPER[paper][1], margin = 10, tw = pw - 2 * margin, th = ph - 2 * margin;
-    var cols = Math.max(1, Math.ceil(plate.w / tw - 1e-9)), rows = Math.max(1, Math.ceil(plate.h / th - 1e-9));
+    var cols = Math.max(1, Math.ceil(plate.w / tw - 1e-9)), rows = items ? Math.max(1, Math.ceil(plate.h / th - 1e-9)) : 0;   // items null = only the extra pages
     var objs = [], pages = [];
     function add(s) { objs.push(s); return objs.length; }
     var K = MM_TO_PT;
@@ -594,15 +594,17 @@
         cs += '0.6 G 0.3 w ' + fmt(margin * K) + ' ' + fmt(margin * K) + ' ' + fmt(tw * K) + ' ' + fmt(th * K) + ' re S\n';
         cs += 'BT /F1 8 Tf 0 g ' + fmt(margin * K) + ' ' + fmt((ph - margin + 3) * K) + ' Td (' + pdfEscape((title || 'Drill pattern') + ' - tile ' + (r + 1) + '/' + rows + ' row, ' + (c + 1) + '/' + cols +
           ' col - print at 100% (no scaling) - plate ' + fmt(plate.w) + ' x ' + fmt(plate.h) + ' mm') + ') Tj ET\n';
-        pages.push(cs);
+        pages.push({ cs: cs, w: pw, h: ph });
       }
     }
+    (extras || []).forEach(function (e) { pages.push(e); });
+    var tilePages = rows * cols;
     // object numbers: 1 catalog, 2 pages, 3 font, then per page: content, page
     objs.push(''); objs.push(''); objs.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
     var kids = [];
-    pages.forEach(function (cs) {
-      var contentNo = add('<< /Length ' + cs.length + ' >>\nstream\n' + cs + 'endstream');
-      var pageNo = add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + fmt(pw * K) + ' ' + fmt(ph * K) + '] /Contents ' + contentNo + ' 0 R /Resources << /Font << /F1 3 0 R >> >> >>');
+    pages.forEach(function (pg) {
+      var cs = pg.cs, contentNo = add('<< /Length ' + cs.length + ' >>\nstream\n' + cs + 'endstream');
+      var pageNo = add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + fmt(pg.w * K) + ' ' + fmt(pg.h * K) + '] /Contents ' + contentNo + ' 0 R /Resources << /Font << /F1 3 0 R >> >> >>');
       kids.push(pageNo + ' 0 R');
     });
     objs[0] = '<< /Type /Catalog /Pages 2 0 R >>';
@@ -613,9 +615,54 @@
     out += 'xref\n0 ' + (objs.length + 1) + '\n0000000000 65535 f \n';
     offsets.forEach(function (o) { out += ('0000000000' + o).slice(-10) + ' 00000 n \n'; });
     out += 'trailer\n<< /Size ' + (objs.length + 1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF\n';
-    return { text: out, pages: pages.length, cols: cols, rows: rows };
+    return { text: out, pages: pages.length, cols: cols, rows: rows, tilePages: tilePages };
   }
   function pdfEscape(s) { return String(s).replace(/[\\()]/g, '\\$&').replace(/[^\x20-\x7e]/g, '?'); }
+
+  // ------------------------------------------------------------------ frame material (picture-frame border around the plate)
+
+  // The plate edge is the inner edge of the frame; the four bars are mitred at 45 degrees.
+  // Top/bottom bars: long edge = plate width + 2 x frame width, short edge = plate width; left/right likewise with the height.
+  function frameBars(plate, fw) {
+    fw = Number(fw) || 0;
+    if (!(fw > 0)) return { width: 0, bars: [], inner: 2 * (plate.w + plate.h), outer: 2 * (plate.w + plate.h), material: 0, plateEdge: 2 * (plate.w + plate.h) };
+    var bars = [
+      { name: 'Top', long: plate.w + 2 * fw, short: plate.w },
+      { name: 'Bottom', long: plate.w + 2 * fw, short: plate.w },
+      { name: 'Left', long: plate.h + 2 * fw, short: plate.h },
+      { name: 'Right', long: plate.h + 2 * fw, short: plate.h }
+    ];
+    var outer = 2 * (plate.w + plate.h) + 8 * fw;
+    return { width: fw, bars: bars, inner: 2 * (plate.w + plate.h), outer: outer, material: outer, plateEdge: 2 * (plate.w + plate.h) };
+  }
+
+  // One A4 landscape page (297 x 210 mm) with the four mitred bars drawn to one common scale. Returns {w, h, cs} (PDF content stream).
+  function frameSheet(plate, fw, title) {
+    var W = 297, H = 210, M = 10, K = MM_TO_PT, fb = frameBars(plate, fw), cs = '';
+    function T(x, y, str, size, centre) { // x, y in page mm, y down from the top
+      var sz = size || 7, w = pdfEscape(str).length * sz * 0.5, px = x * K - (centre ? w / 2 : 0);
+      return 'BT /F1 ' + fmt(sz) + ' Tf 0.15 g ' + fmt(px) + ' ' + fmt((H - y) * K - sz * 0.35) + ' Td (' + pdfEscape(str) + ') Tj ET\n';
+    }
+    cs += T(M, M - 2, (title || 'Frame') + ' - frame material, plate ' + fmt(plate.w) + ' x ' + fmt(plate.h) + ' mm', 9, false);
+    if (!fb.bars.length) { cs += T(W / 2, H / 2, 'No frame (frame width 0 mm)', 12, true); return { w: W, h: H, cs: cs }; }
+    var maxLong = Math.max(fb.bars[0].long, fb.bars[2].long), availW = W - 2 * M, availH = H - 2 * M - 22;
+    var rowGap = 14, sc = Math.min(availW / maxLong, (availH / 4 - rowGap) / fw), thick = Math.max(fw * sc, 2), drawnThick = thick > fw * sc + 1e-9;
+    var y = M + 6;
+    fb.bars.forEach(function (b, i) {
+      var L = b.long * sc, S2 = Math.max(b.short * sc, 0), x0 = M + (availW - L) / 2, off = (L - S2) / 2;
+      var outerAtTop = (i % 2 === 0), ya = y, yb = y + thick;
+      // trapezoid: long edge on the outer side (top for Top/Left, bottom for Bottom/Right)
+      var pts = outerAtTop ? [[x0, ya], [x0 + L, ya], [x0 + L - off, yb], [x0 + off, yb]] : [[x0 + off, ya], [x0 + L - off, ya], [x0 + L, yb], [x0, yb]];
+      cs += '0.93 g 0 G 0.4 w ';
+      pts.forEach(function (q, k) { cs += fmt(q[0] * K) + ' ' + fmt((H - q[1]) * K) + (k ? ' l ' : ' m '); });
+      cs += 'h B\n';
+      cs += T(x0 + L / 2, yb + 5.5, b.name + ' bar: long edge ' + fmt(b.long) + ' mm, short edge ' + fmt(b.short) + ' mm, width ' + fmt(fw) + ' mm, 45 deg mitres', 7.5, true);
+      y += thick + rowGap;
+    });
+    cs += T(M, H - M - 8, 'Plate edge (frame inner edge) ' + fmt(fb.inner) + ' mm; frame outer edge ' + fmt(fb.outer) + ' mm; material needed (sum of the long edges) ' + fmt(fb.material) + ' mm.', 8, false);
+    cs += T(M, H - M - 2, 'Scale 1:' + fmt(1 / sc) + ' (all bars to the same scale' + (drawnThick ? '; width drawn at least 2 mm' : '') + '). Not for printing at 100%.', 7, false);
+    return { w: W, h: H, cs: cs };
+  }
 
   // ------------------------------------------------------------------ nesting of letters on a raw sheet
 
@@ -638,17 +685,18 @@
   function defaultState() {
     return {
       version: 1,
-      plate: { w: 960, h: 300 },
+      plate: { w: 600, h: 300 },
+      frameWidth: 30,
       sameHeight: true,
       holeD: 10,
       minStroke: 3,
       frame: { layout: 'topbottom', unit: 100, stripWidth: 10, inside: false },
       texts: {
-        casino: { text: 'CASINO', font: 'Limelight', weight: 400, x: 20, y: 20, h: 100, mode: 'uniform', cellW: 90, spacing: 6, thicken: 0, holeOffsets: [], extraHoles: [] },
-        open: { text: 'OPEN', font: 'Limelight', weight: 400, x: 580, y: 20, h: 100, mode: 'uniform', cellW: 90, spacing: 6, thicken: 0, holeOffsets: [], extraHoles: [], sameFont: true },
-        closed: { text: 'CLOSED', font: 'Limelight', weight: 400, x: 540, y: 190, h: 50, mode: 'natural', cellW: 45, spacing: 4, thicken: 0, holeOffsets: [], extraHoles: [], sameFont: true }
+        casino: { text: 'CASINO', font: 'Limelight', weight: 400, x: 30, y: 10, h: 100, mode: 'uniform', cellW: 90, spacing: 6, thicken: 0, holeOffsets: [], extraHoles: [] },
+        open: { text: 'OPEN', font: 'Limelight', weight: 400, x: 120, y: 112, h: 100, mode: 'uniform', cellW: 90, spacing: 6, thicken: 0, holeOffsets: [], extraHoles: [], sameFont: true },
+        closed: { text: 'CLOSED', font: 'Limelight', weight: 400, x: 20, y: 245, h: 50, mode: 'natural', cellW: 45, spacing: 4, thicken: 0, holeOffsets: [], extraHoles: [], sameFont: true }
       },
-      arrow: { x: 20, y: 150 },
+      arrow: { x: 125, y: 198 },
       closedRound: { dx: 0, dy: 0 },
       closedSlot: { dx: 0, dy: 0, w: 74, h: 4 },
       strips: [],
@@ -665,6 +713,7 @@
     if (!o || typeof o !== 'object') throw new Error('Not a layout');
     if (o.version !== 1) throw new Error('Unknown layout version ' + o.version);
     s.sameHeight = o.sameHeight !== false;
+    s.frameWidth = num(o.frameWidth, 0, 100, d.frameWidth);
     if (o.plate) { s.plate.w = num(o.plate.w, 1, 1000, d.plate.w); s.plate.h = num(o.plate.h, 1, 1000, d.plate.h); }
     s.holeD = num(o.holeD, 5, 30, d.holeD);
     s.minStroke = num(o.minStroke, 0.5, 20, d.minStroke);
@@ -755,7 +804,7 @@
     MM_TO_PT: MM_TO_PT, distanceTo: distanceTo, signedField: signedField, rasterize: rasterize, marching: marching, simplifyClosed: simplifyClosed,
     Glyph: Glyph, glyphFromPolygons: glyphFromPolygons, placeText: placeText, holeStatus: holeStatus, suggestHole: suggestHole, holeOffsetFor: holeOffsetFor,
     frameCounts: frameCounts, unionBox: unionBox, boxesTouch: boxesTouch, bandSelection: bandSelection, groupScaleLimits: groupScaleLimits, groupCentre: groupCentre, scrollDelta: scrollDelta, resizePlate: resizePlate, frameSides: frameSides, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripCoverage: stripCoverage,
-    drillItems: drillItems, epsFromItems: epsFromItems, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, nestShelves: nestShelves,
+    drillItems: drillItems, epsFromItems: epsFromItems, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, frameBars: frameBars, frameSheet: frameSheet, nestShelves: nestShelves,
     defaultState: defaultState, fromJson: fromJson, toJson: toJson
   };
 });

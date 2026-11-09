@@ -5,6 +5,7 @@ from playwright.sync_api import sync_playwright
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 URL = 'file://' + ROOT + '/tools/plate-designer/index.html'
 fails = []
+LEGACY_JS = "(function(){var s=PlateApp.state();s.plate.w=960;s.plate.h=300;s.texts.casino.x=20;s.texts.casino.y=20;s.texts.open.x=580;s.texts.open.y=20;s.texts.closed.x=540;s.texts.closed.y=190;s.arrow.x=20;s.arrow.y=150;PlateApp.commit();})()"
 def check(c, m):
     if not c: print('FAIL: ' + m); fails.append(m)
 def near(a, b, t, m): check(abs(a - b) <= t, '%s (got %s, want %s +-%s)' % (m, a, b, t))
@@ -12,6 +13,8 @@ with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_context(viewport={'width': 1500, 'height': 850}, color_scheme='dark', permissions=['clipboard-read', 'clipboard-write']).new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' and 'fonts.googleapis' not in m.text and 'ERR_' not in m.text else None)
     pg.goto(URL); pg.wait_for_timeout(500)
+    d0 = pg.evaluate('PlateApp.state()'); check(d0['plate']['w'] == 600 and d0['plate']['h'] == 300 and d0['frameWidth'] == 30, 'defaults: plate 600 x 300, frame width 30')
+    pg.evaluate(LEGACY_JS); pg.wait_for_timeout(50)
     S = lambda: pg.evaluate('PlateApp.state()')
     pg.evaluate("PlateApp.useFont('casino','DejaVu Sans')"); pg.wait_for_function("PlateApp.fontStatus('DejaVu Sans') && PlateApp.fontStatus('DejaVu Sans') !== 'loading'", timeout=15000)
     check(pg.input_value('#t-casino-font') == 'DejaVu Sans', 'font combobox shows the custom font')
@@ -27,16 +30,16 @@ with sync_playwright() as p:
     eps = pg.evaluate('PlateApp.drillEps()')
     check(eps.count(' arc ') == 6 + 4 + 10 + 1, 'EPS circles: 6+4 letters, 10 arrow, 1 CLOSED round, got %d' % eps.count(' arc '))
     check('%%BoundingBox: 0 0 ' in eps, 'EPS header')
-    pdf = pg.evaluate("PlateApp.drillPdf('A4')"); check(pdf['pages'] == 8 and pdf['cols'] == 4 and pdf['rows'] == 2 and pdf['text'].startswith('%PDF-1.4'), 'A4 tiling of 960 x 300: 4 x 2 pages, got %s' % ((pdf['cols'], pdf['rows']),))
+    pdf = pg.evaluate("PlateApp.drillPdf('A4')"); check(pdf['pages'] == 9 and pdf['tilePages'] == 8 and pdf['cols'] == 4 and pdf['rows'] == 2 and pdf['text'].startswith('%PDF-1.4'), 'A4 tiling of 960 x 300: 4 x 2 pages, got %s' % ((pdf['cols'], pdf['rows']),))
     ptxt = pdf['text']; check(' B*' in ptxt and '(C1) Tj' in ptxt and '(O6) Tj' in ptxt and '(L-CAP D2) Tj' in ptxt and '(R-WING-DN A2) Tj' in ptxt and '(CLOSED) Tj' in ptxt, 'drill PDF has the letter and arrow shapes with labels (C1..N6, stick names, CLOSED)')
     check(ptxt.count(' B*') >= 6 + 4 + 6 + 10, 'one filled shape per letter and per arrow stick, got %d' % ptxt.count(' B*'))
-    nl = ptxt.count('0 0.45 0.15 RG'); check(nl == 21 * 4 * pdf['pages'], 'four dimension lines for each of the 21 holes on each of the %d tiles, got %d' % (pdf['pages'], nl))
+    nl = ptxt.count('0 0.45 0.15 RG'); check(nl == 21 * 4 * pdf['tilePages'], 'four dimension lines for each of the 21 holes on each of the %d tiles, got %d' % (pdf['pages'], nl))
     sc2 = pg.evaluate('PlateApp.scene()'); c0 = sc2['casino']['cells'][0]['hole']; W = 960
     check('(%s) Tj' % ('%g' % round(c0['x'], 1)) in ptxt and '(%s) Tj' % ('%g' % round(W - c0['x'], 1)) in ptxt and '(%s) Tj' % ('%g' % round(c0['y'], 1)) in ptxt, 'the first hole distances (left %.1f, right %.1f, up %.1f) are written in the PDF' % (c0['x'], W - c0['x'], c0['y']))
     pg.uncheck('#exPdfDims'); p3 = pg.evaluate("PlateApp.drillPdf('A4')")['text']; check('0 0.45 0.15 RG' not in p3 and ' B*' in p3, 'the dimension option turns the numbers off and keeps the reference drawing'); pg.check('#exPdfDims')
     check('Tj' not in pg.evaluate('PlateApp.drillEps()') and 'Tj' not in pg.evaluate('PlateApp.drillDxf()'), 'EPS and DXF have no dimension text')
     pg.uncheck('#exPdfRef'); p2 = pg.evaluate("PlateApp.drillPdf('A4')")['text']; check(' B*' not in p2 and '(C1) Tj' not in p2, 'the option turns the reference drawing off'); pg.check('#exPdfRef')
-    pdf3 = pg.evaluate("PlateApp.drillPdf('A3')"); check(pdf3['pages'] == 6, 'A3 tiling: 3 x 2 pages, got %d' % pdf3['pages'])
+    pdf3 = pg.evaluate("PlateApp.drillPdf('A3')"); check(pdf3['pages'] == 7, 'A3 tiling: 3 x 2 pages, got %d' % pdf3['pages'])
     dxf = pg.evaluate('PlateApp.drillDxf()'); check(dxf.count('0\nCIRCLE\n') == 21 and dxf.startswith('0\nSECTION') and dxf.endswith('0\nEOF\n'), 'DXF has 21 circles, got %d' % dxf.count('0\nCIRCLE\n'))
     ld = pg.evaluate('PlateApp.lettersEps()'); check(ld['dxf'].count('POLYLINE\n8\nLETTERS') == ld['polys'] and ld['polys'] >= 14, 'letter DXF has one polyline per outline')
     pg.click('#exDxf'); pg.wait_for_timeout(100); check(pg.input_value('#exName') == 'plate-drill-pattern.dxf' and pg.input_value('#exText').count('CIRCLE') == 21, 'export is also shown as text (name and content)')
@@ -183,7 +186,7 @@ with sync_playwright() as p:
     pg.goto('file://' + ROOT + '/index.html'); pg.wait_for_url('**/tools/plate-designer/index.html', timeout=5000); check(pg.locator('#plateW').count() == 1, 'root index.html redirects to the Plate Designer')
     pg.goto(URL); pg.wait_for_timeout(300)
     # plate edge cut line and LED strips inside the plate
-    pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate("PlateApp.useFont('casino','DejaVu Sans')")
+    pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate(LEGACY_JS); pg.wait_for_timeout(50); pg.evaluate("PlateApp.useFont('casino','DejaVu Sans')")
     n0 = pg.evaluate('PlateApp.lettersEps()'); check('PLATE_CUT' not in n0['dxf'], 'plate cut is off by default')
     pg.check('#exPlateCut'); ld = pg.evaluate('PlateApp.lettersEps()')
     check(ld['dxf'].count('POLYLINE\n8\nPLATE_CUT') == 1 and ld['polys'] == n0['polys'] + 1 and ld['text'].count('closepath') == n0['text'].count('closepath') + 1, 'plate edge adds one closed outline to the letter EPS and DXF')
@@ -197,7 +200,7 @@ with sync_playwright() as p:
     ghost = pg.evaluate("document.querySelectorAll('#svg g[pointer-events=none] rect[stroke-dasharray]').length"); check(ghost == 4, 'inside: four ghost strips (dashed, translucent) are drawn over the plate, got %d' % ghost)
     pg.uncheck('#frameInside'); pg.wait_for_timeout(100)
     # extra holes in a letter
-    pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate("PlateApp.useFont('casino','DejaVu Sans')"); pg.click('#zfit'); pg.wait_for_timeout(200)
+    pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate(LEGACY_JS); pg.wait_for_timeout(50); pg.evaluate("PlateApp.useFont('casino','DejaVu Sans')"); pg.click('#zfit'); pg.wait_for_timeout(200)
     def scr(x, y):
         vb = [float(v) for v in pg.evaluate("document.getElementById('svg').getAttribute('viewBox')").split()]; r = pg.evaluate("(function(){var b=document.getElementById('svg').getBoundingClientRect();return [b.left,b.top,b.width,b.height]})()")
         return r[0] + (x - vb[0]) / vb[2] * r[2], r[1] + (y - vb[1]) / vb[3] * r[3]
@@ -222,7 +225,7 @@ with sync_playwright() as p:
     check(pg.locator('#t-casino-xbox .xchip').count() == 0, 'a hole of a letter that no longer exists is not listed')
     pg.fill('#t-casino-text', 'CASINO'); pg.evaluate('PlateApp.commit()')
     # plate centre lines and Ctrl = no snapping
-    pg.goto(URL); pg.wait_for_timeout(300); pg.click('#zfit'); pg.wait_for_timeout(100)
+    pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate(LEGACY_JS); pg.wait_for_timeout(50); pg.click('#zfit'); pg.wait_for_timeout(100)
     check(pg.evaluate("document.querySelectorAll('#svg line[stroke=\"#0a8f8f\"]').length") == 2 and 'centre 480, 150' in pg.evaluate("document.getElementById('svg').textContent"), 'the plate centre lines and the centre label (490, 150) are drawn')
     check(pg.evaluate("document.querySelector('#svg line[stroke=\"#0a8f8f\"]').getAttribute('x1')") == '480', 'vertical centre line at x = 480')
     check(S()['ui']['snap'] is True, 'snap is on by default')
@@ -235,7 +238,7 @@ with sync_playwright() as p:
     near(S()['texts']['casino']['x'], 211.5, 0.3, 'with Ctrl held the same drag does not snap (x = 211.5)')
     pg.fill('#t-casino-x', '20'); pg.evaluate('PlateApp.commit()')
     # plate resize happens around the plate centre
-    pg.goto(URL); pg.wait_for_timeout(300); cx0 = S()['texts']['casino']['x']; w0 = S()['plate']['w']
+    pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate(LEGACY_JS); pg.wait_for_timeout(50); cx0 = S()['texts']['casino']['x']; w0 = S()['plate']['w']
     pg.fill('#plateWn', str(w0 - 100)); pg.wait_for_timeout(100); near(S()['texts']['casino']['x'], cx0 - 50, 0.01, 'plate 100 mm narrower: content shifts 50 mm (both edges move)'); check(S()['plate']['w'] == w0 - 100, 'plate width changed')
     h0 = S()['plate']['h']; cy0 = S()['texts']['casino']['y']; pg.fill('#plateHn', str(h0 - 40)); pg.wait_for_timeout(100); near(S()['texts']['casino']['y'], cy0 - 20, 0.01, 'plate 40 mm lower: content shifts 20 mm up')
     pg.fill('#plateWn', str(w0)); pg.fill('#plateHn', str(h0)); pg.wait_for_timeout(100); near(S()['texts']['casino']['x'], cx0, 0.01, 'back to the old width: content is back'); pg.evaluate('PlateApp.commit()')
@@ -246,7 +249,7 @@ with sync_playwright() as p:
     check(pg.get_attribute('#plateW', 'max') == '1000' and pg.get_attribute('#plateH', 'max') == '1000' and pg.get_attribute('#plateWn', 'min') == '1', 'the sliders and number fields are 1-1000')
     pg.fill('#plateWn', '960'); pg.fill('#plateHn', '300'); pg.wait_for_timeout(100); pg.evaluate('PlateApp.commit()')
     # gold flash and panel scrolling when a text is selected from the drawing
-    pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate("PlateApp.useFont('casino','DejaVu Sans')"); pg.set_viewport_size({'width': 1300, 'height': 520}); pg.click('#zfit'); pg.wait_for_timeout(200)
+    pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate(LEGACY_JS); pg.wait_for_timeout(50); pg.evaluate("PlateApp.useFont('casino','DejaVu Sans')"); pg.set_viewport_size({'width': 1300, 'height': 520}); pg.click('#zfit'); pg.wait_for_timeout(200)
     pg.evaluate("document.getElementById('panel').scrollTop = 0"); pg.wait_for_timeout(100)
     def sect_state(key):
         return pg.evaluate("(function(){var p=document.getElementById('panel').getBoundingClientRect(),e=document.getElementById('sect-%s').getBoundingClientRect();return [e.top-p.top,e.bottom-p.top,document.getElementById('panel').clientHeight,document.getElementById('sect-%s').classList.contains('flash')]})()" % (key, key))
@@ -266,8 +269,21 @@ with sync_playwright() as p:
     pg.mouse.click(*scr(S()['arrow']['x'] + 20, S()['arrow']['y'] + 20)); pg.wait_for_timeout(150)
     check(pg.evaluate('PlateApp.selection().type') == 'arrow' and not any(sect_state(k)[3] for k in ('casino', 'open', 'closed')) and pg.evaluate("document.querySelectorAll('#svg rect[stroke=\"#e8a000\"]').length") == 0, 'selecting the arrow does not flash anything')
     pg.set_viewport_size({'width': 1400, 'height': 800}); pg.wait_for_timeout(100)
+    # frame material: field, info text, PDF page
+    pg.goto(URL); pg.evaluate('localStorage.clear()'); pg.goto(URL); pg.wait_for_timeout(300)
+    check(pg.input_value('#frameWn') == '30' and pg.get_attribute('#frameW', 'max') == '100' and pg.get_attribute('#frameW', 'min') == '0' and pg.get_attribute('#frameWn', 'max') == '100', 'frame width field: default 30, range 0-100')
+    fi = pg.inner_text('#frameMatInfo').replace('\xa0', ' '); check('plate edge 1800 mm' in fi and 'outer edge 2040 mm' in fi and 'long 660 mm, short 600 mm' in fi and 'long 360 mm, short 300 mm' in fi and 'Material needed (long edges): 2040 mm' in fi, 'frame info: ' + fi)
+    pg.fill('#frameWn', '50'); pg.wait_for_timeout(100); fi = pg.inner_text('#frameMatInfo'); check(S()['frameWidth'] == 50 and 'outer edge 2200 mm' in fi and 'long 700 mm' in fi, 'frame width 50 updates the info: ' + fi)
+    pg.fill('#frameWn', '500'); pg.wait_for_timeout(100); check(S()['frameWidth'] == 100, 'frame width limited to 100')
+    pg.fill('#frameWn', '-3'); pg.wait_for_timeout(100); check(S()['frameWidth'] == 0 and 'No frame' in pg.inner_text('#frameMatInfo') and 'perimeter 1800 mm' in pg.inner_text('#frameMatInfo'), 'frame width 0: no frame, perimeter shown')
+    fp0 = pg.evaluate("PlateApp.drillPdf('A4')"); check(fp0['pages'] == fp0['tilePages'], 'no frame page in the drill PDF when the width is 0')
+    pg.fill('#frameWn', '30'); pg.wait_for_timeout(100); fp = pg.evaluate("PlateApp.drillPdf('A4')")
+    check(fp['pages'] == fp['tilePages'] + 1 and 'Top bar: long edge 660 mm' in fp['text'], 'the frame page is the last page of the drill PDF')
+    fr = pg.evaluate('PlateApp.framePdf()'); check(fr['pages'] == 1 and fr['text'].startswith('%PDF-1.4') and 'Right bar: long edge 360 mm' in fr['text'] and '/MediaBox [0 0 841.89' in fr['text'], 'separate frame PDF: one A4 landscape page')
+    pg.fill('#plateWn', '1000'); pg.fill('#plateHn', '800'); pg.wait_for_timeout(100); check('outer edge 3840 mm' in pg.inner_text('#frameMatInfo'), 'frame info follows the plate size: ' + pg.inner_text('#frameMatInfo'))
+    pg.evaluate('PlateApp.commit()'); pg.reload(); pg.wait_for_timeout(300); check(S()['frameWidth'] == 30, 'frame width survives reload')
     # selecting several texts: rubber band, shift / ctrl, group move and scale, same height
-    pg.goto(URL); pg.evaluate('localStorage.clear()'); pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate("PlateApp.useFont('casino','DejaVu Sans')"); pg.set_viewport_size({'width': 1400, 'height': 800}); pg.click('#zfit'); pg.wait_for_timeout(200)
+    pg.goto(URL); pg.evaluate('localStorage.clear()'); pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate(LEGACY_JS); pg.wait_for_timeout(50); pg.evaluate("PlateApp.useFont('casino','DejaVu Sans')"); pg.set_viewport_size({'width': 1400, 'height': 800}); pg.click('#zfit'); pg.wait_for_timeout(200)
     def box(k): return pg.evaluate('PlateApp.scene().%s' % k)
     def drag_mm(a, b, steps=6, button='left'):
         pg.mouse.move(*scr(*a)); pg.mouse.down(button=button); pg.mouse.move(*scr(*b), steps=steps); pg.mouse.up(button=button); pg.wait_for_timeout(60)

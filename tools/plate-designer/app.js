@@ -372,6 +372,8 @@
     updateFrameInfo();
   }
   function updateFrameInfo() {
+    var fm = core.frameBars(S.plate, S.frameWidth);
+    $('frameMatInfo').innerHTML = fm.bars.length ? 'Frame material: plate edge ' + f2(fm.inner) + ' mm = frame inner edge, outer edge ' + f2(fm.outer) + ' mm.<br>Top/bottom bars: long ' + f2(fm.bars[0].long) + ' mm, short ' + f2(fm.bars[0].short) + ' mm (2 pcs); left/right bars: long ' + f2(fm.bars[2].long) + ' mm, short ' + f2(fm.bars[2].short) + ' mm (2 pcs), 45 degree mitres.<br><b>Material needed (long edges): ' + f2(fm.material) + ' mm</b>' : 'No frame (width 0 mm). Plate perimeter ' + f2(fm.plateEdge) + ' mm.';
     var fc = core.frameCounts(S.plate.w, S.plate.h, S.frame.layout, S.frame.unit, S.frame.stripWidth, S.frame.inside);
     function sd(n, o) { return o.n + ' x 100 mm' + (o.left > 0.05 ? ' + ' + f2(o.left) + ' mm left over' : ''); }
     $('frameInfo').innerHTML = 'Top: ' + sd('top', fc.top) + '<br>Bottom: ' + sd('bottom', fc.bottom) + '<br>Left: ' + sd('left', fc.left) + '<br>Right: ' + sd('right', fc.right) +
@@ -504,6 +506,8 @@
   function buildControls() {
     buildTextPanels();
     bind('plateW', function () { return S.plate.w; }, function (v) { core.resizePlate(S, v, undefined); });
+    bind('frameW', function () { return S.frameWidth; }, function (v) { S.frameWidth = Math.min(100, Math.max(0, v)); });
+    bind('frameWn', function () { return S.frameWidth; }, function (v) { S.frameWidth = Math.min(100, Math.max(0, v)); });
     bind('plateWn', function () { return S.plate.w; }, function (v) { core.resizePlate(S, v, undefined); });
     bind('plateH', function () { return S.plate.h; }, function (v) { core.resizePlate(S, undefined, v); });
     bind('plateHn', function () { return S.plate.h; }, function (v) { core.resizePlate(S, undefined, v); });
@@ -564,6 +568,7 @@
     $('stripRot').onclick = rotateStrip; $('stripDel').onclick = deleteStrip;
     $('exEps').onclick = function () { download('plate-drill-pattern.eps', buildDrillEps(), 'application/postscript'); };
     $('exA4').onclick = function () { download('plate-drill-A4.pdf', buildDrillPdf('A4').text, 'application/pdf'); };
+    $('exFrame').onclick = function () { download('plate-frame-A4.pdf', buildFramePdf().text, 'application/pdf'); };
     $('exA3').onclick = function () { download('plate-drill-A3.pdf', buildDrillPdf('A3').text, 'application/pdf'); };
     $('exDxf').onclick = function () { download('plate-drill-pattern.dxf', buildDrillDxf(), 'image/vnd.dxf'); };
     $('exLettersDxf').onclick = function () { var r = buildLettersEps(); statusMsg = r.message; updateStatus(); download('plate-letters-cut.dxf', r.dxf, 'image/vnd.dxf'); };
@@ -717,7 +722,7 @@
   var TIPS = {
     undo: 'Undo the last change (Ctrl+Z).', redo: 'Redo the change you undid (Ctrl+Y).', zin: 'Zoom in.', zout: 'Zoom out.', zfit: 'Zoom and centre so that the whole plate and the LED strip frame are visible.',
     preview: 'Switch between the design view and a preview: black plate, glowing red letters, glowing LEDs. Holes, boxes and dimensions are hidden in the preview.',
-    plateW: 'Width of the vinyl plate in mm (1-1000). This is the final cut size; the dimension arrows measure to its edges.', plateH: 'Height of the vinyl plate in mm (1-1000). This is the final cut size; the dimension arrows measure to its edges.',
+    plateW: 'Width of the vinyl plate in mm (1-1000). This is the final cut size; the dimension arrows measure to its edges.', frameW: 'Width of the frame material (picture-frame border around the plate, 0-100 mm, default 30). The plate edge is the inner edge of the frame; bars are mitred at 45 degrees. Independent of the LED strips.', plateH: 'Height of the vinyl plate in mm (1-1000). This is the final cut size; the dimension arrows measure to its edges.',
     holeD: 'Diameter in mm of the round holes: one behind every CASINO and OPEN letter, and the round CLOSED hole. One value for all (5-30 mm). 10 mm leaves room for about 6 wires.',
     minStroke: 'Minimum stroke thickness in mm. Parts of a letter thinner than this (hairlines, thin serifs, narrow joins) are listed as "thin parts" because they can break or burn away when cut. It is only a warning, nothing is changed. Default 3 mm.',
     frameInside: 'Put the LED strip frame on the plate, against its edges, instead of outside the plate edge. The strips then cover the outer 10 mm of the plate.',
@@ -732,7 +737,7 @@
     closedHole: 'What the drill pattern contains for CLOSED: a round hole for the wires, a slot for the LED stick window, or nothing. Both are drawn on screen; the unused one is dashed.',
     slotW: 'Width in mm of the CLOSED slot. Default 74 mm = LED window of a Grove stick (an assumption: check it on the real stick).', slotH: 'Height in mm of the CLOSED slot. Default 4 mm = LED window of a Grove stick (an assumption).',
     exOutline: 'Include the plate outline (blue) in the drill pattern exports.', exArrow: 'Include the 10 arrow cable holes in the drill pattern exports.',
-    exEps: 'Download the drill pattern as EPS (1 unit = 1 mm, 5 mm margin).', exA4: 'Download the drill pattern as a 1:1 PDF on A4 sheets (tiles). Print at 100 %, no scaling, and tape the tiles together.', exA3: 'Download the drill pattern as a 1:1 PDF on A3 sheets (tiles). Print at 100 %, no scaling.',
+    exFrame: 'Download the frame material page as a PDF (A4 landscape): the four 45 degree mitred bars drawn to one scale with their long and short edge lengths. The same page is also the last page of the drill PDFs.', exEps: 'Download the drill pattern as EPS (1 unit = 1 mm, 5 mm margin).', exA4: 'Download the drill pattern as a 1:1 PDF on A4 sheets (tiles). Print at 100 %, no scaling, and tape the tiles together.', exA3: 'Download the drill pattern as a 1:1 PDF on A3 sheets (tiles). Print at 100 %, no scaling.',
     exDxf: 'Download the drill pattern as DXF (R12, mm, layers PLATE, HOLES, SLOT) for a cutter or CAD program.',
     exPdfRef: 'Draw the letters and the arrow sticks (with letter numbers such as C1, A2 and stick names such as L-CAP D2) in light grey under the holes of the drill PDF, so the sheet is also a layout drawing. Print it twice: drill through one copy and read the other to see what goes where.',
     exPdfDims: 'Write the distance from every hole centre to all four plate edges around the hole in the drill PDF (numbers in mm, rounded to 0.1, with thin dotted lines to the edges). For the CLOSED slot the distances are to its edges. Not in the EPS or DXF files.',
@@ -773,7 +778,7 @@
   function applyTooltips() {
     var tips = Object.assign({}, TIPS);
     KEYS.forEach(function (k) { Object.assign(tips, textTips(k)); });
-    tips.plateWn = tips.plateW; tips.plateHn = tips.plateH; tips.holeDn = tips.holeD; tips.minStrokeN = tips.minStroke;
+    tips.frameWn = tips.frameW; tips.plateWn = tips.plateW; tips.plateHn = tips.plateH; tips.holeDn = tips.holeD; tips.minStrokeN = tips.minStroke;
     Object.keys(tips).forEach(function (id) {
       var el = $(id); if (!el) return;
       el.title = tips[id] + (el.type === 'number' && !el.readOnly ? ' (Drag the number left/right to change it; up/down is 4 times faster.)' : '');
@@ -1103,8 +1108,9 @@
   }
   function buildDrillPdf(paper) {
     var items = core.drillItems(S, drillScene()), ref = (S.export.pdfRef ? pdfReference() : []).concat(S.export.pdfDims ? core.holeDimItems(items, S.plate) : []);
-    return core.pdfTiles(items, S.plate, paper, 'Casino plate drill pattern', ref);
+    return core.pdfTiles(items, S.plate, paper, 'Casino plate drill pattern', ref, S.frameWidth > 0 ? [core.frameSheet(S.plate, S.frameWidth, 'Casino plate')] : []);
   }
+  function buildFramePdf() { return core.pdfTiles(null, S.plate, 'A4', '', [], [core.frameSheet(S.plate, S.frameWidth, 'Casino plate')]); }
   function buildDrillDxf() { return core.dxfFromItems(core.drillItems(S, drillScene()), S.plate); }
   function bboxOf(polys) {
     var a = 1e9, b = 1e9, c = -1e9, d = -1e9;
@@ -1164,7 +1170,7 @@
     $('preview').style.fontWeight = S.ui.preview ? 'bold' : 'normal';
   }
   window.PlateApp = {
-    state: function () { return S; }, scene: function () { return scene(PPM); }, drillEps: buildDrillEps, drillDxf: buildDrillDxf, drillPdf: buildDrillPdf, lettersEps: buildLettersEps,
+    state: function () { return S; }, scene: function () { return scene(PPM); }, drillEps: buildDrillEps, drillDxf: buildDrillDxf, drillPdf: buildDrillPdf, framePdf: buildFramePdf, lettersEps: buildLettersEps,
     shownFont: function (k) { return effFont(k).font; }, fontStatus: function (n) { return fontState[n] && fontState[n].status; }, useFont: useFont, commit: commit, view: view, selection: function () { return sel; }, selected: function () { return selKeys(); }, hist: function () { return { n: hist.length, pos: histPos }; }
   };
   init();
