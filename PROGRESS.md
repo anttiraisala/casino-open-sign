@@ -40,3 +40,4 @@
 - Plate Designer: several holes per letter (extraHoles): add buttons per letter, double-click add/remove, drag, Delete, drill exports, PDF labels, tests + mutants (132).
 - Plate Designer: plate centre lines/marker drawn; holes and strips snap to them; Ctrl while dragging disables snapping.
 - Plate Designer: plate width/height changes around the plate centre (resizePlate), 143 mutants.
+- Plate Designer: plate size limits 1-1000 mm (width and height), default 960 x 300; default OPEN x 580, CLOSED x 540; 149 mutants.

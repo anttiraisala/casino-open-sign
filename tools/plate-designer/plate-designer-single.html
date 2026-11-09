@@ -50,8 +50,8 @@
 </div>
 <div id="panel">
   <h3>Plate (vinyl)</h3>
-  <div class="row"><span>Width mm</span><input type="range" id="plateW" min="100" max="980" step="1"><input type="number" id="plateWn" min="100" max="980"></div>
-  <div class="row"><span>Height mm</span><input type="range" id="plateH" min="100" max="300" step="1"><input type="number" id="plateHn" min="100" max="300"></div>
+  <div class="row"><span>Width mm</span><input type="range" id="plateW" min="1" max="1000" step="1"><input type="number" id="plateWn" min="1" max="1000"></div>
+  <div class="row"><span>Height mm</span><input type="range" id="plateH" min="1" max="1000" step="1"><input type="number" id="plateHn" min="1" max="1000"></div>
   <div class="row"><span>Hole &#8960; mm</span><input type="range" id="holeD" min="5" max="30" step="0.5"><input type="number" id="holeDn" min="5" max="30" step="0.5"></div>
   <div class="note">One diameter for all letter holes and the round CLOSED hole (10 mm = 6 wires).</div>
   <label><input type="checkbox" id="frameInside"> LED strips inside the plate</label>
@@ -749,14 +749,14 @@
   function defaultState() {
     return {
       version: 1,
-      plate: { w: 980, h: 300 },
+      plate: { w: 960, h: 300 },
       holeD: 10,
       minStroke: 3,
       frame: { layout: 'topbottom', unit: 100, stripWidth: 10, inside: false },
       texts: {
         casino: { text: 'CASINO', font: 'Limelight', weight: 400, x: 20, y: 20, h: 100, mode: 'uniform', cellW: 90, spacing: 6, thicken: 0, holeOffsets: [], extraHoles: [] },
-        open: { text: 'OPEN', font: 'Limelight', weight: 400, x: 600, y: 20, h: 100, mode: 'uniform', cellW: 90, spacing: 6, thicken: 0, holeOffsets: [], extraHoles: [], sameFont: true },
-        closed: { text: 'CLOSED', font: 'Limelight', weight: 400, x: 560, y: 190, h: 50, mode: 'natural', cellW: 45, spacing: 4, thicken: 0, holeOffsets: [], extraHoles: [], sameFont: true }
+        open: { text: 'OPEN', font: 'Limelight', weight: 400, x: 580, y: 20, h: 100, mode: 'uniform', cellW: 90, spacing: 6, thicken: 0, holeOffsets: [], extraHoles: [], sameFont: true },
+        closed: { text: 'CLOSED', font: 'Limelight', weight: 400, x: 540, y: 190, h: 50, mode: 'natural', cellW: 45, spacing: 4, thicken: 0, holeOffsets: [], extraHoles: [], sameFont: true }
       },
       arrow: { x: 20, y: 150 },
       closedRound: { dx: 0, dy: 0 },
@@ -774,7 +774,7 @@
     var o = typeof text === 'string' ? JSON.parse(text) : text, d = defaultState(), s = defaultState();
     if (!o || typeof o !== 'object') throw new Error('Not a layout');
     if (o.version !== 1) throw new Error('Unknown layout version ' + o.version);
-    if (o.plate) { s.plate.w = num(o.plate.w, 100, 980, d.plate.w); s.plate.h = num(o.plate.h, 100, 300, d.plate.h); }
+    if (o.plate) { s.plate.w = num(o.plate.w, 1, 1000, d.plate.w); s.plate.h = num(o.plate.h, 1, 1000, d.plate.h); }
     s.holeD = num(o.holeD, 5, 30, d.holeD);
     s.minStroke = num(o.minStroke, 0.5, 20, d.minStroke);
     if (o.frame) { s.frame.layout = o.frame.layout === 'sides' ? 'sides' : 'topbottom'; s.frame.inside = !!o.frame.inside; }
@@ -809,10 +809,10 @@
 
   // Resizes the plate around its centre: both opposite edges move by half the change, so everything on the plate
   // (texts, arrow, strip pieces) is shifted by half of the width / height change and keeps its place relative to the
-  // plate centre. w or h undefined = unchanged. Width 100-980, height 100-300 mm. Mutates state.
+  // plate centre. w or h undefined = unchanged. Width and height 1-1000 mm. Mutates state.
   function resizePlate(state, w, h) {
     function r2(v) { return Math.round(v * 100) / 100; }
-    var nw = w === undefined ? state.plate.w : Math.max(100, Math.min(980, w)), nh = h === undefined ? state.plate.h : Math.max(100, Math.min(300, h));
+    var nw = w === undefined ? state.plate.w : Math.max(1, Math.min(1000, w)), nh = h === undefined ? state.plate.h : Math.max(1, Math.min(1000, h));
     var dx = (nw - state.plate.w) / 2, dy = (nh - state.plate.h) / 2;
     state.plate.w = nw; state.plate.h = nh;
     if (!dx && !dy) return state;
@@ -1547,7 +1547,7 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
   var TIPS = {
     undo: 'Undo the last change (Ctrl+Z).', redo: 'Redo the change you undid (Ctrl+Y).', zin: 'Zoom in.', zout: 'Zoom out.', zfit: 'Zoom and centre so that the whole plate and the LED strip frame are visible.',
     preview: 'Switch between the design view and a preview: black plate, glowing red letters, glowing LEDs. Holes, boxes and dimensions are hidden in the preview.',
-    plateW: 'Width of the vinyl plate in mm (100-980). This is the final cut size; the dimension arrows measure to its edges.', plateH: 'Height of the vinyl plate in mm (100-300). This is the final cut size; the dimension arrows measure to its edges.',
+    plateW: 'Width of the vinyl plate in mm (1-1000). This is the final cut size; the dimension arrows measure to its edges.', plateH: 'Height of the vinyl plate in mm (1-1000). This is the final cut size; the dimension arrows measure to its edges.',
     holeD: 'Diameter in mm of the round holes: one behind every CASINO and OPEN letter, and the round CLOSED hole. One value for all (5-30 mm). 10 mm leaves room for about 6 wires.',
     minStroke: 'Minimum stroke thickness in mm. Parts of a letter thinner than this (hairlines, thin serifs, narrow joins) are listed as "thin parts" because they can break or burn away when cut. It is only a warning, nothing is changed. Default 3 mm.',
     frameInside: 'Put the LED strip frame on the plate, against its edges, instead of outside the plate edge. The strips then cover the outer 10 mm of the plate.',

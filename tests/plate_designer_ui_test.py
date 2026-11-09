@@ -27,11 +27,11 @@ with sync_playwright() as p:
     eps = pg.evaluate('PlateApp.drillEps()')
     check(eps.count(' arc ') == 6 + 4 + 10 + 1, 'EPS circles: 6+4 letters, 10 arrow, 1 CLOSED round, got %d' % eps.count(' arc '))
     check('%%BoundingBox: 0 0 ' in eps, 'EPS header')
-    pdf = pg.evaluate("PlateApp.drillPdf('A4')"); check(pdf['pages'] == 8 and pdf['cols'] == 4 and pdf['rows'] == 2 and pdf['text'].startswith('%PDF-1.4'), 'A4 tiling of 980 x 300: 4 x 2 pages, got %s' % ((pdf['cols'], pdf['rows']),))
+    pdf = pg.evaluate("PlateApp.drillPdf('A4')"); check(pdf['pages'] == 8 and pdf['cols'] == 4 and pdf['rows'] == 2 and pdf['text'].startswith('%PDF-1.4'), 'A4 tiling of 960 x 300: 4 x 2 pages, got %s' % ((pdf['cols'], pdf['rows']),))
     ptxt = pdf['text']; check(' B*' in ptxt and '(C1) Tj' in ptxt and '(O6) Tj' in ptxt and '(L-CAP D2) Tj' in ptxt and '(R-WING-DN A2) Tj' in ptxt and '(CLOSED) Tj' in ptxt, 'drill PDF has the letter and arrow shapes with labels (C1..N6, stick names, CLOSED)')
     check(ptxt.count(' B*') >= 6 + 4 + 6 + 10, 'one filled shape per letter and per arrow stick, got %d' % ptxt.count(' B*'))
     nl = ptxt.count('0 0.45 0.15 RG'); check(nl == 21 * 4 * pdf['pages'], 'four dimension lines for each of the 21 holes on each of the %d tiles, got %d' % (pdf['pages'], nl))
-    sc2 = pg.evaluate('PlateApp.scene()'); c0 = sc2['casino']['cells'][0]['hole']; W = 980
+    sc2 = pg.evaluate('PlateApp.scene()'); c0 = sc2['casino']['cells'][0]['hole']; W = 960
     check('(%s) Tj' % ('%g' % round(c0['x'], 1)) in ptxt and '(%s) Tj' % ('%g' % round(W - c0['x'], 1)) in ptxt and '(%s) Tj' % ('%g' % round(c0['y'], 1)) in ptxt, 'the first hole distances (left %.1f, right %.1f, up %.1f) are written in the PDF' % (c0['x'], W - c0['x'], c0['y']))
     pg.uncheck('#exPdfDims'); p3 = pg.evaluate("PlateApp.drillPdf('A4')")['text']; check('0 0.45 0.15 RG' not in p3 and ' B*' in p3, 'the dimension option turns the numbers off and keeps the reference drawing'); pg.check('#exPdfDims')
     check('Tj' not in pg.evaluate('PlateApp.drillEps()') and 'Tj' not in pg.evaluate('PlateApp.drillDxf()'), 'EPS and DXF have no dimension text')
@@ -46,7 +46,7 @@ with sync_playwright() as p:
     cov = pg.inner_text('#info-casino'); print('casino info:', cov)
     # controls: plate width slider
     pg.fill('#plateWn', '700'); pg.wait_for_timeout(100); check(S()['plate']['w'] == 700, 'plate width numeric field'); check(pg.input_value('#plateW') == '700', 'slider follows numeric field')
-    pg.fill('#plateWn', '980')
+    pg.fill('#plateWn', '960')
     # hole slider shared diameter
     pg.fill('#holeDn', '12'); pg.wait_for_timeout(50); check(S()['holeD'] == 12, 'hole diameter 12')
     eps = pg.evaluate('PlateApp.drillEps()'); check('6 mm 0 360 arc' in eps, 'hole radius 6 mm in the EPS')
@@ -145,6 +145,7 @@ with sync_playwright() as p:
     st = S()['texts']['casino']; near(st['h'], 110, 1.5, 'corner handle: scale 1.1 (got %s)' % st['h']); cb = pg.evaluate('PlateApp.scene().casino'); near(cb['x'] + cb['w'] / 2, 290, 0.05, 'corner: centre x stays'); near(cb['w'] / cb['h'], 5.4, 0.01, 'corner: aspect stays')
     pg.fill('#t-casino-h', '100'); pg.fill('#t-casino-x', '20'); pg.fill('#t-casino-y', '20'); pg.check('#snap')
     # a handle snaps to the edges and centres of the other elements: the right edge of CASINO onto the left edge of OPEN (x = 600)
+    pg.fill('#t-open-x', '600')
     bx = pg.evaluate('PlateApp.scene().casino'); hx0, hy0 = mmpx(bx['x'] + bx['w'], bx['y'] + bx['h'] / 2); tx, ty = mmpx(597.5, 70)
     pg.mouse.move(hx0, hy0); pg.mouse.down(); pg.mouse.move(tx, hy0, steps=6); pg.mouse.up(); pg.wait_for_timeout(50)
     cb = pg.evaluate('PlateApp.scene().casino'); near(cb['x'] + cb['w'], 600, 0.02, 'the right handle snapped to x = 600 (the left edge of OPEN)'); near(cb['x'] + cb['w'] / 2, 290, 0.05, 'snapping keeps the centre')
@@ -172,12 +173,12 @@ with sync_playwright() as p:
     pg.evaluate("document.activeElement.blur()"); d2['plate']['w'] = 700
     pg.evaluate("t => { const dt = new DataTransfer(); dt.setData('text', t); document.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true })); }", json.dumps(d2)); pg.wait_for_timeout(100)
     check(S()['plate']['w'] == 700, 'Ctrl+V anywhere on the page loads a pasted layout')
-    pg.fill('#plateWn', '980')
+    pg.fill('#plateWn', '960')
     # frame info
-    pg.fill('#plateWn', '980'); info = pg.inner_text('#frameInfo'); check('Total 26 units = 78 LEDs' in info, 'frame info: ' + info.replace('\n', ' | '))
+    pg.fill('#plateWn', '960'); info = pg.inner_text('#frameInfo'); check('Total 24 units = 72 LEDs' in info, 'frame info: ' + info.replace('\n', ' | '))
     # layouts in localStorage
     pg.fill('#layoutName', 'test one'); pg.click('#layoutSave'); check('test one' in pg.inner_text('#layoutList'), 'saved layout is listed')
-    pg.evaluate('PlateApp.commit()'); pg.reload(); pg.wait_for_timeout(400); check(S()['plate']['w'] == 980 or S()['plate']['w'] == 800, 'autosave restored after reload'); check('test one' in pg.inner_text('#layoutList'), 'saved layout survives reload')
+    pg.evaluate('PlateApp.commit()'); pg.reload(); pg.wait_for_timeout(400); check(S()['plate']['w'] == 960 or S()['plate']['w'] == 800, 'autosave restored after reload'); check('test one' in pg.inner_text('#layoutList'), 'saved layout survives reload')
     # the repository root page redirects to the designer (GitHub Pages entry)
     pg.goto('file://' + ROOT + '/index.html'); pg.wait_for_url('**/tools/plate-designer/index.html', timeout=5000); check(pg.locator('#plateW').count() == 1, 'root index.html redirects to the Plate Designer')
     pg.goto(URL); pg.wait_for_timeout(300)
@@ -191,7 +192,7 @@ with sync_playwright() as p:
     pg.uncheck('#exNest'); pg.uncheck('#exPlateCut')
     S0 = S(); check(S0['frame']['inside'] is False, 'strips outside by default')
     t_out = pg.inner_text('#frameInfo'); pg.check('#frameInside'); check(S()['frame']['inside'] is True, 'top bar checkbox sets frame.inside')
-    t_in = pg.inner_text('#frameInfo'); check(t_in != t_out and 'Total 22 units' in t_in.replace('\xa0', ' ') if S()['plate']['w'] == 980 else True, 'frame info changes when the strips move inside')
+    t_in = pg.inner_text('#frameInfo'); check(t_in != t_out and 'Total 22 units' in t_in.replace('\xa0', ' ') if S()['plate']['w'] == 960 else True, 'frame info changes when the strips move inside')
     pg.click('#zfit'); pg.wait_for_timeout(100)
     ghost = pg.evaluate("document.querySelectorAll('#svg g[pointer-events=none] rect[stroke-dasharray]').length"); check(ghost == 4, 'inside: four ghost strips (dashed, translucent) are drawn over the plate, got %d' % ghost)
     pg.uncheck('#frameInside'); pg.wait_for_timeout(100)
@@ -222,22 +223,28 @@ with sync_playwright() as p:
     pg.fill('#t-casino-text', 'CASINO'); pg.evaluate('PlateApp.commit()')
     # plate centre lines and Ctrl = no snapping
     pg.goto(URL); pg.wait_for_timeout(300); pg.click('#zfit'); pg.wait_for_timeout(100)
-    check(pg.evaluate("document.querySelectorAll('#svg line[stroke=\"#0a8f8f\"]').length") == 2 and 'centre 490, 150' in pg.evaluate("document.getElementById('svg').textContent"), 'the plate centre lines and the centre label (490, 150) are drawn')
-    check(pg.evaluate("document.querySelector('#svg line[stroke=\"#0a8f8f\"]').getAttribute('x1')") == '490', 'vertical centre line at x = 490')
+    check(pg.evaluate("document.querySelectorAll('#svg line[stroke=\"#0a8f8f\"]').length") == 2 and 'centre 480, 150' in pg.evaluate("document.getElementById('svg').textContent"), 'the plate centre lines and the centre label (490, 150) are drawn')
+    check(pg.evaluate("document.querySelector('#svg line[stroke=\"#0a8f8f\"]').getAttribute('x1')") == '480', 'vertical centre line at x = 480')
     check(S()['ui']['snap'] is True, 'snap is on by default')
     pg.fill('#t-casino-x', '20'); pg.fill('#t-casino-y', '20')
     ax, ay = scr(20 + 540 * 0.2, 24); kk = pg.evaluate('(function(){var b=document.getElementById("svg").getBoundingClientRect();var vb=document.getElementById("svg").getAttribute("viewBox").split(" ");return b.width/parseFloat(vb[2])})()')
-    pg.mouse.move(ax, ay); pg.mouse.down(); pg.mouse.move(ax + 201.5 * kk, ay, steps=5); pg.mouse.up(); pg.wait_for_timeout(100)
-    near(S()['texts']['casino']['x'], 220, 0.01, 'dragging CASINO 201.5 mm snaps its centre onto the plate centre line (x = 220)')
+    pg.mouse.move(ax, ay); pg.mouse.down(); pg.mouse.move(ax + 191.5 * kk, ay, steps=5); pg.mouse.up(); pg.wait_for_timeout(100)
+    near(S()['texts']['casino']['x'], 210, 0.01, 'dragging CASINO 191.5 mm snaps its centre onto the plate centre line (x = 210)')
     pg.fill('#t-casino-x', '20'); ax, ay = scr(20 + 540 * 0.2, 24)
-    pg.keyboard.down('Control'); pg.mouse.move(ax, ay); pg.mouse.down(); pg.mouse.move(ax + 201.5 * kk, ay, steps=5); pg.mouse.up(); pg.keyboard.up('Control'); pg.wait_for_timeout(100)
-    near(S()['texts']['casino']['x'], 221.5, 0.3, 'with Ctrl held the same drag does not snap (x = 221.5)')
+    pg.keyboard.down('Control'); pg.mouse.move(ax, ay); pg.mouse.down(); pg.mouse.move(ax + 191.5 * kk, ay, steps=5); pg.mouse.up(); pg.keyboard.up('Control'); pg.wait_for_timeout(100)
+    near(S()['texts']['casino']['x'], 211.5, 0.3, 'with Ctrl held the same drag does not snap (x = 211.5)')
     pg.fill('#t-casino-x', '20'); pg.evaluate('PlateApp.commit()')
     # plate resize happens around the plate centre
     pg.goto(URL); pg.wait_for_timeout(300); cx0 = S()['texts']['casino']['x']; w0 = S()['plate']['w']
     pg.fill('#plateWn', str(w0 - 100)); pg.wait_for_timeout(100); near(S()['texts']['casino']['x'], cx0 - 50, 0.01, 'plate 100 mm narrower: content shifts 50 mm (both edges move)'); check(S()['plate']['w'] == w0 - 100, 'plate width changed')
     h0 = S()['plate']['h']; cy0 = S()['texts']['casino']['y']; pg.fill('#plateHn', str(h0 - 40)); pg.wait_for_timeout(100); near(S()['texts']['casino']['y'], cy0 - 20, 0.01, 'plate 40 mm lower: content shifts 20 mm up')
     pg.fill('#plateWn', str(w0)); pg.fill('#plateHn', str(h0)); pg.wait_for_timeout(100); near(S()['texts']['casino']['x'], cx0, 0.01, 'back to the old width: content is back'); pg.evaluate('PlateApp.commit()')
+    # plate size limits 1-1000 mm, defaults 960 x 300
+    pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate("PlateApp.reset && PlateApp.reset()")
+    pg.fill('#plateWn', '1'); pg.fill('#plateHn', '1000'); pg.wait_for_timeout(100); check(S()['plate']['w'] == 1 and S()['plate']['h'] == 1000, 'plate can be 1 x 1000 mm')
+    pg.fill('#plateWn', '5000'); pg.fill('#plateHn', '-4'); pg.wait_for_timeout(100); check(S()['plate']['w'] == 1000 and S()['plate']['h'] == 1, 'width is limited to 1000, height to 1')
+    check(pg.get_attribute('#plateW', 'max') == '1000' and pg.get_attribute('#plateH', 'max') == '1000' and pg.get_attribute('#plateWn', 'min') == '1', 'the sliders and number fields are 1-1000')
+    pg.fill('#plateWn', '960'); pg.fill('#plateHn', '300'); pg.wait_for_timeout(100); pg.evaluate('PlateApp.commit()')
     # preview and screenshots
     shot = sys.argv[1] if len(sys.argv) > 1 else '/tmp/plate_designer.png'
     pg.click('#zfit'); pg.screenshot(path=shot)

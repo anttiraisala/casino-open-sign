@@ -638,14 +638,14 @@
   function defaultState() {
     return {
       version: 1,
-      plate: { w: 980, h: 300 },
+      plate: { w: 960, h: 300 },
       holeD: 10,
       minStroke: 3,
       frame: { layout: 'topbottom', unit: 100, stripWidth: 10, inside: false },
       texts: {
         casino: { text: 'CASINO', font: 'Limelight', weight: 400, x: 20, y: 20, h: 100, mode: 'uniform', cellW: 90, spacing: 6, thicken: 0, holeOffsets: [], extraHoles: [] },
-        open: { text: 'OPEN', font: 'Limelight', weight: 400, x: 600, y: 20, h: 100, mode: 'uniform', cellW: 90, spacing: 6, thicken: 0, holeOffsets: [], extraHoles: [], sameFont: true },
-        closed: { text: 'CLOSED', font: 'Limelight', weight: 400, x: 560, y: 190, h: 50, mode: 'natural', cellW: 45, spacing: 4, thicken: 0, holeOffsets: [], extraHoles: [], sameFont: true }
+        open: { text: 'OPEN', font: 'Limelight', weight: 400, x: 580, y: 20, h: 100, mode: 'uniform', cellW: 90, spacing: 6, thicken: 0, holeOffsets: [], extraHoles: [], sameFont: true },
+        closed: { text: 'CLOSED', font: 'Limelight', weight: 400, x: 540, y: 190, h: 50, mode: 'natural', cellW: 45, spacing: 4, thicken: 0, holeOffsets: [], extraHoles: [], sameFont: true }
       },
       arrow: { x: 20, y: 150 },
       closedRound: { dx: 0, dy: 0 },
@@ -663,7 +663,7 @@
     var o = typeof text === 'string' ? JSON.parse(text) : text, d = defaultState(), s = defaultState();
     if (!o || typeof o !== 'object') throw new Error('Not a layout');
     if (o.version !== 1) throw new Error('Unknown layout version ' + o.version);
-    if (o.plate) { s.plate.w = num(o.plate.w, 100, 980, d.plate.w); s.plate.h = num(o.plate.h, 100, 300, d.plate.h); }
+    if (o.plate) { s.plate.w = num(o.plate.w, 1, 1000, d.plate.w); s.plate.h = num(o.plate.h, 1, 1000, d.plate.h); }
     s.holeD = num(o.holeD, 5, 30, d.holeD);
     s.minStroke = num(o.minStroke, 0.5, 20, d.minStroke);
     if (o.frame) { s.frame.layout = o.frame.layout === 'sides' ? 'sides' : 'topbottom'; s.frame.inside = !!o.frame.inside; }
@@ -698,10 +698,10 @@
 
   // Resizes the plate around its centre: both opposite edges move by half the change, so everything on the plate
   // (texts, arrow, strip pieces) is shifted by half of the width / height change and keeps its place relative to the
-  // plate centre. w or h undefined = unchanged. Width 100-980, height 100-300 mm. Mutates state.
+  // plate centre. w or h undefined = unchanged. Width and height 1-1000 mm. Mutates state.
   function resizePlate(state, w, h) {
     function r2(v) { return Math.round(v * 100) / 100; }
-    var nw = w === undefined ? state.plate.w : Math.max(100, Math.min(980, w)), nh = h === undefined ? state.plate.h : Math.max(100, Math.min(300, h));
+    var nw = w === undefined ? state.plate.w : Math.max(1, Math.min(1000, w)), nh = h === undefined ? state.plate.h : Math.max(1, Math.min(1000, h));
     var dx = (nw - state.plate.w) / 2, dy = (nh - state.plate.h) / 2;
     state.plate.w = nw; state.plate.h = nh;
     if (!dx && !dy) return state;

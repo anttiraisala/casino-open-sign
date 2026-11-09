@@ -316,12 +316,12 @@ function scene() {
 // ---- JSON
 {
   const d = core.defaultState();
-  check(d.plate.w === 980 && d.plate.h === 300 && d.holeD === 10 && d.texts.casino.text === 'CASINO' && d.texts.open.text === 'OPEN' && d.texts.closed.text === 'CLOSED', 'defaults: plate 980 x 300, hole 10 mm, texts');
+  check(d.plate.w === 960 && d.plate.h === 300 && d.texts.open.x === 580 && d.texts.closed.x === 540 && d.holeD === 10 && d.texts.casino.text === 'CASINO' && d.texts.open.text === 'OPEN' && d.texts.closed.text === 'CLOSED', 'defaults: plate 960 x 300, OPEN at 580 (fits the plate), hole 10 mm, texts');
   check(d.texts.closed.h === d.texts.casino.h / 2 && d.texts.open.sameFont && d.texts.closed.sameFont, 'CLOSED is half as high; OPEN and CLOSED use the CASINO font by default');
   const back = core.fromJson(core.toJson(d));
   check(JSON.stringify(back) === JSON.stringify(d), 'JSON round trip keeps the state');
   const odd = core.fromJson(JSON.stringify({ version: 1, plate: { w: 5000, h: -3 }, holeD: 99, strips: [{ x: 1, y: 2, rot: 45 }], export: { closedHole: 'bogus' } }));
-  check(odd.plate.w === 980 && odd.plate.h === 100 && odd.holeD === 30 && odd.strips[0].rot === 0 && odd.export.closedHole === 'round', 'values are clamped and checked');
+  check(odd.plate.w === 1000 && odd.plate.h === 1 && odd.holeD === 30 && odd.strips[0].rot === 0 && odd.export.closedHole === 'round', 'values are clamped and checked');
   check(core.defaultState().export.pdfRef === true && core.fromJson({ version: 1, export: { pdfRef: false } }).export.pdfRef === false && core.fromJson({ version: 1, export: {} }).export.pdfRef === true, 'pdfRef option: default true, false is kept');
   check(core.fromJson({ version: 1, ui: { dims: 'bogus' } }).ui.dims === 'selected', 'unknown dimension mode falls back to selected');
   const low = core.fromJson({ version: 1, holeD: 1 }); check(low.holeD === 5, 'hole diameter minimum is 5 mm');
@@ -352,11 +352,13 @@ setTimeout(finish, 3000);
   core.resizePlate(st, 701.5, 150);
   check(st.texts.casino.x === 70.75 && st.arrow.x === 80.75 && st.strips[0].x === 55.75, 'half of 1.5 mm = 0.75 mm');
   core.resizePlate(st, 5000, 5000);
-  check(st.plate.w === 980 && st.plate.h === 300 && st.texts.casino.x === 70.75 + 139.25 && st.texts.casino.y === -15 + 75, 'clamped to 980 x 300, the shift uses the real change (139.25, 75)');
-  core.resizePlate(st, 1, 1);
-  check(st.plate.w === 100 && st.plate.h === 100, 'clamped to 100 x 100');
-  const before = JSON.stringify(st); core.resizePlate(st, 100, 100);
+  check(st.plate.w === 1000 && st.plate.h === 1000 && st.texts.casino.x === 220 && st.texts.casino.y === 410, 'clamped to 1000 x 1000, the shift uses the real change (149.25, 425)');
+  core.resizePlate(st, -5, 0);
+  check(st.plate.w === 1 && st.plate.h === 1, 'clamped to 1 x 1');
+  const before = JSON.stringify(st); core.resizePlate(st, 1, 1);
   check(JSON.stringify(st) === before, 'no change, no shift');
+  const lim = core.fromJson({ version: 1, plate: { w: 1, h: 1000 } }); check(lim.plate.w === 1 && lim.plate.h === 1000, 'plate limits 1 and 1000 are accepted');
+  const lim2 = core.fromJson({ version: 1, plate: { w: 0.5, h: 1001 } }); check(lim2.plate.w === 1 && lim2.plate.h === 1000, 'values outside 1-1000 are clamped');
   const rd = core.defaultState(); rd.plate.w = 500; rd.texts.casino.x = 0; core.resizePlate(rd, 500.014, undefined);
   check(rd.texts.casino.x === 0.01, 'shifts are rounded to 0.01 mm (0.007 -> 0.01), got ' + rd.texts.casino.x);
   const centre = core.defaultState(); centre.plate.w = 400; centre.texts.casino.x = 100; const cxBefore = 100 - 400 / 2;

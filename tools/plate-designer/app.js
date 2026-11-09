@@ -695,7 +695,7 @@
   var TIPS = {
     undo: 'Undo the last change (Ctrl+Z).', redo: 'Redo the change you undid (Ctrl+Y).', zin: 'Zoom in.', zout: 'Zoom out.', zfit: 'Zoom and centre so that the whole plate and the LED strip frame are visible.',
     preview: 'Switch between the design view and a preview: black plate, glowing red letters, glowing LEDs. Holes, boxes and dimensions are hidden in the preview.',
-    plateW: 'Width of the vinyl plate in mm (100-980). This is the final cut size; the dimension arrows measure to its edges.', plateH: 'Height of the vinyl plate in mm (100-300). This is the final cut size; the dimension arrows measure to its edges.',
+    plateW: 'Width of the vinyl plate in mm (1-1000). This is the final cut size; the dimension arrows measure to its edges.', plateH: 'Height of the vinyl plate in mm (1-1000). This is the final cut size; the dimension arrows measure to its edges.',
     holeD: 'Diameter in mm of the round holes: one behind every CASINO and OPEN letter, and the round CLOSED hole. One value for all (5-30 mm). 10 mm leaves room for about 6 wires.',
     minStroke: 'Minimum stroke thickness in mm. Parts of a letter thinner than this (hairlines, thin serifs, narrow joins) are listed as "thin parts" because they can break or burn away when cut. It is only a warning, nothing is changed. Default 3 mm.',
     frameInside: 'Put the LED strip frame on the plate, against its edges, instead of outside the plate edge. The strips then cover the outer 10 mm of the plate.',
