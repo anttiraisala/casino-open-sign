@@ -447,44 +447,66 @@
     return items;
   }
 
-  function epsHeader(title, w, h, margin) {
-    var W = (w + 2 * margin) * MM_TO_PT, H = (h + 2 * margin) * MM_TO_PT;
-    return '%!PS-Adobe-3.0 EPSF-3.0\n%%Title: ' + title + '\n%%Creator: Plate Designer (casino-open-sign)\n%%BoundingBox: 0 0 ' + Math.ceil(W) + ' ' + Math.ceil(H) +
-      '\n%%HiResBoundingBox: 0 0 ' + fmt(W) + ' ' + fmt(H) + '\n%%EndComments\n/mm { ' + fmt(MM_TO_PT) + ' mul } def\n';
+  // ---- EPS for Roland CutStudio: only m / l / c (absolute), no closepath, no fills, thin outlines, y up, points (1 pt = 25.4/72 mm),
+  // lower-left corner of the sheet area = 0 0, fixed +-10000 pt bounding box, one extra "0 0 m" at the end (the reader skips the last line otherwise).
+  var CUT_HEAD = ['%!PS-Adobe-3.0 EPSF-3.0', '%%LanguageLevel: 2', '%%BoundingBox: -10000 -10000 10000 10000', '%%EndComments', '%%BeginSetup', '%%EndSetup', '%%BeginProlog',
+    '% Short operator names used by the path below (standard PostScript, one line each).', '50 dict begin', '/q { gsave } bind def', '/Q { grestore } bind def', '/w { setlinewidth } bind def',
+    '/J { setlinecap } bind def', '/j { setlinejoin } bind def', '/M { setmiterlimit } bind def', '/d { setdash } bind def', '/g { setgray } bind def', '/m { moveto } bind def',
+    '/l { lineto } bind def', '/c { curveto } bind def', '/h { closepath } bind def', '/S { stroke } bind def', '/n { newpath } bind def', '%%EndProlog', '%%Page: 1 1',
+    '%%BeginPageSetup', '%%PageBoundingBox: -10000 -10000 10000 10000', '%%EndPageSetup', '% Cut lines only: thin outlines, no fills, no groups, no clipping.', 'q q', '0 g', '1.41732 w',
+    '0 J', '0 j', '[] 0.0 d', '4 M q'].join('\n') + '\n';
+  var CUT_TAIL = ['% CutStudio skips the last line unless one more moveto follows it:', '0 0 m', 'S Q', 'Q Q', 'showpage', '%%Trailer', 'end', '%%EOF'].join('\n') + '\n';
+  function cutNum(v) {
+    var t = (Math.round(v * 1000) / 1000).toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+    return (t === '' || t === '-0') ? '0' : t;
+  }
+  // Paths are {cmds: [['m', x, y], ['l', x, y], ['c', x1, y1, x2, y2, x3, y3]]} in millimetres with y down.
+  function polyPath(pts, closed) {
+    var cmds = pts.map(function (q, i) { return [i ? 'l' : 'm', q[0], q[1]]; });
+    if (closed && pts.length && (pts[0][0] !== pts[pts.length - 1][0] || pts[0][1] !== pts[pts.length - 1][1])) cmds.push(['l', pts[0][0], pts[0][1]]);
+    return { cmds: cmds, pts: pts.length ? [pts[0]].concat(pts.slice(1)) : [] };
+  }
+  function rectPath(x, y, w, h) { return polyPath([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], true); }
+  function circlePath(cx, cy, r) {   // four cubic Beziers, 90 degrees each
+    var k = 0.5522847498 * r;
+    return { cmds: [['m', cx + r, cy], ['c', cx + r, cy + k, cx + k, cy + r, cx, cy + r], ['c', cx - k, cy + r, cx - r, cy + k, cx - r, cy], ['c', cx - r, cy - k, cx - k, cy - r, cx, cy - r], ['c', cx + k, cy - r, cx + r, cy - k, cx + r, cy]], pts: [[cx + r, cy], [cx, cy + r]] };
+  }
+  // paths shifted by (ox, oy) mm inside an area of height areaH mm (y down), written as the CutStudio EPS. Returns {text, warnings}.
+  function cutEps(paths, areaH, ox, oy) {
+    var out = [], warnings = [], K = MM_TO_PT, bad = false, n = 0;
+    function P(x, y) { var X = (x + ox) * K, Y = (areaH - (y + oy)) * K; if (Math.abs(X) > 10000 || Math.abs(Y) > 10000) bad = true; return cutNum(X) + ' ' + cutNum(Y); }
+    paths.forEach(function (p) {
+      var distinct = {}, k = 0;
+      (p.pts || []).forEach(function (q) { distinct[q[0] + ',' + q[1]] = 1; });
+      Object.keys(distinct).forEach(function () { k++; });
+      if (k < 2) { warnings.push('a path with fewer than two distinct points was skipped'); return; }
+      n++;
+      p.cmds.forEach(function (c) {
+        if (c[0] === 'c') out.push(P(c[1], c[2]) + ' ' + P(c[3], c[4]) + ' ' + P(c[5], c[6]) + ' c');
+        else out.push(P(c[1], c[2]) + ' ' + c[0]);
+      });
+    });
+    if (!n) warnings.push('the drawing is empty (nothing to cut)');
+    if (bad) warnings.push('part of the drawing is outside +-10000 pt (+-3527 mm) and will not import correctly');
+    return { text: CUT_HEAD + (out.length ? out.join('\n') + '\n' : '') + CUT_TAIL, warnings: warnings };
   }
 
-  // EPS of the drilling pattern: 1 unit = 1 mm (converted to points), origin at the lower-left of the plate (plus margin).
-  function epsFromItems(items, plate, title) {
-    var m = 5, s = epsHeader(title || 'Drill pattern', plate.w, plate.h, m);
-    s += '0.1 setlinewidth\n';
-    function Y(y) { return plate.h - y + m; }
+  // Drill pattern for CutStudio. The plate is centred in the sheet area (sheet w x h, at least the plate size).
+  function epsFromItems(items, plate, title, sheet) {
+    var aw = Math.max(plate.w, sheet ? sheet.w : 0), ah = Math.max(plate.h, sheet ? sheet.h : 0), ox = (aw - plate.w) / 2, oy = (ah - plate.h) / 2, paths = [];
     items.forEach(function (it) {
-      if (it.kind === 'outline') {
-        s += '0 0 1 setrgbcolor ' + fmt(m) + ' mm ' + fmt(m) + ' mm moveto ' + fmt(it.w) + ' mm 0 rlineto 0 ' + fmt(it.h) + ' mm rlineto ' + fmt(-it.w) + ' mm 0 rlineto closepath stroke\n';
-      } else if (it.kind === 'circle') {
-        s += '0 0 0 setrgbcolor newpath ' + fmt(it.x + m) + ' mm ' + fmt(Y(it.y)) + ' mm ' + fmt(it.d / 2) + ' mm 0 360 arc closepath stroke\n';
-      } else if (it.kind === 'rect') {
-        s += '0 0 0 setrgbcolor newpath ' + fmt(it.x + m) + ' mm ' + fmt(Y(it.y + it.h)) + ' mm moveto ' + fmt(it.w) + ' mm 0 rlineto 0 ' + fmt(it.h) + ' mm rlineto ' + fmt(-it.w) + ' mm 0 rlineto closepath stroke\n';
-      }
+      if (it.kind === 'outline') paths.push(rectPath(0, 0, it.w, it.h));
+      else if (it.kind === 'circle') paths.push(circlePath(it.x, it.y, it.d / 2));
+      else if (it.kind === 'rect') paths.push(rectPath(it.x, it.y, it.w, it.h));
     });
-    return s + 'showpage\n%%EOF\n';
+    var r = cutEps(paths, ah, ox, oy);
+    if (sheet && (sheet.w < plate.w || sheet.h < plate.h)) r.warnings.push('the plate is larger than the sheet: the area was enlarged to the plate size');
+    return r;
   }
 
-  // EPS of closed polygons (letter outlines), polys in plate-like millimetres (y down) inside a w x h area.
-  function epsFromPolys(polys, w, h, title, boxes) {
-    var m = 5, s = epsHeader(title || 'Letters', w, h, m);
-    s += '0.1 setlinewidth 0 0 0 setrgbcolor\n';
-    function Y(y) { return h - y + m; }
-    polys.forEach(function (p) {
-      if (p.length < 3) return;
-      s += 'newpath ' + fmt(p[0][0] + m) + ' mm ' + fmt(Y(p[0][1])) + ' mm moveto\n';
-      for (var i = 1; i < p.length; i++) s += fmt(p[i][0] + m) + ' mm ' + fmt(Y(p[i][1])) + ' mm lineto\n';
-      s += 'closepath stroke\n';
-    });
-    (boxes || []).forEach(function (b) {
-      s += '0 0 1 setrgbcolor [1 1] 0 setdash newpath ' + fmt(b.x + m) + ' mm ' + fmt(Y(b.y + b.h)) + ' mm moveto ' + fmt(b.w) + ' mm 0 rlineto 0 ' + fmt(b.h) + ' mm rlineto ' + fmt(-b.w) + ' mm 0 rlineto closepath stroke [] 0 setdash\n';
-    });
-    return s + 'showpage\n%%EOF\n';
+  // Closed polygons (letter outlines), polys in plate-like millimetres (y down), shifted by (ox, oy) inside an area of height areaH.
+  function epsFromPolys(polys, areaH, ox, oy) {
+    return cutEps(polys.map(function (p) { return polyPath(p, true); }), areaH, ox || 0, oy || 0);
   }
 
   // ASCII DXF (R12, the most widely read version; units are millimetres, y up). Entities: CIRCLE, closed POLYLINE.
@@ -804,7 +826,7 @@
     MM_TO_PT: MM_TO_PT, distanceTo: distanceTo, signedField: signedField, rasterize: rasterize, marching: marching, simplifyClosed: simplifyClosed,
     Glyph: Glyph, glyphFromPolygons: glyphFromPolygons, placeText: placeText, holeStatus: holeStatus, suggestHole: suggestHole, holeOffsetFor: holeOffsetFor,
     frameCounts: frameCounts, unionBox: unionBox, boxesTouch: boxesTouch, bandSelection: bandSelection, groupScaleLimits: groupScaleLimits, groupCentre: groupCentre, scrollDelta: scrollDelta, resizePlate: resizePlate, frameSides: frameSides, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripCoverage: stripCoverage,
-    drillItems: drillItems, epsFromItems: epsFromItems, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, frameBars: frameBars, frameSheet: frameSheet, nestShelves: nestShelves,
+    drillItems: drillItems, epsFromItems: epsFromItems, cutEps: cutEps, polyPath: polyPath, circlePath: circlePath, cutNum: cutNum, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, frameBars: frameBars, frameSheet: frameSheet, nestShelves: nestShelves,
     defaultState: defaultState, fromJson: fromJson, toJson: toJson
   };
 });

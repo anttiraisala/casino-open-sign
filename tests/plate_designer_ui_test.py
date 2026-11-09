@@ -6,6 +6,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 URL = 'file://' + ROOT + '/tools/plate-designer/index.html'
 fails = []
 LEGACY_JS = "(function(){var s=PlateApp.state();s.plate.w=960;s.plate.h=300;s.texts.casino.x=20;s.texts.casino.y=20;s.texts.open.x=580;s.texts.open.y=20;s.texts.closed.x=540;s.texts.closed.y=190;s.arrow.x=20;s.arrow.y=150;PlateApp.commit();})()"
+def ncirc(t): return len([l for l in t.split('\n') if l.endswith(' c')]) // 4
+def nmove(t): return len([l for l in t.split('\n') if l.endswith(' m') and not l.startswith('0 0')])
 def check(c, m):
     if not c: print('FAIL: ' + m); fails.append(m)
 def near(a, b, t, m): check(abs(a - b) <= t, '%s (got %s, want %s +-%s)' % (m, a, b, t))
@@ -28,8 +30,8 @@ with sync_playwright() as p:
     check(len(sc['arrow']['holes']) == 10, '10 arrow holes')
     # drill EPS
     eps = pg.evaluate('PlateApp.drillEps()')
-    check(eps.count(' arc ') == 6 + 4 + 10 + 1, 'EPS circles: 6+4 letters, 10 arrow, 1 CLOSED round, got %d' % eps.count(' arc '))
-    check('%%BoundingBox: 0 0 ' in eps, 'EPS header')
+    check(ncirc(eps) == 6 + 4 + 10 + 1, 'EPS circles: 6+4 letters, 10 arrow, 1 CLOSED round, got %d' % ncirc(eps))
+    check(eps.startswith('%!PS-Adobe-3.0 EPSF-3.0\n%%LanguageLevel: 2\n%%BoundingBox: -10000 -10000 10000 10000\n') and eps.endswith('0 0 m\nS Q\nQ Q\nshowpage\n%%Trailer\nend\n%%EOF\n') and 'arc' not in eps.split('%%EndPageSetup')[1].replace('Cut lines', '').split('\n4 M q\n')[1], 'EPS is in the CutStudio format')
     pdf = pg.evaluate("PlateApp.drillPdf('A4')"); check(pdf['pages'] == 9 and pdf['tilePages'] == 8 and pdf['cols'] == 4 and pdf['rows'] == 2 and pdf['text'].startswith('%PDF-1.4'), 'A4 tiling of 960 x 300: 4 x 2 pages, got %s' % ((pdf['cols'], pdf['rows']),))
     ptxt = pdf['text']; check(' B*' in ptxt and '(C1) Tj' in ptxt and '(O6) Tj' in ptxt and '(L-CAP D2) Tj' in ptxt and '(R-WING-DN A2) Tj' in ptxt and '(CLOSED) Tj' in ptxt, 'drill PDF has the letter and arrow shapes with labels (C1..N6, stick names, CLOSED)')
     check(ptxt.count(' B*') >= 6 + 4 + 6 + 10, 'one filled shape per letter and per arrow stick, got %d' % ptxt.count(' B*'))
@@ -44,7 +46,7 @@ with sync_playwright() as p:
     ld = pg.evaluate('PlateApp.lettersEps()'); check(ld['dxf'].count('POLYLINE\n8\nLETTERS') == ld['polys'] and ld['polys'] >= 14, 'letter DXF has one polyline per outline')
     pg.click('#exDxf'); pg.wait_for_timeout(100); check(pg.input_value('#exName') == 'plate-drill-pattern.dxf' and pg.input_value('#exText').count('CIRCLE') == 21, 'export is also shown as text (name and content)')
     # letter EPS
-    le = pg.evaluate('PlateApp.lettersEps()'); check(le['polys'] >= 14, 'letter outlines exist, got %d' % le['polys']); check('lineto' in le['text'], 'letter EPS has paths')
+    le = pg.evaluate('PlateApp.lettersEps()'); check(le['polys'] >= 14, 'letter outlines exist, got %d' % le['polys']); check(nmove(le['text']) >= 14 and ' l\n' in le['text'], 'letter EPS has paths')
     # holes covered by the letters in the default layout (DejaVu Sans, uniform cells)
     cov = pg.inner_text('#info-casino'); print('casino info:', cov)
     # controls: plate width slider
@@ -52,7 +54,7 @@ with sync_playwright() as p:
     pg.fill('#plateWn', '960')
     # hole slider shared diameter
     pg.fill('#holeDn', '12'); pg.wait_for_timeout(50); check(S()['holeD'] == 12, 'hole diameter 12')
-    eps = pg.evaluate('PlateApp.drillEps()'); check('6 mm 0 360 arc' in eps, 'hole radius 6 mm in the EPS')
+    eps = pg.evaluate('PlateApp.drillEps()'); el = eps.split('\n4 M q\n')[1].split('\n'); i0 = [i for i, l in enumerate(el) if l.endswith(' m')][1]; xs = float(el[i0].split()[0]); xe = float(el[i0 + 2].split()[-3]); check(abs((xs - xe) - 12 * 72 / 25.4) < 0.01, 'hole radius 6 mm in the EPS (diameter %.3f pt)' % (xs - xe))
     pg.fill('#holeDn', '10')
     # text edit
     pg.fill('#t-open-text', 'OP'); pg.wait_for_timeout(50); check(len(pg.evaluate('PlateApp.scene()')['open']['cells']) == 2, 'OPEN edited to two letters')
@@ -157,8 +159,8 @@ with sync_playwright() as p:
     pg.click('#stripAdd'); check(len(S()['strips']) == 1, 'strip piece added'); pg.keyboard.press('r'); check(S()['strips'][0]['rot'] == 90, 'R rotates the strip')
     pg.keyboard.press('Delete'); check(len(S()['strips']) == 0, 'Delete removes the strip')
     # CLOSED hole export modes
-    pg.select_option('#closedHole', 'slot'); e2 = pg.evaluate('PlateApp.drillEps()'); check(e2.count(' arc ') == 20 and 'rlineto' in e2, 'slot mode: 20 circles + a rectangle')
-    pg.select_option('#closedHole', 'none'); e3 = pg.evaluate('PlateApp.drillEps()'); check(e3.count(' arc ') == 20, 'none mode: 20 circles')
+    pg.select_option('#closedHole', 'slot'); e2 = pg.evaluate('PlateApp.drillEps()'); check(ncirc(e2) == 20 and nmove(e2) == 20 + 1 + 1, 'slot mode: 20 circles + a rectangle (+ the plate outline)')
+    pg.select_option('#closedHole', 'none'); e3 = pg.evaluate('PlateApp.drillEps()'); check(ncirc(e3) == 20 and nmove(e3) == 20 + 1, 'none mode: 20 circles (+ the plate outline)')
     pg.select_option('#closedHole', 'round')
     # quick hole buttons
     pg.click('#t-casino-fit'); offs = S()['texts']['casino']['holeOffsets']; check(len(offs) == 6, 'fit button stores 6 offsets')
@@ -189,7 +191,7 @@ with sync_playwright() as p:
     pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate(LEGACY_JS); pg.wait_for_timeout(50); pg.evaluate("PlateApp.useFont('casino','DejaVu Sans')")
     n0 = pg.evaluate('PlateApp.lettersEps()'); check('PLATE_CUT' not in n0['dxf'], 'plate cut is off by default')
     pg.check('#exPlateCut'); ld = pg.evaluate('PlateApp.lettersEps()')
-    check(ld['dxf'].count('POLYLINE\n8\nPLATE_CUT') == 1 and ld['polys'] == n0['polys'] + 1 and ld['text'].count('closepath') == n0['text'].count('closepath') + 1, 'plate edge adds one closed outline to the letter EPS and DXF')
+    check(ld['dxf'].count('POLYLINE\n8\nPLATE_CUT') == 1 and ld['polys'] == n0['polys'] + 1 and nmove(ld['text']) == nmove(n0['text']) + 1, 'plate edge adds one closed outline to the letter EPS and DXF')
     pg.check('#exNest'); lnest = pg.evaluate('PlateApp.lettersEps()')
     check(lnest['dxf'].count('POLYLINE\n8\nPLATE_CUT') == 1 and lnest['polys'] == n0['polys'] + 1, 'nested: the plate edge is a nested piece')
     pg.uncheck('#exNest'); pg.uncheck('#exPlateCut')
@@ -204,12 +206,12 @@ with sync_playwright() as p:
     def scr(x, y):
         vb = [float(v) for v in pg.evaluate("document.getElementById('svg').getAttribute('viewBox')").split()]; r = pg.evaluate("(function(){var b=document.getElementById('svg').getBoundingClientRect();return [b.left,b.top,b.width,b.height]})()")
         return r[0] + (x - vb[0]) / vb[2] * r[2], r[1] + (y - vb[1]) / vb[3] * r[3]
-    arcs0 = pg.evaluate('PlateApp.drillEps()').count(' arc'); dxf0 = pg.evaluate('PlateApp.drillDxf()').count('0\nCIRCLE\n')
+    arcs0 = ncirc(pg.evaluate('PlateApp.drillEps()')); dxf0 = pg.evaluate('PlateApp.drillDxf()').count('0\nCIRCLE\n')
     check(S()['texts']['casino']['extraHoles'] == [], 'no extra holes by default'); check(pg.locator('#t-casino-xbox .xadd').count() == 6 and pg.locator('#t-open-xbox .xadd').count() == 4 and pg.locator('#t-closed-xbox').count() == 0, 'one add button per letter (CASINO 6, OPEN 4), none for CLOSED')
     pg.click('#t-casino-xbox .xadd[data-i="1"]'); pg.wait_for_timeout(100)
     xh = S()['texts']['casino']['extraHoles']; check(len(xh) == 1 and xh[0]['i'] == 1, 'the add button adds an extra hole to letter 2')
     c1 = pg.evaluate('PlateApp.scene().casino.cells[1]'); check(len(c1['extras']) == 1 and (abs(c1['extras'][0]['x'] - c1['hole']['x']) > 5 or abs(c1['extras'][0]['y'] - c1['hole']['y']) > 5), 'the new hole is placed away from the main hole')
-    check(pg.evaluate('PlateApp.drillEps()').count(' arc') == arcs0 + 1 and pg.evaluate('PlateApp.drillDxf()').count('0\nCIRCLE\n') == dxf0 + 1, 'the extra hole is in the drill EPS and DXF')
+    check(ncirc(pg.evaluate('PlateApp.drillEps()')) == arcs0 + 1 and pg.evaluate('PlateApp.drillDxf()').count('0\nCIRCLE\n') == dxf0 + 1, 'the extra hole is in the drill EPS and DXF')
     check('A2 hole 1' in pg.inner_text('#t-casino-xbox'), 'the list names the hole: A2 hole 1, got %r' % pg.inner_text('#t-casino-xbox'))
     check('Holes covered by the letters: 4/7' in pg.inner_text('#info-casino') or '/7' in pg.inner_text('#info-casino'), 'the hole counter counts the extra hole (7 holes)')
     ex = c1['extras'][0]; x0, y0 = scr(ex['x'], ex['y']); pg.mouse.move(x0, y0); pg.mouse.down(); k = pg.evaluate('(function(){var b=document.getElementById("svg").getBoundingClientRect();var vb=document.getElementById("svg").getAttribute("viewBox").split(" ");return b.width/parseFloat(vb[2])})()')
@@ -282,6 +284,14 @@ with sync_playwright() as p:
     fr = pg.evaluate('PlateApp.framePdf()'); check(fr['pages'] == 1 and fr['text'].startswith('%PDF-1.4') and 'Right bar: long edge 360 mm' in fr['text'] and '/MediaBox [0 0 841.89' in fr['text'], 'separate frame PDF: one A4 landscape page')
     pg.fill('#plateWn', '1000'); pg.fill('#plateHn', '800'); pg.wait_for_timeout(100); check('outer edge 3840 mm' in pg.inner_text('#frameMatInfo'), 'frame info follows the plate size: ' + pg.inner_text('#frameMatInfo'))
     pg.evaluate('PlateApp.commit()'); pg.reload(); pg.wait_for_timeout(300); check(S()['frameWidth'] == 30, 'frame width survives reload')
+    # EPS sheet area: the plate is centred in the sheet w x h
+    pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate(LEGACY_JS); pg.wait_for_timeout(50)
+    pg.fill('#exSheetW', '1000'); pg.fill('#exSheetH', '400'); pg.wait_for_timeout(100)
+    def first_lines(t, n): return t.split('\n4 M q\n')[1].split('\n')[:n]
+    check(S()['export']['plateOutline'] and first_lines(pg.evaluate('PlateApp.drillEps()'), 2) == ['56.693 992.126 m', '2777.953 992.126 l'], 'drill EPS: the 960 x 300 plate is centred in the 1000 x 400 sheet (offset 20, 50 mm): %s' % first_lines(pg.evaluate('PlateApp.drillEps()'), 2))
+    pg.check('#exPlateCut'); lc = pg.evaluate('PlateApp.lettersEps()')['text']; check(first_lines(lc, 2) == ['56.693 992.126 m', '2777.953 992.126 l'], 'letter EPS: plate edge centred the same way: %s' % first_lines(lc, 2))
+    pg.fill('#exSheetW', '500'); pg.wait_for_timeout(100); lw = pg.evaluate('PlateApp.lettersEps()'); check('larger than the sheet' in lw['message'] if 'message' in lw else True, 'sheet smaller than the plate: warning'); check(first_lines(lw['text'], 1) == ['0 992.126 m'], 'sheet narrower than the plate: no horizontal offset, area grows')
+    pg.uncheck('#exPlateCut'); pg.fill('#exSheetW', '600'); pg.fill('#exSheetH', '300'); pg.wait_for_timeout(100)
     # selecting several texts: rubber band, shift / ctrl, group move and scale, same height
     pg.goto(URL); pg.evaluate('localStorage.clear()'); pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate(LEGACY_JS); pg.wait_for_timeout(50); pg.evaluate("PlateApp.useFont('casino','DejaVu Sans')"); pg.set_viewport_size({'width': 1400, 'height': 800}); pg.click('#zfit'); pg.wait_for_timeout(200)
     def box(k): return pg.evaluate('PlateApp.scene().%s' % k)

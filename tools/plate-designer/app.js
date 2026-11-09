@@ -566,7 +566,7 @@
     $('preview').onclick = function () { S.ui.preview = !S.ui.preview; $('preview').style.fontWeight = S.ui.preview ? 'bold' : 'normal'; changed(); };
     $('stripAdd').onclick = function () { S.strips.push({ x: Math.round(S.plate.w / 2 - 50), y: Math.round(S.plate.h / 2 - 5), rot: 0 }); sel = { type: 'strip', idx: S.strips.length - 1 }; changed(); updateInfo(); };
     $('stripRot').onclick = rotateStrip; $('stripDel').onclick = deleteStrip;
-    $('exEps').onclick = function () { download('plate-drill-pattern.eps', buildDrillEps(), 'application/postscript'); };
+    $('exEps').onclick = function () { var r = buildDrillEpsFull(); statusMsg = r.warnings.length ? 'WARNING: ' + r.warnings.join('; ') : ''; updateStatus(); download('plate-drill-pattern.eps', r.text, 'application/postscript'); };
     $('exA4').onclick = function () { download('plate-drill-A4.pdf', buildDrillPdf('A4').text, 'application/pdf'); };
     $('exFrame').onclick = function () { download('plate-frame-A4.pdf', buildFramePdf().text, 'application/pdf'); };
     $('exA3').onclick = function () { download('plate-drill-A3.pdf', buildDrillPdf('A3').text, 'application/pdf'); };
@@ -744,7 +744,7 @@
     exMirror: 'Mirror the letter cut left-to-right, for cutting from the back of the material.', exBoxes: 'Draw dashed bounding boxes in the letter cut export (the text boxes, or the pieces when nested).',
     exNest: 'Pack the letters tightly on a raw sheet of the size below instead of keeping them at their place on the plate.',
     exKerf: 'Laser kerf in mm (width of the cut). Every outline is grown by half of this so that the cut-out letter ends up the right size. Use 0 if unsure.',
-    exSpacing: 'Gap in mm between letters when nesting them on the raw sheet.', exSheetW: 'Width in mm of the raw sheet used for nesting.', exSheetH: 'Height in mm of the raw sheet used for nesting. A warning appears if the letters do not fit.',
+    exSpacing: 'Gap in mm between letters when nesting them on the raw sheet.', exSheetW: 'Width in mm of the sheet: the nesting area, and the EPS area in which the plate is centred (at least the plate size).', exSheetH: 'Height in mm of the sheet (nesting area; EPS area with the plate centred). A warning appears if the letters do not fit.',
     exLetters: 'Download the letter outlines as EPS (as placed on the plate, or nested, mirrored etc. as set above).', exLettersDxf: 'Download the letter outlines as DXF (layers LETTERS and BOXES).',
     exName: 'File name of the last export.', exCopy: 'Copy the last export text. Use it if the download is blocked: paste into a file with the name shown on the left.', exText: 'Content of the last export as text.',
     layoutName: 'Name for saving the current layout in this browser.', layoutSave: 'Save the current layout under this name (stored in this browser only).', layoutList: 'Layouts saved in this browser.', layoutLoad: 'Load the selected saved layout.', layoutDel: 'Delete the selected saved layout.',
@@ -1083,7 +1083,8 @@
 
   // ------------------------------------------------------------------ exports
   function drillScene() { return scene(PPM); }
-  function buildDrillEps() { return core.epsFromItems(core.drillItems(S, drillScene()), S.plate, 'Casino plate drill pattern'); }
+  function buildDrillEpsFull() { return core.epsFromItems(core.drillItems(S, drillScene()), S.plate, 'Casino plate drill pattern', { w: S.export.sheetW, h: S.export.sheetH }); }
+  function buildDrillEps() { return buildDrillEpsFull().text; }
   // Light grey letters and arrow sticks with labels under the drill pattern: the PDF is then also a layout drawing.
   function pdfReference() {
     var sc = scene(PPM_EXPORT), ref = [], r = S.holeD / 2;
@@ -1130,12 +1131,13 @@
     return { pieces: pieces, sc: sc };
   }
   function buildLettersEps() {
-    var lp = letterPieces(PPM_EXPORT), pieces = lp.pieces, ex = S.export, W = S.plate.w, H = S.plate.h, polys = [], boxes = [], plateCuts = [], message = '', areaW = W, areaH = H;
+    var lp = letterPieces(PPM_EXPORT), pieces = lp.pieces, ex = S.export, W = S.plate.w, H = S.plate.h, polys = [], boxes = [], plateCuts = [], message = '', areaW = W, areaH = H, offX = 0, offY = 0;
     var plateRect = [[0, 0], [W, 0], [W, H], [0, H]];
     if (ex.plateCut && !ex.nest) { plateCuts.push(plateRect); polys.push(plateRect); }
     if (!ex.nest) {
       pieces.forEach(function (p) { p.polys.forEach(function (poly) { polys.push(ex.mirror ? poly.map(function (q) { return [W - q[0], q[1]]; }) : poly); }); });
       if (ex.boxes) KEYS.forEach(function (k) { var b = boxOf(lp.sc, k); boxes.push({ x: ex.mirror ? W - b.x - b.w : b.x, y: b.y, w: b.w, h: b.h }); });
+      areaW = Math.max(ex.sheetW, W); areaH = Math.max(ex.sheetH, H); offX = (areaW - W) / 2; offY = (areaH - H) / 2;
       message = (pieces.length) + ' letters' + (ex.plateCut ? ' + plate edge' : '') + ' as placed on the plate' + (ex.mirror ? ' (mirrored)' : '');
     } else {
       if (ex.plateCut) pieces = pieces.concat([{ polys: [plateRect], bb: { x0: 0, y0: 0, x1: W, y1: H }, plate: true }]);
@@ -1152,7 +1154,10 @@
       areaW = ex.sheetW; areaH = Math.max(ex.sheetH, res.usedH);
       message = res.fits ? 'nested ' + (pieces.length - (ex.plateCut ? 1 : 0)) + ' letters' + (ex.plateCut ? ' + plate edge' : '') + ', ' + f2(res.usedH) + ' mm of the ' + ex.sheetH + ' mm sheet used' : 'WARNING: the letters do not fit the ' + ex.sheetW + ' x ' + ex.sheetH + ' mm sheet (need ' + f2(res.usedH) + ' mm height)';
     }
-    return { text: core.epsFromPolys(polys, areaW, areaH, 'Casino plate letters', boxes), dxf: core.dxfFromPolys(polys.filter(function (p) { return plateCuts.indexOf(p) < 0; }), areaH, boxes, plateCuts), message: message, polys: polys.length };
+    var epsR = core.epsFromPolys(polys, areaH, offX, offY);
+    if (!ex.nest && (ex.sheetW < W || ex.sheetH < H)) epsR.warnings.push('the plate is larger than the sheet: the area was enlarged to the plate size');
+    if (epsR.warnings.length) message += (message ? ' ' : '') + 'WARNING: ' + epsR.warnings.join('; ');
+    return { text: epsR.text, dxf: core.dxfFromPolys(polys.filter(function (p) { return plateCuts.indexOf(p) < 0; }), areaH, boxes, plateCuts), message: message, polys: polys.length };
   }
   function download(name, text, type) {
     $('exName').value = name; $('exText').value = text;

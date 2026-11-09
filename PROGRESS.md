@@ -44,3 +44,4 @@
 - Plate Designer: gold selection flash + panel scroll into view for the text elements; 156 mutants.
 - Plate Designer: right/middle button pans, rubber-band and Shift/Ctrl multi-selection of texts, group move/scale, "same height" option (sameHeight); 173 mutants.
 - Plate Designer: frame material calculator (frameWidth 0-100, default 30; mitred bars, perimeter and material needed, frame page in the drill PDFs + "Frame PDF (A4)"); default plate 600 x 300 with new default text/arrow positions; 188 mutants.
+- Plate Designer: EPS exports rewritten for Roland CutStudio (m/l/c only, pt, y up, extra 0 0 m); the plate is centred in the Export sheet w x h; 208 mutants.
