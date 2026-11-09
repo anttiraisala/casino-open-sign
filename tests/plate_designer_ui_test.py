@@ -245,6 +245,27 @@ with sync_playwright() as p:
     pg.fill('#plateWn', '5000'); pg.fill('#plateHn', '-4'); pg.wait_for_timeout(100); check(S()['plate']['w'] == 1000 and S()['plate']['h'] == 1, 'width is limited to 1000, height to 1')
     check(pg.get_attribute('#plateW', 'max') == '1000' and pg.get_attribute('#plateH', 'max') == '1000' and pg.get_attribute('#plateWn', 'min') == '1', 'the sliders and number fields are 1-1000')
     pg.fill('#plateWn', '960'); pg.fill('#plateHn', '300'); pg.wait_for_timeout(100); pg.evaluate('PlateApp.commit()')
+    # gold flash and panel scrolling when a text is selected from the drawing
+    pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate("PlateApp.useFont('casino','DejaVu Sans')"); pg.set_viewport_size({'width': 1300, 'height': 520}); pg.click('#zfit'); pg.wait_for_timeout(200)
+    pg.evaluate("document.getElementById('panel').scrollTop = 0"); pg.wait_for_timeout(100)
+    def sect_state(key):
+        return pg.evaluate("(function(){var p=document.getElementById('panel').getBoundingClientRect(),e=document.getElementById('sect-%s').getBoundingClientRect();return [e.top-p.top,e.bottom-p.top,document.getElementById('panel').clientHeight,document.getElementById('sect-%s').classList.contains('flash')]})()" % (key, key))
+    ob = pg.evaluate('PlateApp.scene().open'); ox, oy = scr(ob['x'] + ob['w'] * 0.2, ob['y'] + 4)
+    check(pg.evaluate('PlateApp.selection().type') == 'casino' and sect_state('open')[1] > sect_state('open')[2], 'before: CASINO is selected and the OPEN section is not fully visible')
+    pg.mouse.click(ox, oy); pg.wait_for_timeout(120)
+    check(pg.evaluate('PlateApp.selection().type') == 'open', 'clicking OPEN in the drawing selects it')
+    check(sect_state('open')[3] is True, 'the OPEN section flashes (gold)'); check(pg.evaluate("document.querySelectorAll('#svg rect[stroke=\"#e8a000\"]').length") == 1, 'a gold bounding box is drawn around OPEN')
+    pg.wait_for_timeout(900); st = sect_state('open'); m = st[2] / 5
+    check(st[0] >= m - 1.5 and st[1] <= st[2] - m + 1.5 or (st[1] - st[0] + 2 * m > st[2] and abs(st[0] - m) < 1.5), 'the panel scrolled so that OPEN is visible with a 1/5 margin: top %.0f bottom %.0f of %d' % (st[0], st[1], st[2]))
+    check(sect_state('open')[3] is False and pg.evaluate("document.querySelectorAll('#svg rect[stroke=\"#e8a000\"]').length") == 0, 'the flash is over after half a second')
+    top1 = pg.evaluate("document.getElementById('panel').scrollTop"); pg.mouse.click(ox, oy); pg.wait_for_timeout(150)
+    check(sect_state('open')[3] is False and pg.evaluate("document.querySelectorAll('#svg rect[stroke=\"#e8a000\"]').length") == 0 and pg.evaluate("document.getElementById('panel').scrollTop") == top1, 'clicking the already selected text: no flash, no scrolling')
+    pg.evaluate("document.getElementById('panel').scrollTop = 0"); cb = pg.evaluate('PlateApp.scene().casino'); cx2, cy2 = scr(cb['x'] + cb['w'] * 0.2, cb['y'] + 4)
+    pg.mouse.move(cx2, cy2); pg.mouse.down(); pg.wait_for_timeout(80); check(sect_state('casino')[3] is True, 'starting a drag on an unselected text selects it and flashes'); pg.mouse.move(cx2 + 5, cy2 + 5, steps=3); pg.mouse.up()
+    pg.wait_for_timeout(700); pg.evaluate("document.getElementById('panel').scrollTop = 300")
+    pg.mouse.click(*scr(S()['arrow']['x'] + 20, S()['arrow']['y'] + 20)); pg.wait_for_timeout(150)
+    check(pg.evaluate('PlateApp.selection().type') == 'arrow' and not any(sect_state(k)[3] for k in ('casino', 'open', 'closed')) and pg.evaluate("document.querySelectorAll('#svg rect[stroke=\"#e8a000\"]').length") == 0, 'selecting the arrow does not flash anything')
+    pg.set_viewport_size({'width': 1400, 'height': 800}); pg.wait_for_timeout(100)
     # preview and screenshots
     shot = sys.argv[1] if len(sys.argv) > 1 else '/tmp/plate_designer.png'
     pg.click('#zfit'); pg.screenshot(path=shot)

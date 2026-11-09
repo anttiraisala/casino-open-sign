@@ -294,6 +294,11 @@
           else s += '<rect x="' + f2(hp.x - hs) + '" y="' + f2(hp.y - hs) + '" width="' + 2 * hs + '" height="' + 2 * hs + '" fill="#fff" stroke="#0057d8" stroke-width="' + 1.5 * px + '"/>';
         });
       }
+      // gold flash around a text box that was just selected from the drawing
+      if (flash && !pv) {
+        var fa = 1 - (performance.now() - flash.t0) / 500;
+        if (fa > 0) { var fb = boxOf(sc, flash.key), fp = 3 * px; s += '<rect pointer-events="none" x="' + (fb.x - fp) + '" y="' + (fb.y - fp) + '" width="' + (fb.w + 2 * fp) + '" height="' + (fb.h + 2 * fp) + '" fill="none" stroke="#e8a000" stroke-opacity="' + fa.toFixed(2) + '" stroke-width="' + 4 * px + '"/>'; }
+      }
       // dimension arrows
       var pts = [];
       function boxPts(b) { return core.boxPoints(b); }
@@ -433,7 +438,7 @@
     var h = '';
     KEYS.forEach(function (key) {
       var k = key;
-      h += '<div class="sect"><b>' + NAMES[k] + '</b>' +
+      h += '<div class="sect" id="sect-' + k + '"><b>' + NAMES[k] + '</b>' +
         '<div class="row"><span>Text</span><input type="text" id="t-' + k + '-text" maxlength="20"></div>' +
         '<div class="row"><span>Font</span><select id="t-' + k + '-font">' + fontOptions() + '</select></div>' +
         (k === 'casino' ? '' : '<label><input type="checkbox" id="t-' + k + '-same"> same font as CASINO</label>') +
@@ -799,7 +804,7 @@
     var h = e.button === 1 ? null : hit(p);
     svg.setPointerCapture(e.pointerId); selX = null;
     if (!h) { drag = { kind: 'pan', sx: e.clientX, sy: e.clientY, cx: view.cx, cy: view.cy, moved: false }; return; }
-    var sc = cur;
+    var sc = cur, prevSel = sel.type;
     if (h.kind === 'handle') { var bs = snapshotText(h.key); drag = { kind: 'scale', key: h.key, hx: h.hx, hy: h.hy, base: bs }; }
     else if (h.kind === 'hole') { sel = { type: h.key }; var c = sc[h.key].cells[h.idx]; drag = { kind: 'hole', key: h.key, idx: h.idx, gx: c.hole.x - p.x, gy: c.hole.y - p.y }; }
     else if (h.kind === 'xhole') { sel = { type: h.key }; selX = { key: h.key, k: h.k }; var xe0 = S.texts[h.key].extraHoles[h.k], c0 = sc[h.key].cells[h.idx]; drag = { kind: 'xhole', key: h.key, k: h.k, idx: h.idx, gx: c0.cx + xe0.dx - p.x, gy: c0.cy + xe0.dy - p.y }; }
@@ -807,6 +812,7 @@
     else if (h.kind === 'closedSlot') { sel = { type: 'closed' }; drag = { kind: 'closedSlot', gx: sc.closedSlot.x - p.x, gy: sc.closedSlot.y - p.y }; }
     else if (h.kind === 'strip') { sel = { type: 'strip', idx: h.idx }; var s0 = S.strips[h.idx]; drag = { kind: 'strip', idx: h.idx, ox: s0.x, oy: s0.y, sx: p.x, sy: p.y }; }
     else { sel = { type: h.key }; var o = h.key === 'arrow' ? S.arrow : S.texts[h.key]; drag = { kind: 'box', key: h.key, ox: o.x, oy: o.y, sx: p.x, sy: p.y }; }
+    if (sel.type !== prevSel && ['casino', 'open', 'closed'].indexOf(sel.type) >= 0) flashText(sel.type);
     drag.moved = false; render(); updateInfo();
   });
   svg.addEventListener('pointermove', function (e) {
@@ -886,6 +892,20 @@
     render();
   }, { passive: false });
   function rotateStrip() { if (sel.type === 'strip' && S.strips[sel.idx]) { var s0 = S.strips[sel.idx]; s0.rot = s0.rot === 90 ? 0 : 90; changed(); updateInfo(); } }
+  var flash = null;   // {key, t0}: the gold highlight of a newly selected text
+  // Gold flash (0.5 s) around the text box and its panel section; the panel scrolls only if the section is not fully visible.
+  function flashText(key) {
+    flash = { key: key, t0: performance.now() };
+    var el = $('sect-' + key), panel = $('panel');
+    if (el) {
+      var pr = panel.getBoundingClientRect(), er = el.getBoundingClientRect(), off = pr.top + panel.clientTop;
+      var d = core.scrollDelta(er.top - off, er.bottom - off, panel.clientHeight);
+      if (d) panel.scrollBy({ top: d, behavior: 'smooth' });
+      el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+      setTimeout(function () { el.classList.remove('flash'); }, 600);
+    }
+    (function tick() { if (flash && performance.now() - flash.t0 < 500) { render(); requestAnimationFrame(tick); } else { flash = null; render(); } })();
+  }
   var selX = null;   // selected extra hole {key, k}
   function addExtraHole(key, i, at) {
     var t = S.texts[key], sc = scene(PPM), c = sc[key].cells[i], r = S.holeD / 2;

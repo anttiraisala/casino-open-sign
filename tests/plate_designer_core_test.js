@@ -366,3 +366,15 @@ setTimeout(finish, 3000);
   check(centre.texts.casino.x - 800 / 2 === cxBefore, 'the distance from the plate centre stays the same');
 }
 
+// panel scrolling to a section
+{
+  check(core.scrollDelta(0, 300, 500) === 0 && core.scrollDelta(100, 500, 500) === 0 && core.scrollDelta(10, 20, 500) === 0 && core.scrollDelta(0, 500, 500) === 0, 'a section that is fully visible: no scrolling (also when it touches the edges)');
+  check(core.scrollDelta(-50, 150, 500) === -150, 'partly above, fits with margins: top to the 100 px margin, scroll up 150');
+  check(core.scrollDelta(300, 600, 500) === 200, 'partly below (300 + 200 margins = exactly the panel height, fits): bottom to 400, scroll down 200');
+  check(core.scrollDelta(600, 800, 500) === 400, 'fully below: bottom to 400, scroll down 400');
+  check(core.scrollDelta(-300, -100, 500) === -400, 'fully above: top to 100, scroll up 400');
+  check(core.scrollDelta(-10, 420, 500) === -110 && core.scrollDelta(50, 700, 500) === -50, 'too tall for both margins: the top edge goes to the 1/5 margin (-110, -50)');
+  check(core.scrollDelta(-20, 520, 500) === -120, 'taller than the panel: top edge to the margin, rest is scrolled by hand');
+  check(core.scrollDelta(200, 550, 500) === 100, 'too tall for the margins (350 + 200 > 500) but not for one margin: top edge to the margin, scroll 100');
+  check(core.scrollDelta(-50, 150, 1000) === -250, 'the margin is 1/5 of the panel height (200 px for 1000 px)');
+}

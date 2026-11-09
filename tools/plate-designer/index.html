@@ -27,6 +27,8 @@
   .xadd { padding: 1px 6px; font-size: 12px; } .xlist { margin-top: 3px; display: flex; flex-wrap: wrap; gap: 3px; }
   .xchip { background: #eaf3ff; border: 1px solid #7aa7e0; border-radius: 10px; padding: 0 3px 0 7px; font-size: 12px; } .xchip.on { background: #cfe3ff; border-color: #1565c0; font-weight: bold; }
   .xdel { border: none; background: none; padding: 0 4px; font-size: 14px; line-height: 1; } .xnone { color: #666; font-size: 12px; }
+  .sect.flash { animation: sectflash 0.5s ease-out; }
+  @keyframes sectflash { from { box-shadow: 0 0 0 3px #e8a000, 0 0 10px 3px #e8a000; border-color: #e8a000; } to { box-shadow: 0 0 0 0 #e8a00000; } }
   .sect { background: #fff; border: 1px solid #ccc; padding: 4px 8px; margin: 6px 0; border-radius: 4px; }
   .dd { position: relative; flex: 1; min-width: 0; }
   .dd select { position: absolute; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }

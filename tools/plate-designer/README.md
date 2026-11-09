@@ -65,3 +65,4 @@ Thickening is an exact shift of that field. The size of a box is the cap height 
 - The thin-part and hole checks are approximations (see above). Check the printed drill template on the real plate and sticks before drilling or cutting.
 - The 74 x 4 mm CLOSED slot is an assumption (the LED window of the stick); the 8 mm arrow cable hole is a guess.
 - Changing the plate width or height resizes it around its centre: both opposite edges move and everything on the plate (texts, arrow, strip pieces) shifts by half the change, so the layout keeps its place relative to the plate centre.
+- Selecting CASINO, OPEN or CLOSED from the drawing (click or start of a drag) flashes a gold frame for half a second around the text box and its panel section; the panel scrolls only if the section is not fully visible, then so that it is fully visible with at least 1/5 of the panel height above and below (when it fits). Already selected text and the arrow: no flash.

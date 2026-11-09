@@ -41,3 +41,4 @@
 - Plate Designer: plate centre lines/marker drawn; holes and strips snap to them; Ctrl while dragging disables snapping.
 - Plate Designer: plate width/height changes around the plate centre (resizePlate), 143 mutants.
 - Plate Designer: plate size limits 1-1000 mm (width and height), default 960 x 300; default OPEN x 580, CLOSED x 540; 149 mutants.
+- Plate Designer: gold selection flash + panel scroll into view for the text elements; 156 mutants.

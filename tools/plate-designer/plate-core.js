@@ -710,12 +710,23 @@
     state.strips.forEach(function (q) { q.x = r2(q.x + dx); q.y = r2(q.y + dy); });
     return state;
   }
+  // How far a scrolling panel must scroll so that a section is fully visible with a margin of 1/5 of the panel height
+  // above and below it (when it fits). top/bottom: the section's edges relative to the top of the panel's visible area,
+  // viewH: the visible height. Fully visible already: 0 (no scrolling). Positive = scroll down. If the section plus both
+  // margins is taller than the panel, its top edge is put at the margin.
+  function scrollDelta(top, bottom, viewH) {
+    if (top >= 0 && bottom <= viewH) return 0;
+    var m = viewH / 5;
+    if (bottom - top + 2 * m > viewH) return top - m;
+    if (top < 0) return top - m;
+    return bottom - (viewH - m);
+  }
   function toJson(state) { return JSON.stringify(state, null, 2); }
 
   return {
     MM_TO_PT: MM_TO_PT, distanceTo: distanceTo, signedField: signedField, rasterize: rasterize, marching: marching, simplifyClosed: simplifyClosed,
     Glyph: Glyph, glyphFromPolygons: glyphFromPolygons, placeText: placeText, holeStatus: holeStatus, suggestHole: suggestHole, holeOffsetFor: holeOffsetFor,
-    frameCounts: frameCounts, resizePlate: resizePlate, frameSides: frameSides, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripCoverage: stripCoverage,
+    frameCounts: frameCounts, scrollDelta: scrollDelta, resizePlate: resizePlate, frameSides: frameSides, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripCoverage: stripCoverage,
     drillItems: drillItems, epsFromItems: epsFromItems, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, nestShelves: nestShelves,
     defaultState: defaultState, fromJson: fromJson, toJson: toJson
   };
