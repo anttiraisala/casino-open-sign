@@ -639,6 +639,7 @@
     return {
       version: 1,
       plate: { w: 960, h: 300 },
+      sameHeight: true,
       holeD: 10,
       minStroke: 3,
       frame: { layout: 'topbottom', unit: 100, stripWidth: 10, inside: false },
@@ -663,6 +664,7 @@
     var o = typeof text === 'string' ? JSON.parse(text) : text, d = defaultState(), s = defaultState();
     if (!o || typeof o !== 'object') throw new Error('Not a layout');
     if (o.version !== 1) throw new Error('Unknown layout version ' + o.version);
+    s.sameHeight = o.sameHeight !== false;
     if (o.plate) { s.plate.w = num(o.plate.w, 1, 1000, d.plate.w); s.plate.h = num(o.plate.h, 1, 1000, d.plate.h); }
     s.holeD = num(o.holeD, 5, 30, d.holeD);
     s.minStroke = num(o.minStroke, 0.5, 20, d.minStroke);
@@ -721,12 +723,38 @@
     if (top < 0) return top - m;
     return bottom - (viewH - m);
   }
+  // ------------------------------------------------------------------ selecting several texts (group)
+  var TEXT_KEYS = ['casino', 'open', 'closed'];
+  // Bounding box {x, y, w, h} of several boxes.
+  function unionBox(boxes) {
+    var x0 = 1e18, y0 = 1e18, x1 = -1e18, y1 = -1e18;
+    boxes.forEach(function (b) { x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); });
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  }
+  // True when two boxes overlap or touch (rubber band selection).
+  function boxesTouch(a, b) { return a.x <= b.x + b.w && b.x <= a.x + a.w && a.y <= b.y + b.h && b.y <= a.y + a.h; }
+  // New selection (keys in the order casino, open, closed) from the current one and the keys under a rubber band:
+  // mode 'replace' = the band keys, 'add' = both, 'remove' = current without the band keys.
+  function bandSelection(current, hit, mode) {
+    return TEXT_KEYS.filter(function (k) {
+      var c = current.indexOf(k) >= 0, h = hit.indexOf(k) >= 0;
+      return mode === 'add' ? c || h : mode === 'remove' ? c && !h : h;
+    });
+  }
+  // Allowed uniform scale factors of a group of texts (snapshots with h, cellW, spacing): the range common to all of them.
+  function groupScaleLimits(texts) {
+    var lo = 0, hi = 1e18;
+    texts.forEach(function (t) { var l = scaleLimits(t); lo = Math.max(lo, l.min); hi = Math.min(hi, l.max); });
+    return { min: lo, max: hi };
+  }
+  // Where the centre of a box ends up when the group is scaled by s around the group centre g.
+  function groupCentre(c, g, s) { return { x: g.x + s * (c.x - g.x), y: g.y + s * (c.y - g.y) }; }
   function toJson(state) { return JSON.stringify(state, null, 2); }
 
   return {
     MM_TO_PT: MM_TO_PT, distanceTo: distanceTo, signedField: signedField, rasterize: rasterize, marching: marching, simplifyClosed: simplifyClosed,
     Glyph: Glyph, glyphFromPolygons: glyphFromPolygons, placeText: placeText, holeStatus: holeStatus, suggestHole: suggestHole, holeOffsetFor: holeOffsetFor,
-    frameCounts: frameCounts, scrollDelta: scrollDelta, resizePlate: resizePlate, frameSides: frameSides, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripCoverage: stripCoverage,
+    frameCounts: frameCounts, unionBox: unionBox, boxesTouch: boxesTouch, bandSelection: bandSelection, groupScaleLimits: groupScaleLimits, groupCentre: groupCentre, scrollDelta: scrollDelta, resizePlate: resizePlate, frameSides: frameSides, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripCoverage: stripCoverage,
     drillItems: drillItems, epsFromItems: epsFromItems, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, nestShelves: nestShelves,
     defaultState: defaultState, fromJson: fromJson, toJson: toJson
   };

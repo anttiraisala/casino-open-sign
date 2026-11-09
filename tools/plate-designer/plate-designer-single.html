@@ -752,6 +752,7 @@
     return {
       version: 1,
       plate: { w: 960, h: 300 },
+      sameHeight: true,
       holeD: 10,
       minStroke: 3,
       frame: { layout: 'topbottom', unit: 100, stripWidth: 10, inside: false },
@@ -776,6 +777,7 @@
     var o = typeof text === 'string' ? JSON.parse(text) : text, d = defaultState(), s = defaultState();
     if (!o || typeof o !== 'object') throw new Error('Not a layout');
     if (o.version !== 1) throw new Error('Unknown layout version ' + o.version);
+    s.sameHeight = o.sameHeight !== false;
     if (o.plate) { s.plate.w = num(o.plate.w, 1, 1000, d.plate.w); s.plate.h = num(o.plate.h, 1, 1000, d.plate.h); }
     s.holeD = num(o.holeD, 5, 30, d.holeD);
     s.minStroke = num(o.minStroke, 0.5, 20, d.minStroke);
@@ -834,12 +836,38 @@
     if (top < 0) return top - m;
     return bottom - (viewH - m);
   }
+  // ------------------------------------------------------------------ selecting several texts (group)
+  var TEXT_KEYS = ['casino', 'open', 'closed'];
+  // Bounding box {x, y, w, h} of several boxes.
+  function unionBox(boxes) {
+    var x0 = 1e18, y0 = 1e18, x1 = -1e18, y1 = -1e18;
+    boxes.forEach(function (b) { x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); });
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  }
+  // True when two boxes overlap or touch (rubber band selection).
+  function boxesTouch(a, b) { return a.x <= b.x + b.w && b.x <= a.x + a.w && a.y <= b.y + b.h && b.y <= a.y + a.h; }
+  // New selection (keys in the order casino, open, closed) from the current one and the keys under a rubber band:
+  // mode 'replace' = the band keys, 'add' = both, 'remove' = current without the band keys.
+  function bandSelection(current, hit, mode) {
+    return TEXT_KEYS.filter(function (k) {
+      var c = current.indexOf(k) >= 0, h = hit.indexOf(k) >= 0;
+      return mode === 'add' ? c || h : mode === 'remove' ? c && !h : h;
+    });
+  }
+  // Allowed uniform scale factors of a group of texts (snapshots with h, cellW, spacing): the range common to all of them.
+  function groupScaleLimits(texts) {
+    var lo = 0, hi = 1e18;
+    texts.forEach(function (t) { var l = scaleLimits(t); lo = Math.max(lo, l.min); hi = Math.min(hi, l.max); });
+    return { min: lo, max: hi };
+  }
+  // Where the centre of a box ends up when the group is scaled by s around the group centre g.
+  function groupCentre(c, g, s) { return { x: g.x + s * (c.x - g.x), y: g.y + s * (c.y - g.y) }; }
   function toJson(state) { return JSON.stringify(state, null, 2); }
 
   return {
     MM_TO_PT: MM_TO_PT, distanceTo: distanceTo, signedField: signedField, rasterize: rasterize, marching: marching, simplifyClosed: simplifyClosed,
     Glyph: Glyph, glyphFromPolygons: glyphFromPolygons, placeText: placeText, holeStatus: holeStatus, suggestHole: suggestHole, holeOffsetFor: holeOffsetFor,
-    frameCounts: frameCounts, scrollDelta: scrollDelta, resizePlate: resizePlate, frameSides: frameSides, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripCoverage: stripCoverage,
+    frameCounts: frameCounts, unionBox: unionBox, boxesTouch: boxesTouch, bandSelection: bandSelection, groupScaleLimits: groupScaleLimits, groupCentre: groupCentre, scrollDelta: scrollDelta, resizePlate: resizePlate, frameSides: frameSides, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripCoverage: stripCoverage,
     drillItems: drillItems, epsFromItems: epsFromItems, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, nestShelves: nestShelves,
     defaultState: defaultState, fromJson: fromJson, toJson: toJson
   };
@@ -869,6 +897,8 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
   'use strict';
   var core = PlateCore, ARROW = ARROW_DATA;
   var S = core.defaultState();
+  var msel = [];   // keys of a selected group of texts (2-3), valid only while sel.type === msel[0]
+  var TK = ['casino', 'open', 'closed'];
   var sel = { type: 'casino', idx: 0 };           // casino | open | closed | arrow | strip
   var view = { cx: 490, cy: 150, k: 1 };           // centre (mm) and pixels per mm
   var svg = document.getElementById('svg');
@@ -980,7 +1010,7 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
     return { h: t.h, cellW: t.cellW, spacing: t.spacing, holeOffsets: JSON.parse(JSON.stringify(t.holeOffsets || [])), extraHoles: JSON.parse(JSON.stringify(t.extraHoles || [])),
       rd: { dx: S.closedRound.dx, dy: S.closedRound.dy }, sd: { dx: S.closedSlot.dx, dy: S.closedSlot.dy }, cx: b.x + b.w / 2, cy: b.y + b.h / 2, w: b.w, boxH: b.h };
   }
-  function scaleText(key, base, s) {
+  function scaleText(key, base, s, ncx, ncy) {   // ncx, ncy: new centre of the box (default: the old centre)
     var lim = core.scaleLimits(base), t = S.texts[key];
     s = cl(s, lim.min, lim.max);
     var n = core.scaledText(base, s);
@@ -990,7 +1020,13 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
       S.closedSlot.dx = Math.round(base.sd.dx * s * 1000) / 1000; S.closedSlot.dy = Math.round(base.sd.dy * s * 1000) / 1000;
     }
     var a = textScene(key, PPM);
-    t.x = Math.round((base.cx - a.w / 2) * 100) / 100; t.y = Math.round((base.cy - a.h / 2) * 100) / 100;
+    t.x = Math.round(((ncx === undefined ? base.cx : ncx) - a.w / 2) * 100) / 100; t.y = Math.round(((ncy === undefined ? base.cy : ncy) - a.h / 2) * 100) / 100;
+  }
+  // "same height": the other one of CASINO and OPEN gets the same height as key (scaled around its own centre)
+  function matchOtherHeight(key) {
+    if (!S.sameHeight || (key !== 'casino' && key !== 'open')) return;
+    var other = key === 'casino' ? 'open' : 'casino', b1 = snapshotText(other);
+    scaleText(other, b1, S.texts[key].h / b1.h);
   }
   function textScene(key, ppm) {
     var t = S.texts[key], f = effFont(key);
@@ -1147,13 +1183,14 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
       // boxes
       var all = KEYS.concat(['arrow']);
       all.forEach(function (key) {
-        var b = boxOf(sc, key), on = sel.type === key;
+        var b = boxOf(sc, key), on = TK.indexOf(key) >= 0 ? selKeys().indexOf(key) >= 0 : sel.type === key;
         s += '<rect x="' + f2(b.x) + '" y="' + f2(b.y) + '" width="' + f2(b.w) + '" height="' + f2(b.h) + '" fill="none" stroke="' + (on ? '#0057d8' : '#8a8a8a') + '" stroke-width="' + (on ? 1.6 : 0.8) * px + '" stroke-dasharray="' + 5 * px + ' ' + 3 * px + '"/>' +
           '<text x="' + f2(b.x) + '" y="' + f2(b.y - 3 * px) + '" font-size="' + 10 * px + '" fill="' + (on ? '#0057d8' : '#777') + '">' + (key === 'arrow' ? 'ARROW' : NAMES[key]) + ' ' + f2(b.w) + ' x ' + f2(b.h) + '</text>';
       });
       // handles of the selected text box: corners and side midpoints scale it uniformly around its centre, the centre dot moves it
-      if (sel.type && sel.type !== 'arrow' && sel.type !== 'strip') {
-        var hb = boxOf(sc, sel.type), hs = 4 * px;
+      var hk = selKeys();
+      if (hk.length) {
+        var hb = hk.length >= 2 ? groupBox(sc, hk) : boxOf(sc, hk[0]), hs = 4 * px;
         handlePoints(hb).forEach(function (hp) {
           if (hp.hx === 0 && hp.hy === 0) s += '<circle cx="' + f2(hp.x) + '" cy="' + f2(hp.y) + '" r="' + 3 * px + '" fill="#0057d8"/>';
           else s += '<rect x="' + f2(hp.x - hs) + '" y="' + f2(hp.y - hs) + '" width="' + 2 * hs + '" height="' + 2 * hs + '" fill="#fff" stroke="#0057d8" stroke-width="' + 1.5 * px + '"/>';
@@ -1162,13 +1199,19 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
       // gold flash around a text box that was just selected from the drawing
       if (flash && !pv) {
         var fa = 1 - (performance.now() - flash.t0) / 500;
-        if (fa > 0) { var fb = boxOf(sc, flash.key), fp = 3 * px; s += '<rect pointer-events="none" x="' + (fb.x - fp) + '" y="' + (fb.y - fp) + '" width="' + (fb.w + 2 * fp) + '" height="' + (fb.h + 2 * fp) + '" fill="none" stroke="#e8a000" stroke-opacity="' + fa.toFixed(2) + '" stroke-width="' + 4 * px + '"/>'; }
+        if (fa > 0) flash.keys.forEach(function (fk) { var fb = boxOf(sc, fk), fp = 3 * px; s += '<rect pointer-events="none" x="' + (fb.x - fp) + '" y="' + (fb.y - fp) + '" width="' + (fb.w + 2 * fp) + '" height="' + (fb.h + 2 * fp) + '" fill="none" stroke="#e8a000" stroke-opacity="' + fa.toFixed(2) + '" stroke-width="' + 4 * px + '"/>'; });
+      }
+      // rubber band of a selection drag
+      if (drag && drag.kind === 'band' && drag.moved && !pv) {
+        var bx0 = Math.min(drag.sx, drag.x), by0 = Math.min(drag.sy, drag.y);
+        s += '<rect pointer-events="none" x="' + bx0 + '" y="' + by0 + '" width="' + Math.abs(drag.x - drag.sx) + '" height="' + Math.abs(drag.y - drag.sy) + '" fill="#0057d8" fill-opacity="0.08" stroke="#0057d8" stroke-width="' + px + '" stroke-dasharray="' + 4 * px + ' ' + 3 * px + '"/>';
       }
       // dimension arrows
       var pts = [];
       function boxPts(b) { return core.boxPoints(b); }
       if (S.ui.dims === 'selected') {
         if (sel.type === 'strip' && S.strips[sel.idx]) pts = boxPts(core.stripRect(S.strips[sel.idx]));
+        else if (selKeys().length >= 2) pts = boxPts(groupBox(sc, selKeys()));
         else if (sel.type) {
           pts = boxPts(boxOf(sc, sel.type));
           if (sel.type === 'casino' || sel.type === 'open') sc[sel.type].cells.forEach(function (c) { if (c.hole) pts.push(c.hole); (c.extras || []).forEach(function (e) { pts.push(e); }); });
@@ -1312,6 +1355,7 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
         '<div class="row"><span>Spacing</span><select id="t-' + k + '-mode"><option value="uniform">uniform cells</option><option value="natural">natural widths</option></select></div>' +
         '<div class="row"><span>Width mm</span><input type="number" id="t-' + k + '-w" min="5" max="3000" step="1"><span style="width:auto;flex:1;color:#666">height and width: aspect ratio locked</span></div>' +
         '<div class="row"><span>Height mm</span><input type="number" id="t-' + k + '-h" min="5" max="600" step="1"><span style="width:auto">cell</span><input type="number" id="t-' + k + '-cw" min="5" max="600" step="1"><span style="width:auto">gap</span><input type="number" id="t-' + k + '-sp" min="-50" max="100" step="0.5"></div>' +
+        (k === 'closed' ? '' : '<div class="row"><label><input type="checkbox" id="sameH-' + k + '"> CASINO and OPEN same height</label></div>') +
         '<div class="row"><span>Thicken mm</span><input type="range" id="t-' + k + '-th" min="-3" max="8" step="0.1"><input type="number" id="t-' + k + '-thn" min="-5" max="10" step="0.1"></div>' +
         '<div class="row"><span>Position x, y</span><input type="number" id="t-' + k + '-x" step="1"><input type="number" id="t-' + k + '-y" step="1"></div>' +
         (k === 'closed' ? '<div class="row"><span>Hole offset</span><input type="number" id="t-closed-hdx" step="0.5"><input type="number" id="t-closed-hdy" step="0.5"></div>' :
@@ -1387,7 +1431,8 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
       if (k !== 'casino') bind('t-' + k + '-same', function () { return T().sameFont; }, function (v) { T().sameFont = v; ensureFont(effFont(k).font); });
       bind('t-' + k + '-bold', function () { return T().weight === 700; }, function (v) { T().weight = v ? 700 : 400; ensureFont(T().font); clearGlyphs(); });
       bind('t-' + k + '-mode', function () { return T().mode; }, function (v) { T().mode = v; });
-      bind('t-' + k + '-h', function () { return T().h; }, function (v) { var b0 = snapshotText(k); scaleText(k, b0, v / b0.h); });
+      if (k !== 'closed') bind('sameH-' + k, function () { return S.sameHeight; }, function (v) { S.sameHeight = v; });
+      bind('t-' + k + '-h', function () { return T().h; }, function (v) { var b0 = snapshotText(k); scaleText(k, b0, v / b0.h); matchOtherHeight(k); });
       bind('t-' + k + '-w', function () { return Math.round(textScene(k, PPM).w * 100) / 100; }, function (v) { var b0 = snapshotText(k); scaleText(k, b0, v / b0.w); });
       bind('t-' + k + '-cw', function () { return T().cellW; }, function (v) { keepCentre(k, function () { T().cellW = cl(v, 5, 600); }); });
       bind('t-' + k + '-sp', function () { return T().spacing; }, function (v) { keepCentre(k, function () { T().spacing = cl(v, -50, 100); }); });
@@ -1573,6 +1618,8 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
     frameLayout: 'How the 10 mm wide LED strip frame meets at the corners. "Top and bottom over the corners": the top and bottom strips are as long as the plate plus both side strips. "Sides over the corners": the side strips are longer instead. Only whole 100 mm units (3 LEDs each) are counted; the leftover is hatched.',
     stripAdd: 'Add a 100 x 10 mm LED strip piece (one 3-LED unit) in the middle of the plate. Drag it behind a letter.', stripRot: 'Rotate the selected strip piece between horizontal and vertical (key R).', stripDel: 'Delete the selected strip piece (key Delete).',
     dims: 'Which mm dimension arrows to draw to the final plate edge: from the centre, corners and hole centres of the selected object, from every object, or none.',
+    'sameH-casino': 'When on (default), CASINO and OPEN always have the same height: changing the height of one (field or handles) changes the other too. Turning it on changes nothing until you edit a height next time.',
+    'sameH-open': 'When on (default), CASINO and OPEN always have the same height: changing the height of one (field or handles) changes the other too. Turning it on changes nothing until you edit a height next time.',
     snap: 'When on, dragging a box snaps its vertical and horizontal centre line to the centre lines of the other boxes and of the plate when they are within 3 mm (pink guide line); dragged holes and LED strip pieces snap to the plate centre lines. Hold Ctrl while dragging to move without snapping.',
     grid: 'Show the grid lines and the ruler numbers (mm) on the plate.',
     closedHole: 'What the drill pattern contains for CLOSED: a round hole for the wires, a slot for the LED stick window, or nothing. Both are drawn on screen; the unused one is dashed.',
@@ -1637,11 +1684,19 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
 
   // ------------------------------------------------------------------ mouse and keyboard
   var drag = null;
+  // cursors with a + or - next to the arrow: shift adds to the selection, ctrl removes from it
+  function curSvg(sign) {
+    var g = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26"><path d="M2 2 L2 18 L6.5 14 L10 21 L12.5 19.8 L9 13 L15 13 Z" fill="#fff" stroke="#000" stroke-width="1.2"/><circle cx="20" cy="19" r="5.5" fill="#fff" stroke="#000"/><path d="M17 19 H23' + (sign === '+' ? ' M20 16 V22' : '') + '" stroke="#000" stroke-width="1.6"/></svg>';
+    return 'url("data:image/svg+xml,' + encodeURIComponent(g) + '") 2 2, ' + (sign === '+' ? 'copy' : 'not-allowed');
+  }
+  var CUR_PLUS = curSvg('+'), CUR_MINUS = curSvg('-');
+  svg.addEventListener('contextmenu', function (e) { e.preventDefault(); });
   function hit(p) {
     var sc = cur, r = S.holeD / 2, tol = 4 / view.k, i, k, key;
-    if (sel.type && sel.type !== 'arrow' && sel.type !== 'strip') {
-      var hp = handlePoints(boxOf(sc, sel.type)), hr = 7 / view.k;
-      for (i = 0; i < hp.length; i++) if ((hp[i].hx !== 0 || hp[i].hy !== 0) && Math.abs(p.x - hp[i].x) <= hr && Math.abs(p.y - hp[i].y) <= hr) return { kind: 'handle', key: sel.type, hx: hp[i].hx, hy: hp[i].hy };
+    var hk = selKeys();
+    if (hk.length) {
+      var hp = handlePoints(hk.length >= 2 ? groupBox(sc, hk) : boxOf(sc, hk[0])), hr = 7 / view.k;
+      for (i = 0; i < hp.length; i++) if ((hp[i].hx !== 0 || hp[i].hy !== 0) && Math.abs(p.x - hp[i].x) <= hr && Math.abs(p.y - hp[i].y) <= hr) return { kind: hk.length >= 2 ? 'ghandle' : 'handle', key: hk[0], hx: hp[i].hx, hy: hp[i].hy };
     }
     for (k = 0; k < 2; k++) {
       key = KEYS[k];
@@ -1664,26 +1719,54 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
   }
   svg.addEventListener('pointerdown', function (e) {
     var p = toMm(e), now = Date.now(), dbl = e.button === 0 && lastDown && now - lastDown.t < 400 && Math.hypot(e.clientX - lastDown.x, e.clientY - lastDown.y) < 5;
-    lastDown = dbl ? null : { t: now, x: e.clientX, y: e.clientY };
+    if (e.button === 0) lastDown = dbl ? null : { t: now, x: e.clientX, y: e.clientY };
     if (dbl && onDouble(p)) { drag = null; return; }
-    var h = e.button === 1 ? null : hit(p);
     svg.setPointerCapture(e.pointerId); selX = null;
-    if (!h) { drag = { kind: 'pan', sx: e.clientX, sy: e.clientY, cx: view.cx, cy: view.cy, moved: false }; return; }
-    var sc = cur, prevSel = sel.type;
-    if (h.kind === 'handle') { var bs = snapshotText(h.key); drag = { kind: 'scale', key: h.key, hx: h.hx, hy: h.hy, base: bs }; }
-    else if (h.kind === 'hole') { sel = { type: h.key }; var c = sc[h.key].cells[h.idx]; drag = { kind: 'hole', key: h.key, idx: h.idx, gx: c.hole.x - p.x, gy: c.hole.y - p.y }; }
-    else if (h.kind === 'xhole') { sel = { type: h.key }; selX = { key: h.key, k: h.k }; var xe0 = S.texts[h.key].extraHoles[h.k], c0 = sc[h.key].cells[h.idx]; drag = { kind: 'xhole', key: h.key, k: h.k, idx: h.idx, gx: c0.cx + xe0.dx - p.x, gy: c0.cy + xe0.dy - p.y }; }
-    else if (h.kind === 'closedRound') { sel = { type: 'closed' }; drag = { kind: 'closedRound', gx: sc.closedRound.x - p.x, gy: sc.closedRound.y - p.y }; }
-    else if (h.kind === 'closedSlot') { sel = { type: 'closed' }; drag = { kind: 'closedSlot', gx: sc.closedSlot.x - p.x, gy: sc.closedSlot.y - p.y }; }
-    else if (h.kind === 'strip') { sel = { type: 'strip', idx: h.idx }; var s0 = S.strips[h.idx]; drag = { kind: 'strip', idx: h.idx, ox: s0.x, oy: s0.y, sx: p.x, sy: p.y }; }
-    else { sel = { type: h.key }; var o = h.key === 'arrow' ? S.arrow : S.texts[h.key]; drag = { kind: 'box', key: h.key, ox: o.x, oy: o.y, sx: p.x, sy: p.y }; }
-    if (sel.type !== prevSel && ['casino', 'open', 'closed'].indexOf(sel.type) >= 0) flashText(sel.type);
+    // right and middle button: pan
+    if (e.button === 1 || e.button === 2) { drag = { kind: 'pan', sx: e.clientX, sy: e.clientY, cx: view.cx, cy: view.cy, moved: false }; return; }
+    var h = hit(p), ctrl = e.ctrlKey || e.metaKey;
+    // empty space: rubber band selection (shift adds, ctrl removes); a plain click without a drag clears the selection
+    if (!h) { drag = { kind: 'band', sx: p.x, sy: p.y, x: p.x, y: p.y, mode: e.shiftKey ? 'add' : ctrl ? 'remove' : 'replace', moved: false, cx: e.clientX, cy: e.clientY }; return; }
+    var sc = cur, gk = selKeys(), inGroup = function (k) { return gk.length >= 2 && gk.indexOf(k) >= 0; };
+    if (h.kind === 'handle') {
+      var other = S.sameHeight && (h.key === 'casino' || h.key === 'open') ? (h.key === 'casino' ? 'open' : 'casino') : null;
+      drag = { kind: 'scale', key: h.key, hx: h.hx, hy: h.hy, base: snapshotText(h.key), other: other, otherBase: other ? snapshotText(other) : null };
+    }
+    else if (h.kind === 'ghandle') {
+      var bases = {}, ub = groupBox(sc, gk); gk.forEach(function (k) { bases[k] = snapshotText(k); });
+      drag = { kind: 'gscale', keys: gk, hx: h.hx, hy: h.hy, bases: bases, ub: { cx: ub.x + ub.w / 2, cy: ub.y + ub.h / 2, w: ub.w, h: ub.h } };
+    }
+    else if (h.kind === 'hole') { if (!inGroup(h.key)) setTextSelection([h.key]); var c = sc[h.key].cells[h.idx]; drag = { kind: 'hole', key: h.key, idx: h.idx, gx: c.hole.x - p.x, gy: c.hole.y - p.y }; }
+    else if (h.kind === 'xhole') { if (!inGroup(h.key)) setTextSelection([h.key]); selX = { key: h.key, k: h.k }; var xe0 = S.texts[h.key].extraHoles[h.k], c0 = sc[h.key].cells[h.idx]; drag = { kind: 'xhole', key: h.key, k: h.k, idx: h.idx, gx: c0.cx + xe0.dx - p.x, gy: c0.cy + xe0.dy - p.y }; }
+    else if (h.kind === 'closedRound') { if (!inGroup('closed')) setTextSelection(['closed']); drag = { kind: 'closedRound', gx: sc.closedRound.x - p.x, gy: sc.closedRound.y - p.y }; }
+    else if (h.kind === 'closedSlot') { if (!inGroup('closed')) setTextSelection(['closed']); drag = { kind: 'closedSlot', gx: sc.closedSlot.x - p.x, gy: sc.closedSlot.y - p.y }; }
+    else if (h.kind === 'strip') { msel = []; sel = { type: 'strip', idx: h.idx }; var s0 = S.strips[h.idx]; drag = { kind: 'strip', idx: h.idx, ox: s0.x, oy: s0.y, sx: p.x, sy: p.y }; }
+    else {
+      var isText = h.key !== 'arrow', collapse = null, dropKey = null;
+      if (!isText) { msel = []; sel = { type: 'arrow' }; }
+      else if (e.shiftKey) { if (gk.indexOf(h.key) < 0) setTextSelection(TK.filter(function (k) { return gk.indexOf(k) >= 0 || k === h.key; })); }
+      else if (inGroup(h.key)) { if (ctrl) dropKey = h.key; else collapse = h.key; }
+      else if (ctrl && gk.length === 1 && gk[0] === h.key) dropKey = h.key;
+      else setTextSelection([h.key]);
+      var gk2 = selKeys();
+      if (isText && gk2.length >= 2) {
+        var bases2 = {}, ub2 = groupBox(sc, gk2); gk2.forEach(function (k) { bases2[k] = { x: S.texts[k].x, y: S.texts[k].y }; });
+        drag = { kind: 'gbox', keys: gk2, bases: bases2, ub: ub2, sx: p.x, sy: p.y, collapse: collapse, dropKey: dropKey };
+      } else {
+        var o = h.key === 'arrow' ? S.arrow : S.texts[h.key]; drag = { kind: 'box', key: h.key, ox: o.x, oy: o.y, sx: p.x, sy: p.y, dropKey: dropKey };
+      }
+    }
+    drag.px = e.clientX; drag.py = e.clientY;
+    if (drag.kind === 'band') svg.style.cursor = drag.mode === 'add' ? CUR_PLUS : drag.mode === 'remove' ? CUR_MINUS : '';
     drag.moved = false; render(); updateInfo();
   });
   svg.addEventListener('pointermove', function (e) {
     if (!drag) {
       var hv = cur && e.buttons === 0 ? hit(toMm(e)) : null, cur2 = '';
       if (hv && hv.kind === 'handle') cur2 = hv.hy === 0 ? 'ew-resize' : hv.hx === 0 ? 'ns-resize' : (hv.hx * hv.hy > 0 ? 'nwse-resize' : 'nesw-resize');
+      var textBox = hv && hv.kind === 'box' && hv.key !== 'arrow';
+      if (e.shiftKey && (!hv || textBox)) cur2 = CUR_PLUS;
+      else if ((e.ctrlKey || e.metaKey) && (!hv || (textBox && selKeys().indexOf(hv.key) >= 0))) cur2 = CUR_MINUS;
       if (svg.style.cursor !== cur2) svg.style.cursor = cur2;
       return;
     }
@@ -1692,6 +1775,12 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
       if (Math.abs(dx) + Math.abs(dy) > 2) drag.moved = true;
       view.cx = drag.cx - dx / view.k; view.cy = drag.cy - dy / view.k; render(); return;
     }
+    if (drag.kind === 'band') {
+      var pb = toMm(e); drag.x = pb.x; drag.y = pb.y;
+      if (Math.abs(e.clientX - drag.cx) + Math.abs(e.clientY - drag.cy) > 3) drag.moved = true;
+      render(); return;
+    }
+    if ((drag.collapse || drag.dropKey) && !drag.moved && Math.abs(e.clientX - drag.px) + Math.abs(e.clientY - drag.py) <= 3) return;
     var p = toMm(e); drag.moved = true; guides = { v: null, h: null };
     var snapOn = S.ui.snap && !(e.ctrlKey || e.metaKey);   // hold Ctrl while dragging to move freely
     // snaps a point (hole, strip centre) to the plate centre lines within 3 mm; returns the corrected point
@@ -1708,7 +1797,33 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
         var sr = core.snapHandleScale(sf, drag.hx, drag.hy, bs2.cx, bs2.cy, bs2.w, bs2.boxH, xs, ys, 6 / view.k);
         sf = sr.s; guides = { v: sr.vertical, h: sr.horizontal };
       }
-      scaleText(drag.key, bs2, sf); syncControls(); render(); return;
+      scaleText(drag.key, bs2, sf);
+      if (drag.other) scaleText(drag.other, drag.otherBase, S.texts[drag.key].h / drag.otherBase.h);
+      syncControls(); render(); return;
+    }
+    if (drag.kind === 'gscale') {
+      var gu = drag.ub, gs = core.handleScale(drag.hx, drag.hy, gu.cx, gu.cy, gu.w, gu.h, p.x, p.y);
+      if (snapOn) {
+        var gxs = [0, S.plate.w / 2, S.plate.w], gys = [0, S.plate.h / 2, S.plate.h];
+        KEYS.concat(['arrow']).forEach(function (kk) { if (drag.keys.indexOf(kk) < 0) { var q = boxOf(cur, kk); gxs.push(q.x, q.x + q.w / 2, q.x + q.w); gys.push(q.y, q.y + q.h / 2, q.y + q.h); } });
+        var gr = core.snapHandleScale(gs, drag.hx, drag.hy, gu.cx, gu.cy, gu.w, gu.h, gxs, gys, 6 / view.k);
+        gs = gr.s; guides = { v: gr.vertical, h: gr.horizontal };
+      }
+      var gl = core.groupScaleLimits(drag.keys.map(function (k) { return drag.bases[k]; }));
+      gs = cl(gs, gl.min, gl.max);
+      drag.keys.forEach(function (k) { var b0 = drag.bases[k], nc = core.groupCentre({ x: b0.cx, y: b0.cy }, { x: gu.cx, y: gu.cy }, gs); scaleText(k, b0, gs, nc.x, nc.y); });
+      syncControls(); render(); return;
+    }
+    if (drag.kind === 'gbox') {
+      var gnx = drag.ub.x + p.x - drag.sx, gny = drag.ub.y + p.y - drag.sy;
+      if (snapOn) {
+        var gt = [{ cx: S.plate.w / 2, cy: S.plate.h / 2 }];
+        KEYS.concat(['arrow']).forEach(function (kk) { if (drag.keys.indexOf(kk) < 0) { var q = boxOf(cur, kk); gt.push({ cx: q.x + q.w / 2, cy: q.y + q.h / 2 }); } });
+        var gsn = core.snapCentres({ x: gnx, y: gny, w: drag.ub.w, h: drag.ub.h }, gt, 3);
+        gnx += gsn.dx; gny += gsn.dy; guides = { v: gsn.vertical, h: gsn.horizontal };
+      }
+      drag.keys.forEach(function (k) { S.texts[k].x = Math.round((drag.bases[k].x + gnx - drag.ub.x) * 100) / 100; S.texts[k].y = Math.round((drag.bases[k].y + gny - drag.ub.y) * 100) / 100; });
+      syncControls(); render(); return;
     }
     if (drag.kind === 'box') {
       var o = drag.key === 'arrow' ? S.arrow : S.texts[drag.key], b = boxOf(cur, drag.key);
@@ -1744,8 +1859,18 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
   function endDrag() {
     if (!drag) return;
     var was = drag; drag = null; guides = { v: null, h: null };
-    if (was.kind === 'pan' && !was.moved) { sel = { type: null }; }
-    if (was.kind !== 'pan' && was.moved) commit();
+    svg.style.cursor = '';
+    if (was.kind === 'band') {
+      if (was.moved) {
+        var rect = { x: Math.min(was.sx, was.x), y: Math.min(was.sy, was.y), w: Math.abs(was.x - was.sx), h: Math.abs(was.y - was.sy) };
+        var bhit = TK.filter(function (k) { return core.boxesTouch(rect, boxOf(cur, k)); }), bnext = core.bandSelection(selKeys(), bhit, was.mode);
+        if (was.mode === 'replace' || bnext.join() !== selKeys().join()) setTextSelection(bnext);
+      } else if (was.mode === 'replace') { msel = []; sel = { type: null }; }
+    } else if (was.kind !== 'pan') {
+      if (was.moved) commit();
+      else if (was.collapse) setTextSelection([was.collapse]);
+      else if (was.dropKey) setTextSelection(selKeys().filter(function (k) { return k !== was.dropKey; }));
+    }
     render(); updateInfo();
   }
   svg.addEventListener('pointerup', endDrag); svg.addEventListener('pointercancel', endDrag);
@@ -1757,17 +1882,29 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
     render();
   }, { passive: false });
   function rotateStrip() { if (sel.type === 'strip' && S.strips[sel.idx]) { var s0 = S.strips[sel.idx]; s0.rot = s0.rot === 90 ? 0 : 90; changed(); updateInfo(); } }
-  var flash = null;   // {key, t0}: the gold highlight of a newly selected text
-  // Gold flash (0.5 s) around the text box and its panel section; the panel scrolls only if the section is not fully visible.
-  function flashText(key) {
-    flash = { key: key, t0: performance.now() };
-    var el = $('sect-' + key), panel = $('panel');
-    if (el) {
-      var pr = panel.getBoundingClientRect(), er = el.getBoundingClientRect(), off = pr.top + panel.clientTop;
-      var d = core.scrollDelta(er.top - off, er.bottom - off, panel.clientHeight);
+  var flash = null;   // {keys, t0}: the gold highlight of newly selected texts
+  // The selected texts: the group, or the one selected text, or none.
+  function selKeys() { return msel.length >= 2 && sel.type === msel[0] ? msel.slice() : (TK.indexOf(sel.type) >= 0 ? [sel.type] : []); }
+  // Selects texts (keys in the order casino, open, closed). The gold flash runs when the selection changed.
+  function setTextSelection(keys) {
+    var before = selKeys().join(','), after = keys.join(',');
+    msel = keys.length >= 2 ? keys.slice() : [];
+    sel = { type: keys.length ? keys[0] : null };
+    if (keys.length && before !== after) flashTexts(keys);
+  }
+  function groupBox(sc, keys) { return core.unionBox(keys.map(function (k) { return boxOf(sc, k); })); }
+  // Gold flash (0.5 s) around the text boxes and their panel sections; the panel scrolls only if the sections are not fully visible.
+  function flashTexts(keys) {
+    flash = { keys: keys.slice(), t0: performance.now() };
+    var panel = $('panel'), pr = panel.getBoundingClientRect(), off = pr.top + panel.clientTop, top = 1e18, bottom = -1e18, els = [];
+    keys.forEach(function (key) {
+      var el = $('sect-' + key); if (!el) return; els.push(el);
+      var er = el.getBoundingClientRect(); top = Math.min(top, er.top - off); bottom = Math.max(bottom, er.bottom - off);
+    });
+    if (els.length) {
+      var d = core.scrollDelta(top, bottom, panel.clientHeight);
       if (d) panel.scrollBy({ top: d, behavior: 'smooth' });
-      el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
-      setTimeout(function () { el.classList.remove('flash'); }, 600);
+      els.forEach(function (el) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); setTimeout(function () { el.classList.remove('flash'); }, 600); });
     }
     (function tick() { if (flash && performance.now() - flash.t0 < 500) { render(); requestAnimationFrame(tick); } else { flash = null; render(); } })();
   }
@@ -1921,7 +2058,7 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
   }
   window.PlateApp = {
     state: function () { return S; }, scene: function () { return scene(PPM); }, drillEps: buildDrillEps, drillDxf: buildDrillDxf, drillPdf: buildDrillPdf, lettersEps: buildLettersEps,
-    shownFont: function (k) { return effFont(k).font; }, fontStatus: function (n) { return fontState[n] && fontState[n].status; }, useFont: useFont, commit: commit, view: view, selection: function () { return sel; }, hist: function () { return { n: hist.length, pos: histPos }; }
+    shownFont: function (k) { return effFont(k).font; }, fontStatus: function (n) { return fontState[n] && fontState[n].status; }, useFont: useFont, commit: commit, view: view, selection: function () { return sel; }, selected: function () { return selKeys(); }, hist: function () { return { n: hist.length, pos: histPos }; }
   };
   init();
 })();

@@ -378,3 +378,28 @@ setTimeout(finish, 3000);
   check(core.scrollDelta(200, 550, 500) === 100, 'too tall for the margins (350 + 200 > 500) but not for one margin: top edge to the margin, scroll 100');
   check(core.scrollDelta(-50, 150, 1000) === -250, 'the margin is 1/5 of the panel height (200 px for 1000 px)');
 }
+
+// selecting several texts
+{
+  const u = core.unionBox([{ x: 20, y: 20, w: 540, h: 100 }, { x: 580, y: 30, w: 378, h: 80 }, { x: 540, y: 190, w: 200, h: 50 }]);
+  check(u.x === 20 && u.y === 20 && u.w === 938 && u.h === 220, 'union of three boxes: 20, 20, 938 x 220, got ' + JSON.stringify(u));
+  check(JSON.stringify(core.unionBox([{ x: 5, y: 6, w: 10, h: 20 }])) === '{"x":5,"y":6,"w":10,"h":20}', 'union of one box is the box');
+  const a = { x: 0, y: 0, w: 10, h: 10 };
+  check(core.boxesTouch(a, { x: 5, y: 5, w: 10, h: 10 }) && core.boxesTouch(a, { x: 10, y: 10, w: 5, h: 5 }) && core.boxesTouch(a, { x: -5, y: 3, w: 5, h: 2 }) && core.boxesTouch(a, { x: 3, y: -5, w: 2, h: 5 }), 'overlapping and touching boxes hit (also touching from the left and from above)');
+  check(!core.boxesTouch(a, { x: 10.1, y: 0, w: 5, h: 5 }) && !core.boxesTouch(a, { x: 0, y: 10.1, w: 5, h: 5 }) && !core.boxesTouch(a, { x: -6, y: 0, w: 5, h: 5 }) && !core.boxesTouch(a, { x: 0, y: -6, w: 5, h: 5 }), 'separate boxes do not hit (each side)');
+  check(JSON.stringify(core.bandSelection(['casino'], ['closed', 'open'], 'replace')) === '["open","closed"]', 'replace: the band keys, in the order casino, open, closed');
+  check(JSON.stringify(core.bandSelection(['closed'], ['casino'], 'add')) === '["casino","closed"]', 'add: both');
+  check(JSON.stringify(core.bandSelection(['casino', 'open', 'closed'], ['open'], 'remove')) === '["casino","closed"]', 'remove: current without the band keys');
+  check(JSON.stringify(core.bandSelection(['casino'], [], 'replace')) === '[]' && JSON.stringify(core.bandSelection(['casino'], [], 'add')) === '["casino"]' && JSON.stringify(core.bandSelection(['casino'], [], 'remove')) === '["casino"]', 'empty band: replace clears, add and remove keep');
+  const gl = core.groupScaleLimits([{ h: 100, cellW: 90, spacing: 6 }, { h: 50, cellW: 45, spacing: 4 }]);
+  check(Math.abs(gl.min - 5 / 45) < 1e-9 && Math.abs(gl.max - 6) < 1e-9, 'group limits: min 5/45 (cell width of the smaller text), max 600/100 = 6, got ' + JSON.stringify(gl));
+  const gl2 = core.groupScaleLimits([{ h: 100, cellW: 90, spacing: 60 }, { h: 10, cellW: 10, spacing: 1 }]);
+  check(Math.abs(gl2.min - 0.5) < 1e-9 && Math.abs(gl2.max - 100 / 60) < 1e-9, 'group limits: the tightest of both: 0.5 .. 1.667, got ' + JSON.stringify(gl2));
+  const gc = core.groupCentre({ x: 300, y: 70 }, { x: 490, y: 150 }, 1.5);
+  check(gc.x === 205 && gc.y === 30, 'a box centre (300, 70) scaled 1.5 around (490, 150) is (205, 30), got ' + JSON.stringify(gc));
+  const gc2 = core.groupCentre({ x: 490, y: 150 }, { x: 490, y: 150 }, 3);
+  check(gc2.x === 490 && gc2.y === 150, 'the group centre itself does not move');
+  check(core.defaultState().sameHeight === true && core.fromJson({ version: 1 }).sameHeight === true && core.fromJson({ version: 1, sameHeight: false }).sameHeight === false && core.fromJson({ version: 1, sameHeight: true }).sameHeight === true, 'sameHeight: default true, false is kept');
+  check(core.fromJson(core.toJson(core.fromJson({ version: 1, sameHeight: false }))).sameHeight === false, 'sameHeight survives JSON');
+}
+
