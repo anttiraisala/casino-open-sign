@@ -332,6 +332,42 @@
     return { dx: bestX ? bestX.d : 0, dy: bestY ? bestY.d : 0, vertical: bestX ? bestX.at : null, horizontal: bestY ? bestY.at : null };
   }
 
+  // ------------------------------------------------------------------ scaling a text box with its handles
+
+  // Uniform scale factor of a box (centre cx, cy; size w0 x h0) when a handle is dragged to (px, py). The handle is
+  // given by its direction (hx, hy) in -1/0/1: corners have both, sides only one. The centre stays where it is.
+  function handleScale(hx, hy, cx, cy, w0, h0, px, py) {
+    var dx = px - cx, dy = py - cy;
+    if (hx !== 0 && hy !== 0) return Math.sqrt(dx * dx + dy * dy) / Math.sqrt(w0 * w0 / 4 + h0 * h0 / 4);
+    if (hx !== 0) return Math.abs(dx) / (w0 / 2);
+    return Math.abs(dy) / (h0 / 2);
+  }
+  // Snaps the dragged handle to the nearest line in xs (vertical lines, x values) or ys (horizontal lines, y values)
+  // within thr mm by adjusting the scale factor. Returns {s, vertical, horizontal} (the line that was used, or null).
+  function snapHandleScale(s, hx, hy, cx, cy, w0, h0, xs, ys, thr) {
+    var best = null, i, d, ns, X = cx + hx * w0 * s / 2, Y = cy + hy * h0 * s / 2;
+    if (hx !== 0) for (i = 0; i < xs.length; i++) {
+      d = xs[i] - X; ns = 2 * hx * (xs[i] - cx) / w0;
+      if (ns > 0 && Math.abs(d) <= thr && (best === null || Math.abs(d) < Math.abs(best.d))) best = { d: d, s: ns, v: xs[i], h: null };
+    }
+    if (hy !== 0) for (i = 0; i < ys.length; i++) {
+      d = ys[i] - Y; ns = 2 * hy * (ys[i] - cy) / h0;
+      if (ns > 0 && Math.abs(d) <= thr && (best === null || Math.abs(d) < Math.abs(best.d))) best = { d: d, s: ns, v: null, h: ys[i] };
+    }
+    return best ? { s: best.s, vertical: best.v, horizontal: best.h } : { s: s, vertical: null, horizontal: null };
+  }
+  // Allowed scale factors of a text (height 5-600, cell width 5-600, gap -50..100 mm), so the state stays valid.
+  function scaleLimits(t) {
+    var lo = Math.max(5 / t.h, 5 / t.cellW), hi = Math.min(600 / t.h, 600 / t.cellW);
+    if (t.spacing > 0) hi = Math.min(hi, 100 / t.spacing); else if (t.spacing < 0) hi = Math.min(hi, 50 / -t.spacing);
+    return { min: lo, max: hi };
+  }
+  // The sizes of a text scaled uniformly by s (3 decimals): height, cell width, gap and the hole offsets.
+  function scaledText(t, s) {
+    function r(v) { return Math.round(v * 1000) / 1000; }
+    return { h: r(t.h * s), cellW: r(t.cellW * s), spacing: r(t.spacing * s), holeOffsets: (t.holeOffsets || []).map(function (o) { return { dx: r(o.dx * s), dy: r(o.dy * s) }; }) };
+  }
+
   // ------------------------------------------------------------------ strip pieces behind the letters
 
   function stripRect(s) { return s.rot === 90 ? { x: s.x, y: s.y, w: 10, h: 100 } : { x: s.x, y: s.y, w: 100, h: 10 }; }
@@ -627,7 +663,7 @@
   return {
     MM_TO_PT: MM_TO_PT, distanceTo: distanceTo, signedField: signedField, rasterize: rasterize, marching: marching, simplifyClosed: simplifyClosed,
     Glyph: Glyph, glyphFromPolygons: glyphFromPolygons, placeText: placeText, holeStatus: holeStatus, holeOffsetFor: holeOffsetFor,
-    frameCounts: frameCounts, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, stripRect: stripRect, stripCoverage: stripCoverage,
+    frameCounts: frameCounts, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripCoverage: stripCoverage,
     drillItems: drillItems, epsFromItems: epsFromItems, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, nestShelves: nestShelves,
     defaultState: defaultState, fromJson: fromJson, toJson: toJson
   };

@@ -22,7 +22,7 @@ nothing to install and nothing is sent anywhere, except that fonts are fetched f
 - Preview (black plate, red glowing letters, glowing LEDs), zoom/pan (wheel, drag background), grid and rulers.
 - Every field has a tooltip that explains exactly what it does. All dropdowns work the same way: click opens the list, the arrow keys preview each choice live, Enter accepts, Esc goes back to the old value (typing a letter jumps to a matching entry).
 - Number fields: drag the number sideways to change it (1 step per 2 px); dragging up/down is 4 times faster (up = more). A plain click lets you type.
-- Changing the height, cell width or gap of a text keeps the centre of its box in place.
+- Handles on the selected text box (CASINO, OPEN, CLOSED): drag a corner or a side midpoint to scale the whole text uniformly (aspect ratio locked) around the centre of the box, which stays in place; the centre dot moves the box. The dragged handle snaps (6 px) to the edges and centre lines of the other boxes and the plate (pink guide line; "snap" option). The Height and Width fields scale the same way (cells, gaps and hole positions scale with the text); the cell and gap fields change the layout and also keep the centre.
 - Keyboard: arrows nudge 1 mm, Shift 10 mm, Alt 0.1 mm. Ctrl+Z / Ctrl+Y undo/redo.
 
 ## Exports

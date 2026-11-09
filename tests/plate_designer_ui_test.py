@@ -59,7 +59,7 @@ with sync_playwright() as p:
     r = pg.evaluate("(()=>{const r=document.getElementById('svg').getBoundingClientRect();return [r.left,r.top,r.width,r.height]})()")
     def px(x, y): return r[0] + (x - vb[0]) / vb[2] * r[2], r[1] + (y - vb[1]) / vb[3] * r[3]
     # click on a gap between holes inside the CASINO box (top edge area, away from holes)
-    sx, sy = px(box['x'] + 5, box['y'] + 4)
+    sx, sy = px(box['x'] + box['w'] * 0.2, box['y'] + 4)
     pg.mouse.move(sx, sy); pg.mouse.down(); pg.mouse.move(sx + 20, sy + 40, steps=5); pg.mouse.up(); pg.wait_for_timeout(100)
     dx = S()['texts']['casino']['x'] - 20; dy = S()['texts']['casino']['y'] - 20
     check(dx > 5 and dy > 5, 'box moved by dragging (dx %.1f dy %.1f)' % (dx, dy))
@@ -113,14 +113,42 @@ with sync_playwright() as p:
     pg.wait_for_function("PlateApp.fontStatus('Zilla Slab') !== 'loading'", timeout=10000)
     check(pg.evaluate("PlateApp.shownFont('casino')") == 'Zilla Slab', 'after loading (or failing) the new font is the drawn one')
     pg.unroute('**/fonts.googleapis.com/**'); pg.evaluate("PlateApp.useFont('casino','DejaVu Sans')"); pg.wait_for_timeout(300)
-    # resizing keeps the centre of the box
+    # height and width scale the whole text uniformly around the centre of the box
     pg.fill('#t-casino-x', '20'); pg.fill('#t-casino-y', '20'); pg.fill('#t-casino-h', '60'); st = S()['texts']['casino']
-    near(st['y'], 40, 0.011, 'height 100 -> 60 keeps the vertical centre (y 20 -> 40)'); near(st['x'], 20, 0.011, 'uniform width does not change with the height, x stays')
-    pg.fill('#t-casino-cw', '100'); st = S()['texts']['casino']; near(st['x'], -10, 0.011, 'cell width 90 -> 100 keeps the horizontal centre (x 20 -> -10)')
-    pg.fill('#t-casino-cw', '90'); pg.fill('#t-casino-h', '100'); pg.select_option('#t-casino-mode', 'natural')
-    c0 = pg.evaluate("(()=>{const b=PlateApp.scene().casino;return [b.x+b.w/2,b.y+b.h/2]})()"); pg.fill('#t-casino-h', '70'); c1 = pg.evaluate("(()=>{const b=PlateApp.scene().casino;return [b.x+b.w/2,b.y+b.h/2]})()")
-    near(c1[0], c0[0], 0.02, 'natural mode: horizontal centre stays when the width changes with the height'); near(c1[1], c0[1], 0.02, 'natural mode: vertical centre stays')
-    pg.select_option('#t-casino-mode', 'uniform'); pg.fill('#t-casino-h', '100'); pg.fill('#t-casino-x', '20'); pg.fill('#t-casino-y', '20')
+    near(st['y'], 40, 0.011, 'height 100 -> 60 keeps the vertical centre (y 20 -> 40)'); near(st['x'], 128, 0.011, 'and the horizontal centre: the width shrinks 540 -> 324, x 20 -> 128')
+    near(st['cellW'], 54, 0.001, 'cell width scales with the height'); near(st['spacing'], 3.6, 0.001, 'gap scales with the height')
+    check(pg.input_value('#t-casino-w') == '324', 'the width field shows 324 (got %s)' % pg.input_value('#t-casino-w'))
+    pg.fill('#t-casino-w', '648'); st = S()['texts']['casino']
+    near(st['h'], 120, 0.01, 'width 324 -> 648 doubles the height (aspect locked)'); near(st['x'] + 324, 290, 0.02, 'horizontal centre stays at 290'); near(st['y'] + 60, 70, 0.02, 'vertical centre stays at 70')
+    pg.fill('#t-casino-h', '100'); pg.fill('#t-casino-cw', '90'); pg.fill('#t-casino-sp', '6'); st = S()['texts']['casino']; c0 = st['x'] + 270
+    pg.fill('#t-casino-cw', '100'); st = S()['texts']['casino']; near(st['x'] + 300, c0, 0.02, 'cell width alone also keeps the horizontal centre')
+    pg.fill('#t-casino-cw', '90'); pg.select_option('#t-casino-mode', 'natural')
+    def cen(): return pg.evaluate("(()=>{const b=PlateApp.scene().casino;return [b.x+b.w/2,b.y+b.h/2,b.w/b.h]})()")
+    c0 = cen(); pg.fill('#t-casino-h', '70'); c1 = cen()
+    near(c1[0], c0[0], 0.02, 'natural mode: horizontal centre stays'); near(c1[1], c0[1], 0.02, 'natural mode: vertical centre stays'); near(c1[2], c0[2], 0.02, 'natural mode: aspect ratio stays')
+    pg.select_option('#t-casino-mode', 'uniform'); pg.fill('#t-casino-h', '100'); pg.fill('#t-casino-cw', '90'); pg.fill('#t-casino-sp', '6'); pg.fill('#t-casino-x', '20'); pg.fill('#t-casino-y', '20')
+    # handles: drag to scale around the centre
+    def mmpx(mx, my):
+        vb2 = [float(v) for v in pg.evaluate("document.getElementById('svg').getAttribute('viewBox')").split()]; r2 = pg.evaluate("(()=>{const r=document.getElementById('svg').getBoundingClientRect();return [r.left,r.top,r.width,r.height]})()")
+        return r2[0] + (mx - vb2[0]) / vb2[2] * r2[2], r2[1] + (my - vb2[1]) / vb2[3] * r2[3]
+    pg.mouse.click(*mmpx(20 + 540 * 0.2, 24)); check(pg.evaluate('PlateApp.selection().type') == 'casino', 'casino selected')
+    pg.uncheck('#snap')
+    bx = pg.evaluate('PlateApp.scene().casino'); hx0, hy0 = mmpx(bx['x'] + bx['w'], bx['y'] + bx['h'] / 2); tx, ty = mmpx(290 + 324, 70)
+    pg.mouse.move(hx0, hy0); check(pg.evaluate("document.getElementById('svg').style.cursor") == 'ew-resize', 'cursor over a side handle is ew-resize')
+    pg.mouse.down(); pg.mouse.move(tx, hy0, steps=6); pg.mouse.up(); pg.wait_for_timeout(50)
+    st = S()['texts']['casino']; near(st['h'], 120, 1.5, 'right side handle dragged to scale 1.2: height 100 -> ~120 (got %s)' % st['h'])
+    cb = pg.evaluate('PlateApp.scene().casino'); near(cb['x'] + cb['w'] / 2, 290, 0.05, 'centre x stays after a handle drag'); near(cb['y'] + cb['h'] / 2, 70, 0.05, 'centre y stays after a handle drag'); near(cb['w'] / cb['h'], 5.4, 0.01, 'aspect ratio stays')
+    pg.fill('#t-casino-h', '100'); pg.fill('#t-casino-x', '20'); pg.fill('#t-casino-y', '20')
+    bx = pg.evaluate('PlateApp.scene().casino'); hx0, hy0 = mmpx(bx['x'] + bx['w'], bx['y'] + bx['h']); tx, ty = mmpx(290 + 270 * 1.1, 70 + 50 * 1.1)
+    pg.mouse.move(hx0, hy0); check(pg.evaluate("document.getElementById('svg').style.cursor") == 'nwse-resize', 'cursor over the bottom right corner is nwse-resize')
+    pg.mouse.down(); pg.mouse.move(tx, ty, steps=6); pg.mouse.up(); pg.wait_for_timeout(50)
+    st = S()['texts']['casino']; near(st['h'], 110, 1.5, 'corner handle: scale 1.1 (got %s)' % st['h']); cb = pg.evaluate('PlateApp.scene().casino'); near(cb['x'] + cb['w'] / 2, 290, 0.05, 'corner: centre x stays'); near(cb['w'] / cb['h'], 5.4, 0.01, 'corner: aspect stays')
+    pg.fill('#t-casino-h', '100'); pg.fill('#t-casino-x', '20'); pg.fill('#t-casino-y', '20'); pg.check('#snap')
+    # a handle snaps to the edges and centres of the other elements: the right edge of CASINO onto the left edge of OPEN (x = 600)
+    bx = pg.evaluate('PlateApp.scene().casino'); hx0, hy0 = mmpx(bx['x'] + bx['w'], bx['y'] + bx['h'] / 2); tx, ty = mmpx(597.5, 70)
+    pg.mouse.move(hx0, hy0); pg.mouse.down(); pg.mouse.move(tx, hy0, steps=6); pg.mouse.up(); pg.wait_for_timeout(50)
+    cb = pg.evaluate('PlateApp.scene().casino'); near(cb['x'] + cb['w'], 600, 0.02, 'the right handle snapped to x = 600 (the left edge of OPEN)'); near(cb['x'] + cb['w'] / 2, 290, 0.05, 'snapping keeps the centre')
+    pg.fill('#t-casino-h', '100'); pg.fill('#t-casino-x', '20'); pg.fill('#t-casino-y', '20')
     # strip pieces
     pg.click('#stripAdd'); check(len(S()['strips']) == 1, 'strip piece added'); pg.keyboard.press('r'); check(S()['strips'][0]['rot'] == 90, 'R rotates the strip')
     pg.keyboard.press('Delete'); check(len(S()['strips']) == 0, 'Delete removes the strip')

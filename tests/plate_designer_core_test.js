@@ -130,6 +130,32 @@ function fakeGlyph(wmm) { return core.glyphFromPolygons([rect(0, -100, wmm, 0, f
   const nn = core.snapCentres({ x: 0, y: 0, w: 100, h: 50 }, [{ cx: 52, cy: 27 }, { cx: 51, cy: 26 }], 3); check(nn.dx === 1 && nn.dy === 1, 'the nearest centre line wins');
   check(core.snapCentres({ x: 0, y: 0, w: 100, h: 50 }, [{ cx: 53, cy: 200 }], 3).dx === 3, 'a centre line exactly at the threshold still snaps');
 }
+// ---- scaling with handles
+{
+  // box 200 x 100 centred at (300, 200)
+  near(core.handleScale(1, 0, 300, 200, 200, 100, 460, 999), 1.6, 1e-9, 'right side handle: half width 100 -> 160 mm = 1.6');
+  near(core.handleScale(-1, 0, 300, 200, 200, 100, 150, 0), 1.5, 1e-9, 'left side handle uses the distance from the centre');
+  near(core.handleScale(0, 1, 300, 200, 200, 100, 0, 275), 1.5, 1e-9, 'bottom handle: half height 50 -> 75 = 1.5');
+  near(core.handleScale(0, -1, 300, 200, 200, 100, 0, 100), 2, 1e-9, 'top handle');
+  near(core.handleScale(1, 1, 300, 200, 200, 100, 300 + 200, 200 + 100), 2, 1e-9, 'corner handle: distance 223.6 / half diagonal 111.8 = 2');
+  const sn = core.snapHandleScale(1.6, 1, 0, 300, 200, 200, 100, [100, 455, 600], [], 6);
+  near(sn.s, 1.55, 1e-9, 'right handle at x 460 snaps to the line x 455 (scale 1.55)'); check(sn.vertical === 455 && sn.horizontal === null, 'guide line reported');
+  check(core.snapHandleScale(1.6, 1, 0, 300, 200, 200, 100, [100, 466.5], [], 6).s === 1.6 && core.snapHandleScale(1.6, 1, 0, 300, 200, 200, 100, [466.5], [], 6).vertical === null, 'beyond the threshold nothing snaps');
+  check(core.snapHandleScale(1.6, 1, 0, 300, 200, 200, 100, [466], [], 6).s === 1.66, 'exactly at the threshold still snaps');
+  const sy = core.snapHandleScale(1.5, 0, -1, 300, 200, 200, 100, [], [120, 126, 500], 6);
+  near(sy.s, 1.48, 1e-9, 'top handle (y 125) snaps to the nearest horizontal line, y 126 (scale 1.48)'); check(sy.horizontal === 126 && sy.vertical === null, 'horizontal guide reported');
+  check(core.snapHandleScale(1.5, 0, 1, 300, 200, 200, 100, [999], [], 6).vertical === null, 'a bottom handle ignores vertical lines');
+  const nr = core.snapHandleScale(1.5, 1, 0, 300, 200, 200, 100, [300, 599], [], 400); check(nr.vertical === 599, 'the nearest line wins, and lines on the wrong side of the centre are ignored (x 300 would give scale 0)');
+  const cs = core.snapHandleScale(1.5, 1, 1, 300, 200, 200, 100, [452], [276], 6); check(cs.horizontal === 276 && cs.vertical === null && Math.abs(cs.s - 1.52) < 1e-9, 'a corner handle may snap to a horizontal line (nearer than the vertical one)');
+  const sl = core.snapHandleScale(1.5, -1, 0, 300, 200, 200, 100, [148, 153, 600], [], 6); near(sl.s, 1.52, 1e-9, 'left handle (x 150) snaps to the nearest line x 148 (scale 1.52)'); check(sl.vertical === 148, 'left guide line');
+  const wrong = core.snapHandleScale(1.5, 1, 0, 300, 200, 200, 100, [100, 900], [], 1000); check(wrong.vertical === 900 && wrong.s === 6, 'a line on the other side of the centre cannot be used (scale would be negative)');
+  const t0 = { h: 100, cellW: 90, spacing: 6, holeOffsets: [{ dx: 2, dy: -4 }, { dx: 0, dy: 1.5 }] };
+  const sc = core.scaledText(t0, 0.6); check(sc.h === 60 && sc.cellW === 54 && sc.spacing === 3.6 && sc.holeOffsets[0].dx === 1.2 && sc.holeOffsets[0].dy === -2.4 && sc.holeOffsets[1].dy === 0.9, 'uniform scaling of height, cell width, gap and hole offsets');
+  check(core.scaledText({ h: 33.3333, cellW: 10, spacing: 0, holeOffsets: [] }, 1 / 3).h === 11.111, 'rounded to 3 decimals');
+  const lm = core.scaleLimits(t0); near(lm.min, 5 / 90, 1e-12, 'smallest scale keeps the cell width at 5 mm'); near(lm.max, 6, 1e-12, 'largest scale keeps the height at 600 mm'); near(core.scaleLimits({ h: 100, cellW: 90, spacing: 40 }).max, 2.5, 1e-12, 'largest scale keeps the gap at 100 mm');
+  const l2 = core.scaleLimits({ h: 100, cellW: 400, spacing: -10 }); near(l2.max, 1.5, 1e-12, 'cell width 600 limit'); near(l2.min, 0.05, 1e-12, 'height 5 limit');
+  near(core.scaleLimits({ h: 100, cellW: 50, spacing: -20 }).max, 2.5, 1e-12, 'negative gap limit -50');
+}
 // ---- hole dimensions for the PDF
 {
   const dm = core.holeDimItems([{ kind: 'outline', w: 100, h: 50 }, { kind: 'circle', x: 15, y: 20, d: 10 }], { w: 100, h: 50 });

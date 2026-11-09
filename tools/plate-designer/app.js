@@ -108,6 +108,25 @@
     var a = textScene(key, PPM), t = S.texts[key];
     t.x = Math.round((cx - a.w / 2) * 100) / 100; t.y = Math.round((cy - a.h / 2) * 100) / 100;
   }
+  // Uniform scaling of a whole text (height, cell width, gap, hole offsets; for CLOSED also its hole offset) around the
+  // centre of its box. base = snapshotText(key) taken before the change, so repeated drag steps do not drift.
+  function snapshotText(key) {
+    var t = S.texts[key], b = textScene(key, PPM);
+    return { h: t.h, cellW: t.cellW, spacing: t.spacing, holeOffsets: JSON.parse(JSON.stringify(t.holeOffsets || [])),
+      rd: { dx: S.closedRound.dx, dy: S.closedRound.dy }, sd: { dx: S.closedSlot.dx, dy: S.closedSlot.dy }, cx: b.x + b.w / 2, cy: b.y + b.h / 2, w: b.w, boxH: b.h };
+  }
+  function scaleText(key, base, s) {
+    var lim = core.scaleLimits(base), t = S.texts[key];
+    s = cl(s, lim.min, lim.max);
+    var n = core.scaledText(base, s);
+    t.h = n.h; t.cellW = n.cellW; t.spacing = n.spacing; t.holeOffsets = n.holeOffsets;
+    if (key === 'closed') {
+      S.closedRound.dx = Math.round(base.rd.dx * s * 1000) / 1000; S.closedRound.dy = Math.round(base.rd.dy * s * 1000) / 1000;
+      S.closedSlot.dx = Math.round(base.sd.dx * s * 1000) / 1000; S.closedSlot.dy = Math.round(base.sd.dy * s * 1000) / 1000;
+    }
+    var a = textScene(key, PPM);
+    t.x = Math.round((base.cx - a.w / 2) * 100) / 100; t.y = Math.round((base.cy - a.h / 2) * 100) / 100;
+  }
   function textScene(key, ppm) {
     var t = S.texts[key], f = effFont(key);
     var glyphs = Array.from(t.text).map(function (ch) { return ch.trim() ? getGlyph(f.font, f.weight, ch, t.h, ppm) : null; });
@@ -255,6 +274,14 @@
         s += '<rect x="' + f2(b.x) + '" y="' + f2(b.y) + '" width="' + f2(b.w) + '" height="' + f2(b.h) + '" fill="none" stroke="' + (on ? '#0057d8' : '#8a8a8a') + '" stroke-width="' + (on ? 1.6 : 0.8) * px + '" stroke-dasharray="' + 5 * px + ' ' + 3 * px + '"/>' +
           '<text x="' + f2(b.x) + '" y="' + f2(b.y - 3 * px) + '" font-size="' + 10 * px + '" fill="' + (on ? '#0057d8' : '#777') + '">' + (key === 'arrow' ? 'ARROW' : NAMES[key]) + ' ' + f2(b.w) + ' x ' + f2(b.h) + '</text>';
       });
+      // handles of the selected text box: corners and side midpoints scale it uniformly around its centre, the centre dot moves it
+      if (sel.type && sel.type !== 'arrow' && sel.type !== 'strip') {
+        var hb = boxOf(sc, sel.type), hs = 4 * px;
+        handlePoints(hb).forEach(function (hp) {
+          if (hp.hx === 0 && hp.hy === 0) s += '<circle cx="' + f2(hp.x) + '" cy="' + f2(hp.y) + '" r="' + 3 * px + '" fill="#0057d8"/>';
+          else s += '<rect x="' + f2(hp.x - hs) + '" y="' + f2(hp.y - hs) + '" width="' + 2 * hs + '" height="' + 2 * hs + '" fill="#fff" stroke="#0057d8" stroke-width="' + 1.5 * px + '"/>';
+        });
+      }
       // dimension arrows
       var pts = [];
       function boxPts(b) { return core.boxPoints(b); }
@@ -278,6 +305,11 @@
     updateStatus();
   }
   var guides = { v: null, h: null };
+  function handlePoints(b) {
+    var pts = [], hx, hy;
+    for (hy = -1; hy <= 1; hy++) for (hx = -1; hx <= 1; hx++) pts.push({ hx: hx, hy: hy, x: b.x + b.w / 2 + hx * b.w / 2, y: b.y + b.h / 2 + hy * b.h / 2 });
+    return pts;
+  }
 
   // ------------------------------------------------------------------ info panels
   var thinCache = new Map();
@@ -395,6 +427,7 @@
         '<div class="row"><span>Other Google font</span><input type="text" id="t-' + k + '-other" placeholder="e.g. Bungee Hairline"><button id="t-' + k + '-use">Use</button></div>' +
         '<label><input type="checkbox" id="t-' + k + '-bold"> bold (700)</label>' +
         '<div class="row"><span>Spacing</span><select id="t-' + k + '-mode"><option value="uniform">uniform cells</option><option value="natural">natural widths</option></select></div>' +
+        '<div class="row"><span>Width mm</span><input type="number" id="t-' + k + '-w" min="5" max="3000" step="1"><span style="width:auto;flex:1;color:#666">height and width: aspect ratio locked</span></div>' +
         '<div class="row"><span>Height mm</span><input type="number" id="t-' + k + '-h" min="5" max="600" step="1"><span style="width:auto">cell</span><input type="number" id="t-' + k + '-cw" min="5" max="600" step="1"><span style="width:auto">gap</span><input type="number" id="t-' + k + '-sp" min="-50" max="100" step="0.5"></div>' +
         '<div class="row"><span>Thicken mm</span><input type="range" id="t-' + k + '-th" min="-3" max="8" step="0.1"><input type="number" id="t-' + k + '-thn" min="-5" max="10" step="0.1"></div>' +
         '<div class="row"><span>Position x, y</span><input type="number" id="t-' + k + '-x" step="1"><input type="number" id="t-' + k + '-y" step="1"></div>' +
@@ -461,7 +494,8 @@
       if (k !== 'casino') bind('t-' + k + '-same', function () { return T().sameFont; }, function (v) { T().sameFont = v; ensureFont(effFont(k).font); });
       bind('t-' + k + '-bold', function () { return T().weight === 700; }, function (v) { T().weight = v ? 700 : 400; ensureFont(T().font); clearGlyphs(); });
       bind('t-' + k + '-mode', function () { return T().mode; }, function (v) { T().mode = v; });
-      bind('t-' + k + '-h', function () { return T().h; }, function (v) { keepCentre(k, function () { T().h = cl(v, 5, 600); }); });
+      bind('t-' + k + '-h', function () { return T().h; }, function (v) { var b0 = snapshotText(k); scaleText(k, b0, v / b0.h); });
+      bind('t-' + k + '-w', function () { return Math.round(textScene(k, PPM).w * 100) / 100; }, function (v) { var b0 = snapshotText(k); scaleText(k, b0, v / b0.w); });
       bind('t-' + k + '-cw', function () { return T().cellW; }, function (v) { keepCentre(k, function () { T().cellW = cl(v, 5, 600); }); });
       bind('t-' + k + '-sp', function () { return T().spacing; }, function (v) { keepCentre(k, function () { T().spacing = cl(v, -50, 100); }); });
       bind('t-' + k + '-th', function () { return T().thicken; }, function (v) { T().thicken = cl(v, -5, 10); });
@@ -672,7 +706,8 @@
     t['t-' + k + '-use'] = 'Use the typed Google font name for this text.';
     t['t-' + k + '-bold'] = 'Use the bold (700) weight if the font has it. Otherwise the browser fakes it.';
     t['t-' + k + '-mode'] = 'Uniform cells: every letter is centred in a cell of the same width ("cell"). Natural widths: each letter takes the width the font gives it plus the gap.';
-    t['t-' + k + '-h'] = 'Height in mm of the ' + n + ' text: the cap height (height of the letter H). The box has this height. The centre of the box stays where it is when you change it.';
+    t['t-' + k + '-h'] = 'Height in mm of the ' + n + ' text: the cap height (height of the letter H). The box has this height. Height and width scale the whole text uniformly (cells, gaps, hole positions; the aspect ratio is locked) around the centre of the box, which stays where it is. You can also drag the handles of the selected box.';
+    t['t-' + k + '-w'] = 'Width in mm of the whole ' + n + ' box. Scales the whole text uniformly like the height (the aspect ratio is locked) around the centre of the box, which stays where it is.';
     t['t-' + k + '-cw'] = 'Width in mm of one cell in uniform mode (the letter is centred in it). Not used in natural mode.';
     t['t-' + k + '-sp'] = 'Gap in mm between the letters in natural mode (added to each letter width; half on each side). Not used in uniform mode.';
     t['t-' + k + '-th'] = 'Thicken in mm: grows (+) or shrinks (-) every letter outline evenly. Use it to make thin parts stronger or to make room for a hole. Affects the drawing, the hole check and the letter cut.';
@@ -709,6 +744,10 @@
   var drag = null;
   function hit(p) {
     var sc = cur, r = S.holeD / 2, tol = 4 / view.k, i, k, key;
+    if (sel.type && sel.type !== 'arrow' && sel.type !== 'strip') {
+      var hp = handlePoints(boxOf(sc, sel.type)), hr = 7 / view.k;
+      for (i = 0; i < hp.length; i++) if ((hp[i].hx !== 0 || hp[i].hy !== 0) && Math.abs(p.x - hp[i].x) <= hr && Math.abs(p.y - hp[i].y) <= hr) return { kind: 'handle', key: sel.type, hx: hp[i].hx, hy: hp[i].hy };
+    }
     for (k = 0; k < 2; k++) {
       key = KEYS[k];
       for (i = 0; i < sc[key].cells.length; i++) { var c = sc[key].cells[i]; if (c.hole && Math.hypot(p.x - c.hole.x, p.y - c.hole.y) <= Math.max(r, tol)) return { kind: 'hole', key: key, idx: i }; }
@@ -729,7 +768,8 @@
     svg.setPointerCapture(e.pointerId);
     if (!h) { drag = { kind: 'pan', sx: e.clientX, sy: e.clientY, cx: view.cx, cy: view.cy, moved: false }; return; }
     var sc = cur;
-    if (h.kind === 'hole') { sel = { type: h.key }; var c = sc[h.key].cells[h.idx]; drag = { kind: 'hole', key: h.key, idx: h.idx, gx: c.hole.x - p.x, gy: c.hole.y - p.y }; }
+    if (h.kind === 'handle') { var bs = snapshotText(h.key); drag = { kind: 'scale', key: h.key, hx: h.hx, hy: h.hy, base: bs }; }
+    else if (h.kind === 'hole') { sel = { type: h.key }; var c = sc[h.key].cells[h.idx]; drag = { kind: 'hole', key: h.key, idx: h.idx, gx: c.hole.x - p.x, gy: c.hole.y - p.y }; }
     else if (h.kind === 'closedRound') { sel = { type: 'closed' }; drag = { kind: 'closedRound', gx: sc.closedRound.x - p.x, gy: sc.closedRound.y - p.y }; }
     else if (h.kind === 'closedSlot') { sel = { type: 'closed' }; drag = { kind: 'closedSlot', gx: sc.closedSlot.x - p.x, gy: sc.closedSlot.y - p.y }; }
     else if (h.kind === 'strip') { sel = { type: 'strip', idx: h.idx }; var s0 = S.strips[h.idx]; drag = { kind: 'strip', idx: h.idx, ox: s0.x, oy: s0.y, sx: p.x, sy: p.y }; }
@@ -737,13 +777,28 @@
     drag.moved = false; render(); updateInfo();
   });
   svg.addEventListener('pointermove', function (e) {
-    if (!drag) return;
+    if (!drag) {
+      var hv = cur && e.buttons === 0 ? hit(toMm(e)) : null, cur2 = '';
+      if (hv && hv.kind === 'handle') cur2 = hv.hy === 0 ? 'ew-resize' : hv.hx === 0 ? 'ns-resize' : (hv.hx * hv.hy > 0 ? 'nwse-resize' : 'nesw-resize');
+      if (svg.style.cursor !== cur2) svg.style.cursor = cur2;
+      return;
+    }
     if (drag.kind === 'pan') {
       var dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
       if (Math.abs(dx) + Math.abs(dy) > 2) drag.moved = true;
       view.cx = drag.cx - dx / view.k; view.cy = drag.cy - dy / view.k; render(); return;
     }
     var p = toMm(e); drag.moved = true; guides = { v: null, h: null };
+    if (drag.kind === 'scale') {
+      var bs2 = drag.base, sf = core.handleScale(drag.hx, drag.hy, bs2.cx, bs2.cy, bs2.w, bs2.boxH, p.x, p.y);
+      if (S.ui.snap) {
+        var xs = [0, S.plate.w / 2, S.plate.w], ys = [0, S.plate.h / 2, S.plate.h];
+        KEYS.concat(['arrow']).forEach(function (kk) { if (kk !== drag.key) { var q = boxOf(cur, kk); xs.push(q.x, q.x + q.w / 2, q.x + q.w); ys.push(q.y, q.y + q.h / 2, q.y + q.h); } });
+        var sr = core.snapHandleScale(sf, drag.hx, drag.hy, bs2.cx, bs2.cy, bs2.w, bs2.boxH, xs, ys, 6 / view.k);
+        sf = sr.s; guides = { v: sr.vertical, h: sr.horizontal };
+      }
+      scaleText(drag.key, bs2, sf); syncControls(); render(); return;
+    }
     if (drag.kind === 'box') {
       var o = drag.key === 'arrow' ? S.arrow : S.texts[drag.key], b = boxOf(cur, drag.key);
       var nx = drag.ox + p.x - drag.sx, ny = drag.oy + p.y - drag.sy;
