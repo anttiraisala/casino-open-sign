@@ -13,7 +13,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
-FILES = ["wiring-diagram", "layout-diagram", "layout-parts", "strip_test/wiring-diagram", "strip_test/layout-diagram", "stick_test/wiring-diagram", "stick_test/layout-diagram", "stick_test_direct/wiring-diagram", "stick_test_direct/layout-diagram", "arrow_sticks/wiring-diagram", "arrow_sticks/layout-diagram", "strip_single_led_test/wiring-diagram", "strip_single_led_test/layout-diagram", "strip_knight_rider_test/wiring-diagram", "strip_knight_rider_test/layout-diagram", "sticks_11_test/wiring-diagram", "sticks_11_test/layout-diagram"]
+FILES = ["wiring-diagram", "layout-diagram", "layout-parts", "strip_test/wiring-diagram", "strip_test/layout-diagram", "stick_test/wiring-diagram", "stick_test/layout-diagram", "stick_test_direct/wiring-diagram", "stick_test_direct/layout-diagram", "arrow_sticks/wiring-diagram", "arrow_sticks/layout-diagram", "strip_single_led_test/wiring-diagram", "strip_single_led_test/layout-diagram", "strip_knight_rider_test/wiring-diagram", "strip_knight_rider_test/layout-diagram", "strip_frame_demo_test/wiring-diagram", "strip_frame_demo_test/layout-diagram", "sticks_11_test/wiring-diagram", "sticks_11_test/layout-diagram"]
 
 
 def main():

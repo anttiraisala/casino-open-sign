@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "author": "Casino sign project - Strip frame demo test",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-arduino-mega",
+      "id": "mega",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-text",
+      "id": "t1",
+      "top": -60,
+      "left": 140,
+      "attrs": {
+        "text": "Strip frame demo: D9 frame strip 16 pixels (red, green, blue lights), D10 single pixel pulse"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "t2",
+      "top": -42,
+      "left": 140,
+      "attrs": {
+        "text": "Simulation only: the strips are powered from the Mega 5V. In real life they get 12 V from the supply."
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 232,
+      "left": 120,
+      "attrs": {
+        "value": "330"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": 262,
+      "left": 120,
+      "attrs": {
+        "value": "330"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "strip1",
+      "top": 330,
+      "left": 60,
+      "rotate": 0,
+      "attrs": {
+        "pixels": "16",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "strip2",
+      "top": 400,
+      "left": 60,
+      "rotate": 0,
+      "attrs": {
+        "pixels": "1",
+        "pixelSize": "3535"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "mega:9",
+      "r1:1",
+      "green",
+      []
+    ],
+    [
+      "r1:2",
+      "strip1:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "strip1:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "strip1:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:10",
+      "r2:1",
+      "green",
+      []
+    ],
+    [
+      "r2:2",
+      "strip2:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "strip2:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "strip2:VSS",
+      "black",
+      []
+    ]
+  ],
+  "dependencies": {}
+}
