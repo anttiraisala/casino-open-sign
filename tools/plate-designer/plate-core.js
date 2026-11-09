@@ -405,22 +405,53 @@
 
   // ------------------------------------------------------------------ strip pieces behind the letters
 
-  function stripRect(s) { return s.rot === 90 ? { x: s.x, y: s.y, w: 10, h: 100 } : { x: s.x, y: s.y, w: 100, h: 10 }; }
+  // A strip piece is 100 x 10 mm. (x, y) is the top-left corner of the UNROTATED piece; rot is any angle in degrees (clockwise on
+  // the screen, y down), the piece turns around its centre (x + 50, y + 5).
+  var STRIP_L = 100, STRIP_W = 10;
+  function normRot(a) { a = Number(a); if (!isFinite(a)) return 0; a = ((a % 360) + 360) % 360; a = Math.round(a * 100) / 100; return a >= 360 ? 0 : a; }
+  function stripCentre(s) { return { x: s.x + STRIP_L / 2, y: s.y + STRIP_W / 2 }; }
+  // local point (u along the piece, v across, from the centre) -> plate mm
+  function stripToWorld(s, u, v) {
+    var c = stripCentre(s), a = (s.rot || 0) * Math.PI / 180, co = Math.cos(a), si = Math.sin(a);
+    return { x: c.x + u * co - v * si, y: c.y + u * si + v * co };
+  }
+  function stripPoly(s) { return [[-STRIP_L / 2, -STRIP_W / 2], [STRIP_L / 2, -STRIP_W / 2], [STRIP_L / 2, STRIP_W / 2], [-STRIP_L / 2, STRIP_W / 2]].map(function (q) { var w = stripToWorld(s, q[0], q[1]); return [w.x, w.y]; }); }
+  // axis-aligned bounding box of the turned piece (its centre is the piece centre)
+  function stripRect(s) {
+    var p = stripPoly(s), x0 = 1e18, y0 = 1e18, x1 = -1e18, y1 = -1e18;
+    p.forEach(function (q) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); });
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  }
+  function stripContains(s, px, py) {
+    var c = stripCentre(s), a = -(s.rot || 0) * Math.PI / 180, dx = px - c.x, dy = py - c.y, u = dx * Math.cos(a) - dy * Math.sin(a), v = dx * Math.sin(a) + dy * Math.cos(a);
+    return Math.abs(u) <= STRIP_L / 2 + 1e-9 && Math.abs(v) <= STRIP_W / 2 + 1e-9;
+  }
+  // sample points (cell centres of a step x step grid on the piece) in plate mm
+  function stripSamples(s, step) {
+    var out = [], u, v;
+    for (v = -STRIP_W / 2 + step / 2; v < STRIP_W / 2; v += step) for (u = -STRIP_L / 2 + step / 2; u < STRIP_L / 2; u += step) { var w = stripToWorld(s, u, v); out.push([w.x, w.y]); }
+    return out;
+  }
+  // position of the rotation handle: 12 mm beyond the right end of the piece (in the piece's own direction)
+  function stripHandle(s) { return stripToWorld(s, STRIP_L / 2 + 12, 0); }
+  // angle (degrees) that puts the handle towards the point (px, py); snap > 0 rounds to that step
+  function stripAngleTo(s, px, py, snap) {
+    var c = stripCentre(s), a = Math.atan2(py - c.y, px - c.x) * 180 / Math.PI;
+    if (snap > 0) a = Math.round(a / snap) * snap;
+    return normRot(a);
+  }
 
   // Fraction (0..1) of a 100 x 10 mm strip piece that lies behind a letter (any of the placed cells).
   function stripCoverage(s, cells, offsetMm) {
-    var r = stripRect(s), n = 0, hit = 0, x, y, step = 0.5, c, k;
-    for (y = r.y + step / 2; y < r.y + r.h; y += step) {
-      for (x = r.x + step / 2; x < r.x + r.w; x += step) {
-        n++;
-        for (k = 0; k < cells.length; k++) {
-          c = cells[k];
-          if (!c.glyph) continue;
-          if (c.glyph.insideDist(x - c.gox, y - c.goy, offsetMm) >= 0) { hit++; break; }
-        }
+    var pts = stripSamples(s, 0.5), hit = 0, i, k, c;
+    for (i = 0; i < pts.length; i++) {
+      for (k = 0; k < cells.length; k++) {
+        c = cells[k];
+        if (!c.glyph) continue;
+        if (c.glyph.insideDist(pts[i][0] - c.gox, pts[i][1] - c.goy, offsetMm) >= 0) { hit++; break; }
       }
     }
-    return n ? hit / n : 0;
+    return pts.length ? hit / pts.length : 0;
   }
 
   // ------------------------------------------------------------------ drill pattern items, EPS, PDF
@@ -709,6 +740,7 @@
       version: 1,
       plate: { w: 600, h: 300 },
       frameWidth: 30,
+      stripsV: 2,
       sameHeight: true,
       holeD: 10,
       minStroke: 3,
@@ -755,7 +787,13 @@
     if (o.arrow) { s.arrow.x = num(o.arrow.x, -2000, 3000, d.arrow.x); s.arrow.y = num(o.arrow.y, -2000, 3000, d.arrow.y); }
     if (o.closedRound) { s.closedRound.dx = num(o.closedRound.dx, -300, 300, 0); s.closedRound.dy = num(o.closedRound.dy, -300, 300, 0); }
     if (o.closedSlot) { s.closedSlot.dx = num(o.closedSlot.dx, -300, 300, 0); s.closedSlot.dy = num(o.closedSlot.dy, -300, 300, 0); s.closedSlot.w = num(o.closedSlot.w, 1, 300, 74); s.closedSlot.h = num(o.closedSlot.h, 1, 100, 4); }
-    s.strips = Array.isArray(o.strips) ? o.strips.slice(0, 100).map(function (t) { return { x: num(t.x, -2000, 3000, 0), y: num(t.y, -2000, 3000, 0), rot: t.rot === 90 ? 90 : 0 }; }) : [];
+    // stripsV 2: any rotation angle, (x, y) = top-left of the unrotated piece. Older files had rot 0 / 90 with (x, y) = top-left of the turned piece.
+    s.strips = Array.isArray(o.strips) ? o.strips.slice(0, 100).map(function (t) {
+      var x = num(t.x, -2000, 3000, 0), y = num(t.y, -2000, 3000, 0), rot = o.stripsV === 2 ? normRot(t.rot) : (t.rot === 90 ? 90 : 0);
+      if (o.stripsV !== 2 && rot === 90) { x -= 45; y += 45; }
+      return { x: x, y: y, rot: rot };
+    }) : [];
+    s.stripsV = 2;
     if (o.export) {
       var e2 = s.export, x = o.export;
       e2.closedHole = x.closedHole === 'slot' || x.closedHole === 'none' ? x.closedHole : 'round';
@@ -825,7 +863,8 @@
   return {
     MM_TO_PT: MM_TO_PT, distanceTo: distanceTo, signedField: signedField, rasterize: rasterize, marching: marching, simplifyClosed: simplifyClosed,
     Glyph: Glyph, glyphFromPolygons: glyphFromPolygons, placeText: placeText, holeStatus: holeStatus, suggestHole: suggestHole, holeOffsetFor: holeOffsetFor,
-    frameCounts: frameCounts, unionBox: unionBox, boxesTouch: boxesTouch, bandSelection: bandSelection, groupScaleLimits: groupScaleLimits, groupCentre: groupCentre, scrollDelta: scrollDelta, resizePlate: resizePlate, frameSides: frameSides, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripCoverage: stripCoverage,
+    stripPoly: stripPoly, stripContains: stripContains, stripSamples: stripSamples, stripHandle: stripHandle, stripAngleTo: stripAngleTo, stripCentre: stripCentre, normRot: normRot,
+    frameCounts: frameCounts, unionBox: unionBox, boxesTouch: boxesTouch, bandSelection: bandSelection, groupScaleLimits: groupScaleLimits, groupCentre: groupCentre, scrollDelta: scrollDelta, resizePlate: resizePlate, frameSides: frameSides, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripPoly: stripPoly, stripContains: stripContains, stripSamples: stripSamples, stripHandle: stripHandle, stripAngleTo: stripAngleTo, stripCentre: stripCentre, normRot: normRot, stripCoverage: stripCoverage,
     drillItems: drillItems, epsFromItems: epsFromItems, cutEps: cutEps, polyPath: polyPath, circlePath: circlePath, cutNum: cutNum, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, frameBars: frameBars, frameSheet: frameSheet, nestShelves: nestShelves,
     defaultState: defaultState, fromJson: fromJson, toJson: toJson
   };

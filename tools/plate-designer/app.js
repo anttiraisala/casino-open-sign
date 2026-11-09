@@ -254,8 +254,12 @@
     if (S.frame.inside) s += '<g pointer-events="none">' + frameSvg(pv) + '</g>';
     // strip pieces (behind the letters)
     S.strips.forEach(function (t, i) {
-      var r = core.stripRect(t), on = sel.type === 'strip' && sel.idx === i;
-      s += '<rect x="' + r.x + '" y="' + r.y + '" width="' + r.w + '" height="' + r.h + '" fill="' + (pv ? '#ffd27a' : '#6a8dff') + '" fill-opacity="' + (pv ? 0.9 : 0.55) + '" stroke="' + (on ? '#d00' : '#1f3fb0') + '" stroke-width="' + (on ? 2 : 1) * px + '"' + (pv ? ' filter="url(#glow)"' : '') + '/>';
+      var on = sel.type === 'strip' && sel.idx === i, pp = core.stripPoly(t).map(function (q) { return f2(q[0]) + ',' + f2(q[1]); }).join(' ');
+      s += '<polygon points="' + pp + '" fill="' + (pv ? '#ffd27a' : '#6a8dff') + '" fill-opacity="' + (pv ? 0.9 : 0.55) + '" stroke="' + (on ? '#d00' : '#1f3fb0') + '" stroke-width="' + (on ? 2 : 1) * px + '"' + (pv ? ' filter="url(#glow)"' : '') + '/>';
+      if (on && !pv) {   // rotation handle: a dot beyond the right end of the piece, on a thin line from the centre
+        var c0 = core.stripCentre(t), hd = core.stripHandle(t);
+        s += '<line x1="' + f2(c0.x) + '" y1="' + f2(c0.y) + '" x2="' + f2(hd.x) + '" y2="' + f2(hd.y) + '" stroke="#d00" stroke-width="' + px + '" stroke-dasharray="' + 3 * px + ' ' + 3 * px + '"/><circle cx="' + f2(hd.x) + '" cy="' + f2(hd.y) + '" r="' + 5 * px + '" fill="#fff" stroke="#d00" stroke-width="' + 1.5 * px + '"/>';
+      }
     });
     // arrow
     ARROW.sticks.forEach(function (st) {
@@ -384,15 +388,14 @@
     $('json').title = 'Layout JSON';
   }
   function stripCoverage(s) {
-    var sc = cur || scene(PPM), r = core.stripRect(s), n = 0, hit = 0, x, y;
-    for (y = r.y + 0.25; y < r.y + r.h; y += 0.5) for (x = r.x + 0.25; x < r.x + r.w; x += 0.5) {
-      n++;
+    var sc = cur || scene(PPM), pts = core.stripSamples(s, 0.5), n = pts.length, hit = 0;
+    pts.forEach(function (q) {
       var inside = KEYS.some(function (key) {
         var off = S.texts[key].thicken;
-        return sc[key].cells.some(function (c) { return c.glyph && c.glyph.insideDist(x - c.gox, y - c.goy, off) >= 0; });
+        return sc[key].cells.some(function (c) { return c.glyph && c.glyph.insideDist(q[0] - c.gox, q[1] - c.goy, off) >= 0; });
       });
       if (inside) hit++;
-    }
+    });
     return n ? hit / n : 0;
   }
   function updateStatus() {
@@ -508,6 +511,7 @@
     bind('plateW', function () { return S.plate.w; }, function (v) { core.resizePlate(S, v, undefined); });
     bind('frameW', function () { return S.frameWidth; }, function (v) { S.frameWidth = Math.min(100, Math.max(0, v)); });
     bind('frameWn', function () { return S.frameWidth; }, function (v) { S.frameWidth = Math.min(100, Math.max(0, v)); });
+    bind('stripRotN', function () { return sel.type === 'strip' && S.strips[sel.idx] ? Math.round(S.strips[sel.idx].rot * 10) / 10 : 0; }, function (v) { if (sel.type === 'strip' && S.strips[sel.idx]) S.strips[sel.idx].rot = core.normRot(v); });
     bind('plateWn', function () { return S.plate.w; }, function (v) { core.resizePlate(S, v, undefined); });
     bind('plateH', function () { return S.plate.h; }, function (v) { core.resizePlate(S, undefined, v); });
     bind('plateHn', function () { return S.plate.h; }, function (v) { core.resizePlate(S, undefined, v); });
@@ -564,7 +568,7 @@
     $('undo').onclick = undo; $('redo').onclick = redo;
     $('zin').onclick = function () { zoomAt(1.3); }; $('zout').onclick = function () { zoomAt(1 / 1.3); }; $('zfit').onclick = fit;
     $('preview').onclick = function () { S.ui.preview = !S.ui.preview; $('preview').style.fontWeight = S.ui.preview ? 'bold' : 'normal'; changed(); };
-    $('stripAdd').onclick = function () { S.strips.push({ x: Math.round(S.plate.w / 2 - 50), y: Math.round(S.plate.h / 2 - 5), rot: 0 }); sel = { type: 'strip', idx: S.strips.length - 1 }; changed(); updateInfo(); };
+    $('stripAdd').onclick = function () { S.strips.push({ x: Math.round(S.plate.w / 2 - 50), y: Math.round(S.plate.h / 2 - 5), rot: 0 }); sel = { type: 'strip', idx: S.strips.length - 1 }; syncControls(); changed(); updateInfo(); };
     $('stripRot').onclick = rotateStrip; $('stripDel').onclick = deleteStrip;
     $('exEps').onclick = function () { var r = buildDrillEpsFull(); statusMsg = r.warnings.length ? 'WARNING: ' + r.warnings.join('; ') : ''; updateStatus(); download('plate-drill-pattern.eps', r.text, 'application/postscript'); };
     $('exA4').onclick = function () { download('plate-drill-A4.pdf', buildDrillPdf('A4').text, 'application/pdf'); };
@@ -728,7 +732,7 @@
     frameInside: 'Put the LED strip frame on the plate, against its edges, instead of outside the plate edge. The strips then cover the outer 10 mm of the plate.',
     exPlateCut: 'Also draw the outer edge of the plate as a cut line in the letter cut exports (EPS and DXF; DXF layer PLATE_CUT).',
     frameLayout: 'How the 10 mm wide LED strip frame meets at the corners. "Top and bottom over the corners": the top and bottom strips are as long as the plate plus both side strips. "Sides over the corners": the side strips are longer instead. Only whole 100 mm units (3 LEDs each) are counted; the leftover is hatched.',
-    stripAdd: 'Add a 100 x 10 mm LED strip piece (one 3-LED unit) in the middle of the plate. Drag it behind a letter.', stripRot: 'Rotate the selected strip piece between horizontal and vertical (key R).', stripDel: 'Delete the selected strip piece (key Delete).',
+    stripAdd: 'Add a 100 x 10 mm LED strip piece (one 3-LED unit) in the middle of the plate. Drag it behind a letter.', stripRot: 'Turn the selected strip piece by 90 degrees (key R). For any other angle use the Rotation field or drag the round handle at the end of the piece.', stripRotN: 'Rotation of the selected strip piece in degrees (0-360, clockwise, around the centre of the piece). You can also drag the round handle at its end; Shift = 15 degree steps.', stripDel: 'Delete the selected strip piece (key Delete).',
     dims: 'Which mm dimension arrows to draw to the final plate edge: from the centre, corners and hole centres of the selected object, from every object, or none.',
     'sameH-casino': 'When on (default), CASINO and OPEN always have the same height: changing the height of one (field or handles) changes the other too. Turning it on changes nothing until you edit a height next time.',
     'sameH-open': 'When on (default), CASINO and OPEN always have the same height: changing the height of one (field or handles) changes the other too. Turning it on changes nothing until you edit a height next time.',
@@ -821,7 +825,8 @@
     if (S.export.closedHole === 'round' && Math.hypot(p.x - sc.closedRound.x, p.y - sc.closedRound.y) <= Math.max(r, tol)) return { kind: 'closedRound' };
     var sl = sc.closedSlot;
     if (S.export.closedHole === 'slot' && Math.abs(p.x - sl.x) <= sl.w / 2 && Math.abs(p.y - sl.y) <= Math.max(sl.h / 2, tol)) return { kind: 'closedSlot' };
-    for (i = S.strips.length - 1; i >= 0; i--) { var rc = core.stripRect(S.strips[i]); if (p.x >= rc.x && p.x <= rc.x + rc.w && p.y >= rc.y && p.y <= rc.y + rc.h) return { kind: 'strip', idx: i }; }
+    if (sel.type === 'strip' && S.strips[sel.idx]) { var sh = core.stripHandle(S.strips[sel.idx]); if (Math.hypot(p.x - sh.x, p.y - sh.y) <= 8 / view.k) return { kind: 'striprot', idx: sel.idx }; }
+    for (i = S.strips.length - 1; i >= 0; i--) { if (core.stripContains(S.strips[i], p.x, p.y)) return { kind: 'strip', idx: i }; }
     var best = null, bestA = 1e18;
     KEYS.concat(['arrow']).forEach(function (kk) {
       var b = boxOf(sc, kk);
@@ -852,7 +857,8 @@
     else if (h.kind === 'xhole') { if (!inGroup(h.key)) setTextSelection([h.key]); selX = { key: h.key, k: h.k }; var xe0 = S.texts[h.key].extraHoles[h.k], c0 = sc[h.key].cells[h.idx]; drag = { kind: 'xhole', key: h.key, k: h.k, idx: h.idx, gx: c0.cx + xe0.dx - p.x, gy: c0.cy + xe0.dy - p.y }; }
     else if (h.kind === 'closedRound') { if (!inGroup('closed')) setTextSelection(['closed']); drag = { kind: 'closedRound', gx: sc.closedRound.x - p.x, gy: sc.closedRound.y - p.y }; }
     else if (h.kind === 'closedSlot') { if (!inGroup('closed')) setTextSelection(['closed']); drag = { kind: 'closedSlot', gx: sc.closedSlot.x - p.x, gy: sc.closedSlot.y - p.y }; }
-    else if (h.kind === 'strip') { msel = []; sel = { type: 'strip', idx: h.idx }; var s0 = S.strips[h.idx]; drag = { kind: 'strip', idx: h.idx, ox: s0.x, oy: s0.y, sx: p.x, sy: p.y }; }
+    else if (h.kind === 'striprot') drag = { kind: 'striprot', idx: h.idx };
+    else if (h.kind === 'strip') { msel = []; sel = { type: 'strip', idx: h.idx }; syncControls(); var s0 = S.strips[h.idx]; drag = { kind: 'strip', idx: h.idx, ox: s0.x, oy: s0.y, sx: p.x, sy: p.y }; }
     else {
       var isText = h.key !== 'arrow', collapse = null, dropKey = null;
       if (!isText) { msel = []; sel = { type: 'arrow' }; }
@@ -960,6 +966,8 @@
     } else if (drag.kind === 'closedRound' || drag.kind === 'closedSlot') {
       var cb = cur.closed, cp = snapPt(p.x + drag.gx, p.y + drag.gy), dx2 = Math.round((cp.x - (cb.x + cb.w / 2)) * 100) / 100, dy2 = Math.round((cp.y - (cb.y + cb.h / 2)) * 100) / 100;
       S.closedRound.dx = S.closedSlot.dx = dx2; S.closedRound.dy = S.closedSlot.dy = dy2; syncControls();
+    } else if (drag.kind === 'striprot') {
+      var sr0 = S.strips[drag.idx]; sr0.rot = core.stripAngleTo(sr0, p.x, p.y, e.shiftKey ? 15 : 0); sr0.rot = Math.round(sr0.rot * 10) / 10; syncControls();
     } else if (drag.kind === 'strip') {
       var s1 = S.strips[drag.idx]; s1.x = drag.ox + p.x - drag.sx; s1.y = drag.oy + p.y - drag.sy;
       var sr1 = core.stripRect(s1), sp = snapPt(sr1.x + sr1.w / 2, sr1.y + sr1.h / 2);
@@ -993,7 +1001,7 @@
     view.cx = p.x - (e.clientX - r.left - r.width / 2) / nk; view.cy = p.y - (e.clientY - r.top - r.height / 2) / nk;
     render();
   }, { passive: false });
-  function rotateStrip() { if (sel.type === 'strip' && S.strips[sel.idx]) { var s0 = S.strips[sel.idx]; s0.rot = s0.rot === 90 ? 0 : 90; changed(); updateInfo(); } }
+  function rotateStrip() { if (sel.type === 'strip' && S.strips[sel.idx]) { var s0 = S.strips[sel.idx]; s0.rot = core.normRot(Math.floor(s0.rot / 90 + 1e-9) * 90 + 90); syncControls(); changed(); updateInfo(); } }
   var flash = null;   // {keys, t0}: the gold highlight of newly selected texts
   // The selected texts: the group, or the one selected text, or none.
   function selKeys() { return msel.length >= 2 && sel.type === msel[0] ? msel.slice() : (TK.indexOf(sel.type) >= 0 ? [sel.type] : []); }

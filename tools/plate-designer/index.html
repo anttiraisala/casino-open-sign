@@ -72,14 +72,15 @@
   <div id="frameInfo" class="note"></div>
 
   <h3>Strip pieces behind the letters</h3>
-  <div class="row"><button id="stripAdd">Add 100 x 10 mm piece</button><button id="stripRot">Rotate (R)</button><button id="stripDel">Delete</button></div>
+  <div class="row"><button id="stripAdd">Add 100 x 10 mm piece</button><button id="stripRot">Turn 90&deg; (R)</button><button id="stripDel">Delete</button></div>
+  <div class="row"><span>Rotation &deg;</span><input type="number" id="stripRotN" min="0" max="360" step="0.1"></div>
   <div id="stripInfo" class="note"></div>
 
   <h3>View</h3>
   <div class="row"><span>Dimensions</span><select id="dims"><option value="selected">selected object</option><option value="all">all objects</option><option value="none">none</option></select></div>
   <label><input type="checkbox" id="snap"> snap to centre lines (3 mm, Ctrl = off)</label>
   <label><input type="checkbox" id="grid"> grid and rulers</label>
-  <div class="note">Drag: boxes, holes, strips. Wheel: zoom. Drag background: pan. Arrows: nudge 1 mm (Shift 10, Alt 0.1). R: rotate strip. Del: delete strip.</div>
+  <div class="note">Drag: boxes, holes, strips. Wheel: zoom. Drag background: pan. Arrows: nudge 1 mm (Shift 10, Alt 0.1). R: turn the strip 90 degrees; drag the round handle at its end (Shift = 15 degree steps) or type the angle to turn it freely. Del: delete strip.</div>
 
   <h3>Export</h3>
   <div class="row"><span>CLOSED hole</span><select id="closedHole"><option value="round">round (wires)</option><option value="slot">slot (LED stick)</option><option value="none">none</option></select></div>

@@ -247,8 +247,8 @@ function fakeGlyph(wmm) { return core.glyphFromPolygons([rect(0, -100, wmm, 0, f
 {
   const g = core.glyphFromPolygons([rect(0, -100, 20, 0, false)], { ppm: 2, padMm: 4 });
   const cell = { glyph: g, gox: 100, goy: 150 };    // the bar covers x 100..120, y 50..150
-  check(Math.abs(core.stripCoverage({ x: 105, y: 50, rot: 90 }, [cell], 0) - 1) < 0.02, 'a vertical strip piece inside the bar is fully covered');
-  check(Math.abs(core.stripCoverage({ x: 115, y: 50, rot: 90 }, [cell], 0) - 0.5) < 0.03, 'half of the piece is outside: 0.5');
+  check(Math.abs(core.stripCoverage({ x: 60, y: 95, rot: 90 }, [cell], 0) - 1) < 0.02, 'a vertical strip piece inside the bar is fully covered');
+  check(Math.abs(core.stripCoverage({ x: 70, y: 95, rot: 90 }, [cell], 0) - 0.5) < 0.03, 'half of the piece is outside: 0.5');
   check(core.stripCoverage({ x: 300, y: 50, rot: 0 }, [cell], 0) === 0, 'a piece far away has no coverage');
   check(core.stripRect({ x: 5, y: 6, rot: 0 }).w === 100 && core.stripRect({ x: 5, y: 6, rot: 90 }).h === 100 && core.stripRect({ x: 5, y: 6, rot: 90 }).w === 10, 'strip piece is 100 x 10 mm, rotated 10 x 100');
 }
@@ -385,6 +385,36 @@ function finish() {
   var j = core.fromJson(JSON.stringify({ version: 1, frameWidth: 250 })), j2 = core.fromJson(JSON.stringify({ version: 1, frameWidth: -5 })), j3 = core.fromJson('{"version":1}'), j4 = core.fromJson(JSON.stringify({ version: 1, frameWidth: 12.5 }));
   check(j.frameWidth === 100 && j2.frameWidth === 0 && j3.frameWidth === 30 && j4.frameWidth === 12.5, 'frameWidth json: clamp 0-100, default 30');
 })();
+
+// ---- strip pieces turned by any angle
+{
+  const near2 = (a, b, t) => Math.abs(a - b) <= (t || 0.001);
+  const p0 = core.stripPoly({ x: 0, y: 0, rot: 0 }), p90 = core.stripPoly({ x: 0, y: 0, rot: 90 });
+  check(JSON.stringify(p0.map(q => q.map(v => Math.round(v * 1000) / 1000))) === '[[0,0],[100,0],[100,10],[0,10]]', 'rot 0: corners of the 100 x 10 piece');
+  check(JSON.stringify(p90.map(q => q.map(v => Math.round(v * 1000) / 1000))) === '[[55,-45],[55,55],[45,55],[45,-45]]', 'rot 90: the piece turns around its centre (50, 5): ' + JSON.stringify(p90));
+  const r45 = core.stripRect({ x: 0, y: 0, rot: 45 });
+  check(near2(r45.w, 110 / Math.SQRT2, 0.001) && near2(r45.h, 110 / Math.SQRT2, 0.001) && near2(r45.x + r45.w / 2, 50, 0.001) && near2(r45.y + r45.h / 2, 5, 0.001), 'rot 45: bounding box 77.782 mm square around the same centre');
+  const s45 = { x: -50, y: -5, rot: 45 };
+  check(core.stripContains(s45, 35, 35) && !core.stripContains(s45, 35, -35) && core.stripContains(s45, 30 * Math.SQRT1_2 - 4 * Math.SQRT1_2, 30 * Math.SQRT1_2 + 4 * Math.SQRT1_2) && !core.stripContains(s45, 30 * Math.SQRT1_2 - 6 * Math.SQRT1_2, 30 * Math.SQRT1_2 + 6 * Math.SQRT1_2) && !core.stripContains(s45, 36, 36), 'point test follows the turned piece (inside along the axis, outside across and beyond the end)');
+  const h0 = core.stripHandle({ x: 0, y: 0, rot: 0 }), h90 = core.stripHandle({ x: 0, y: 0, rot: 90 });
+  check(near2(h0.x, 112) && near2(h0.y, 5) && near2(h90.x, 50) && near2(h90.y, 67), 'rotation handle is 12 mm beyond the right end: (112, 5), turned 90: (50, 67)');
+  const sA = { x: 0, y: 0, rot: 0 };
+  check(core.stripAngleTo(sA, 50, 105, 0) === 90 && core.stripAngleTo(sA, 150, 5, 0) === 0 && core.stripAngleTo(sA, 50, -95, 0) === 270 && core.stripAngleTo(sA, 50 + 100 * Math.cos(20 * Math.PI / 180), 5 + 100 * Math.sin(20 * Math.PI / 180), 15) === 15 && core.stripAngleTo(sA, 50 + 100 * Math.cos(23 * Math.PI / 180), 5 + 100 * Math.sin(23 * Math.PI / 180), 15) === 30 && core.stripAngleTo(sA, 50 + 100 * Math.cos(33.37 * Math.PI / 180), 5 + 100 * Math.sin(33.37 * Math.PI / 180), 0) === 33.37, 'angle from the centre to a point: 90, 0, 270, 15 degree snapping, free angle 33.37');
+  check(core.normRot(0) === 0 && core.normRot(360) === 0 && core.normRot(-90) === 270 && core.normRot(370.123) === 10.12 && core.normRot('x') === 0 && core.normRot(719.999) === 0, 'normRot wraps to 0..360 and rounds to 0.01');
+  const smp = core.stripSamples({ x: 3, y: 4, rot: 30 }, 0.5);
+  check(smp.length === 4000 && smp.every(q => core.stripContains({ x: 3, y: 4, rot: 30 }, q[0], q[1])), 'sample grid: 4000 points, all inside the piece');
+  const g2 = core.glyphFromPolygons([rect(0, -100, 20, 0, false)], { ppm: 2, padMm: 4 }), cell2 = { glyph: g2, gox: 100, goy: 150 };
+  check(Math.abs(core.stripCoverage({ x: 60, y: 95, rot: 90 }, [cell2], 0) - Math.abs(core.stripCoverage({ x: 60, y: 95, rot: 270 }, [cell2], 0))) < 0.01 && core.stripCoverage({ x: 60, y: 95, rot: 90 }, [cell2], 0) > 0.98, 'coverage of a turned piece: 90 and 270 degrees give the same');
+  const c45 = core.stripCoverage({ x: 60, y: 95, rot: 45 }, [cell2], 0);
+  check(c45 > 0.1 && c45 < 0.5, 'a piece turned 45 degrees across a 20 mm bar is only partly covered: ' + c45);
+  const lj = core.fromJson(JSON.stringify({ version: 1, stripsV: 2, strips: [{ x: 10, y: 20, rot: 45.55 }, { x: 0, y: 0, rot: 370 }, { x: 0, y: 0, rot: -90 }, { x: 0, y: 0, rot: 'x' }, { x: 7, y: 8, rot: 90 }] }));
+  check(lj.strips[0].x === 10 && lj.strips[0].y === 20 && lj.strips[0].rot === 45.55 && lj.strips[1].rot === 10 && lj.strips[2].rot === 270 && lj.strips[3].rot === 0 && lj.strips[4].x === 7 && lj.strips[4].y === 8 && lj.strips[4].rot === 90 && lj.stripsV === 2, 'JSON v2: any angle kept, wrapped to 0..360');
+  const old = core.fromJson(JSON.stringify({ version: 1, strips: [{ x: 10, y: 20, rot: 90 }, { x: 10, y: 20, rot: 0 }, { x: 10, y: 20, rot: 45 }] }));
+  check(old.strips[0].x === -35 && old.strips[0].y === 65 && old.strips[0].rot === 90 && old.strips[1].x === 10 && old.strips[1].y === 20 && old.strips[1].rot === 0 && old.strips[2].rot === 0 && old.stripsV === 2, 'older JSON (no stripsV): rot 90 keeps its place (centre stays), other values become 0');
+  const o4 = core.stripRect({ x: -35, y: 65, rot: 90 });
+  check(near2(o4.x, 10) && near2(o4.y, 20) && near2(o4.w, 10) && near2(o4.h, 100), 'the converted older piece occupies the same 10 x 100 mm rectangle (10, 20)');
+  check(core.defaultState().stripsV === 2, 'default state is strips version 2');
+}
 setTimeout(finish, 3000);
 
 // resizing the plate around its centre
