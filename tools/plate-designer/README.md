@@ -23,14 +23,17 @@ nothing to install and nothing is sent anywhere, except that fonts are fetched f
 - Keyboard: arrows nudge 1 mm, Shift 10 mm, Alt 0.1 mm. Ctrl+Z / Ctrl+Y undo/redo.
 
 ## Exports
-- Drill pattern as EPS (1 unit = 1 mm, 5 mm margin; plate outline optional).
+- Drill pattern as EPS (1 unit = 1 mm, 5 mm margin; plate outline optional) and as DXF (R12 ASCII, mm, y up, layers PLATE / HOLES / SLOT: circles and closed polylines).
 - Drill pattern as 1:1 tiled PDF, A4 or A3 landscape (print at 100 %, tape the tiles together; crosshair at every hole).
 - Letter cut as EPS: as placed on the plate or nested on a raw sheet, optional mirror (cut from the back), laser kerf, dashed bounding boxes.
-  Letters are written as outlines at 0.1 mm resolution; inner contours (holes of A, O, D, P) are included.
+  Letter cut also as DXF (layers LETTERS, BOXES; one closed polyline per outline). DXF is untested in a real cutter program. Letters are written as outlines at 0.1 mm resolution; inner contours (holes of A, O, D, P) are included.
 
 ## Saving
 - Autosave in the browser (localStorage), named layouts, undo/redo.
 - JSON textarea shows the layout live: copy it out, or paste a layout and press "Apply JSON". Fonts are stored by name only, no font files.
+
+## Published copy
+`python3 tools/build_plate_designer_single.py` writes `plate-designer-single.html` (everything inlined); it is published as the artifact "Plate Designer - CASINO OPEN front plate" (slug f2576151-ab61-4c1b-b072-788b0609f3cd). Downloads are blocked inside the artifact, so every export is also shown as text in the Export section (Copy button). Republish it to the same slug after changing the tool.
 
 ## Files
 - `index.html`, `app.js` - the user interface.

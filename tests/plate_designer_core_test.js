@@ -130,6 +130,19 @@ function fakeGlyph(wmm) { return core.glyphFromPolygons([rect(0, -100, wmm, 0, f
   const nn = core.snapCentres({ x: 0, y: 0, w: 100, h: 50 }, [{ cx: 52, cy: 27 }, { cx: 51, cy: 26 }], 3); check(nn.dx === 1 && nn.dy === 1, 'the nearest centre line wins');
   check(core.snapCentres({ x: 0, y: 0, w: 100, h: 50 }, [{ cx: 53, cy: 200 }], 3).dx === 3, 'a centre line exactly at the threshold still snaps');
 }
+// ---- DXF
+{
+  const dx = core.dxfFromItems([{ kind: 'outline', w: 100, h: 50 }, { kind: 'circle', x: 15, y: 20, d: 10 }, { kind: 'rect', x: 20, y: 10, w: 74, h: 4 }], { w: 100, h: 50 });
+  check(dx.startsWith('0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n') && dx.endsWith('0\nENDSEC\n0\nEOF\n'), 'DXF header (R12) and end');
+  check(dx.indexOf('0\nCIRCLE\n8\nHOLES\n10\n15\n20\n30\n30\n0\n40\n5\n') > 0, 'circle (15, 50-20 = 30) radius 5 on layer HOLES');
+  check(dx.indexOf('0\nPOLYLINE\n8\nPLATE\n66\n1\n70\n1\n0\nVERTEX\n8\nPLATE\n10\n0\n20\n0\n30\n0\n0\nVERTEX\n8\nPLATE\n10\n100\n20\n0\n') > 0, 'closed outline polyline starting at the origin');
+  check(dx.indexOf('8\nSLOT\n10\n20\n20\n36\n') > 0 && dx.indexOf('8\nSLOT\n10\n94\n20\n40\n') > 0, 'slot corners: lower-left (20, 50-10-4 = 36), upper-right (94, 40)');
+  check((dx.match(/0\nSEQEND/g) || []).length === 2, 'two polylines closed with SEQEND');
+  const dp = core.dxfFromPolys([[[0, 0], [10, 0], [10, 20]], [[1, 1], [2, 2]]], 50, [{ x: 0, y: 0, w: 10, h: 20 }]);
+  check(dp.indexOf('8\nLETTERS\n10\n10\n20\n50\n') > 0 && dp.indexOf('8\nLETTERS\n10\n10\n20\n30\n') > 0, 'letter polygon y flipped (0 -> 50, 20 -> 30)');
+  check((dp.match(/POLYLINE\n8\nLETTERS/g) || []).length === 1, 'polygons with fewer than 3 points are skipped');
+  check(dp.indexOf('8\nBOXES\n10\n0\n20\n30\n') > 0, 'bounding box on layer BOXES, lower-left (0, 50-0-20 = 30)');
+}
 // ---- strip pieces behind letters
 {
   const g = core.glyphFromPolygons([rect(0, -100, 20, 0, false)], { ppm: 2, padMm: 4 });

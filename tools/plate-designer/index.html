@@ -69,13 +69,17 @@
   <div class="row"><span>Slot w x h mm</span><input type="number" id="slotW" min="1" max="300" step="0.5"><input type="number" id="slotH" min="1" max="100" step="0.5"></div>
   <label><input type="checkbox" id="exOutline"> plate outline in the drill pattern</label>
   <label><input type="checkbox" id="exArrow"> arrow cable holes in the drill pattern</label>
-  <div class="row"><button id="exEps">Drill pattern EPS</button><button id="exA4">Drill PDF A4</button><button id="exA3">Drill PDF A3</button></div>
+  <div class="row"><button id="exEps">Drill pattern EPS</button><button id="exA4">Drill PDF A4</button><button id="exA3">Drill PDF A3</button><button id="exDxf">Drill DXF</button></div>
   <label><input type="checkbox" id="exMirror"> mirror the letters (cut from the back)</label>
   <label><input type="checkbox" id="exBoxes"> dashed bounding boxes</label>
   <label><input type="checkbox" id="exNest"> nest the letters on a raw sheet</label>
   <div class="row"><span>Kerf mm</span><input type="number" id="exKerf" min="-2" max="2" step="0.05"><span style="width:auto">spacing</span><input type="number" id="exSpacing" min="0" max="50" step="0.5"></div>
   <div class="row"><span>Sheet w x h mm</span><input type="number" id="exSheetW" min="50" max="3000"><input type="number" id="exSheetH" min="50" max="3000"></div>
-  <div class="row"><button id="exLetters">Letter cut EPS</button></div>
+  <div class="row"><button id="exLetters">Letter cut EPS</button><button id="exLettersDxf">Letter cut DXF</button></div>
+
+  <div id="lastExport" class="note">Downloads can be blocked (for example inside a published page): every export is also shown here as text, to copy into a file with the same name.</div>
+  <div class="row"><input type="text" id="exName" readonly><button id="exCopy">Copy</button></div>
+  <textarea id="exText" spellcheck="false" readonly style="height:70px"></textarea>
 
   <h3>Layouts</h3>
   <div class="row"><input type="text" id="layoutName" placeholder="layout name"><button id="layoutSave">Save</button></div>

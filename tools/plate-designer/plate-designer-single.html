@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plate Designer - CASINO OPEN front plate</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 13px system-ui, sans-serif; color: #222; background: #e9e9e9; display: flex; height: 100vh; }
+  #stage { flex: 1; position: relative; min-width: 0; }
+  #svg { width: 100%; height: 100%; display: block; background: #cfcfcf; touch-action: none; user-select: none; }
+  #bar { position: absolute; left: 8px; top: 8px; display: flex; gap: 4px; flex-wrap: wrap; }
+  #status { position: absolute; left: 8px; bottom: 8px; right: 8px; background: #fffd; padding: 4px 8px; border-radius: 4px; font-size: 12px; pointer-events: none; }
+  #panel { width: 400px; overflow-y: auto; background: #f8f8f8; border-left: 1px solid #999; padding: 6px 10px 40px; }
+  h3 { margin: 12px 0 4px; font-size: 13px; border-bottom: 1px solid #bbb; }
+  label { display: block; margin: 3px 0; }
+  .row { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+  .row > span { width: 84px; flex: none; }
+  .row input[type=range] { flex: 1; min-width: 0; }
+  .row input[type=number] { width: 60px; }
+  .row input[type=text], .row select { flex: 1; min-width: 0; }
+  button { cursor: pointer; padding: 3px 8px; }
+  textarea { width: 100%; height: 120px; font: 11px monospace; }
+  .warn { color: #b00020; } .ok { color: #1b7f2a; }
+  .note { color: #555; font-size: 12px; margin: 2px 0; }
+  .sect { background: #fff; border: 1px solid #ccc; padding: 4px 8px; margin: 6px 0; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div id="bar">
+    <button id="undo" title="Ctrl+Z">Undo</button><button id="redo" title="Ctrl+Y">Redo</button>
+    <button id="zin">+</button><button id="zout">-</button><button id="zfit">Fit</button>
+    <button id="preview">Preview</button>
+  </div>
+  <div id="status"></div>
+</div>
+<div id="panel">
+  <h3>Plate (vinyl)</h3>
+  <div class="row"><span>Width mm</span><input type="range" id="plateW" min="100" max="980" step="1"><input type="number" id="plateWn" min="100" max="980"></div>
+  <div class="row"><span>Height mm</span><input type="range" id="plateH" min="100" max="300" step="1"><input type="number" id="plateHn" min="100" max="300"></div>
+  <div class="row"><span>Hole &#8960; mm</span><input type="range" id="holeD" min="5" max="30" step="0.5"><input type="number" id="holeDn" min="5" max="30" step="0.5"></div>
+  <div class="note">One diameter for all letter holes and the round CLOSED hole (10 mm = 6 wires).</div>
+  <div class="row"><span>Min stroke mm</span><input type="range" id="minStroke" min="1" max="10" step="0.5"><input type="number" id="minStrokeN" min="0.5" max="20" step="0.5"></div>
+
+  <h3>Texts</h3>
+  <div id="texts"></div>
+
+  <h3>Arrow</h3>
+  <div class="note">Fixed size 349.76 x 102.32 mm, 10 cable holes (8 mm) from <code>arrow_geometry.py</code>. Drag the box.</div>
+
+  <h3>LED strip frame (outside the plate)</h3>
+  <div class="row"><span>Layout</span><select id="frameLayout"><option value="topbottom">top and bottom over the corners</option><option value="sides">sides over the corners</option></select></div>
+  <div id="frameInfo" class="note"></div>
+
+  <h3>Strip pieces behind the letters</h3>
+  <div class="row"><button id="stripAdd">Add 100 x 10 mm piece</button><button id="stripRot">Rotate (R)</button><button id="stripDel">Delete</button></div>
+  <div id="stripInfo" class="note"></div>
+
+  <h3>View</h3>
+  <div class="row"><span>Dimensions</span><select id="dims"><option value="selected">selected object</option><option value="all">all objects</option><option value="none">none</option></select></div>
+  <label><input type="checkbox" id="snap"> snap centre lines (3 mm)</label>
+  <label><input type="checkbox" id="grid"> grid and rulers</label>
+  <div class="note">Drag: boxes, holes, strips. Wheel: zoom. Drag background: pan. Arrows: nudge 1 mm (Shift 10, Alt 0.1). R: rotate strip. Del: delete strip.</div>
+
+  <h3>Export</h3>
+  <div class="row"><span>CLOSED hole</span><select id="closedHole"><option value="round">round (wires)</option><option value="slot">slot (LED stick)</option><option value="none">none</option></select></div>
+  <div class="row"><span>Slot w x h mm</span><input type="number" id="slotW" min="1" max="300" step="0.5"><input type="number" id="slotH" min="1" max="100" step="0.5"></div>
+  <label><input type="checkbox" id="exOutline"> plate outline in the drill pattern</label>
+  <label><input type="checkbox" id="exArrow"> arrow cable holes in the drill pattern</label>
+  <div class="row"><button id="exEps">Drill pattern EPS</button><button id="exA4">Drill PDF A4</button><button id="exA3">Drill PDF A3</button><button id="exDxf">Drill DXF</button></div>
+  <label><input type="checkbox" id="exMirror"> mirror the letters (cut from the back)</label>
+  <label><input type="checkbox" id="exBoxes"> dashed bounding boxes</label>
+  <label><input type="checkbox" id="exNest"> nest the letters on a raw sheet</label>
+  <div class="row"><span>Kerf mm</span><input type="number" id="exKerf" min="-2" max="2" step="0.05"><span style="width:auto">spacing</span><input type="number" id="exSpacing" min="0" max="50" step="0.5"></div>
+  <div class="row"><span>Sheet w x h mm</span><input type="number" id="exSheetW" min="50" max="3000"><input type="number" id="exSheetH" min="50" max="3000"></div>
+  <div class="row"><button id="exLetters">Letter cut EPS</button><button id="exLettersDxf">Letter cut DXF</button></div>
+
+  <div id="lastExport" class="note">Downloads can be blocked (for example inside a published page): every export is also shown here as text, to copy into a file with the same name.</div>
+  <div class="row"><input type="text" id="exName" readonly><button id="exCopy">Copy</button></div>
+  <textarea id="exText" spellcheck="false" readonly style="height:70px"></textarea>
+
+  <h3>Layouts</h3>
+  <div class="row"><input type="text" id="layoutName" placeholder="layout name"><button id="layoutSave">Save</button></div>
+  <div class="row"><select id="layoutList"></select><button id="layoutLoad">Load</button><button id="layoutDel">Delete</button></div>
+  <div class="row"><button id="reset">Reset to defaults</button></div>
+  <h3>JSON (copy / paste)</h3>
+  <textarea id="json" spellcheck="false"></textarea>
+  <div class="row"><button id="jsonApply">Apply JSON</button><button id="jsonCopy">Copy</button></div>
+  <div id="jsonMsg" class="note"></div>
+  <div class="note">Fonts are stored by name only; they are fetched from Google Fonts when used (needs the network).</div>
+</div>
+<script>
+/*
+ * Plate Designer core: pure geometry and file-writing logic (no DOM). Works in the browser (window.PlateCore) and in
+ * Node (require). All lengths are millimetres, x to the right, y down, origin at the top-left corner of the plate.
+ *
+ * Letters are handled as masks (pixels) because the browser can draw any font into a canvas: from a mask this file
+ * makes a signed distance field, and from that the offset (thickening / kerf) outlines, the largest circle that fits
+ * into a letter (hole placement), thin-part detection and the cut outlines (marching squares).
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.PlateCore = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  var MM_TO_PT = 72 / 25.4;
+  var BIG = 1e20;
+
+  // ------------------------------------------------------------------ distance transform
+
+  // Squared 1-D distance transform (Felzenszwalb & Huttenlocher), in place on f (length n).
+  function edt1d(f, n, d, v, z) {
+    var k = 0, q, s;
+    v[0] = 0; z[0] = -BIG; z[1] = BIG;
+    for (q = 1; q < n; q++) {
+      s = ((f[q] + q * q) - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
+      while (s <= z[k]) {
+        k--;
+        s = ((f[q] + q * q) - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
+      }
+      k++; v[k] = q; z[k] = s; z[k + 1] = BIG;
+    }
+    k = 0;
+    for (q = 0; q < n; q++) {
+      while (z[k + 1] < q) k++;
+      d[q] = (q - v[k]) * (q - v[k]) + f[v[k]];
+    }
+  }
+
+  // Distance (in pixels) from every pixel to the nearest pixel where src[i] is truthy (0 on the source itself).
+  function distanceTo(src, w, h) {
+    var n = Math.max(w, h), f = new Float64Array(n), d = new Float64Array(n), v = new Int32Array(n), z = new Float64Array(n + 1);
+    var g = new Float64Array(w * h), x, y;
+    for (x = 0; x < w; x++) {
+      for (y = 0; y < h; y++) f[y] = src[y * w + x] ? 0 : BIG;
+      edt1d(f, h, d, v, z);
+      for (y = 0; y < h; y++) g[y * w + x] = d[y];
+    }
+    var out = new Float32Array(w * h);
+    for (y = 0; y < h; y++) {
+      for (x = 0; x < w; x++) f[x] = g[y * w + x];
+      edt1d(f, w, d, v, z);
+      for (x = 0; x < w; x++) out[y * w + x] = d[x] >= BIG / 2 ? 1e6 : Math.sqrt(d[x]);
+    }
+    return out;
+  }
+
+  // Signed distance field in pixels: positive inside the shape (distance to the edge), negative outside.
+  function signedField(mask, w, h) {
+    var dOut = distanceTo(mask, w, h);
+    var inv = new Uint8Array(w * h), i;
+    for (i = 0; i < w * h; i++) inv[i] = mask[i] ? 0 : 1;
+    var dIn = distanceTo(inv, w, h);
+    var s = new Float32Array(w * h);
+    for (i = 0; i < w * h; i++) s[i] = mask[i] ? dIn[i] - 0.5 : -(dOut[i] - 0.5);
+    return s;
+  }
+
+  // Fills polygons (pixel coordinates, nonzero winding) into a w x h mask sampled at the pixel centres.
+  function rasterize(polys, w, h) {
+    var mask = new Uint8Array(w * h), y, i, j, p, a, b, xs, k, wind, x;
+    for (y = 0; y < h; y++) {
+      var yc = y + 0.5;
+      xs = [];
+      for (p = 0; p < polys.length; p++) {
+        var pts = polys[p];
+        for (i = 0; i < pts.length; i++) {
+          a = pts[i]; b = pts[(i + 1) % pts.length];
+          if (a[1] === b[1]) continue;
+          var lo = Math.min(a[1], b[1]), hi = Math.max(a[1], b[1]);
+          if (yc < lo || yc >= hi) continue;
+          xs.push([a[0] + (yc - a[1]) / (b[1] - a[1]) * (b[0] - a[0]), b[1] > a[1] ? 1 : -1]);
+        }
+      }
+      xs.sort(function (m, n) { return m[0] - n[0]; });
+      wind = 0;
+      for (k = 0; k < xs.length - 1; k++) {
+        wind += xs[k][1];
+        if (wind !== 0) {
+          var x0 = Math.ceil(xs[k][0] - 0.5), x1 = Math.ceil(xs[k + 1][0] - 0.5);
+          for (x = Math.max(0, x0); x < Math.min(w, x1); x++) mask[y * w + x] = 1;
+        }
+      }
+    }
+    return mask;
+  }
+
+  // ------------------------------------------------------------------ contours (marching squares)
+
+  // Closed polylines (pixel coordinates) where the field crosses `level`; inside = field >= level.
+  function marching(field, w, h, level) {
+    var adj = {}, i, j;
+    function key(t, a, b) { return t + ':' + a + ',' + b; }
+    function pointOf(kk) {
+      var t = kk.charAt(0), parts = kk.slice(2).split(','), a = +parts[0], b = +parts[1], va, vb, tt;
+      if (t === 'h') {
+        va = field[b * w + a] - level; vb = field[b * w + a + 1] - level; tt = va / (va - vb);
+        return [a + 0.5 + tt, b + 0.5];
+      }
+      va = field[b * w + a] - level; vb = field[(b + 1) * w + a] - level; tt = va / (va - vb);
+      return [a + 0.5, b + 0.5 + tt];
+    }
+    function link(p, q) { (adj[p] = adj[p] || []).push(q); (adj[q] = adj[q] || []).push(p); }
+    for (j = 0; j < h - 1; j++) {
+      for (i = 0; i < w - 1; i++) {
+        var a = field[j * w + i] - level, b = field[j * w + i + 1] - level, c = field[(j + 1) * w + i + 1] - level, d = field[(j + 1) * w + i] - level;
+        var idx = (a >= 0 ? 1 : 0) | (b >= 0 ? 2 : 0) | (c >= 0 ? 4 : 0) | (d >= 0 ? 8 : 0);
+        if (idx === 0 || idx === 15) continue;
+        var T = key('h', i, j), R = key('v', i + 1, j), B = key('h', i, j + 1), L = key('v', i, j);
+        var centreInside = (a + b + c + d) / 4 >= 0;
+        switch (idx) {
+          case 1: case 14: link(L, T); break;
+          case 2: case 13: link(T, R); break;
+          case 3: case 12: link(L, R); break;
+          case 4: case 11: link(R, B); break;
+          case 5: if (centreInside) { link(T, R); link(L, B); } else { link(L, T); link(R, B); } break;
+          case 6: case 9: link(T, B); break;
+          case 7: case 8: link(L, B); break;
+          case 10: if (centreInside) { link(L, T); link(R, B); } else { link(T, R); link(L, B); } break;
+        }
+      }
+    }
+    var loops = [], seen = {}, kk;
+    for (kk in adj) {
+      if (seen[kk]) continue;
+      var loop = [], cur = kk;
+      while (cur !== undefined && !seen[cur]) {
+        seen[cur] = true; loop.push(pointOf(cur));
+        var nb = adj[cur];
+        cur = seen[nb[0]] ? nb[1] : nb[0];
+      }
+      if (loop.length >= 3) loops.push(loop);
+    }
+    return loops;
+  }
+
+  // Douglas-Peucker for a closed polygon.
+  function simplifyClosed(pts, tol) {
+    if (pts.length < 4 || tol <= 0) return pts.slice();
+    var far = 0, dmax = -1, i;
+    for (i = 1; i < pts.length; i++) {
+      var dd = Math.pow(pts[i][0] - pts[0][0], 2) + Math.pow(pts[i][1] - pts[0][1], 2);
+      if (dd > dmax) { dmax = dd; far = i; }
+    }
+    function dp(arr) {
+      if (arr.length < 3) return arr.slice(0, arr.length - 1);
+      var a = arr[0], b = arr[arr.length - 1], dx = b[0] - a[0], dy = b[1] - a[1], len = Math.sqrt(dx * dx + dy * dy), best = -1, bi = -1, k;
+      for (k = 1; k < arr.length - 1; k++) {
+        var dist = len === 0 ? Math.hypot(arr[k][0] - a[0], arr[k][1] - a[1]) : Math.abs(dy * arr[k][0] - dx * arr[k][1] + b[0] * a[1] - b[1] * a[0]) / len;
+        if (dist > best) { best = dist; bi = k; }
+      }
+      if (best > tol) return dp(arr.slice(0, bi + 1)).concat(dp(arr.slice(bi)));
+      return [a];
+    }
+    var first = pts.slice(0, far + 1), second = pts.slice(far).concat([pts[0]]);
+    return dp(first).concat(dp(second));
+  }
+
+  // ------------------------------------------------------------------ glyphs
+
+  // A glyph is a mask with a scale and an origin (the baseline start of the letter). Local coordinates are
+  // millimetres from that origin, y down (letters stand above y = 0).
+  function Glyph(o) {
+    this.mask = o.mask; this.w = o.w; this.h = o.h; this.ppm = o.ppm; this.ox = o.ox; this.oy = o.oy;
+    this.advanceMm = o.advanceMm || 0;
+    this._field = null; this._ink = null; this._area = null;
+  }
+  Glyph.prototype.field = function () {
+    if (!this._field) this._field = signedField(this.mask, this.w, this.h);
+    return this._field;
+  };
+  Glyph.prototype.ink = function () {
+    if (this._ink) return this._ink;
+    var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, x, y;
+    for (y = 0; y < this.h; y++) for (x = 0; x < this.w; x++) if (this.mask[y * this.w + x]) {
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+    if (x1 < 0) return (this._ink = null);
+    var p = this.ppm;
+    this._ink = { x0: (x0 - this.ox) / p, x1: (x1 + 1 - this.ox) / p, y0: (y0 - this.oy) / p, y1: (y1 + 1 - this.oy) / p };
+    return this._ink;
+  };
+  Glyph.prototype.areaMm2 = function () {
+    if (this._area === null) {
+      var n = 0, i;
+      for (i = 0; i < this.mask.length; i++) if (this.mask[i]) n++;
+      this._area = n / (this.ppm * this.ppm);
+    }
+    return this._area;
+  };
+  // Distance (mm) from a local point to the edge of the letter grown by offsetMm; negative outside.
+  Glyph.prototype.insideDist = function (x, y, offsetMm) {
+    var px = x * this.ppm + this.ox - 0.5, py = y * this.ppm + this.oy - 0.5;
+    var i = Math.floor(px), j = Math.floor(py), f = this.field();
+    if (i < 0 || j < 0 || i >= this.w - 1 || j >= this.h - 1) return -1e3;
+    var fx = px - i, fy = py - j;
+    var v = f[j * this.w + i] * (1 - fx) * (1 - fy) + f[j * this.w + i + 1] * fx * (1 - fy) + f[(j + 1) * this.w + i] * (1 - fx) * fy + f[(j + 1) * this.w + i + 1] * fx * fy;
+    return v / this.ppm + (offsetMm || 0);
+  };
+  // The point of the letter farthest from its edge (the largest circle that fits): {x, y, r} in mm.
+  Glyph.prototype.inscribed = function (offsetMm) {
+    var f = this.field(), best = -1e9, bi = 0, i;
+    for (i = 0; i < f.length; i++) if (f[i] > best) { best = f[i]; bi = i; }
+    return { x: ((bi % this.w) + 0.5 - this.ox) / this.ppm, y: (Math.floor(bi / this.w) + 0.5 - this.oy) / this.ppm, r: best / this.ppm + (offsetMm || 0) };
+  };
+  // The point closest to (cx, cy) where a circle of radius r (plus margin) fits inside the letter grown by offsetMm.
+  // Falls back to the thickest point when no circle fits. Returns {x, y, r, fits}.
+  Glyph.prototype.bestHole = function (cx, cy, r, offsetMm, marginMm) {
+    var f = this.field(), need = (r + (marginMm || 0) - (offsetMm || 0)) * this.ppm, best = 1e18, bi = -1, i;
+    for (i = 0; i < f.length; i++) {
+      if (f[i] < need) continue;
+      var x = ((i % this.w) + 0.5 - this.ox) / this.ppm, y = (Math.floor(i / this.w) + 0.5 - this.oy) / this.ppm;
+      var dd = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+      if (dd < best) { best = dd; bi = i; }
+    }
+    if (bi < 0) { var t = this.inscribed(offsetMm); return { x: t.x, y: t.y, r: t.r, fits: false }; }
+    return { x: ((bi % this.w) + 0.5 - this.ox) / this.ppm, y: (Math.floor(bi / this.w) + 0.5 - this.oy) / this.ppm, r: f[bi] / this.ppm + (offsetMm || 0), fits: true };
+  };
+  // Area (mm2) of the letter (grown by offsetMm) that is thinner than minStrokeMm.
+  Glyph.prototype.thinAreaMm2 = function (minStrokeMm, offsetMm) {
+    var f = this.field(), off = (offsetMm || 0) * this.ppm, r = minStrokeMm / 2 * this.ppm, n = f.length, core = new Uint8Array(n), i, any = false;
+    for (i = 0; i < n; i++) if (f[i] + off >= r) { core[i] = 1; any = true; }
+    var thin = 0;
+    if (!any) { for (i = 0; i < n; i++) if (f[i] + off >= 0) thin++; return thin / (this.ppm * this.ppm); }
+    var d = distanceTo(core, this.w, this.h);
+    for (i = 0; i < n; i++) if (f[i] + off >= 0 && d[i] > r + 1) thin++;
+    return thin / (this.ppm * this.ppm);
+  };
+  // Cut outlines of the letter grown by offsetMm: closed polygons in local millimetres.
+  Glyph.prototype.contours = function (offsetMm, tolMm) {
+    var loops = marching(this.field(), this.w, this.h, -(offsetMm || 0) * this.ppm), out = [], k, p = this.ppm, ox = this.ox, oy = this.oy;
+    for (k = 0; k < loops.length; k++) {
+      var mm = loops[k].map(function (q) { return [(q[0] - ox) / p, (q[1] - oy) / p]; });
+      out.push(simplifyClosed(mm, tolMm === undefined ? 0.02 : tolMm));
+    }
+    return out;
+  };
+
+  // Builds a glyph from polygons in millimetres (used by the tests; the browser draws masks with a canvas).
+  function glyphFromPolygons(polysMm, o) {
+    var ppm = o.ppm, pad = Math.ceil((o.padMm === undefined ? 6 : o.padMm) * ppm), x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    polysMm.forEach(function (p) { p.forEach(function (q) { x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); x1 = Math.max(x1, q[0]); y1 = Math.max(y1, q[1]); }); });
+    var ox = pad - Math.floor(x0 * ppm), oy = pad - Math.floor(y0 * ppm);
+    var w = Math.ceil(x1 * ppm) - Math.floor(x0 * ppm) + 2 * pad, h = Math.ceil(y1 * ppm) - Math.floor(y0 * ppm) + 2 * pad;
+    var polysPx = polysMm.map(function (p) { return p.map(function (q) { return [q[0] * ppm + ox, q[1] * ppm + oy]; }); });
+    return new Glyph({ mask: rasterize(polysPx, w, h), w: w, h: h, ppm: ppm, ox: ox, oy: oy, advanceMm: o.advanceMm === undefined ? x1 : o.advanceMm });
+  }
+
+  // ------------------------------------------------------------------ text layout
+
+  // glyphs: array of Glyph or null (a space). def: {x, y, h, mode:'uniform'|'natural', cellW, spacing, holeOffsets:[{dx,dy}]}.
+  // Returns the box and the cells: each cell has its rectangle, the absolute glyph origin and the (default) hole position.
+  function placeText(def, glyphs, withHoles) {
+    var cells = [], x = 0, i;
+    var uniformW = def.cellW;
+    for (i = 0; i < glyphs.length; i++) {
+      var g = glyphs[i], cw, gx;
+      if (def.mode === 'natural') {
+        var adv = g ? g.advanceMm : (def.h * 0.3);
+        cw = adv + def.spacing; gx = x + def.spacing / 2;
+      } else {
+        cw = uniformW;
+        var ink = g && g.ink();
+        gx = x + cw / 2 - (ink ? (ink.x0 + ink.x1) / 2 : 0);
+      }
+      var cell = { index: i, glyph: g, x: def.x + x, y: def.y, w: cw, h: def.h, gox: def.x + gx, goy: def.y + def.h };
+      cell.cx = cell.x + cw / 2; cell.cy = cell.y + def.h / 2;
+      if (withHoles && g) {
+        var o = (def.holeOffsets && def.holeOffsets[i]) || { dx: 0, dy: 0 };
+        cell.hole = { x: cell.cx + (o.dx || 0), y: cell.cy + (o.dy || 0) };
+      }
+      cells.push(cell);
+      x += cw;
+    }
+    return { x: def.x, y: def.y, w: x, h: def.h, cells: cells };
+  }
+
+  // Is the hole circle (radius r) fully behind the letter (grown by offsetMm)? clearance = how much room is left (mm).
+  function holeStatus(cell, r, offsetMm) {
+    if (!cell.glyph || !cell.hole) return { covered: false, clearance: -1e3 };
+    var d = cell.glyph.insideDist(cell.hole.x - cell.gox, cell.hole.y - cell.goy, offsetMm);
+    return { covered: d >= r - 1e-6, clearance: d - r };
+  }
+
+  // Hole offset (relative to the cell centre) for the quick buttons.
+  function holeOffsetFor(cell, r, offsetMm, mode, marginMm) {
+    if (mode === 'centre') return { dx: 0, dy: 0 };
+    var b = cell.glyph.bestHole(cell.cx - cell.gox, cell.cy - cell.goy, r, offsetMm, marginMm === undefined ? 0.5 : marginMm);
+    return { dx: b.x + cell.gox - cell.cx, dy: b.y + cell.goy - cell.cy, fits: b.fits };
+  }
+
+  // ------------------------------------------------------------------ frame strips, dimensions, snapping
+
+  // How many whole 3-LED units (100 mm) fit on each side of the frame. layout: 'topbottom' (top and bottom run over the
+  // corners) or 'sides' (the sides run over the corners). The strip (width sw) lies just outside the plate edge.
+  function frameCounts(W, H, layout, unit, sw) {
+    var topLen = layout === 'sides' ? W : W + 2 * sw, sideLen = layout === 'sides' ? H + 2 * sw : H;
+    function side(len) { var n = Math.floor(len / unit + 1e-9); return { len: len, n: n, left: len - n * unit }; }
+    var t = side(topLen), b = side(topLen), l = side(sideLen), r = side(sideLen);
+    var total = t.n + b.n + l.n + r.n;
+    return { top: t, bottom: b, left: l, right: r, totalUnits: total, totalLeds: total * 3 };
+  }
+
+  // Distances from a point to the four plate edges (the little dimension arrows).
+  function dimsForPoint(x, y, W, H) { return { left: x, right: W - x, up: y, down: H - y }; }
+
+  // Centre and the four corners of a box.
+  function boxPoints(b) {
+    return [{ name: 'centre', x: b.x + b.w / 2, y: b.y + b.h / 2 }, { name: 'tl', x: b.x, y: b.y }, { name: 'tr', x: b.x + b.w, y: b.y },
+      { name: 'bl', x: b.x, y: b.y + b.h }, { name: 'br', x: b.x + b.w, y: b.y + b.h }];
+  }
+
+  // Snaps the vertical and horizontal centre lines of a moving box to the centre lines of targets (boxes and the
+  // plate). Returns the extra movement and the guide lines that were used.
+  function snapCentres(box, targets, thr) {
+    var cx = box.x + box.w / 2, cy = box.y + box.h / 2, bestX = null, bestY = null, i;
+    for (i = 0; i < targets.length; i++) {
+      var dx = targets[i].cx - cx, dy = targets[i].cy - cy;
+      if (Math.abs(dx) <= thr && (bestX === null || Math.abs(dx) < Math.abs(bestX.d))) bestX = { d: dx, at: targets[i].cx };
+      if (Math.abs(dy) <= thr && (bestY === null || Math.abs(dy) < Math.abs(bestY.d))) bestY = { d: dy, at: targets[i].cy };
+    }
+    return { dx: bestX ? bestX.d : 0, dy: bestY ? bestY.d : 0, vertical: bestX ? bestX.at : null, horizontal: bestY ? bestY.at : null };
+  }
+
+  // ------------------------------------------------------------------ strip pieces behind the letters
+
+  function stripRect(s) { return s.rot === 90 ? { x: s.x, y: s.y, w: 10, h: 100 } : { x: s.x, y: s.y, w: 100, h: 10 }; }
+
+  // Fraction (0..1) of a 100 x 10 mm strip piece that lies behind a letter (any of the placed cells).
+  function stripCoverage(s, cells, offsetMm) {
+    var r = stripRect(s), n = 0, hit = 0, x, y, step = 0.5, c, k;
+    for (y = r.y + step / 2; y < r.y + r.h; y += step) {
+      for (x = r.x + step / 2; x < r.x + r.w; x += step) {
+        n++;
+        for (k = 0; k < cells.length; k++) {
+          c = cells[k];
+          if (!c.glyph) continue;
+          if (c.glyph.insideDist(x - c.gox, y - c.goy, offsetMm) >= 0) { hit++; break; }
+        }
+      }
+    }
+    return n ? hit / n : 0;
+  }
+
+  // ------------------------------------------------------------------ drill pattern items, EPS, PDF
+
+  function fmt(n) { return String(Math.round(n * 1000) / 1000); }
+
+  // Primitives of the drilling pattern in plate millimetres. state.holes lists are made by the caller (app or test):
+  // items: {kind:'circle', x, y, d, tag} | {kind:'rect', x, y, w, h, tag} | {kind:'outline', w, h}
+  function drillItems(state, scene) {
+    var items = [];
+    if (state.export.plateOutline) items.push({ kind: 'outline', w: state.plate.w, h: state.plate.h, tag: 'plate' });
+    var d = state.holeD;
+    ['casino', 'open'].forEach(function (key) {
+      var t = scene[key];
+      if (!t) return;
+      t.cells.forEach(function (c) { if (c.hole) items.push({ kind: 'circle', x: c.hole.x, y: c.hole.y, d: d, tag: key }); });
+    });
+    if (state.export.arrow && scene.arrow) {
+      scene.arrow.holes.forEach(function (h) { items.push({ kind: 'circle', x: h.x, y: h.y, d: h.d, tag: 'arrow' }); });
+    }
+    var mode = state.export.closedHole;
+    if (mode === 'round') items.push({ kind: 'circle', x: scene.closedRound.x, y: scene.closedRound.y, d: d, tag: 'closed' });
+    if (mode === 'slot') items.push({ kind: 'rect', x: scene.closedSlot.x - scene.closedSlot.w / 2, y: scene.closedSlot.y - scene.closedSlot.h / 2, w: scene.closedSlot.w, h: scene.closedSlot.h, tag: 'closed' });
+    return items;
+  }
+
+  function epsHeader(title, w, h, margin) {
+    var W = (w + 2 * margin) * MM_TO_PT, H = (h + 2 * margin) * MM_TO_PT;
+    return '%!PS-Adobe-3.0 EPSF-3.0\n%%Title: ' + title + '\n%%Creator: Plate Designer (casino-open-sign)\n%%BoundingBox: 0 0 ' + Math.ceil(W) + ' ' + Math.ceil(H) +
+      '\n%%HiResBoundingBox: 0 0 ' + fmt(W) + ' ' + fmt(H) + '\n%%EndComments\n/mm { ' + fmt(MM_TO_PT) + ' mul } def\n';
+  }
+
+  // EPS of the drilling pattern: 1 unit = 1 mm (converted to points), origin at the lower-left of the plate (plus margin).
+  function epsFromItems(items, plate, title) {
+    var m = 5, s = epsHeader(title || 'Drill pattern', plate.w, plate.h, m);
+    s += '0.1 setlinewidth\n';
+    function Y(y) { return plate.h - y + m; }
+    items.forEach(function (it) {
+      if (it.kind === 'outline') {
+        s += '0 0 1 setrgbcolor ' + fmt(m) + ' mm ' + fmt(m) + ' mm moveto ' + fmt(it.w) + ' mm 0 rlineto 0 ' + fmt(it.h) + ' mm rlineto ' + fmt(-it.w) + ' mm 0 rlineto closepath stroke\n';
+      } else if (it.kind === 'circle') {
+        s += '0 0 0 setrgbcolor newpath ' + fmt(it.x + m) + ' mm ' + fmt(Y(it.y)) + ' mm ' + fmt(it.d / 2) + ' mm 0 360 arc closepath stroke\n';
+      } else if (it.kind === 'rect') {
+        s += '0 0 0 setrgbcolor newpath ' + fmt(it.x + m) + ' mm ' + fmt(Y(it.y + it.h)) + ' mm moveto ' + fmt(it.w) + ' mm 0 rlineto 0 ' + fmt(it.h) + ' mm rlineto ' + fmt(-it.w) + ' mm 0 rlineto closepath stroke\n';
+      }
+    });
+    return s + 'showpage\n%%EOF\n';
+  }
+
+  // EPS of closed polygons (letter outlines), polys in plate-like millimetres (y down) inside a w x h area.
+  function epsFromPolys(polys, w, h, title, boxes) {
+    var m = 5, s = epsHeader(title || 'Letters', w, h, m);
+    s += '0.1 setlinewidth 0 0 0 setrgbcolor\n';
+    function Y(y) { return h - y + m; }
+    polys.forEach(function (p) {
+      if (p.length < 3) return;
+      s += 'newpath ' + fmt(p[0][0] + m) + ' mm ' + fmt(Y(p[0][1])) + ' mm moveto\n';
+      for (var i = 1; i < p.length; i++) s += fmt(p[i][0] + m) + ' mm ' + fmt(Y(p[i][1])) + ' mm lineto\n';
+      s += 'closepath stroke\n';
+    });
+    (boxes || []).forEach(function (b) {
+      s += '0 0 1 setrgbcolor [1 1] 0 setdash newpath ' + fmt(b.x + m) + ' mm ' + fmt(Y(b.y + b.h)) + ' mm moveto ' + fmt(b.w) + ' mm 0 rlineto 0 ' + fmt(b.h) + ' mm rlineto ' + fmt(-b.w) + ' mm 0 rlineto closepath stroke [] 0 setdash\n';
+    });
+    return s + 'showpage\n%%EOF\n';
+  }
+
+  // ASCII DXF (R12, the most widely read version; units are millimetres, y up). Entities: CIRCLE, closed POLYLINE.
+  function dxfStart() { return '0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n'; }
+  function dxfEnd() { return '0\nENDSEC\n0\nEOF\n'; }
+  function dxfCircle(x, y, r, layer) { return '0\nCIRCLE\n8\n' + layer + '\n10\n' + fmt(x) + '\n20\n' + fmt(y) + '\n30\n0\n40\n' + fmt(r) + '\n'; }
+  function dxfPoly(pts, layer) {
+    var t = '0\nPOLYLINE\n8\n' + layer + '\n66\n1\n70\n1\n', i;
+    for (i = 0; i < pts.length; i++) t += '0\nVERTEX\n8\n' + layer + '\n10\n' + fmt(pts[i][0]) + '\n20\n' + fmt(pts[i][1]) + '\n30\n0\n';
+    return t + '0\nSEQEND\n8\n' + layer + '\n';
+  }
+  function dxfRect(x, y, w, h, layer) { return dxfPoly([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], layer); }
+  // Drilling pattern (items as for the EPS), plate-millimetres with y down -> DXF with y up. Layers: PLATE, HOLES, SLOT.
+  function dxfFromItems(items, plate) {
+    var t = dxfStart();
+    items.forEach(function (it) {
+      if (it.kind === 'outline') t += dxfRect(0, 0, it.w, it.h, 'PLATE');
+      else if (it.kind === 'circle') t += dxfCircle(it.x, plate.h - it.y, it.d / 2, 'HOLES');
+      else if (it.kind === 'rect') t += dxfRect(it.x, plate.h - it.y - it.h, it.w, it.h, 'SLOT');
+    });
+    return t + dxfEnd();
+  }
+  // Letter outlines (closed polygons, y down) in an area of height h; layer LETTERS, optional bounding boxes on layer BOXES.
+  function dxfFromPolys(polys, h, boxes) {
+    var t = dxfStart();
+    polys.forEach(function (p) { if (p.length >= 3) t += dxfPoly(p.map(function (q) { return [q[0], h - q[1]]; }), 'LETTERS'); });
+    (boxes || []).forEach(function (b) { t += dxfRect(b.x, h - b.y - b.h, b.w, b.h, 'BOXES'); });
+    return t + dxfEnd();
+  }
+
+  // Tiled 1:1 PDF of the drilling pattern. paper: 'A4' | 'A3', landscape tiles. Returns {bytes: Uint8Array-like string, pages}.
+  var PAPER = { A4: [297, 210], A3: [420, 297] };
+  function pdfTiles(items, plate, paper, title) {
+    var pw = PAPER[paper][0], ph = PAPER[paper][1], margin = 10, tw = pw - 2 * margin, th = ph - 2 * margin;
+    var cols = Math.max(1, Math.ceil(plate.w / tw - 1e-9)), rows = Math.max(1, Math.ceil(plate.h / th - 1e-9));
+    var objs = [], pages = [];
+    function add(s) { objs.push(s); return objs.length; }
+    var K = MM_TO_PT;
+    var r, c;
+    for (r = 0; r < rows; r++) {
+      for (c = 0; c < cols; c++) {
+        var x0 = c * tw, y0 = r * th; // tile origin in plate mm (y down)
+        var cs = 'q ' + fmt(margin * K) + ' ' + fmt(margin * K) + ' ' + fmt(tw * K) + ' ' + fmt(th * K) + ' re W n\n0.1 w\n';
+        // transform plate mm (y down) to page points: X = margin + (x - x0), Y = margin + th - (y - y0) -> page y up
+        var X = function (x) { return (margin + x - x0) * K; };
+        var Yp = function (y) { return (margin + th - (y - y0)) * K; };
+        items.forEach(function (it) {
+          if (it.kind === 'outline') {
+            cs += '0 0 1 RG ' + fmt(X(0)) + ' ' + fmt(Yp(it.h)) + ' ' + fmt(it.w * K) + ' ' + fmt(it.h * K) + ' re S\n';
+          } else if (it.kind === 'rect') {
+            cs += '0 0 0 RG ' + fmt(X(it.x)) + ' ' + fmt(Yp(it.y + it.h)) + ' ' + fmt(it.w * K) + ' ' + fmt(it.h * K) + ' re S\n';
+          } else if (it.kind === 'circle') {
+            var cx = X(it.x), cy = Yp(it.y), rr = it.d / 2 * K, q = 0.5522847498 * rr;
+            cs += '0 0 0 RG ' + fmt(cx + rr) + ' ' + fmt(cy) + ' m ' +
+              fmt(cx + rr) + ' ' + fmt(cy + q) + ' ' + fmt(cx + q) + ' ' + fmt(cy + rr) + ' ' + fmt(cx) + ' ' + fmt(cy + rr) + ' c ' +
+              fmt(cx - q) + ' ' + fmt(cy + rr) + ' ' + fmt(cx - rr) + ' ' + fmt(cy + q) + ' ' + fmt(cx - rr) + ' ' + fmt(cy) + ' c ' +
+              fmt(cx - rr) + ' ' + fmt(cy - q) + ' ' + fmt(cx - q) + ' ' + fmt(cy - rr) + ' ' + fmt(cx) + ' ' + fmt(cy - rr) + ' c ' +
+              fmt(cx + q) + ' ' + fmt(cy - rr) + ' ' + fmt(cx + rr) + ' ' + fmt(cy - q) + ' ' + fmt(cx + rr) + ' ' + fmt(cy) + ' c S\n';
+            // crosshair at the centre
+            cs += fmt(cx - 2 * K) + ' ' + fmt(cy) + ' m ' + fmt(cx + 2 * K) + ' ' + fmt(cy) + ' l ' + fmt(cx) + ' ' + fmt(cy - 2 * K) + ' m ' + fmt(cx) + ' ' + fmt(cy + 2 * K) + ' l S\n';
+          }
+        });
+        cs += 'Q\n';
+        // tile frame and label
+        cs += '0.6 G 0.3 w ' + fmt(margin * K) + ' ' + fmt(margin * K) + ' ' + fmt(tw * K) + ' ' + fmt(th * K) + ' re S\n';
+        cs += 'BT /F1 8 Tf 0 g ' + fmt(margin * K) + ' ' + fmt((ph - margin + 3) * K) + ' Td (' + pdfEscape((title || 'Drill pattern') + ' - tile ' + (r + 1) + '/' + rows + ' row, ' + (c + 1) + '/' + cols +
+          ' col - print at 100% (no scaling) - plate ' + fmt(plate.w) + ' x ' + fmt(plate.h) + ' mm') + ') Tj ET\n';
+        pages.push(cs);
+      }
+    }
+    // object numbers: 1 catalog, 2 pages, 3 font, then per page: content, page
+    objs.push(''); objs.push(''); objs.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+    var kids = [];
+    pages.forEach(function (cs) {
+      var contentNo = add('<< /Length ' + cs.length + ' >>\nstream\n' + cs + 'endstream');
+      var pageNo = add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + fmt(pw * K) + ' ' + fmt(ph * K) + '] /Contents ' + contentNo + ' 0 R /Resources << /Font << /F1 3 0 R >> >> >>');
+      kids.push(pageNo + ' 0 R');
+    });
+    objs[0] = '<< /Type /Catalog /Pages 2 0 R >>';
+    objs[1] = '<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + kids.length + ' >>';
+    var out = '%PDF-1.4\n', offsets = [];
+    objs.forEach(function (o, i) { offsets.push(out.length); out += (i + 1) + ' 0 obj\n' + o + '\nendobj\n'; });
+    var xref = out.length;
+    out += 'xref\n0 ' + (objs.length + 1) + '\n0000000000 65535 f \n';
+    offsets.forEach(function (o) { out += ('0000000000' + o).slice(-10) + ' 00000 n \n'; });
+    out += 'trailer\n<< /Size ' + (objs.length + 1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF\n';
+    return { text: out, pages: pages.length, cols: cols, rows: rows };
+  }
+  function pdfEscape(s) { return String(s).replace(/[\\()]/g, '\\$&').replace(/[^\x20-\x7e]/g, '?'); }
+
+  // ------------------------------------------------------------------ nesting of letters on a raw sheet
+
+  // items: [{id, w, h}] (bounding boxes). Shelf packing, tallest first. Returns {placed:[{id,x,y}], fits, usedH}.
+  function nestShelves(items, sheetW, sheetH, spacing) {
+    var sorted = items.slice().sort(function (a, b) { return b.h - a.h; });
+    var x = 0, y = 0, rowH = 0, placed = [], fits = true;
+    sorted.forEach(function (it) {
+      if (x > 0 && x + it.w > sheetW + 1e-9) { x = 0; y += rowH + spacing; rowH = 0; }
+      if (it.w > sheetW + 1e-9) fits = false;
+      placed.push({ id: it.id, x: x, y: y });
+      x += it.w + spacing; rowH = Math.max(rowH, it.h);
+      if (y + it.h > sheetH + 1e-9) fits = false;
+    });
+    return { placed: placed, fits: fits, usedH: y + rowH };
+  }
+
+  // ------------------------------------------------------------------ state, JSON
+
+  function defaultState() {
+    return {
+      version: 1,
+      plate: { w: 980, h: 300 },
+      holeD: 10,
+      minStroke: 3,
+      frame: { layout: 'topbottom', unit: 100, stripWidth: 10 },
+      texts: {
+        casino: { text: 'CASINO', font: 'Limelight', weight: 400, x: 20, y: 20, h: 100, mode: 'uniform', cellW: 90, spacing: 6, thicken: 0, holeOffsets: [] },
+        open: { text: 'OPEN', font: 'Limelight', weight: 400, x: 600, y: 20, h: 100, mode: 'uniform', cellW: 90, spacing: 6, thicken: 0, holeOffsets: [], sameFont: true },
+        closed: { text: 'CLOSED', font: 'Limelight', weight: 400, x: 560, y: 190, h: 50, mode: 'natural', cellW: 45, spacing: 4, thicken: 0, holeOffsets: [], sameFont: true }
+      },
+      arrow: { x: 20, y: 150 },
+      closedRound: { dx: 0, dy: 0 },
+      closedSlot: { dx: 0, dy: 0, w: 74, h: 4 },
+      strips: [],
+      export: { closedHole: 'round', plateOutline: true, arrow: true, mirror: false, kerf: 0, sheetW: 600, sheetH: 300, spacing: 3, boxes: false, nest: false },
+      ui: { dims: 'selected', snap: true, preview: false, grid: true }
+    };
+  }
+
+  function num(v, lo, hi, dflt) { v = Number(v); if (!isFinite(v)) return dflt; return Math.min(hi, Math.max(lo, v)); }
+
+  // Parses and checks a saved layout (JSON text); missing values come from the defaults. Throws on bad input.
+  function fromJson(text) {
+    var o = typeof text === 'string' ? JSON.parse(text) : text, d = defaultState(), s = defaultState();
+    if (!o || typeof o !== 'object') throw new Error('Not a layout');
+    if (o.version !== 1) throw new Error('Unknown layout version ' + o.version);
+    if (o.plate) { s.plate.w = num(o.plate.w, 100, 980, d.plate.w); s.plate.h = num(o.plate.h, 100, 300, d.plate.h); }
+    s.holeD = num(o.holeD, 5, 30, d.holeD);
+    s.minStroke = num(o.minStroke, 0.5, 20, d.minStroke);
+    if (o.frame) { s.frame.layout = o.frame.layout === 'sides' ? 'sides' : 'topbottom'; }
+    ['casino', 'open', 'closed'].forEach(function (k) {
+      var t = (o.texts && o.texts[k]) || {}, e = s.texts[k], dd = d.texts[k];
+      e.text = typeof t.text === 'string' ? t.text.slice(0, 20) : dd.text;
+      e.font = typeof t.font === 'string' && t.font ? t.font.slice(0, 80) : dd.font;
+      e.weight = t.weight === 700 ? 700 : 400;
+      e.x = num(t.x, -2000, 3000, dd.x); e.y = num(t.y, -2000, 3000, dd.y); e.h = num(t.h, 5, 600, dd.h);
+      e.mode = t.mode === 'natural' ? 'natural' : (t.mode === 'uniform' ? 'uniform' : dd.mode);
+      e.cellW = num(t.cellW, 5, 600, dd.cellW); e.spacing = num(t.spacing, -50, 100, dd.spacing); e.thicken = num(t.thicken, -5, 10, dd.thicken);
+      e.holeOffsets = Array.isArray(t.holeOffsets) ? t.holeOffsets.slice(0, 20).map(function (h) { return h ? { dx: num(h.dx, -300, 300, 0), dy: num(h.dy, -300, 300, 0) } : { dx: 0, dy: 0 }; }) : [];
+      if (k !== 'casino') e.sameFont = t.sameFont !== false;
+    });
+    if (o.arrow) { s.arrow.x = num(o.arrow.x, -2000, 3000, d.arrow.x); s.arrow.y = num(o.arrow.y, -2000, 3000, d.arrow.y); }
+    if (o.closedRound) { s.closedRound.dx = num(o.closedRound.dx, -300, 300, 0); s.closedRound.dy = num(o.closedRound.dy, -300, 300, 0); }
+    if (o.closedSlot) { s.closedSlot.dx = num(o.closedSlot.dx, -300, 300, 0); s.closedSlot.dy = num(o.closedSlot.dy, -300, 300, 0); s.closedSlot.w = num(o.closedSlot.w, 1, 300, 74); s.closedSlot.h = num(o.closedSlot.h, 1, 100, 4); }
+    s.strips = Array.isArray(o.strips) ? o.strips.slice(0, 100).map(function (t) { return { x: num(t.x, -2000, 3000, 0), y: num(t.y, -2000, 3000, 0), rot: t.rot === 90 ? 90 : 0 }; }) : [];
+    if (o.export) {
+      var e2 = s.export, x = o.export;
+      e2.closedHole = x.closedHole === 'slot' || x.closedHole === 'none' ? x.closedHole : 'round';
+      e2.plateOutline = x.plateOutline !== false; e2.arrow = x.arrow !== false; e2.mirror = !!x.mirror; e2.boxes = !!x.boxes; e2.nest = !!x.nest;
+      e2.kerf = num(x.kerf, -2, 2, 0); e2.sheetW = num(x.sheetW, 50, 3000, 600); e2.sheetH = num(x.sheetH, 50, 3000, 300); e2.spacing = num(x.spacing, 0, 50, 3);
+    }
+    if (o.ui) {
+      s.ui.dims = ['selected', 'all', 'none'].indexOf(o.ui.dims) >= 0 ? o.ui.dims : 'selected';
+      s.ui.snap = o.ui.snap !== false; s.ui.preview = !!o.ui.preview; s.ui.grid = o.ui.grid !== false;
+    }
+    return s;
+  }
+
+  function toJson(state) { return JSON.stringify(state, null, 2); }
+
+  return {
+    MM_TO_PT: MM_TO_PT, distanceTo: distanceTo, signedField: signedField, rasterize: rasterize, marching: marching, simplifyClosed: simplifyClosed,
+    Glyph: Glyph, glyphFromPolygons: glyphFromPolygons, placeText: placeText, holeStatus: holeStatus, holeOffsetFor: holeOffsetFor,
+    frameCounts: frameCounts, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, stripRect: stripRect, stripCoverage: stripCoverage,
+    drillItems: drillItems, epsFromItems: epsFromItems, dxfFromItems: dxfFromItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, nestShelves: nestShelves,
+    defaultState: defaultState, fromJson: fromJson, toJson: toJson
+  };
+});
+
+</script>
+<script>
+// Generated by tools/generate_plate_designer_arrow.py from tools/arrow_geometry.py; do not edit.
+var ARROW_DATA = {"w":349.76,"h":102.32,"holeD":8.0,"sticks":[
+{"name":"L-CAP","connector":"D2","pts":[[88.88,9.66],[88.88,92.66],[78.88,92.66],[78.88,9.66]],"fill":"#c5d8ff","stroke":"#1f4ed8","hole":[83.88,51.16]},
+{"name":"L-WING-UP","connector":"D3","pts":[[0.0,41.5],[71.88,0.0],[76.88,8.66],[5.0,50.16]],"fill":"#d9d9d9","stroke":"#6d6d6d","hole":[38.44,25.08]},
+{"name":"L-WING-DN","connector":"D4","pts":[[5.0,52.16],[76.88,93.66],[71.88,102.32],[0.0,60.82]],"fill":"#d9d9d9","stroke":"#6d6d6d","hole":[38.44,77.24]},
+{"name":"RAIL-UP-L","connector":"D5","pts":[[90.88,27.66],[173.88,27.66],[173.88,37.66],[90.88,37.66]],"fill":"#ffd0d0","stroke":"#d11a1a","hole":[132.38,32.66]},
+{"name":"RAIL-UP-R","connector":"D6","pts":[[258.88,37.66],[175.88,37.66],[175.88,27.66],[258.88,27.66]],"fill":"#ffd0d0","stroke":"#d11a1a","hole":[217.38,32.66]},
+{"name":"RAIL-DN-L","connector":"D7","pts":[[90.88,64.66],[173.88,64.66],[173.88,74.66],[90.88,74.66]],"fill":"#ffd0d0","stroke":"#d11a1a","hole":[132.38,69.66]},
+{"name":"RAIL-DN-R","connector":"D8","pts":[[258.88,74.66],[175.88,74.66],[175.88,64.66],[258.88,64.66]],"fill":"#ffd0d0","stroke":"#d11a1a","hole":[217.38,69.66]},
+{"name":"R-CAP","connector":"A0","pts":[[270.88,9.66],[270.88,92.66],[260.88,92.66],[260.88,9.66]],"fill":"#d3f7c0","stroke":"#3a9a00","hole":[265.88,51.16]},
+{"name":"R-WING-UP","connector":"A1","pts":[[344.76,50.16],[272.88,8.66],[277.88,0.0],[349.76,41.5]],"fill":"#e6d0ff","stroke":"#7a1fd1","hole":[311.32,25.08]},
+{"name":"R-WING-DN","connector":"A2","pts":[[349.76,60.82],[277.88,102.32],[272.88,93.66],[344.76,52.16]],"fill":"#e6d0ff","stroke":"#7a1fd1","hole":[311.32,77.24]}]};
+if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
+
+</script>
+<script>
+// Plate Designer - browser app for the CASINO OPEN front plate (drill pattern, letter cut, LED strip frame).
+// Geometry and file writers live in plate-core.js (tested in tests/plate_designer_core_test.js).
+(function () {
+  'use strict';
+  var core = PlateCore, ARROW = ARROW_DATA;
+  var S = core.defaultState();
+  var sel = { type: 'casino', idx: 0 };           // casino | open | closed | arrow | strip
+  var view = { cx: 490, cy: 150, k: 1 };           // centre (mm) and pixels per mm
+  var svg = document.getElementById('svg');
+  var KEYS = ['casino', 'open', 'closed'], NAMES = { casino: 'CASINO', open: 'OPEN', closed: 'CLOSED' };
+  var LS_AUTO = 'plateDesigner.autosave', LS_LAYOUTS = 'plateDesigner.layouts';
+  var PPM = 4, PPM_EXPORT = 10;
+  function $(id) { return document.getElementById(id); }
+  function cl(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+  function f2(n) { return (Math.round(n * 100) / 100).toString(); }
+
+  // ------------------------------------------------------------------ fonts
+  var FONT_GROUPS = [
+    ['1920s / Art Deco', ['Limelight', 'Poiret One!', 'Federo', 'Monoton', 'Gruppo!', 'Josefin Sans', 'Josefin Slab', 'Italiana!', 'Marcellus', 'Cinzel', 'Cinzel Decorative', 'Forum', 'Bellefair!', 'Julius Sans One!', 'Megrim!', 'Syncopate', 'Tenor Sans', 'Fascinate', 'Fascinate Inline', 'Faster One', 'Bungee Inline', 'Bungee Shade', 'Diplomata', 'Diplomata SC', 'Rozha One', 'Abril Fatface', 'Playfair Display', 'Playfair Display SC', 'Bodoni Moda', 'Libre Bodoni', 'Yeseva One', 'Elsie', 'Elsie Swash Caps', 'Emblema One', 'Vast Shadow', 'Ribeye Marrow', 'Chonburi', 'Almendra Display', 'Gravitas One', 'Stint Ultra Expanded']],
+    ['Bold and clear', ['Anton', 'Bebas Neue', 'Oswald', 'League Gothic', 'Fjalla One', 'Alfa Slab One', 'Bevan', 'Ultra', 'Bungee', 'Righteous', 'Archivo Black', 'Black Ops One', 'Passion One', 'Russo One', 'Squada One', 'Titan One', 'Chango', 'Fugaz One', 'Paytone One', 'Lilita One', 'Bowlby One', 'Bowlby One SC', 'Carter One', 'Changa One', 'Luckiest Guy', 'Concert One', 'Francois One', 'Big Shoulders Display', 'Staatliches', 'Teko', 'Unica One', 'Krona One', 'Rubik Mono One', 'Holtwood One SC', 'Sigmar One', 'Rammetto One', 'Shrikhand', 'Stint Ultra Condensed', 'Londrina Solid', 'Black Han Sans']],
+    ['Sans and serif', ['Montserrat', 'Poppins', 'Raleway', 'Lato', 'Quicksand!', 'Comfortaa', 'Audiowide', 'Orbitron', 'Michroma', 'Arvo', 'Rye', 'Sancreek', 'Ewert', 'Ranchers', 'Slackey', 'Special Elite', 'Kelly Slab', 'Cabin Sketch', 'Smokum', 'Ribeye']],
+    ['Script', ['Lobster', 'Lobster Two', 'Pacifico', 'Berkshire Swash', 'Kaushan Script', 'Yellowtail', 'Sacramento!', 'Playball', 'Cherry Swash', 'Oleo Script', 'Spicy Rice', 'Wellfleet', 'Bigshot One']]
+  ];
+  var fontState = {};
+  var meas = document.createElement('canvas').getContext('2d');
+  function widthOf(spec) { meas.font = '72px ' + spec; return meas.measureText('MWmwiI0123456789 CASINO OPEN').width; }
+  function fontAvailable(name) {
+    return widthOf('"' + name + '", monospace') !== widthOf('monospace') || widthOf('"' + name + '", serif') !== widthOf('serif');
+  }
+  function ensureFont(name) {
+    if (fontState[name]) return fontState[name].promise;
+    var st = fontState[name] = { status: 'loading' };
+    st.promise = new Promise(function (resolve) {
+      var done = false;
+      function finish() {
+        if (done) return; done = true;
+        Promise.all([document.fonts.load('400 40px "' + name + '"'), document.fonts.load('700 40px "' + name + '"')]).catch(function () { }).then(function () {
+          st.status = fontAvailable(name) ? 'ok' : 'missing';
+          clearGlyphs(name); render(); updateInfo(); resolve(st.status);
+        });
+      }
+      var l = document.createElement('link');
+      l.rel = 'stylesheet'; l.onload = finish; l.onerror = finish;
+      l.href = 'https://fonts.googleapis.com/css?family=' + encodeURIComponent(name).replace(/%20/g, '+') + ':400,700&display=swap';
+      document.head.appendChild(l);
+      setTimeout(finish, 6000);
+    });
+    return st.promise;
+  }
+
+  // ------------------------------------------------------------------ glyphs (canvas -> mask)
+  var glyphCache = {}, capCache = {}, contourCache = typeof WeakMap === 'function' ? new WeakMap() : null;
+  var gcan = document.createElement('canvas'), gctx = gcan.getContext('2d', { willReadFrequently: true });
+  function clearGlyphs(font) {
+    Object.keys(glyphCache).forEach(function (k) { if (!font || k.indexOf(font + '|') === 0) delete glyphCache[k]; });
+    Object.keys(capCache).forEach(function (k) { if (!font || k.indexOf(font + '|') === 0) delete capCache[k]; });
+  }
+  function capRatio(font, weight) {
+    var key = font + '|' + weight;
+    if (!capCache[key]) { gctx.font = weight + ' 200px "' + font + '"'; capCache[key] = Math.max(0.2, gctx.measureText('H').actualBoundingBoxAscent / 200); }
+    return capCache[key];
+  }
+  function getGlyph(font, weight, ch, hMm, ppm) {
+    var key = font + '|' + weight + '|' + ch + '|' + hMm + '|' + ppm;
+    if (key in glyphCache) return glyphCache[key];
+    if (Object.keys(glyphCache).length > 600) glyphCache = {};
+    var px = hMm * ppm / capRatio(font, weight);
+    gctx.font = weight + ' ' + px + 'px "' + font + '"';
+    var m = gctx.measureText(ch);
+    var pad = Math.ceil(12 * ppm), left = Math.ceil(m.actualBoundingBoxLeft), right = Math.ceil(m.actualBoundingBoxRight), asc = Math.ceil(m.actualBoundingBoxAscent), desc = Math.ceil(m.actualBoundingBoxDescent);
+    var w = left + right + 2 * pad + 2, h = asc + desc + 2 * pad + 2, ox = pad + left + 1, oy = pad + asc + 1;
+    gcan.width = w; gcan.height = h;
+    gctx.font = weight + ' ' + px + 'px "' + font + '"'; gctx.textBaseline = 'alphabetic'; gctx.textAlign = 'left'; gctx.fillStyle = '#000';
+    gctx.fillText(ch, ox, oy);
+    var data = gctx.getImageData(0, 0, w, h).data, mask = new Uint8Array(w * h), any = false, i;
+    for (i = 0; i < w * h; i++) if (data[i * 4 + 3] >= 128) { mask[i] = 1; any = true; }
+    var g = any ? new core.Glyph({ mask: mask, w: w, h: h, ppm: ppm, ox: ox, oy: oy, advanceMm: m.width / ppm }) : null;
+    glyphCache[key] = g;
+    return g;
+  }
+  function contours(g, offset, tol) {
+    var key = offset + ':' + tol, e = contourCache && contourCache.get(g);
+    if (!e) { e = {}; if (contourCache) contourCache.set(g, e); }
+    if (!e[key]) e[key] = g.contours(offset, tol);
+    return e[key];
+  }
+
+  // ------------------------------------------------------------------ scene
+  function effFont(key) {
+    var t = S.texts[key];
+    if (key !== 'casino' && t.sameFont) return { font: S.texts.casino.font, weight: S.texts.casino.weight };
+    return { font: t.font, weight: t.weight };
+  }
+  function textScene(key, ppm) {
+    var t = S.texts[key], f = effFont(key);
+    var glyphs = Array.from(t.text).map(function (ch) { return ch.trim() ? getGlyph(f.font, f.weight, ch, t.h, ppm) : null; });
+    return core.placeText(t, glyphs, key !== 'closed');
+  }
+  function scene(ppm) {
+    var sc = { casino: textScene('casino', ppm), open: textScene('open', ppm), closed: textScene('closed', ppm) };
+    var cb = sc.closed;
+    sc.arrow = { x: S.arrow.x, y: S.arrow.y, w: ARROW.w, h: ARROW.h, holes: ARROW.sticks.filter(function (s) { return s.hole; }).map(function (s) { return { x: S.arrow.x + s.hole[0], y: S.arrow.y + s.hole[1], d: ARROW.holeD }; }) };
+    sc.closedRound = { x: cb.x + cb.w / 2 + S.closedRound.dx, y: cb.y + cb.h / 2 + S.closedRound.dy };
+    sc.closedSlot = { x: cb.x + cb.w / 2 + S.closedSlot.dx, y: cb.y + cb.h / 2 + S.closedSlot.dy, w: S.closedSlot.w, h: S.closedSlot.h };
+    return sc;
+  }
+  function boxOf(sc, key) {
+    if (key === 'arrow') return { x: sc.arrow.x, y: sc.arrow.y, w: ARROW.w, h: ARROW.h };
+    return { x: sc[key].x, y: sc[key].y, w: sc[key].w, h: sc[key].h };
+  }
+  var cur = null; // last scene used for drawing / hit tests
+
+  // ------------------------------------------------------------------ view
+  function setViewBox() {
+    var w = svg.clientWidth / view.k, h = svg.clientHeight / view.k;
+    svg.setAttribute('viewBox', (view.cx - w / 2) + ' ' + (view.cy - h / 2) + ' ' + w + ' ' + h);
+  }
+  function fit() {
+    var sw = S.frame.stripWidth, W = S.plate.w + 2 * sw + 60, H = S.plate.h + 2 * sw + 60;
+    view.k = Math.min(svg.clientWidth / W, svg.clientHeight / H) || 1;
+    view.cx = S.plate.w / 2; view.cy = S.plate.h / 2; render();
+  }
+  function toMm(e) {
+    var r = svg.getBoundingClientRect();
+    return { x: view.cx + (e.clientX - r.left - r.width / 2) / view.k, y: view.cy + (e.clientY - r.top - r.height / 2) / view.k };
+  }
+  function zoomAt(factor) { view.k = cl(view.k * factor, 0.2, 60); render(); }
+
+  // ------------------------------------------------------------------ drawing
+  function pathOf(polys, dx, dy) {
+    var s = '';
+    polys.forEach(function (p) {
+      for (var i = 0; i < p.length; i++) s += (i ? 'L' : 'M') + f2(p[i][0] + dx) + ' ' + f2(p[i][1] + dy);
+      s += 'Z';
+    });
+    return s;
+  }
+  function frameSvg(preview) {
+    var W = S.plate.w, H = S.plate.h, sw = S.frame.stripWidth, unit = S.frame.unit, fc = core.frameCounts(W, H, S.frame.layout, unit, sw), s = '';
+    var tb = S.frame.layout === 'topbottom';
+    var sides = [
+      { x: tb ? -sw : 0, y: -sw, len: tb ? W + 2 * sw : W, horiz: true, info: fc.top },
+      { x: tb ? -sw : 0, y: H, len: tb ? W + 2 * sw : W, horiz: true, info: fc.bottom },
+      { x: -sw, y: tb ? 0 : -sw, len: tb ? H : H + 2 * sw, horiz: false, info: fc.left },
+      { x: W, y: tb ? 0 : -sw, len: tb ? H : H + 2 * sw, horiz: false, info: fc.right }
+    ];
+    sides.forEach(function (sd, si) {
+      var w = sd.horiz ? sd.len : sw, h = sd.horiz ? sw : sd.len;
+      s += '<rect x="' + sd.x + '" y="' + sd.y + '" width="' + w + '" height="' + h + '" fill="' + (preview ? '#000' : '#4a4a4a') + '" stroke="#222" stroke-width="' + 0.4 / view.k * 2 + '"/>';
+      var n = sd.info.n, i, j;
+      for (i = 0; i < n; i++) {
+        var hue = (si * 70 + i * 47) % 360, col = 'hsl(' + hue + ',90%,58%)';
+        for (j = 0; j < 3; j++) {
+          var t = i * unit + unit * (1 + 2 * j) / 6;
+          var cx = sd.horiz ? sd.x + t : sd.x + sw / 2, cy = sd.horiz ? sd.y + sw / 2 : sd.y + t;
+          s += '<circle cx="' + f2(cx) + '" cy="' + f2(cy) + '" r="2.4" fill="' + col + '"' + (preview ? ' filter="url(#glow)"' : '') + '/>';
+        }
+        if (i > 0) { var b = i * unit; s += sd.horiz ? '<line x1="' + (sd.x + b) + '" y1="' + sd.y + '" x2="' + (sd.x + b) + '" y2="' + (sd.y + sw) + '" stroke="#999" stroke-width="' + 0.5 / view.k + '"/>' : '<line x1="' + sd.x + '" y1="' + (sd.y + b) + '" x2="' + (sd.x + sw) + '" y2="' + (sd.y + b) + '" stroke="#999" stroke-width="' + 0.5 / view.k + '"/>'; }
+      }
+      if (sd.info.left > 0.05) {
+        var o = n * unit;
+        s += sd.horiz ? '<rect x="' + (sd.x + o) + '" y="' + sd.y + '" width="' + sd.info.left + '" height="' + sw + '" fill="url(#hatch)"/>' : '<rect x="' + sd.x + '" y="' + (sd.y + o) + '" width="' + sw + '" height="' + sd.info.left + '" fill="url(#hatch)"/>';
+      }
+    });
+    return s;
+  }
+  function gridSvg() {
+    var W = S.plate.w, H = S.plate.h, px = 1 / view.k, steps = [1, 2, 5, 10, 20, 50, 100, 200], st = 100, i, s = '';
+    for (i = 0; i < steps.length; i++) if (steps[i] * view.k >= 9) { st = steps[i]; break; }
+    var major = st * 5 >= 50 ? st * 5 : st * 10, x, y;
+    for (x = st; x < W; x += st) s += '<line x1="' + x + '" y1="0" x2="' + x + '" y2="' + H + '" stroke="' + (x % major === 0 ? '#bbb' : '#e2dcc8') + '" stroke-width="' + px * 0.7 + '"/>';
+    for (y = st; y < H; y += st) s += '<line x1="0" y1="' + y + '" x2="' + W + '" y2="' + y + '" stroke="' + (y % major === 0 ? '#bbb' : '#e2dcc8') + '" stroke-width="' + px * 0.7 + '"/>';
+    for (x = 0; x <= W; x += major) s += '<text x="' + (x + 1 * px) + '" y="' + 10 * px + '" font-size="' + 9 * px + '" fill="#666">' + x + '</text>';
+    for (y = major; y <= H; y += major) s += '<text x="' + 2 * px + '" y="' + (y - 2 * px) + '" font-size="' + 9 * px + '" fill="#666">' + y + '</text>';
+    return s;
+  }
+  function dimSvg(points) {
+    var W = S.plate.w, H = S.plate.h, px = 1 / view.k, s = '', fs = 10 * px;
+    function line(x1, y1, x2, y2, v) {
+      if (v < 0.5) return '';
+      return '<line x1="' + f2(x1) + '" y1="' + f2(y1) + '" x2="' + f2(x2) + '" y2="' + f2(y2) + '" stroke="#0a7a3c" stroke-width="' + px + '" marker-start="url(#arr)" marker-end="url(#arr)"/>' +
+        '<text x="' + f2((x1 + x2) / 2) + '" y="' + f2((y1 + y2) / 2) + '" font-size="' + fs + '" fill="#0a5" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="' + 3 * px + '">' + f2(v) + '</text>';
+    }
+    points.forEach(function (p) {
+      var d = core.dimsForPoint(p.x, p.y, W, H);
+      s += line(p.x, p.y, 0, p.y, d.left) + line(p.x, p.y, W, p.y, d.right) + line(p.x, p.y, p.x, 0, d.up) + line(p.x, p.y, p.x, H, d.down);
+      s += '<circle cx="' + p.x + '" cy="' + p.y + '" r="' + 2 * px + '" fill="#0a7a3c"/>';
+    });
+    return s;
+  }
+  function render() {
+    if (!svg.clientWidth) return;
+    setViewBox();
+    var sc = scene(PPM), pv = S.ui.preview, W = S.plate.w, H = S.plate.h, px = 1 / view.k, s = '';
+    cur = sc;
+    s += '<defs><marker id="arr" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L6 3L0 6z" fill="#0a7a3c"/></marker>' +
+      '<pattern id="hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="4" height="4" fill="#777"/><line x1="0" y1="0" x2="0" y2="4" stroke="#bbb" stroke-width="1.5"/></pattern>' +
+      '<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+    s += frameSvg(pv);
+    s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="' + (pv ? '#101010' : '#f3efe0') + '" stroke="#000" stroke-width="' + px + '"/>';
+    if (S.ui.grid && !pv) s += gridSvg();
+    // strip pieces (behind the letters)
+    S.strips.forEach(function (t, i) {
+      var r = core.stripRect(t), on = sel.type === 'strip' && sel.idx === i;
+      s += '<rect x="' + r.x + '" y="' + r.y + '" width="' + r.w + '" height="' + r.h + '" fill="' + (pv ? '#ffd27a' : '#6a8dff') + '" fill-opacity="' + (pv ? 0.9 : 0.55) + '" stroke="' + (on ? '#d00' : '#1f3fb0') + '" stroke-width="' + (on ? 2 : 1) * px + '"' + (pv ? ' filter="url(#glow)"' : '') + '/>';
+    });
+    // arrow
+    ARROW.sticks.forEach(function (st) {
+      var pts = st.pts.map(function (q) { return (q[0] + S.arrow.x) + ',' + (q[1] + S.arrow.y); }).join(' ');
+      s += '<polygon points="' + pts + '" fill="' + (pv ? '#fff' : st.fill) + '" fill-opacity="' + (pv ? 0.85 : 0.8) + '" stroke="' + st.stroke + '" stroke-width="' + 0.5 * px + '"' + (pv ? ' filter="url(#glow)"' : '') + '/>';
+    });
+    // letters
+    var letterFill = pv ? '#ff2a2a' : '#b01030';
+    KEYS.forEach(function (key) {
+      var t = S.texts[key], poly = [];
+      sc[key].cells.forEach(function (c) { if (c.glyph) poly.push(pathOf(contours(c.glyph, t.thicken, 0.05), c.gox, c.goy)); });
+      s += '<path d="' + poly.join('') + '" fill="' + letterFill + '" fill-opacity="' + (pv ? 1 : 0.82) + '" fill-rule="evenodd"' + (pv ? ' filter="url(#glow)"' : '') + '/>';
+    });
+    if (!pv) {
+      // holes
+      ARROW.sticks.forEach(function (st) { if (st.hole) s += '<circle cx="' + (st.hole[0] + S.arrow.x) + '" cy="' + (st.hole[1] + S.arrow.y) + '" r="' + ARROW.holeD / 2 + '" fill="#fff" stroke="#333" stroke-width="' + px + '"/>'; });
+      ['casino', 'open'].forEach(function (key) {
+        sc[key].cells.forEach(function (c) {
+          if (!c.hole) return;
+          var ok = core.holeStatus(c, S.holeD / 2, S.texts[key].thicken).covered;
+          s += '<circle cx="' + f2(c.hole.x) + '" cy="' + f2(c.hole.y) + '" r="' + S.holeD / 2 + '" fill="#fff" fill-opacity="0.9" stroke="' + (ok ? '#1b9a35' : '#e00') + '" stroke-width="' + 1.5 * px + '"/>' +
+            '<path d="M' + (c.hole.x - 2 * px * 3) + ' ' + c.hole.y + 'H' + (c.hole.x + 6 * px) + 'M' + c.hole.x + ' ' + (c.hole.y - 6 * px) + 'V' + (c.hole.y + 6 * px) + '" stroke="' + (ok ? '#1b9a35' : '#e00') + '" stroke-width="' + px + '"/>';
+        });
+      });
+      var mode = S.export.closedHole;
+      s += '<circle cx="' + f2(sc.closedRound.x) + '" cy="' + f2(sc.closedRound.y) + '" r="' + S.holeD / 2 + '" fill="#fff" fill-opacity="0.9" stroke="#1565c0" stroke-width="' + 1.5 * px + '"' + (mode === 'round' ? '' : ' stroke-dasharray="' + 3 * px + ' ' + 3 * px + '" opacity="0.5"') + '/>';
+      var sl = sc.closedSlot;
+      s += '<rect x="' + f2(sl.x - sl.w / 2) + '" y="' + f2(sl.y - sl.h / 2) + '" width="' + sl.w + '" height="' + sl.h + '" fill="#fff" fill-opacity="0.9" stroke="#ef6c00" stroke-width="' + 1.5 * px + '"' + (mode === 'slot' ? '' : ' stroke-dasharray="' + 3 * px + ' ' + 3 * px + '" opacity="0.5"') + '/>';
+      // boxes
+      var all = KEYS.concat(['arrow']);
+      all.forEach(function (key) {
+        var b = boxOf(sc, key), on = sel.type === key;
+        s += '<rect x="' + f2(b.x) + '" y="' + f2(b.y) + '" width="' + f2(b.w) + '" height="' + f2(b.h) + '" fill="none" stroke="' + (on ? '#0057d8' : '#8a8a8a') + '" stroke-width="' + (on ? 1.6 : 0.8) * px + '" stroke-dasharray="' + 5 * px + ' ' + 3 * px + '"/>' +
+          '<text x="' + f2(b.x) + '" y="' + f2(b.y - 3 * px) + '" font-size="' + 10 * px + '" fill="' + (on ? '#0057d8' : '#777') + '">' + (key === 'arrow' ? 'ARROW' : NAMES[key]) + ' ' + f2(b.w) + ' x ' + f2(b.h) + '</text>';
+      });
+      // dimension arrows
+      var pts = [];
+      function boxPts(b) { return core.boxPoints(b); }
+      if (S.ui.dims === 'selected') {
+        if (sel.type === 'strip' && S.strips[sel.idx]) pts = boxPts(core.stripRect(S.strips[sel.idx]));
+        else if (sel.type) {
+          pts = boxPts(boxOf(sc, sel.type));
+          if (sel.type === 'casino' || sel.type === 'open') sc[sel.type].cells.forEach(function (c) { if (c.hole) pts.push(c.hole); });
+          if (sel.type === 'closed') pts.push(sc.closedRound);
+          if (sel.type === 'arrow') sc.arrow.holes.forEach(function (h) { pts.push(h); });
+        }
+      } else if (S.ui.dims === 'all') {
+        all.forEach(function (key) { pts = pts.concat(boxPts(boxOf(sc, key))); });
+      }
+      if (pts.length) s += dimSvg(pts);
+      if (guides.v !== null) s += '<line x1="' + guides.v + '" y1="-40" x2="' + guides.v + '" y2="' + (H + 40) + '" stroke="#e0007a" stroke-width="' + px + '" stroke-dasharray="' + 4 * px + ' ' + 3 * px + '"/>';
+      if (guides.h !== null) s += '<line x1="-40" y1="' + guides.h + '" x2="' + (W + 40) + '" y2="' + guides.h + '" stroke="#e0007a" stroke-width="' + px + '" stroke-dasharray="' + 4 * px + ' ' + 3 * px + '"/>';
+    }
+    svg.innerHTML = s;
+    updateFrameInfo();
+    updateStatus();
+  }
+  var guides = { v: null, h: null };
+
+  // ------------------------------------------------------------------ info panels
+  var thinCache = new Map();
+  function thinOf(g, offset) {
+    var key = S.minStroke + ':' + offset, e = thinCache.get(g);
+    if (!e) { e = {}; thinCache.set(g, e); }
+    if (e[key] === undefined) e[key] = g.thinAreaMm2(S.minStroke, offset);
+    return e[key];
+  }
+  function updateInfo() {
+    var sc = cur || scene(PPM), r = S.holeD / 2;
+    KEYS.forEach(function (key) {
+      var t = S.texts[key], f = effFont(key), el = $('info-' + key), cells = sc[key].cells, thin = [], cov = 0, holes = 0, st = fontState[f.font];
+      cells.forEach(function (c, i) {
+        if (!c.glyph) return;
+        if (c.hole) { holes++; if (core.holeStatus(c, r, t.thicken).covered) cov++; }
+        var a = thinOf(c.glyph, t.thicken);
+        if (a > 1) thin.push(t.text[i] + ' ' + Math.round(a) + ' mm2');
+      });
+      var h = 'Box ' + f2(sc[key].w) + ' x ' + f2(sc[key].h) + ' mm. ';
+      if (holes) h += '<span class="' + (cov === holes ? 'ok' : 'warn') + '">Holes covered by the letters: ' + cov + '/' + holes + '.</span> ';
+      h += thin.length ? '<span class="warn">Thin parts (below ' + S.minStroke + ' mm): ' + thin.join(', ') + '.</span> ' : '<span class="ok">No thin parts.</span> ';
+      if (st && st.status === 'missing') h += '<br><span class="warn">Font "' + f.font + '" not available (no network or wrong name) - showing the browser default.</span>';
+      else if (st && st.status === 'loading') h += '<br>Loading font ' + f.font + '...';
+      el.innerHTML = h;
+    });
+    updateFrameInfo();
+  }
+  function updateFrameInfo() {
+    var fc = core.frameCounts(S.plate.w, S.plate.h, S.frame.layout, S.frame.unit, S.frame.stripWidth);
+    function sd(n, o) { return o.n + ' x 100 mm' + (o.left > 0.05 ? ' + ' + f2(o.left) + ' mm left over' : ''); }
+    $('frameInfo').innerHTML = 'Top: ' + sd('top', fc.top) + '<br>Bottom: ' + sd('bottom', fc.bottom) + '<br>Left: ' + sd('left', fc.left) + '<br>Right: ' + sd('right', fc.right) +
+      '<br><b>Total ' + fc.totalUnits + ' units = ' + fc.totalLeds + ' LEDs</b> (3 LEDs per 100 mm)';
+    var si = $('stripInfo');
+    if (sel.type === 'strip' && S.strips[sel.idx]) si.textContent = 'Piece ' + (sel.idx + 1) + ' of ' + S.strips.length + ': ' + Math.round(stripCoverage(S.strips[sel.idx]) * 100) + ' % behind a letter.';
+    else si.textContent = S.strips.length + ' piece(s). Click one to see how much of it is behind a letter.';
+    $('json').title = 'Layout JSON';
+  }
+  function stripCoverage(s) {
+    var sc = cur || scene(PPM), r = core.stripRect(s), n = 0, hit = 0, x, y;
+    for (y = r.y + 0.25; y < r.y + r.h; y += 0.5) for (x = r.x + 0.25; x < r.x + r.w; x += 0.5) {
+      n++;
+      var inside = KEYS.some(function (key) {
+        var off = S.texts[key].thicken;
+        return sc[key].cells.some(function (c) { return c.glyph && c.glyph.insideDist(x - c.gox, y - c.goy, off) >= 0; });
+      });
+      if (inside) hit++;
+    }
+    return n ? hit / n : 0;
+  }
+  function updateStatus() {
+    var name = sel.type === 'strip' ? 'strip piece ' + (sel.idx + 1) : sel.type ? (sel.type === 'arrow' ? 'ARROW' : NAMES[sel.type]) : 'nothing';
+    $('status').textContent = 'Plate ' + f2(S.plate.w) + ' x ' + f2(S.plate.h) + ' mm - selected: ' + name + ' - zoom ' + Math.round(view.k * 100) / 100 + ' px/mm' + (statusMsg ? ' - ' + statusMsg : '');
+  }
+  var statusMsg = '';
+
+  // ------------------------------------------------------------------ state history, storage
+  var hist = [], histPos = -1, commitTimer = null;
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { } }
+  function commit() {
+    clearTimeout(commitTimer); commitTimer = null;
+    var j = core.toJson(S);
+    if (hist[histPos] !== j) {
+      hist = hist.slice(0, histPos + 1); hist.push(j); if (hist.length > 100) hist.shift(); histPos = hist.length - 1;
+      lsSet(LS_AUTO, j);
+    }
+    if (document.activeElement !== $('json')) $('json').value = j;
+    updateInfo(); updateUndo();
+  }
+  function scheduleCommit() { clearTimeout(commitTimer); commitTimer = setTimeout(commit, 350); }
+  function updateUndo() { $('undo').disabled = histPos <= 0; $('redo').disabled = histPos >= hist.length - 1; }
+  function loadState(st) { S = st; ensureAllFonts(); syncControls(); render(); }
+  function undo() { commit(); if (histPos > 0) { histPos--; loadState(core.fromJson(hist[histPos])); $('json').value = hist[histPos]; updateInfo(); updateUndo(); } }
+  function redo() { commit(); if (histPos < hist.length - 1) { histPos++; loadState(core.fromJson(hist[histPos])); $('json').value = hist[histPos]; updateInfo(); updateUndo(); } }
+  function ensureAllFonts() { KEYS.forEach(function (k) { ensureFont(effFont(k).font); }); }
+  function changed() { render(); scheduleCommit(); }
+
+  // ------------------------------------------------------------------ controls
+  var binds = [];
+  function bind(id, get, set) {
+    var el = $(id), chk = el.type === 'checkbox', num = el.type === 'number' || el.type === 'range';
+    binds.push({ el: el, get: get });
+    el.addEventListener(el.tagName === 'SELECT' || chk ? 'change' : 'input', function () {
+      var v = chk ? el.checked : num ? parseFloat(el.value) : el.value;
+      if (num && !isFinite(v)) return;
+      set(v); syncControls(el); changed();
+    });
+  }
+  function syncControls(except) {
+    KEYS.forEach(function (k) { addFontOption(k, S.texts[k].font); });
+    binds.forEach(function (b) {
+      if (b.el === except) return;
+      var v = b.get();
+      if (b.el.type === 'checkbox') b.el.checked = !!v; else b.el.value = v;
+    });
+  }
+  function fontOptions() {
+    var h = '';
+    FONT_GROUPS.forEach(function (g) {
+      h += '<optgroup label="' + g[0] + '">' + g[1].map(function (n) { var thin = n.slice(-1) === '!', nm = thin ? n.slice(0, -1) : n; return '<option value="' + nm + '">' + nm + (thin ? ' (thin)' : '') + '</option>'; }).join('') + '</optgroup>';
+    });
+    return h;
+  }
+  function buildTextPanels() {
+    var h = '';
+    KEYS.forEach(function (key) {
+      var k = key;
+      h += '<div class="sect"><b>' + NAMES[k] + '</b>' +
+        '<div class="row"><span>Text</span><input type="text" id="t-' + k + '-text" maxlength="20"></div>' +
+        '<div class="row"><span>Font</span><select id="t-' + k + '-font">' + fontOptions() + '</select></div>' +
+        (k === 'casino' ? '' : '<label><input type="checkbox" id="t-' + k + '-same"> same font as CASINO</label>') +
+        '<div class="row"><span>Other Google font</span><input type="text" id="t-' + k + '-other" placeholder="e.g. Bungee Hairline"><button id="t-' + k + '-use">Use</button></div>' +
+        '<label><input type="checkbox" id="t-' + k + '-bold"> bold (700)</label>' +
+        '<div class="row"><span>Spacing</span><select id="t-' + k + '-mode"><option value="uniform">uniform cells</option><option value="natural">natural widths</option></select></div>' +
+        '<div class="row"><span>Height mm</span><input type="number" id="t-' + k + '-h" min="5" max="600" step="1"><span style="width:auto">cell</span><input type="number" id="t-' + k + '-cw" min="5" max="600" step="1"><span style="width:auto">gap</span><input type="number" id="t-' + k + '-sp" min="-50" max="100" step="0.5"></div>' +
+        '<div class="row"><span>Thicken mm</span><input type="range" id="t-' + k + '-th" min="-3" max="8" step="0.1"><input type="number" id="t-' + k + '-thn" min="-5" max="10" step="0.1"></div>' +
+        '<div class="row"><span>Position x, y</span><input type="number" id="t-' + k + '-x" step="1"><input type="number" id="t-' + k + '-y" step="1"></div>' +
+        (k === 'closed' ? '<div class="row"><span>Hole offset</span><input type="number" id="t-closed-hdx" step="0.5"><input type="number" id="t-closed-hdy" step="0.5"></div>' :
+          '<div class="row"><button id="t-' + k + '-centre">Centre holes in cells</button><button id="t-' + k + '-fit">Fit holes into thick parts</button></div>') +
+        '<div class="note" id="info-' + k + '"></div></div>';
+    });
+    $('texts').innerHTML = h;
+  }
+  function addFontOption(key, name) {
+    var sel2 = $('t-' + key + '-font');
+    if (!sel2 || Array.prototype.some.call(sel2.options, function (o) { return o.value === name; })) return;
+    var og = sel2.querySelector('optgroup[label="Custom"]');
+    if (!og) { og = document.createElement('optgroup'); og.label = 'Custom'; sel2.insertBefore(og, sel2.firstChild); }
+    var op = document.createElement('option'); op.value = op.textContent = name; og.appendChild(op);
+  }
+  function useFont(key, name) {
+    name = name.trim(); if (!name) return;
+    addFontOption(key, name);
+    S.texts[key].font = name; if (key !== 'casino') S.texts[key].sameFont = false;
+    ensureFont(name); syncControls(); changed();
+  }
+  function placeHolesBy(key, mode) {
+    var sc = scene(PPM), t = S.texts[key], r = S.holeD / 2;
+    t.holeOffsets = sc[key].cells.map(function (c) {
+      if (!c.glyph) return { dx: 0, dy: 0 };
+      var o = core.holeOffsetFor(c, r, t.thicken, mode);
+      return { dx: Math.round(o.dx * 100) / 100, dy: Math.round(o.dy * 100) / 100 };
+    });
+    changed();
+  }
+  function buildControls() {
+    buildTextPanels();
+    bind('plateW', function () { return S.plate.w; }, function (v) { S.plate.w = cl(v, 100, 980); });
+    bind('plateWn', function () { return S.plate.w; }, function (v) { S.plate.w = cl(v, 100, 980); });
+    bind('plateH', function () { return S.plate.h; }, function (v) { S.plate.h = cl(v, 100, 300); });
+    bind('plateHn', function () { return S.plate.h; }, function (v) { S.plate.h = cl(v, 100, 300); });
+    bind('holeD', function () { return S.holeD; }, function (v) { S.holeD = cl(v, 5, 30); });
+    bind('holeDn', function () { return S.holeD; }, function (v) { S.holeD = cl(v, 5, 30); });
+    bind('minStroke', function () { return S.minStroke; }, function (v) { S.minStroke = cl(v, 0.5, 20); });
+    bind('minStrokeN', function () { return S.minStroke; }, function (v) { S.minStroke = cl(v, 0.5, 20); });
+    bind('frameLayout', function () { return S.frame.layout; }, function (v) { S.frame.layout = v; });
+    bind('dims', function () { return S.ui.dims; }, function (v) { S.ui.dims = v; });
+    bind('snap', function () { return S.ui.snap; }, function (v) { S.ui.snap = v; });
+    bind('grid', function () { return S.ui.grid; }, function (v) { S.ui.grid = v; });
+    bind('closedHole', function () { return S.export.closedHole; }, function (v) { S.export.closedHole = v; });
+    bind('slotW', function () { return S.closedSlot.w; }, function (v) { S.closedSlot.w = cl(v, 1, 300); });
+    bind('slotH', function () { return S.closedSlot.h; }, function (v) { S.closedSlot.h = cl(v, 1, 100); });
+    bind('exOutline', function () { return S.export.plateOutline; }, function (v) { S.export.plateOutline = v; });
+    bind('exArrow', function () { return S.export.arrow; }, function (v) { S.export.arrow = v; });
+    bind('exMirror', function () { return S.export.mirror; }, function (v) { S.export.mirror = v; });
+    bind('exBoxes', function () { return S.export.boxes; }, function (v) { S.export.boxes = v; });
+    bind('exNest', function () { return S.export.nest; }, function (v) { S.export.nest = v; });
+    bind('exKerf', function () { return S.export.kerf; }, function (v) { S.export.kerf = cl(v, -2, 2); });
+    bind('exSpacing', function () { return S.export.spacing; }, function (v) { S.export.spacing = cl(v, 0, 50); });
+    bind('exSheetW', function () { return S.export.sheetW; }, function (v) { S.export.sheetW = cl(v, 50, 3000); });
+    bind('exSheetH', function () { return S.export.sheetH; }, function (v) { S.export.sheetH = cl(v, 50, 3000); });
+    KEYS.forEach(function (k) {
+      var T = function () { return S.texts[k]; };
+      bind('t-' + k + '-text', function () { return T().text; }, function (v) { T().text = v.slice(0, 20); });
+      bind('t-' + k + '-font', function () { return T().font; }, function (v) { T().font = v; if (k !== 'casino') T().sameFont = false; ensureFont(v); });
+      if (k !== 'casino') bind('t-' + k + '-same', function () { return T().sameFont; }, function (v) { T().sameFont = v; ensureFont(effFont(k).font); });
+      bind('t-' + k + '-bold', function () { return T().weight === 700; }, function (v) { T().weight = v ? 700 : 400; ensureFont(T().font); clearGlyphs(); });
+      bind('t-' + k + '-mode', function () { return T().mode; }, function (v) { T().mode = v; });
+      bind('t-' + k + '-h', function () { return T().h; }, function (v) { T().h = cl(v, 5, 600); });
+      bind('t-' + k + '-cw', function () { return T().cellW; }, function (v) { T().cellW = cl(v, 5, 600); });
+      bind('t-' + k + '-sp', function () { return T().spacing; }, function (v) { T().spacing = cl(v, -50, 100); });
+      bind('t-' + k + '-th', function () { return T().thicken; }, function (v) { T().thicken = cl(v, -5, 10); });
+      bind('t-' + k + '-thn', function () { return T().thicken; }, function (v) { T().thicken = cl(v, -5, 10); });
+      bind('t-' + k + '-x', function () { return T().x; }, function (v) { T().x = v; });
+      bind('t-' + k + '-y', function () { return T().y; }, function (v) { T().y = v; });
+      $('t-' + k + '-use').addEventListener('click', function () { useFont(k, $('t-' + k + '-other').value); });
+      $('t-' + k + '-other').addEventListener('keydown', function (e) { if (e.key === 'Enter') useFont(k, e.target.value); });
+      // font combobox: arrows switch the font live, Enter accepts, Esc puts the old one back
+      var fs = $('t-' + k + '-font'), backup = null;
+      fs.addEventListener('focus', function () { backup = T().font; });
+      fs.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && backup !== null) { T().font = backup; fs.value = backup; changed(); e.preventDefault(); e.stopPropagation(); }
+        else if (e.key === 'Enter') { backup = T().font; fs.blur(); commit(); }
+      });
+      if (k === 'closed') {
+        bind('t-closed-hdx', function () { return S.closedRound.dx; }, function (v) { S.closedRound.dx = v; S.closedSlot.dx = v; });
+        bind('t-closed-hdy', function () { return S.closedRound.dy; }, function (v) { S.closedRound.dy = v; S.closedSlot.dy = v; });
+      } else {
+        $('t-' + k + '-centre').addEventListener('click', function () { placeHolesBy(k, 'centre'); });
+        $('t-' + k + '-fit').addEventListener('click', function () { placeHolesBy(k, 'fit'); });
+      }
+    });
+    $('undo').onclick = undo; $('redo').onclick = redo;
+    $('zin').onclick = function () { zoomAt(1.3); }; $('zout').onclick = function () { zoomAt(1 / 1.3); }; $('zfit').onclick = fit;
+    $('preview').onclick = function () { S.ui.preview = !S.ui.preview; $('preview').style.fontWeight = S.ui.preview ? 'bold' : 'normal'; changed(); };
+    $('stripAdd').onclick = function () { S.strips.push({ x: Math.round(S.plate.w / 2 - 50), y: Math.round(S.plate.h / 2 - 5), rot: 0 }); sel = { type: 'strip', idx: S.strips.length - 1 }; changed(); updateInfo(); };
+    $('stripRot').onclick = rotateStrip; $('stripDel').onclick = deleteStrip;
+    $('exEps').onclick = function () { download('plate-drill-pattern.eps', buildDrillEps(), 'application/postscript'); };
+    $('exA4').onclick = function () { download('plate-drill-A4.pdf', buildDrillPdf('A4').text, 'application/pdf'); };
+    $('exA3').onclick = function () { download('plate-drill-A3.pdf', buildDrillPdf('A3').text, 'application/pdf'); };
+    $('exDxf').onclick = function () { download('plate-drill-pattern.dxf', buildDrillDxf(), 'image/vnd.dxf'); };
+    $('exLettersDxf').onclick = function () { var r = buildLettersEps(); statusMsg = r.message; updateStatus(); download('plate-letters-cut.dxf', r.dxf, 'image/vnd.dxf'); };
+    $('exLetters').onclick = function () { var r = buildLettersEps(); statusMsg = r.message; updateStatus(); download('plate-letters-cut.eps', r.text, 'application/postscript'); };
+    $('jsonApply').onclick = function () {
+      try { var st = core.fromJson($('json').value); loadState(st); commit(); $('jsonMsg').textContent = 'Layout loaded.'; $('jsonMsg').className = 'note ok'; }
+      catch (e) { $('jsonMsg').textContent = 'Not loaded: ' + e.message; $('jsonMsg').className = 'note warn'; }
+    };
+    $('exCopy').onclick = function () { $('exText').select(); try { document.execCommand('copy'); statusMsg = 'copied ' + $('exName').value; updateStatus(); } catch (e) { } };
+    $('jsonCopy').onclick = function () { $('json').select(); try { document.execCommand('copy'); $('jsonMsg').textContent = 'Copied.'; $('jsonMsg').className = 'note ok'; } catch (e) { } };
+    $('reset').onclick = function () { loadState(core.defaultState()); fit(); commit(); };
+    $('layoutSave').onclick = function () {
+      var name = $('layoutName').value.trim(); if (!name) return;
+      var all = layouts(); all[name] = core.toJson(S); lsSet(LS_LAYOUTS, JSON.stringify(all)); fillLayouts(name);
+    };
+    $('layoutLoad').onclick = function () { var all = layouts(), n = $('layoutList').value; if (all[n]) { loadState(core.fromJson(all[n])); fit(); commit(); } };
+    $('layoutDel').onclick = function () { var all = layouts(); delete all[$('layoutList').value]; lsSet(LS_LAYOUTS, JSON.stringify(all)); fillLayouts(); };
+  }
+  function layouts() { try { return JSON.parse(lsGet(LS_LAYOUTS) || '{}'); } catch (e) { return {}; } }
+  function fillLayouts(pick) {
+    var all = layouts(), names = Object.keys(all).sort();
+    $('layoutList').innerHTML = names.map(function (n) { return '<option>' + n.replace(/</g, '&lt;') + '</option>'; }).join('');
+    if (pick) $('layoutList').value = pick;
+  }
+
+  // ------------------------------------------------------------------ mouse and keyboard
+  var drag = null;
+  function hit(p) {
+    var sc = cur, r = S.holeD / 2, tol = 4 / view.k, i, k, key;
+    for (k = 0; k < 2; k++) {
+      key = KEYS[k];
+      for (i = 0; i < sc[key].cells.length; i++) { var c = sc[key].cells[i]; if (c.hole && Math.hypot(p.x - c.hole.x, p.y - c.hole.y) <= Math.max(r, tol)) return { kind: 'hole', key: key, idx: i }; }
+    }
+    if (S.export.closedHole === 'round' && Math.hypot(p.x - sc.closedRound.x, p.y - sc.closedRound.y) <= Math.max(r, tol)) return { kind: 'closedRound' };
+    var sl = sc.closedSlot;
+    if (S.export.closedHole === 'slot' && Math.abs(p.x - sl.x) <= sl.w / 2 && Math.abs(p.y - sl.y) <= Math.max(sl.h / 2, tol)) return { kind: 'closedSlot' };
+    for (i = S.strips.length - 1; i >= 0; i--) { var rc = core.stripRect(S.strips[i]); if (p.x >= rc.x && p.x <= rc.x + rc.w && p.y >= rc.y && p.y <= rc.y + rc.h) return { kind: 'strip', idx: i }; }
+    var best = null, bestA = 1e18;
+    KEYS.concat(['arrow']).forEach(function (kk) {
+      var b = boxOf(sc, kk);
+      if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h && b.w * b.h < bestA) { best = { kind: 'box', key: kk }; bestA = b.w * b.h; }
+    });
+    return best;
+  }
+  svg.addEventListener('pointerdown', function (e) {
+    var p = toMm(e), h = e.button === 1 ? null : hit(p);
+    svg.setPointerCapture(e.pointerId);
+    if (!h) { drag = { kind: 'pan', sx: e.clientX, sy: e.clientY, cx: view.cx, cy: view.cy, moved: false }; return; }
+    var sc = cur;
+    if (h.kind === 'hole') { sel = { type: h.key }; var c = sc[h.key].cells[h.idx]; drag = { kind: 'hole', key: h.key, idx: h.idx, gx: c.hole.x - p.x, gy: c.hole.y - p.y }; }
+    else if (h.kind === 'closedRound') { sel = { type: 'closed' }; drag = { kind: 'closedRound', gx: sc.closedRound.x - p.x, gy: sc.closedRound.y - p.y }; }
+    else if (h.kind === 'closedSlot') { sel = { type: 'closed' }; drag = { kind: 'closedSlot', gx: sc.closedSlot.x - p.x, gy: sc.closedSlot.y - p.y }; }
+    else if (h.kind === 'strip') { sel = { type: 'strip', idx: h.idx }; var s0 = S.strips[h.idx]; drag = { kind: 'strip', idx: h.idx, ox: s0.x, oy: s0.y, sx: p.x, sy: p.y }; }
+    else { sel = { type: h.key }; var o = h.key === 'arrow' ? S.arrow : S.texts[h.key]; drag = { kind: 'box', key: h.key, ox: o.x, oy: o.y, sx: p.x, sy: p.y }; }
+    drag.moved = false; render(); updateInfo();
+  });
+  svg.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    if (drag.kind === 'pan') {
+      var dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+      if (Math.abs(dx) + Math.abs(dy) > 2) drag.moved = true;
+      view.cx = drag.cx - dx / view.k; view.cy = drag.cy - dy / view.k; render(); return;
+    }
+    var p = toMm(e); drag.moved = true; guides = { v: null, h: null };
+    if (drag.kind === 'box') {
+      var o = drag.key === 'arrow' ? S.arrow : S.texts[drag.key], b = boxOf(cur, drag.key);
+      var nx = drag.ox + p.x - drag.sx, ny = drag.oy + p.y - drag.sy;
+      if (S.ui.snap) {
+        var targets = [{ cx: S.plate.w / 2, cy: S.plate.h / 2 }];
+        KEYS.concat(['arrow']).forEach(function (kk) { if (kk !== drag.key) { var q = boxOf(cur, kk); targets.push({ cx: q.x + q.w / 2, cy: q.y + q.h / 2 }); } });
+        var sn = core.snapCentres({ x: nx, y: ny, w: b.w, h: b.h }, targets, 3);
+        nx += sn.dx; ny += sn.dy; guides = { v: sn.vertical, h: sn.horizontal };
+      }
+      o.x = Math.round(nx * 100) / 100; o.y = Math.round(ny * 100) / 100;
+      syncControls();
+    } else if (drag.kind === 'hole') {
+      var c = cur[drag.key].cells[drag.idx], t = S.texts[drag.key];
+      while (t.holeOffsets.length <= drag.idx) t.holeOffsets.push({ dx: 0, dy: 0 });
+      t.holeOffsets[drag.idx] = { dx: Math.round((p.x + drag.gx - c.cx) * 100) / 100, dy: Math.round((p.y + drag.gy - c.cy) * 100) / 100 };
+    } else if (drag.kind === 'closedRound' || drag.kind === 'closedSlot') {
+      var cb = cur.closed, dx2 = Math.round((p.x + drag.gx - (cb.x + cb.w / 2)) * 100) / 100, dy2 = Math.round((p.y + drag.gy - (cb.y + cb.h / 2)) * 100) / 100;
+      S.closedRound.dx = S.closedSlot.dx = dx2; S.closedRound.dy = S.closedSlot.dy = dy2; syncControls();
+    } else if (drag.kind === 'strip') {
+      var s1 = S.strips[drag.idx]; s1.x = Math.round((drag.ox + p.x - drag.sx) * 100) / 100; s1.y = Math.round((drag.oy + p.y - drag.sy) * 100) / 100;
+    }
+    render();
+  });
+  function endDrag() {
+    if (!drag) return;
+    var was = drag; drag = null; guides = { v: null, h: null };
+    if (was.kind === 'pan' && !was.moved) { sel = { type: null }; }
+    if (was.kind !== 'pan' && was.moved) commit();
+    render(); updateInfo();
+  }
+  svg.addEventListener('pointerup', endDrag); svg.addEventListener('pointercancel', endDrag);
+  svg.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    var p = toMm(e), f = Math.pow(1.15, -e.deltaY / 100), nk = cl(view.k * f, 0.2, 60), r = svg.getBoundingClientRect();
+    view.k = nk;
+    view.cx = p.x - (e.clientX - r.left - r.width / 2) / nk; view.cy = p.y - (e.clientY - r.top - r.height / 2) / nk;
+    render();
+  }, { passive: false });
+  function rotateStrip() { if (sel.type === 'strip' && S.strips[sel.idx]) { var s0 = S.strips[sel.idx]; s0.rot = s0.rot === 90 ? 0 : 90; changed(); updateInfo(); } }
+  function deleteStrip() { if (sel.type === 'strip' && S.strips[sel.idx]) { S.strips.splice(sel.idx, 1); sel = { type: null }; changed(); updateInfo(); } }
+  document.addEventListener('keydown', function (e) {
+    var tag = (e.target.tagName || '').toLowerCase();
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) { if (tag === 'textarea' || (tag === 'input' && e.target.type === 'text')) return; e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) { if (tag === 'textarea' || (tag === 'input' && e.target.type === 'text')) return; e.preventDefault(); redo(); return; }
+    if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+    if (e.key === 'r' || e.key === 'R') { rotateStrip(); return; }
+    if (e.key === 'Delete' || e.key === 'Backspace') { deleteStrip(); return; }
+    if (e.key === 'Escape') { sel = { type: null }; render(); updateInfo(); return; }
+    var step = e.altKey ? 0.1 : e.shiftKey ? 10 : 1, dx = 0, dy = 0;
+    if (e.key === 'ArrowLeft') dx = -step; else if (e.key === 'ArrowRight') dx = step; else if (e.key === 'ArrowUp') dy = -step; else if (e.key === 'ArrowDown') dy = step; else return;
+    e.preventDefault();
+    var o = sel.type === 'strip' ? S.strips[sel.idx] : sel.type === 'arrow' ? S.arrow : sel.type ? S.texts[sel.type] : null;
+    if (!o) return;
+    o.x = Math.round((o.x + dx) * 100) / 100; o.y = Math.round((o.y + dy) * 100) / 100; syncControls(); changed();
+  });
+  window.addEventListener('resize', render);
+
+  // ------------------------------------------------------------------ exports
+  function drillScene() { return scene(PPM); }
+  function buildDrillEps() { return core.epsFromItems(core.drillItems(S, drillScene()), S.plate, 'Casino plate drill pattern'); }
+  function buildDrillPdf(paper) { return core.pdfTiles(core.drillItems(S, drillScene()), S.plate, paper, 'Casino plate drill pattern'); }
+  function buildDrillDxf() { return core.dxfFromItems(core.drillItems(S, drillScene()), S.plate); }
+  function bboxOf(polys) {
+    var a = 1e9, b = 1e9, c = -1e9, d = -1e9;
+    polys.forEach(function (p) { p.forEach(function (q) { a = Math.min(a, q[0]); b = Math.min(b, q[1]); c = Math.max(c, q[0]); d = Math.max(d, q[1]); }); });
+    return { x0: a, y0: b, x1: c, y1: d };
+  }
+  function letterPieces(ppm) {
+    var sc = scene(ppm), pieces = [];
+    KEYS.forEach(function (key) {
+      var off = S.texts[key].thicken + S.export.kerf / 2;
+      sc[key].cells.forEach(function (c) {
+        if (!c.glyph) return;
+        var polys = c.glyph.contours(off, 0.02).map(function (p) { return p.map(function (q) { return [q[0] + c.gox, q[1] + c.goy]; }); });
+        if (polys.length) pieces.push({ key: key, index: c.index, polys: polys, bb: bboxOf(polys) });
+      });
+    });
+    return { pieces: pieces, sc: sc };
+  }
+  function buildLettersEps() {
+    var lp = letterPieces(PPM_EXPORT), pieces = lp.pieces, ex = S.export, W = S.plate.w, H = S.plate.h, polys = [], boxes = [], message = '', areaW = W, areaH = H;
+    if (!ex.nest) {
+      pieces.forEach(function (p) { p.polys.forEach(function (poly) { polys.push(ex.mirror ? poly.map(function (q) { return [W - q[0], q[1]]; }) : poly); }); });
+      if (ex.boxes) KEYS.forEach(function (k) { var b = boxOf(lp.sc, k); boxes.push({ x: ex.mirror ? W - b.x - b.w : b.x, y: b.y, w: b.w, h: b.h }); });
+      message = pieces.length + ' letters as placed on the plate' + (ex.mirror ? ' (mirrored)' : '');
+    } else {
+      var items = pieces.map(function (p, i) { return { id: i, w: p.bb.x1 - p.bb.x0, h: p.bb.y1 - p.bb.y0 }; });
+      var res = core.nestShelves(items, ex.sheetW, ex.sheetH, ex.spacing);
+      res.placed.forEach(function (pl) {
+        var p = pieces[pl.id], w = p.bb.x1 - p.bb.x0, h = p.bb.y1 - p.bb.y0;
+        p.polys.forEach(function (poly) {
+          polys.push(poly.map(function (q) { var x = ex.mirror ? p.bb.x0 + p.bb.x1 - q[0] : q[0]; return [x - p.bb.x0 + pl.x, q[1] - p.bb.y0 + pl.y]; }));
+        });
+        if (ex.boxes) boxes.push({ x: pl.x, y: pl.y, w: w, h: h });
+      });
+      areaW = ex.sheetW; areaH = Math.max(ex.sheetH, res.usedH);
+      message = res.fits ? 'nested ' + pieces.length + ' letters, ' + f2(res.usedH) + ' mm of the ' + ex.sheetH + ' mm sheet used' : 'WARNING: the letters do not fit the ' + ex.sheetW + ' x ' + ex.sheetH + ' mm sheet (need ' + f2(res.usedH) + ' mm height)';
+    }
+    return { text: core.epsFromPolys(polys, areaW, areaH, 'Casino plate letters', boxes), dxf: core.dxfFromPolys(polys, areaH, boxes), message: message, polys: polys.length };
+  }
+  function download(name, text, type) {
+    $('exName').value = name; $('exText').value = text;
+    var b = new Blob([text], { type: type }), a = document.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+
+  // ------------------------------------------------------------------ start
+  function init() {
+    buildControls();
+    var saved = lsGet(LS_AUTO);
+    if (saved) { try { S = core.fromJson(saved); } catch (e) { S = core.defaultState(); } }
+    ensureAllFonts(); fillLayouts(); syncControls(); fit(); commit();
+    $('preview').style.fontWeight = S.ui.preview ? 'bold' : 'normal';
+  }
+  window.PlateApp = {
+    state: function () { return S; }, scene: function () { return scene(PPM); }, drillEps: buildDrillEps, drillDxf: buildDrillDxf, drillPdf: buildDrillPdf, lettersEps: buildLettersEps,
+    fontStatus: function (n) { return fontState[n] && fontState[n].status; }, useFont: useFont, commit: commit, view: view, selection: function () { return sel; }, hist: function () { return { n: hist.length, pos: histPos }; }
+  };
+  init();
+})();
+
+</script>
+</body>
+</html>

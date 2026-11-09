@@ -472,11 +472,14 @@
     $('exEps').onclick = function () { download('plate-drill-pattern.eps', buildDrillEps(), 'application/postscript'); };
     $('exA4').onclick = function () { download('plate-drill-A4.pdf', buildDrillPdf('A4').text, 'application/pdf'); };
     $('exA3').onclick = function () { download('plate-drill-A3.pdf', buildDrillPdf('A3').text, 'application/pdf'); };
+    $('exDxf').onclick = function () { download('plate-drill-pattern.dxf', buildDrillDxf(), 'image/vnd.dxf'); };
+    $('exLettersDxf').onclick = function () { var r = buildLettersEps(); statusMsg = r.message; updateStatus(); download('plate-letters-cut.dxf', r.dxf, 'image/vnd.dxf'); };
     $('exLetters').onclick = function () { var r = buildLettersEps(); statusMsg = r.message; updateStatus(); download('plate-letters-cut.eps', r.text, 'application/postscript'); };
     $('jsonApply').onclick = function () {
       try { var st = core.fromJson($('json').value); loadState(st); commit(); $('jsonMsg').textContent = 'Layout loaded.'; $('jsonMsg').className = 'note ok'; }
       catch (e) { $('jsonMsg').textContent = 'Not loaded: ' + e.message; $('jsonMsg').className = 'note warn'; }
     };
+    $('exCopy').onclick = function () { $('exText').select(); try { document.execCommand('copy'); statusMsg = 'copied ' + $('exName').value; updateStatus(); } catch (e) { } };
     $('jsonCopy').onclick = function () { $('json').select(); try { document.execCommand('copy'); $('jsonMsg').textContent = 'Copied.'; $('jsonMsg').className = 'note ok'; } catch (e) { } };
     $('reset').onclick = function () { loadState(core.defaultState()); fit(); commit(); };
     $('layoutSave').onclick = function () {
@@ -593,6 +596,7 @@
   function drillScene() { return scene(PPM); }
   function buildDrillEps() { return core.epsFromItems(core.drillItems(S, drillScene()), S.plate, 'Casino plate drill pattern'); }
   function buildDrillPdf(paper) { return core.pdfTiles(core.drillItems(S, drillScene()), S.plate, paper, 'Casino plate drill pattern'); }
+  function buildDrillDxf() { return core.dxfFromItems(core.drillItems(S, drillScene()), S.plate); }
   function bboxOf(polys) {
     var a = 1e9, b = 1e9, c = -1e9, d = -1e9;
     polys.forEach(function (p) { p.forEach(function (q) { a = Math.min(a, q[0]); b = Math.min(b, q[1]); c = Math.max(c, q[0]); d = Math.max(d, q[1]); }); });
@@ -629,9 +633,10 @@
       areaW = ex.sheetW; areaH = Math.max(ex.sheetH, res.usedH);
       message = res.fits ? 'nested ' + pieces.length + ' letters, ' + f2(res.usedH) + ' mm of the ' + ex.sheetH + ' mm sheet used' : 'WARNING: the letters do not fit the ' + ex.sheetW + ' x ' + ex.sheetH + ' mm sheet (need ' + f2(res.usedH) + ' mm height)';
     }
-    return { text: core.epsFromPolys(polys, areaW, areaH, 'Casino plate letters', boxes), message: message, polys: polys.length };
+    return { text: core.epsFromPolys(polys, areaW, areaH, 'Casino plate letters', boxes), dxf: core.dxfFromPolys(polys, areaH, boxes), message: message, polys: polys.length };
   }
   function download(name, text, type) {
+    $('exName').value = name; $('exText').value = text;
     var b = new Blob([text], { type: type }), a = document.createElement('a');
     a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click();
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
@@ -646,7 +651,7 @@
     $('preview').style.fontWeight = S.ui.preview ? 'bold' : 'normal';
   }
   window.PlateApp = {
-    state: function () { return S; }, scene: function () { return scene(PPM); }, drillEps: buildDrillEps, drillPdf: buildDrillPdf, lettersEps: buildLettersEps,
+    state: function () { return S; }, scene: function () { return scene(PPM); }, drillEps: buildDrillEps, drillDxf: buildDrillDxf, drillPdf: buildDrillPdf, lettersEps: buildLettersEps,
     fontStatus: function (n) { return fontState[n] && fontState[n].status; }, useFont: useFont, commit: commit, view: view, selection: function () { return sel; }, hist: function () { return { n: hist.length, pos: histPos }; }
   };
   init();

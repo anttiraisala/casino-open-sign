@@ -29,6 +29,9 @@ with sync_playwright() as p:
     check('%%BoundingBox: 0 0 ' in eps, 'EPS header')
     pdf = pg.evaluate("PlateApp.drillPdf('A4')"); check(pdf['pages'] == 8 and pdf['cols'] == 4 and pdf['rows'] == 2 and pdf['text'].startswith('%PDF-1.4'), 'A4 tiling of 980 x 300: 4 x 2 pages, got %s' % ((pdf['cols'], pdf['rows']),))
     pdf3 = pg.evaluate("PlateApp.drillPdf('A3')"); check(pdf3['pages'] == 6, 'A3 tiling: 3 x 2 pages, got %d' % pdf3['pages'])
+    dxf = pg.evaluate('PlateApp.drillDxf()'); check(dxf.count('0\nCIRCLE\n') == 21 and dxf.startswith('0\nSECTION') and dxf.endswith('0\nEOF\n'), 'DXF has 21 circles, got %d' % dxf.count('0\nCIRCLE\n'))
+    ld = pg.evaluate('PlateApp.lettersEps()'); check(ld['dxf'].count('POLYLINE\n8\nLETTERS') == ld['polys'] and ld['polys'] >= 14, 'letter DXF has one polyline per outline')
+    pg.click('#exDxf'); pg.wait_for_timeout(100); check(pg.input_value('#exName') == 'plate-drill-pattern.dxf' and pg.input_value('#exText').count('CIRCLE') == 21, 'export is also shown as text (name and content)')
     # letter EPS
     le = pg.evaluate('PlateApp.lettersEps()'); check(le['polys'] >= 14, 'letter outlines exist, got %d' % le['polys']); check('lineto' in le['text'], 'letter EPS has paths')
     # holes covered by the letters in the default layout (DejaVu Sans, uniform cells)

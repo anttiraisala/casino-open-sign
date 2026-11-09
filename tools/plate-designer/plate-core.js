@@ -415,6 +415,34 @@
     return s + 'showpage\n%%EOF\n';
   }
 
+  // ASCII DXF (R12, the most widely read version; units are millimetres, y up). Entities: CIRCLE, closed POLYLINE.
+  function dxfStart() { return '0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n'; }
+  function dxfEnd() { return '0\nENDSEC\n0\nEOF\n'; }
+  function dxfCircle(x, y, r, layer) { return '0\nCIRCLE\n8\n' + layer + '\n10\n' + fmt(x) + '\n20\n' + fmt(y) + '\n30\n0\n40\n' + fmt(r) + '\n'; }
+  function dxfPoly(pts, layer) {
+    var t = '0\nPOLYLINE\n8\n' + layer + '\n66\n1\n70\n1\n', i;
+    for (i = 0; i < pts.length; i++) t += '0\nVERTEX\n8\n' + layer + '\n10\n' + fmt(pts[i][0]) + '\n20\n' + fmt(pts[i][1]) + '\n30\n0\n';
+    return t + '0\nSEQEND\n8\n' + layer + '\n';
+  }
+  function dxfRect(x, y, w, h, layer) { return dxfPoly([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], layer); }
+  // Drilling pattern (items as for the EPS), plate-millimetres with y down -> DXF with y up. Layers: PLATE, HOLES, SLOT.
+  function dxfFromItems(items, plate) {
+    var t = dxfStart();
+    items.forEach(function (it) {
+      if (it.kind === 'outline') t += dxfRect(0, 0, it.w, it.h, 'PLATE');
+      else if (it.kind === 'circle') t += dxfCircle(it.x, plate.h - it.y, it.d / 2, 'HOLES');
+      else if (it.kind === 'rect') t += dxfRect(it.x, plate.h - it.y - it.h, it.w, it.h, 'SLOT');
+    });
+    return t + dxfEnd();
+  }
+  // Letter outlines (closed polygons, y down) in an area of height h; layer LETTERS, optional bounding boxes on layer BOXES.
+  function dxfFromPolys(polys, h, boxes) {
+    var t = dxfStart();
+    polys.forEach(function (p) { if (p.length >= 3) t += dxfPoly(p.map(function (q) { return [q[0], h - q[1]]; }), 'LETTERS'); });
+    (boxes || []).forEach(function (b) { t += dxfRect(b.x, h - b.y - b.h, b.w, b.h, 'BOXES'); });
+    return t + dxfEnd();
+  }
+
   // Tiled 1:1 PDF of the drilling pattern. paper: 'A4' | 'A3', landscape tiles. Returns {bytes: Uint8Array-like string, pages}.
   var PAPER = { A4: [297, 210], A3: [420, 297] };
   function pdfTiles(items, plate, paper, title) {
@@ -559,7 +587,7 @@
     MM_TO_PT: MM_TO_PT, distanceTo: distanceTo, signedField: signedField, rasterize: rasterize, marching: marching, simplifyClosed: simplifyClosed,
     Glyph: Glyph, glyphFromPolygons: glyphFromPolygons, placeText: placeText, holeStatus: holeStatus, holeOffsetFor: holeOffsetFor,
     frameCounts: frameCounts, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, stripRect: stripRect, stripCoverage: stripCoverage,
-    drillItems: drillItems, epsFromItems: epsFromItems, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, nestShelves: nestShelves,
+    drillItems: drillItems, epsFromItems: epsFromItems, dxfFromItems: dxfFromItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, nestShelves: nestShelves,
     defaultState: defaultState, fromJson: fromJson, toJson: toJson
   };
 });
