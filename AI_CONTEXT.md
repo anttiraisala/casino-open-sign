@@ -247,6 +247,9 @@ the harness hard-codes LOW = closed.
   expander (PCF8574) for the hex switches (needs wiring and code changes). 3.3 V boards need level shifters
   for the WS2812B data lines.
 
+## Plate Designer (2026-11-09)
+`tools/plate-designer/` (README.md there): `plate-core.js` = tested pure logic (SDF/marching-squares letter geometry, hole checks, snapping, frame counts, EPS/PDF writers, JSON v1), `app.js` + `index.html` = UI, `arrow-data.js` generated from `tools/arrow_geometry.py`. Tests: `tests/plate_designer_core_test.js`, `tests/mutate_plate_designer.py`, `tests/plate_designer_ui_test.py`. Fonts stored by name only; Google Fonts load needs network (untested from the sandbox).
+
 ## 10. Open items and ideas
 
 - Planned features are listed in `DESCRIPTION.md` (section "Planned and possible features");

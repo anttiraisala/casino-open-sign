@@ -16,6 +16,7 @@ Arduino Mega LED sign that says CASINO OPEN for a home poker room, with animated
 - `strip_single_led_test/`, `strip_knight_rider_test/`, `sticks_11_test/`: newer hardware tests, not yet run on real hardware: one pixel walking along three 12 V WS2811 strips (counts the real pixels, checks the colour order); a knight-rider light bouncing on three 50-pixel strips; and the 10 arrow sticks plus the CLOSED light stick (A3) kept lit to see whether anything gets hot.
 - `arrow_sticks/`: the planned arrow made of 10 Grove RGB LED sticks (design B): exact 1:1 drill template (A3 PDF, or two A4 pages with half an arrow on each), indicative layout and wiring, all from one geometry file (`tools/arrow_geometry.py`). The sign sketch now drives it (phase 1: a simple flowing arrow animation; see `AI_CONTEXT.md`).
 - `backup/old_arrow_strips/`: the previous sign with the arrow made of six LED strips, kept as a backup list; not wired any more.
+- `tools/plate-designer/`: Plate Designer, a browser tool for the front plate (drill pattern, letter cut, LED strip frame); open `index.html`, see its README.md.
 - `tests/`: host-side test harnesses with mock Arduino libraries (no AVR toolchain needed). `tools/`: Python generators for the drawings, `diagram.json` files and PDFs.
 - `README.txt` / `README-fi.txt`: the full hardware README (English / Finnish) with exact wiring and the parts-to-buy list.
 
