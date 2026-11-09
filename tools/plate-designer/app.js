@@ -482,10 +482,10 @@
   }
   function buildControls() {
     buildTextPanels();
-    bind('plateW', function () { return S.plate.w; }, function (v) { S.plate.w = cl(v, 100, 980); });
-    bind('plateWn', function () { return S.plate.w; }, function (v) { S.plate.w = cl(v, 100, 980); });
-    bind('plateH', function () { return S.plate.h; }, function (v) { S.plate.h = cl(v, 100, 300); });
-    bind('plateHn', function () { return S.plate.h; }, function (v) { S.plate.h = cl(v, 100, 300); });
+    bind('plateW', function () { return S.plate.w; }, function (v) { core.resizePlate(S, v, undefined); });
+    bind('plateWn', function () { return S.plate.w; }, function (v) { core.resizePlate(S, v, undefined); });
+    bind('plateH', function () { return S.plate.h; }, function (v) { core.resizePlate(S, undefined, v); });
+    bind('plateHn', function () { return S.plate.h; }, function (v) { core.resizePlate(S, undefined, v); });
     bind('holeD', function () { return S.holeD; }, function (v) { S.holeD = cl(v, 5, 30); });
     bind('holeDn', function () { return S.holeD; }, function (v) { S.holeD = cl(v, 5, 30); });
     bind('minStroke', function () { return S.minStroke; }, function (v) { S.minStroke = cl(v, 0.5, 20); });

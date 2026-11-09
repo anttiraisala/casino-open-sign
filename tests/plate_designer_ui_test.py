@@ -233,6 +233,11 @@ with sync_playwright() as p:
     pg.keyboard.down('Control'); pg.mouse.move(ax, ay); pg.mouse.down(); pg.mouse.move(ax + 201.5 * kk, ay, steps=5); pg.mouse.up(); pg.keyboard.up('Control'); pg.wait_for_timeout(100)
     near(S()['texts']['casino']['x'], 221.5, 0.3, 'with Ctrl held the same drag does not snap (x = 221.5)')
     pg.fill('#t-casino-x', '20'); pg.evaluate('PlateApp.commit()')
+    # plate resize happens around the plate centre
+    pg.goto(URL); pg.wait_for_timeout(300); cx0 = S()['texts']['casino']['x']; w0 = S()['plate']['w']
+    pg.fill('#plateWn', str(w0 - 100)); pg.wait_for_timeout(100); near(S()['texts']['casino']['x'], cx0 - 50, 0.01, 'plate 100 mm narrower: content shifts 50 mm (both edges move)'); check(S()['plate']['w'] == w0 - 100, 'plate width changed')
+    h0 = S()['plate']['h']; cy0 = S()['texts']['casino']['y']; pg.fill('#plateHn', str(h0 - 40)); pg.wait_for_timeout(100); near(S()['texts']['casino']['y'], cy0 - 20, 0.01, 'plate 40 mm lower: content shifts 20 mm up')
+    pg.fill('#plateWn', str(w0)); pg.fill('#plateHn', str(h0)); pg.wait_for_timeout(100); near(S()['texts']['casino']['x'], cx0, 0.01, 'back to the old width: content is back'); pg.evaluate('PlateApp.commit()')
     # preview and screenshots
     shot = sys.argv[1] if len(sys.argv) > 1 else '/tmp/plate_designer.png'
     pg.click('#zfit'); pg.screenshot(path=shot)

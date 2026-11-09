@@ -39,3 +39,4 @@
 - Plate Designer: strips inside the plate are drawn as translucent orange dashed ghosts over the plate; 100 mm LED groups alternate in tint with clear dividers (also outside).
 - Plate Designer: several holes per letter (extraHoles): add buttons per letter, double-click add/remove, drag, Delete, drill exports, PDF labels, tests + mutants (132).
 - Plate Designer: plate centre lines/marker drawn; holes and strips snap to them; Ctrl while dragging disables snapping.
+- Plate Designer: plate width/height changes around the plate centre (resizePlate), 143 mutants.

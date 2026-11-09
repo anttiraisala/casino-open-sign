@@ -696,12 +696,26 @@
     return s;
   }
 
+  // Resizes the plate around its centre: both opposite edges move by half the change, so everything on the plate
+  // (texts, arrow, strip pieces) is shifted by half of the width / height change and keeps its place relative to the
+  // plate centre. w or h undefined = unchanged. Width 100-980, height 100-300 mm. Mutates state.
+  function resizePlate(state, w, h) {
+    function r2(v) { return Math.round(v * 100) / 100; }
+    var nw = w === undefined ? state.plate.w : Math.max(100, Math.min(980, w)), nh = h === undefined ? state.plate.h : Math.max(100, Math.min(300, h));
+    var dx = (nw - state.plate.w) / 2, dy = (nh - state.plate.h) / 2;
+    state.plate.w = nw; state.plate.h = nh;
+    if (!dx && !dy) return state;
+    ['casino', 'open', 'closed'].forEach(function (k) { var t = state.texts[k]; t.x = r2(t.x + dx); t.y = r2(t.y + dy); });
+    state.arrow.x = r2(state.arrow.x + dx); state.arrow.y = r2(state.arrow.y + dy);
+    state.strips.forEach(function (q) { q.x = r2(q.x + dx); q.y = r2(q.y + dy); });
+    return state;
+  }
   function toJson(state) { return JSON.stringify(state, null, 2); }
 
   return {
     MM_TO_PT: MM_TO_PT, distanceTo: distanceTo, signedField: signedField, rasterize: rasterize, marching: marching, simplifyClosed: simplifyClosed,
     Glyph: Glyph, glyphFromPolygons: glyphFromPolygons, placeText: placeText, holeStatus: holeStatus, suggestHole: suggestHole, holeOffsetFor: holeOffsetFor,
-    frameCounts: frameCounts, frameSides: frameSides, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripCoverage: stripCoverage,
+    frameCounts: frameCounts, resizePlate: resizePlate, frameSides: frameSides, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripCoverage: stripCoverage,
     drillItems: drillItems, epsFromItems: epsFromItems, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, nestShelves: nestShelves,
     defaultState: defaultState, fromJson: fromJson, toJson: toJson
   };

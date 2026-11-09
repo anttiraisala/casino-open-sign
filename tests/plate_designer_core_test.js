@@ -340,3 +340,27 @@ function finish() {
   process.exit(fails ? 1 : 0);
 }
 setTimeout(finish, 3000);
+
+// resizing the plate around its centre
+{
+  const st = core.defaultState(); st.plate.w = 600; st.plate.h = 200; st.texts.casino.x = 20; st.texts.casino.y = 10; st.texts.open.x = 100.5; st.texts.closed.y = 150; st.arrow.x = 30; st.arrow.y = 50; st.strips = [{ x: 5, y: 7, rot: 0 }];
+  core.resizePlate(st, 700, undefined);
+  check(st.plate.w === 700 && st.plate.h === 200, 'width 600 -> 700');
+  check(st.texts.casino.x === 70 && st.texts.casino.y === 10 && st.texts.open.x === 150.5 && st.texts.closed.y === 150 && st.arrow.x === 80 && st.arrow.y === 50 && st.strips[0].x === 55 && st.strips[0].y === 7, 'both side edges move 50 mm: x +50, y unchanged');
+  core.resizePlate(st, undefined, 150);
+  check(st.plate.h === 150 && st.texts.casino.y === -15 && st.texts.closed.y === 125 && st.arrow.y === 25 && st.strips[0].y === -18 && st.texts.casino.x === 70, 'height 200 -> 150: y -25');
+  core.resizePlate(st, 701.5, 150);
+  check(st.texts.casino.x === 70.75 && st.arrow.x === 80.75 && st.strips[0].x === 55.75, 'half of 1.5 mm = 0.75 mm');
+  core.resizePlate(st, 5000, 5000);
+  check(st.plate.w === 980 && st.plate.h === 300 && st.texts.casino.x === 70.75 + 139.25 && st.texts.casino.y === -15 + 75, 'clamped to 980 x 300, the shift uses the real change (139.25, 75)');
+  core.resizePlate(st, 1, 1);
+  check(st.plate.w === 100 && st.plate.h === 100, 'clamped to 100 x 100');
+  const before = JSON.stringify(st); core.resizePlate(st, 100, 100);
+  check(JSON.stringify(st) === before, 'no change, no shift');
+  const rd = core.defaultState(); rd.plate.w = 500; rd.texts.casino.x = 0; core.resizePlate(rd, 500.014, undefined);
+  check(rd.texts.casino.x === 0.01, 'shifts are rounded to 0.01 mm (0.007 -> 0.01), got ' + rd.texts.casino.x);
+  const centre = core.defaultState(); centre.plate.w = 400; centre.texts.casino.x = 100; const cxBefore = 100 - 400 / 2;
+  core.resizePlate(centre, 800, undefined);
+  check(centre.texts.casino.x - 800 / 2 === cxBefore, 'the distance from the plate centre stays the same');
+}
+

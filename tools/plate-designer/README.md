@@ -64,3 +64,4 @@ Thickening is an exact shift of that field. The size of a box is the cap height 
 - Fonts from Google Fonts could not be tested from the sandbox (no network); only local fonts were used in the tests. Wrong names show a warning and the browser default font.
 - The thin-part and hole checks are approximations (see above). Check the printed drill template on the real plate and sticks before drilling or cutting.
 - The 74 x 4 mm CLOSED slot is an assumption (the LED window of the stick); the 8 mm arrow cable hole is a guess.
+- Changing the plate width or height resizes it around its centre: both opposite edges move and everything on the plate (texts, arrow, strip pieces) shifts by half the change, so the layout keeps its place relative to the plate centre.
