@@ -86,10 +86,27 @@
   }
 
   // ------------------------------------------------------------------ scene
-  function effFont(key) {
+  // The font that is wanted for a text (what the controls say) ...
+  function wantedFont(key) {
     var t = S.texts[key];
     if (key !== 'casino' && t.sameFont) return { font: S.texts.casino.font, weight: S.texts.casino.weight };
     return { font: t.font, weight: t.weight };
+  }
+  // ... and the font that is drawn: the new font only after it has really loaded, so the text does not flash a fallback font.
+  var shown = {};
+  function effFont(key) {
+    var w = wantedFont(key);
+    if (!fontState[w.font]) ensureFont(w.font);
+    if (fontState[w.font].status === 'loading' && shown[key]) return shown[key];
+    shown[key] = w;
+    return w;
+  }
+  // Run a change that resizes a text box (height, cell width, gap) and keep the centre of its bounding box where it was.
+  function keepCentre(key, change) {
+    var b = textScene(key, PPM), cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    change();
+    var a = textScene(key, PPM), t = S.texts[key];
+    t.x = Math.round((cx - a.w / 2) * 100) / 100; t.y = Math.round((cy - a.h / 2) * 100) / 100;
   }
   function textScene(key, ppm) {
     var t = S.texts[key], f = effFont(key);
@@ -273,7 +290,7 @@
   function updateInfo() {
     var sc = cur || scene(PPM), r = S.holeD / 2;
     KEYS.forEach(function (key) {
-      var t = S.texts[key], f = effFont(key), el = $('info-' + key), cells = sc[key].cells, thin = [], cov = 0, holes = 0, st = fontState[f.font];
+      var t = S.texts[key], f = effFont(key), wf = wantedFont(key), el = $('info-' + key), cells = sc[key].cells, thin = [], cov = 0, holes = 0, st = fontState[wf.font];
       cells.forEach(function (c, i) {
         if (!c.glyph) return;
         if (c.hole) { holes++; if (core.holeStatus(c, r, t.thicken).covered) cov++; }
@@ -283,8 +300,8 @@
       var h = 'Box ' + f2(sc[key].w) + ' x ' + f2(sc[key].h) + ' mm. ';
       if (holes) h += '<span class="' + (cov === holes ? 'ok' : 'warn') + '">Holes covered by the letters: ' + cov + '/' + holes + '.</span> ';
       h += thin.length ? '<span class="warn">Thin parts (below ' + S.minStroke + ' mm): ' + thin.join(', ') + '.</span> ' : '<span class="ok">No thin parts.</span> ';
-      if (st && st.status === 'missing') h += '<br><span class="warn">Font "' + f.font + '" not available (no network or wrong name) - showing the browser default.</span>';
-      else if (st && st.status === 'loading') h += '<br>Loading font ' + f.font + '...';
+      if (st && st.status === 'missing') h += '<br><span class="warn">Font "' + wf.font + '" not available (no network or wrong name) - showing the browser default.</span>';
+      else if (st && st.status === 'loading') h += '<br>Loading font ' + wf.font + '...';
       el.innerHTML = h;
     });
     updateFrameInfo();
@@ -331,7 +348,8 @@
     if (document.activeElement !== $('json')) $('json').value = j;
     updateInfo(); updateUndo();
   }
-  function scheduleCommit() { clearTimeout(commitTimer); commitTimer = setTimeout(commit, 350); }
+  var holdCommits = false;
+  function scheduleCommit() { if (holdCommits) return; clearTimeout(commitTimer); commitTimer = setTimeout(commit, 350); }
   function updateUndo() { $('undo').disabled = histPos <= 0; $('redo').disabled = histPos >= hist.length - 1; }
   function loadState(st) { S = st; ensureAllFonts(); syncControls(); render(); }
   function undo() { commit(); if (histPos > 0) { histPos--; loadState(core.fromJson(hist[histPos])); $('json').value = hist[histPos]; updateInfo(); updateUndo(); } }
@@ -356,6 +374,7 @@
       if (b.el === except) return;
       var v = b.get();
       if (b.el.type === 'checkbox') b.el.checked = !!v; else b.el.value = v;
+      if (b.el._dd) b.el._dd.refresh();
     });
   }
   function fontOptions() {
@@ -440,22 +459,15 @@
       if (k !== 'casino') bind('t-' + k + '-same', function () { return T().sameFont; }, function (v) { T().sameFont = v; ensureFont(effFont(k).font); });
       bind('t-' + k + '-bold', function () { return T().weight === 700; }, function (v) { T().weight = v ? 700 : 400; ensureFont(T().font); clearGlyphs(); });
       bind('t-' + k + '-mode', function () { return T().mode; }, function (v) { T().mode = v; });
-      bind('t-' + k + '-h', function () { return T().h; }, function (v) { T().h = cl(v, 5, 600); });
-      bind('t-' + k + '-cw', function () { return T().cellW; }, function (v) { T().cellW = cl(v, 5, 600); });
-      bind('t-' + k + '-sp', function () { return T().spacing; }, function (v) { T().spacing = cl(v, -50, 100); });
+      bind('t-' + k + '-h', function () { return T().h; }, function (v) { keepCentre(k, function () { T().h = cl(v, 5, 600); }); });
+      bind('t-' + k + '-cw', function () { return T().cellW; }, function (v) { keepCentre(k, function () { T().cellW = cl(v, 5, 600); }); });
+      bind('t-' + k + '-sp', function () { return T().spacing; }, function (v) { keepCentre(k, function () { T().spacing = cl(v, -50, 100); }); });
       bind('t-' + k + '-th', function () { return T().thicken; }, function (v) { T().thicken = cl(v, -5, 10); });
       bind('t-' + k + '-thn', function () { return T().thicken; }, function (v) { T().thicken = cl(v, -5, 10); });
       bind('t-' + k + '-x', function () { return T().x; }, function (v) { T().x = v; });
       bind('t-' + k + '-y', function () { return T().y; }, function (v) { T().y = v; });
       $('t-' + k + '-use').addEventListener('click', function () { useFont(k, $('t-' + k + '-other').value); });
       $('t-' + k + '-other').addEventListener('keydown', function (e) { if (e.key === 'Enter') useFont(k, e.target.value); });
-      // font combobox: arrows switch the font live, Enter accepts, Esc puts the old one back
-      var fs = $('t-' + k + '-font'), backup = null;
-      fs.addEventListener('focus', function () { backup = T().font; });
-      fs.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && backup !== null) { T().font = backup; fs.value = backup; changed(); e.preventDefault(); e.stopPropagation(); }
-        else if (e.key === 'Enter') { backup = T().font; fs.blur(); commit(); }
-      });
       if (k === 'closed') {
         bind('t-closed-hdx', function () { return S.closedRound.dx; }, function (v) { S.closedRound.dx = v; S.closedSlot.dx = v; });
         bind('t-closed-hdy', function () { return S.closedRound.dy; }, function (v) { S.closedRound.dy = v; S.closedSlot.dy = v; });
@@ -475,12 +487,28 @@
     $('exDxf').onclick = function () { download('plate-drill-pattern.dxf', buildDrillDxf(), 'image/vnd.dxf'); };
     $('exLettersDxf').onclick = function () { var r = buildLettersEps(); statusMsg = r.message; updateStatus(); download('plate-letters-cut.dxf', r.dxf, 'image/vnd.dxf'); };
     $('exLetters').onclick = function () { var r = buildLettersEps(); statusMsg = r.message; updateStatus(); download('plate-letters-cut.eps', r.text, 'application/postscript'); };
-    $('jsonApply').onclick = function () {
-      try { var st = core.fromJson($('json').value); loadState(st); commit(); $('jsonMsg').textContent = 'Layout loaded.'; $('jsonMsg').className = 'note ok'; }
-      catch (e) { $('jsonMsg').textContent = 'Not loaded: ' + e.message; $('jsonMsg').className = 'note warn'; }
-    };
+    $('jsonApply').onclick = function () { importJson($('json').value); };
     $('exCopy').onclick = function () { $('exText').select(); try { document.execCommand('copy'); statusMsg = 'copied ' + $('exName').value; updateStatus(); } catch (e) { } };
-    $('jsonCopy').onclick = function () { $('json').select(); try { document.execCommand('copy'); $('jsonMsg').textContent = 'Copied.'; $('jsonMsg').className = 'note ok'; } catch (e) { } };
+    $('jsonCopy').onclick = function () {
+      var text = core.toJson(S);
+      function ok() { $('jsonMsg').textContent = 'JSON copied to the clipboard.'; $('jsonMsg').className = 'note ok'; }
+      function fallback() { $('json').value = text; $('json').select(); try { if (document.execCommand('copy')) ok(); else throw 0; } catch (e) { $('jsonMsg').textContent = 'Copy was blocked: the JSON is selected, press Ctrl+C.'; $('jsonMsg').className = 'note warn'; } }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok, fallback); else fallback();
+    };
+    $('jsonPaste').onclick = function () {
+      function blocked() { $('json').focus(); $('json').select(); $('jsonMsg').textContent = 'Reading the clipboard is blocked here: press Ctrl+V now and the layout loads.'; $('jsonMsg').className = 'note warn'; }
+      if (navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(importJson, blocked); else blocked();
+    };
+    $('json').addEventListener('paste', function (e) {
+      var txt = e.clipboardData && e.clipboardData.getData('text'); e.preventDefault();
+      if (txt) { $('json').value = txt; importJson(txt); }
+    });
+    document.addEventListener('paste', function (e) {
+      var t = e.target, tag = (t.tagName || '').toLowerCase();
+      if (t.id === 'json' || tag === 'textarea' || (tag === 'input' && t.type === 'text')) return;
+      var txt = e.clipboardData && e.clipboardData.getData('text');
+      if (txt && txt.trim().charAt(0) === '{') { e.preventDefault(); importJson(txt); }
+    });
     $('reset').onclick = function () { loadState(core.defaultState()); fit(); commit(); };
     $('layoutSave').onclick = function () {
       var name = $('layoutName').value.trim(); if (!name) return;
@@ -489,12 +517,189 @@
     $('layoutLoad').onclick = function () { var all = layouts(), n = $('layoutList').value; if (all[n]) { loadState(core.fromJson(all[n])); fit(); commit(); } };
     $('layoutDel').onclick = function () { var all = layouts(); delete all[$('layoutList').value]; lsSet(LS_LAYOUTS, JSON.stringify(all)); fillLayouts(); };
   }
+  function importJson(text) {
+    try { var st = core.fromJson(text); loadState(st); fit(); commit(); $('json').value = core.toJson(S); $('jsonMsg').textContent = 'Layout loaded.'; $('jsonMsg').className = 'note ok'; }
+    catch (e) { $('jsonMsg').textContent = 'Not loaded: ' + e.message; $('jsonMsg').className = 'note warn'; }
+  }
   function layouts() { try { return JSON.parse(lsGet(LS_LAYOUTS) || '{}'); } catch (e) { return {}; } }
   function fillLayouts(pick) {
     var all = layouts(), names = Object.keys(all).sort();
     $('layoutList').innerHTML = names.map(function (n) { return '<option>' + n.replace(/</g, '&lt;') + '</option>'; }).join('');
     if (pick) $('layoutList').value = pick;
+    if ($('layoutList')._dd) $('layoutList')._dd.refresh();
   }
+
+  // ------------------------------------------------------------------ dropdowns (click opens the list, arrows preview live, Enter accepts, Esc reverts)
+  function enhanceSelect(sel) {
+    if (sel._dd) return;
+    var wrap = document.createElement('div'); wrap.className = 'dd';
+    sel.parentNode.insertBefore(wrap, sel); wrap.appendChild(sel);
+    var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'dd-btn'; wrap.insertBefore(btn, sel);
+    var list = null, items = [], hi = -1, orig = null, typed = '', typedTimer = null;
+    function label() { var o = sel.options[sel.selectedIndex]; btn.textContent = (o ? o.textContent : '') + ' ▾'; }
+    sel._dd = { btn: btn, refresh: label };
+    sel.addEventListener('change', label);
+    function highlight(i) {
+      if (hi >= 0 && items[hi]) items[hi].el.classList.remove('hi');
+      hi = i; items[hi].el.classList.add('hi'); items[hi].el.scrollIntoView({ block: 'nearest' });
+    }
+    function apply(v) { if (sel.value !== v) { sel.value = v; sel.dispatchEvent(new Event('change', { bubbles: true })); } label(); }
+    function outside(e) { if (list && !list.contains(e.target) && e.target !== btn) close(false); }
+    function close(accept) {
+      if (!list) return;
+      list.remove(); list = null; document.removeEventListener('mousedown', outside, true);
+      if (!accept) apply(orig);
+      holdCommits = false; commit(); btn.focus();
+    }
+    function open() {
+      if (list) return;
+      orig = sel.value; holdCommits = true; items = []; hi = -1;
+      list = document.createElement('div'); list.className = 'dd-list';
+      function addOpt(o) {
+        var d = document.createElement('div'); d.className = 'dd-item' + (o.value === orig ? ' cur' : ''); d.textContent = o.textContent;
+        var idx = items.length; items.push({ el: d, value: o.value });
+        d.addEventListener('mousemove', function () { if (hi !== idx) highlight(idx); });
+        d.addEventListener('mousedown', function (e) { e.preventDefault(); apply(o.value); close(true); });
+        list.appendChild(d);
+      }
+      Array.prototype.forEach.call(sel.children, function (c) {
+        if (c.tagName === 'OPTGROUP') { var g = document.createElement('div'); g.className = 'dd-group'; g.textContent = c.label; list.appendChild(g); Array.prototype.forEach.call(c.children, addOpt); }
+        else addOpt(c);
+      });
+      var r = btn.getBoundingClientRect(), below = window.innerHeight - r.bottom, up = r.top;
+      list.style.left = r.left + 'px'; list.style.minWidth = Math.max(r.width, 160) + 'px';
+      if (below >= 220 || below >= up) { list.style.top = r.bottom + 'px'; list.style.maxHeight = Math.min(300, below - 8) + 'px'; }
+      else { list.style.bottom = (window.innerHeight - r.top) + 'px'; list.style.maxHeight = Math.min(300, up - 8) + 'px'; }
+      document.body.appendChild(list);
+      document.addEventListener('mousedown', outside, true);
+      var cur = items.findIndex(function (it) { return it.value === orig; }); highlight(cur < 0 ? 0 : cur);
+    }
+    function move(i) { i = cl(i, 0, items.length - 1); highlight(i); apply(items[i].value); }
+    btn.addEventListener('mousedown', function (e) { e.preventDefault(); btn.focus(); if (list) close(false); else open(); });
+    btn.addEventListener('keydown', function (e) {
+      if (!list) {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); open(); }
+        return;
+      }
+      var k = e.key, handled = true;
+      if (k === 'ArrowDown') move(hi + 1); else if (k === 'ArrowUp') move(hi - 1); else if (k === 'Home') move(0); else if (k === 'End') move(items.length - 1);
+      else if (k === 'PageDown') move(hi + 8); else if (k === 'PageUp') move(hi - 8);
+      else if (k === 'Enter') close(true); else if (k === 'Escape') close(false);
+      else if (k === 'Tab') { close(true); handled = false; }
+      else if (k.length === 1 && !e.ctrlKey && !e.altKey) {
+        typed += k.toLowerCase(); clearTimeout(typedTimer); typedTimer = setTimeout(function () { typed = ''; }, 800);
+        var n = items.length, i, j;
+        for (j = 1; j <= n; j++) { i = (hi + (typed.length > 1 ? j - 1 : j)) % n; if (items[i].el.textContent.toLowerCase().indexOf(typed) === 0) { move(i); break; } }
+      } else handled = false;
+      if (handled) { e.preventDefault(); e.stopPropagation(); }
+    });
+    btn.addEventListener('blur', function () { if (list) close(true); });
+    label();
+  }
+  function enhanceAllSelects() { Array.prototype.forEach.call(document.querySelectorAll('select'), enhanceSelect); }
+
+  // ------------------------------------------------------------------ drag a number to change it
+  // Drag sideways: 1 step per 2 px. Drag up/down: 4 times faster (up = more). A click without moving puts the cursor in the field.
+  function enableScrub(el) {
+    var st = null;
+    function decimals(step) { var t = String(step), i = t.indexOf('.'); return i < 0 ? 0 : t.length - i - 1; }
+    function inSpinner(e) { var r = el.getBoundingClientRect(); return e.clientX > r.right - 20; }
+    function move(e) {
+      if (!st) return;
+      var dx = e.clientX - st.x, dy = e.clientY - st.y;
+      if (!st.moved) { if (Math.abs(dx) + Math.abs(dy) < 4) return; st.moved = true; document.body.style.userSelect = 'none'; document.body.style.cursor = 'ew-resize'; }
+      e.preventDefault();
+      var step = parseFloat(el.step) || 1, steps = Math.round((dx - dy * 4) / 2), v = st.v + steps * step;
+      if (el.min !== '') v = Math.max(parseFloat(el.min), v);
+      if (el.max !== '') v = Math.min(parseFloat(el.max), v);
+      v = Math.round(v / step) * step;
+      var t = v.toFixed(decimals(step));
+      if (el.value !== t) { el.value = t; el.dispatchEvent(new Event('input', { bubbles: true })); }
+    }
+    function up() {
+      if (!st) return;
+      var was = st; st = null;
+      window.removeEventListener('pointermove', move, true); window.removeEventListener('pointerup', up, true); window.removeEventListener('pointercancel', up, true);
+      document.body.style.userSelect = ''; document.body.style.cursor = '';
+      if (!was.moved) { el.focus(); el.select(); }
+    }
+    el.addEventListener('mousedown', function (e) { if (!el.readOnly && !inSpinner(e)) e.preventDefault(); });
+    el.addEventListener('pointerdown', function (e) {
+      if (el.readOnly || e.button !== 0 || inSpinner(e)) return;
+      st = { x: e.clientX, y: e.clientY, v: parseFloat(el.value) || 0, moved: false };
+      window.addEventListener('pointermove', move, true); window.addEventListener('pointerup', up, true); window.addEventListener('pointercancel', up, true);
+    });
+  }
+  function enableAllScrubs() { Array.prototype.forEach.call(document.querySelectorAll('input[type=number]'), enableScrub); }
+
+  // ------------------------------------------------------------------ tooltips
+  var TIPS = {
+    undo: 'Undo the last change (Ctrl+Z).', redo: 'Redo the change you undid (Ctrl+Y).', zin: 'Zoom in.', zout: 'Zoom out.', zfit: 'Zoom and centre so that the whole plate and the LED strip frame are visible.',
+    preview: 'Switch between the design view and a preview: black plate, glowing red letters, glowing LEDs. Holes, boxes and dimensions are hidden in the preview.',
+    plateW: 'Width of the vinyl plate in mm (100-980). This is the final cut size; the dimension arrows measure to its edges.', plateH: 'Height of the vinyl plate in mm (100-300). This is the final cut size; the dimension arrows measure to its edges.',
+    holeD: 'Diameter in mm of the round holes: one behind every CASINO and OPEN letter, and the round CLOSED hole. One value for all (5-30 mm). 10 mm leaves room for about 6 wires.',
+    minStroke: 'Minimum stroke thickness in mm. Parts of a letter thinner than this (hairlines, thin serifs, narrow joins) are listed as "thin parts" because they can break or burn away when cut. It is only a warning, nothing is changed. Default 3 mm.',
+    frameLayout: 'How the 10 mm wide LED strip frame outside the plate edge meets at the corners. "Top and bottom over the corners": the top and bottom strips are as long as the plate plus both side strips. "Sides over the corners": the side strips are longer instead. Only whole 100 mm units (3 LEDs each) are counted; the leftover is hatched.',
+    stripAdd: 'Add a 100 x 10 mm LED strip piece (one 3-LED unit) in the middle of the plate. Drag it behind a letter.', stripRot: 'Rotate the selected strip piece between horizontal and vertical (key R).', stripDel: 'Delete the selected strip piece (key Delete).',
+    dims: 'Which mm dimension arrows to draw to the final plate edge: from the centre, corners and hole centres of the selected object, from every object, or none.',
+    snap: 'When on, dragging a box snaps its vertical and horizontal centre line to the centre lines of the other boxes and of the plate when they are within 3 mm (pink guide line).',
+    grid: 'Show the grid lines and the ruler numbers (mm) on the plate.',
+    closedHole: 'What the drill pattern contains for CLOSED: a round hole for the wires, a slot for the LED stick window, or nothing. Both are drawn on screen; the unused one is dashed.',
+    slotW: 'Width in mm of the CLOSED slot. Default 74 mm = LED window of a Grove stick (an assumption: check it on the real stick).', slotH: 'Height in mm of the CLOSED slot. Default 4 mm = LED window of a Grove stick (an assumption).',
+    exOutline: 'Include the plate outline (blue) in the drill pattern exports.', exArrow: 'Include the 10 arrow cable holes in the drill pattern exports.',
+    exEps: 'Download the drill pattern as EPS (1 unit = 1 mm, 5 mm margin).', exA4: 'Download the drill pattern as a 1:1 PDF on A4 sheets (tiles). Print at 100 %, no scaling, and tape the tiles together.', exA3: 'Download the drill pattern as a 1:1 PDF on A3 sheets (tiles). Print at 100 %, no scaling.',
+    exDxf: 'Download the drill pattern as DXF (R12, mm, layers PLATE, HOLES, SLOT) for a cutter or CAD program.',
+    exMirror: 'Mirror the letter cut left-to-right, for cutting from the back of the material.', exBoxes: 'Draw dashed bounding boxes in the letter cut export (the text boxes, or the pieces when nested).',
+    exNest: 'Pack the letters tightly on a raw sheet of the size below instead of keeping them at their place on the plate.',
+    exKerf: 'Laser kerf in mm (width of the cut). Every outline is grown by half of this so that the cut-out letter ends up the right size. Use 0 if unsure.',
+    exSpacing: 'Gap in mm between letters when nesting them on the raw sheet.', exSheetW: 'Width in mm of the raw sheet used for nesting.', exSheetH: 'Height in mm of the raw sheet used for nesting. A warning appears if the letters do not fit.',
+    exLetters: 'Download the letter outlines as EPS (as placed on the plate, or nested, mirrored etc. as set above).', exLettersDxf: 'Download the letter outlines as DXF (layers LETTERS and BOXES).',
+    exName: 'File name of the last export.', exCopy: 'Copy the last export text. Use it if the download is blocked: paste into a file with the name shown on the left.', exText: 'Content of the last export as text.',
+    layoutName: 'Name for saving the current layout in this browser.', layoutSave: 'Save the current layout under this name (stored in this browser only).', layoutList: 'Layouts saved in this browser.', layoutLoad: 'Load the selected saved layout.', layoutDel: 'Delete the selected saved layout.',
+    reset: 'Throw away the current layout and start from the defaults (undo can bring it back).',
+    json: 'The whole layout as JSON, updated live. Copy it to keep it, or paste a layout here and press "Apply JSON". Fonts are stored by name only.', jsonApply: 'Load the layout from the JSON text box (after you edited it by hand).', jsonCopy: 'Copy the current layout as JSON from the app to the clipboard.', jsonPaste: 'Read a layout (JSON) from the clipboard into the app. If reading the clipboard is blocked, press Ctrl+V anywhere on the page (outside the text fields) instead.'
+  };
+  function textTips(k) {
+    var n = NAMES[k], t = {};
+    t['t-' + k + '-text'] = 'The text of the ' + n + ' box (up to 20 characters). Each letter gets its own cell' + (k === 'closed' ? '.' : ' and its own hole.') + ' A space leaves an empty cell.';
+    t['t-' + k + '-font'] = 'Font of the ' + n + ' text. Click to open the list; the arrow keys preview the font live, Enter accepts, Esc goes back to the previous font. Fonts are loaded by name from Google Fonts (needs network). "(thin)" fonts have hairline strokes that are hard to cut.';
+    t['t-' + k + '-same'] = 'Use the font and bold setting of CASINO for this text, so the three words match.';
+    t['t-' + k + '-other'] = 'Any font name from fonts.google.com, typed exactly (for example Bungee Hairline), then Enter or "Use".';
+    t['t-' + k + '-use'] = 'Use the typed Google font name for this text.';
+    t['t-' + k + '-bold'] = 'Use the bold (700) weight if the font has it. Otherwise the browser fakes it.';
+    t['t-' + k + '-mode'] = 'Uniform cells: every letter is centred in a cell of the same width ("cell"). Natural widths: each letter takes the width the font gives it plus the gap.';
+    t['t-' + k + '-h'] = 'Height in mm of the ' + n + ' text: the cap height (height of the letter H). The box has this height. The centre of the box stays where it is when you change it.';
+    t['t-' + k + '-cw'] = 'Width in mm of one cell in uniform mode (the letter is centred in it). Not used in natural mode.';
+    t['t-' + k + '-sp'] = 'Gap in mm between the letters in natural mode (added to each letter width; half on each side). Not used in uniform mode.';
+    t['t-' + k + '-th'] = 'Thicken in mm: grows (+) or shrinks (-) every letter outline evenly. Use it to make thin parts stronger or to make room for a hole. Affects the drawing, the hole check and the letter cut.';
+    t['t-' + k + '-thn'] = t['t-' + k + '-th'];
+    t['t-' + k + '-x'] = 'Left edge of the ' + n + ' box in mm from the left edge of the plate. Dragging the box changes it.';
+    t['t-' + k + '-y'] = 'Top edge of the ' + n + ' box in mm from the top edge of the plate. Dragging the box changes it.';
+    if (k === 'closed') { t['t-closed-hdx'] = 'Sideways shift in mm of the CLOSED hole/slot from the centre of the CLOSED box (right is positive). You can also drag it.'; t['t-closed-hdy'] = 'Vertical shift in mm of the CLOSED hole/slot from the centre of the CLOSED box (down is positive). You can also drag it.'; }
+    else {
+      t['t-' + k + '-centre'] = 'Put every hole in the middle of its letter cell.';
+      t['t-' + k + '-fit'] = 'Move every hole to the nearest spot where the whole circle (plus 0.5 mm) is behind the letter, so it is hidden. If none fits, it goes to the thickest part.';
+    }
+    return t;
+  }
+  function applyTooltips() {
+    var tips = Object.assign({}, TIPS);
+    KEYS.forEach(function (k) { Object.assign(tips, textTips(k)); });
+    tips.plateWn = tips.plateW; tips.plateHn = tips.plateH; tips.holeDn = tips.holeD; tips.minStrokeN = tips.minStroke;
+    Object.keys(tips).forEach(function (id) {
+      var el = $(id); if (!el) return;
+      el.title = tips[id] + (el.type === 'number' && !el.readOnly ? ' (Drag the number left/right to change it; up/down is 4 times faster.)' : '');
+      if (el._dd) el._dd.btn.title = tips[id];
+      var par = el.parentElement;
+      if (par && par.classList.contains('dd')) par = par.parentElement;
+      if (par && par.tagName === 'LABEL') par.title = tips[id];
+      var sp = el.previousElementSibling;
+      if (sp && sp.classList.contains('dd')) sp = sp.previousElementSibling;
+      while (sp && sp.tagName !== 'SPAN') sp = sp.previousElementSibling;
+      if (sp && par && par.classList.contains('row') && !sp.title) sp.title = tips[id];
+    });
+  }
+  window.PlateTips = function () { return TIPS; };
 
   // ------------------------------------------------------------------ mouse and keyboard
   var drag = null;
@@ -579,7 +784,7 @@
     var tag = (e.target.tagName || '').toLowerCase();
     if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) { if (tag === 'textarea' || (tag === 'input' && e.target.type === 'text')) return; e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) { if (tag === 'textarea' || (tag === 'input' && e.target.type === 'text')) return; e.preventDefault(); redo(); return; }
-    if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+    if (tag === 'input' || tag === 'select' || tag === 'textarea' || (e.target.classList && e.target.classList.contains('dd-btn'))) return;
     if (e.key === 'r' || e.key === 'R') { rotateStrip(); return; }
     if (e.key === 'Delete' || e.key === 'Backspace') { deleteStrip(); return; }
     if (e.key === 'Escape') { sel = { type: null }; render(); updateInfo(); return; }
@@ -644,7 +849,7 @@
 
   // ------------------------------------------------------------------ start
   function init() {
-    buildControls();
+    buildControls(); enhanceAllSelects(); enableAllScrubs(); applyTooltips();
     var saved = lsGet(LS_AUTO);
     if (saved) { try { S = core.fromJson(saved); } catch (e) { S = core.defaultState(); } }
     ensureAllFonts(); fillLayouts(); syncControls(); fit(); commit();
@@ -652,7 +857,7 @@
   }
   window.PlateApp = {
     state: function () { return S; }, scene: function () { return scene(PPM); }, drillEps: buildDrillEps, drillDxf: buildDrillDxf, drillPdf: buildDrillPdf, lettersEps: buildLettersEps,
-    fontStatus: function (n) { return fontState[n] && fontState[n].status; }, useFont: useFont, commit: commit, view: view, selection: function () { return sel; }, hist: function () { return { n: hist.length, pos: histPos }; }
+    shownFont: function (k) { return effFont(k).font; }, fontStatus: function (n) { return fontState[n] && fontState[n].status; }, useFont: useFont, commit: commit, view: view, selection: function () { return sel; }, hist: function () { return { n: hist.length, pos: histPos }; }
   };
   init();
 })();

@@ -17,13 +17,21 @@
   .row { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
   .row > span { width: 84px; flex: none; }
   .row input[type=range] { flex: 1; min-width: 0; }
-  .row input[type=number] { width: 60px; }
+  .row input[type=number] { width: 60px; cursor: ew-resize; touch-action: none; }
   .row input[type=text], .row select { flex: 1; min-width: 0; }
   button { cursor: pointer; padding: 3px 8px; }
   textarea { width: 100%; height: 120px; font: 11px monospace; }
   .warn { color: #b00020; } .ok { color: #1b7f2a; }
   .note { color: #555; font-size: 12px; margin: 2px 0; }
   .sect { background: #fff; border: 1px solid #ccc; padding: 4px 8px; margin: 6px 0; border-radius: 4px; }
+  .dd { position: relative; flex: 1; min-width: 0; }
+  .dd select { position: absolute; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .dd-btn { width: 100%; text-align: left; padding: 2px 6px; background: Field; color: FieldText; border: 1px solid #888; border-radius: 3px; font: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dd-list { position: fixed; z-index: 1000; background: Canvas; color: CanvasText; border: 1px solid #555; box-shadow: 0 3px 10px #0005; max-height: 300px; overflow-y: auto; font-size: 13px; }
+  .dd-group { font-size: 11px; color: GrayText; padding: 3px 8px 1px; background: Canvas; border-bottom: 1px solid #8884; position: sticky; top: 0; }
+  .dd-item { padding: 3px 12px; cursor: pointer; white-space: nowrap; }
+  .dd-item.cur { font-weight: bold; }
+  .dd-item.hi { background: #0057d8; color: #fff; }
 </style>
 </head>
 <body>
@@ -87,7 +95,8 @@
   <div class="row"><button id="reset">Reset to defaults</button></div>
   <h3>JSON (copy / paste)</h3>
   <textarea id="json" spellcheck="false"></textarea>
-  <div class="row"><button id="jsonApply">Apply JSON</button><button id="jsonCopy">Copy</button></div>
+  <div class="row"><button id="jsonCopy">Copy JSON from app</button><button id="jsonPaste">Paste clipboard into app</button></div>
+  <div class="row"><button id="jsonApply">Apply edited JSON</button></div>
   <div id="jsonMsg" class="note"></div>
   <div class="note">Fonts are stored by name only; they are fetched from Google Fonts when used (needs the network).</div>
 </div>

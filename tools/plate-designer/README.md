@@ -20,6 +20,9 @@ nothing to install and nothing is sent anywhere, except that fonts are fetched f
 - LED strip frame outside the plate: 10 mm wide, 100 mm units with 3 LEDs each (coloured clusters), whole units per side, leftover mm and totals; layout "top and bottom over the corners" (default) or "sides over the corners".
 - Optional 100 x 10 mm strip pieces you can drag behind the letters (R rotates, Delete removes, shows how much is behind a letter).
 - Preview (black plate, red glowing letters, glowing LEDs), zoom/pan (wheel, drag background), grid and rulers.
+- Every field has a tooltip that explains exactly what it does. All dropdowns work the same way: click opens the list, the arrow keys preview each choice live, Enter accepts, Esc goes back to the old value (typing a letter jumps to a matching entry).
+- Number fields: drag the number sideways to change it (1 step per 2 px); dragging up/down is 4 times faster (up = more). A plain click lets you type.
+- Changing the height, cell width or gap of a text keeps the centre of its box in place.
 - Keyboard: arrows nudge 1 mm, Shift 10 mm, Alt 0.1 mm. Ctrl+Z / Ctrl+Y undo/redo.
 
 ## Exports
@@ -30,7 +33,7 @@ nothing to install and nothing is sent anywhere, except that fonts are fetched f
 
 ## Saving
 - Autosave in the browser (localStorage), named layouts, undo/redo.
-- JSON textarea shows the layout live: copy it out, or paste a layout and press "Apply JSON". Fonts are stored by name only, no font files.
+- JSON textarea shows the layout live. "Copy JSON from app" puts it on the clipboard; "Paste clipboard into app" loads a layout from the clipboard (if the browser blocks reading the clipboard, press Ctrl+V anywhere on the page outside the text fields). "Apply edited JSON" loads hand-edited text. Fonts are stored by name only, no font files.
 
 ## Published copy
 `python3 tools/build_plate_designer_single.py` writes `plate-designer-single.html` (everything inlined); it is published as the artifact "Plate Designer - CASINO OPEN front plate" (slug f2576151-ab61-4c1b-b072-788b0609f3cd). Downloads are blocked inside the artifact, so every export is also shown as text in the Export section (Copy button). Republish it to the same slug after changing the tool.
