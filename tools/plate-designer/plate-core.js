@@ -458,8 +458,21 @@
 
   function fmt(n) { return String(Math.round(n * 1000) / 1000); }
 
+  // LED window of an arrow stick: a w x h mm rectangle centred on the stick body, along the long edge of the body (4 corner points).
+  function stickWindow(pts, w, h) {
+    var n = pts.length, cx = 0, cy = 0, i;
+    for (i = 0; i < n; i++) { cx += pts[i][0] / n; cy += pts[i][1] / n; }
+    var e1 = [pts[1][0] - pts[0][0], pts[1][1] - pts[0][1]], e2 = [pts[2][0] - pts[1][0], pts[2][1] - pts[1][1]];
+    var e = Math.hypot(e1[0], e1[1]) >= Math.hypot(e2[0], e2[1]) ? e1 : e2, len = Math.hypot(e[0], e[1]), ux = e[0] / len, uy = e[1] / len, vx = -uy, vy = ux;
+    function r3(v) { return Math.round(v * 1000) / 1000; }
+    return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(function (q) {
+      var a = q[0] * w / 2, b = q[1] * h / 2;
+      return [r3(cx + a * ux + b * vx), r3(cy + a * uy + b * vy)];
+    });
+  }
+
   // Primitives of the drilling pattern in plate millimetres. state.holes lists are made by the caller (app or test):
-  // items: {kind:'circle', x, y, d, tag} | {kind:'rect', x, y, w, h, tag} | {kind:'poly', pts:[[x,y],...], tag} (closed outline, e.g. an arrow stick) | {kind:'outline', w, h}
+  // items: {kind:'circle', x, y, d, tag} | {kind:'rect', x, y, w, h, tag} | {kind:'poly', pts:[[x,y],...], tag} (closed outline, e.g. the LED window of an arrow stick) | {kind:'outline', w, h}
   function drillItems(state, scene) {
     var items = [];
     if (state.export.plateOutline) items.push({ kind: 'outline', w: state.plate.w, h: state.plate.h, tag: 'plate' });
@@ -470,7 +483,8 @@
       t.cells.forEach(function (c) { if (c.hole) items.push({ kind: 'circle', x: c.hole.x, y: c.hole.y, d: d, tag: key }); (c.extras || []).forEach(function (e) { items.push({ kind: 'circle', x: e.x, y: e.y, d: d, tag: key }); }); });
     });
     if (state.export.arrow && scene.arrow) {
-      (scene.arrow.sticks || []).forEach(function (st) { items.push({ kind: 'poly', pts: st.pts, tag: 'arrow', name: st.name }); });
+      // every arrow stick gets its LED window (the same w x h as the CLOSED slot), whatever the CLOSED hole mode is
+      (scene.arrow.sticks || []).forEach(function (st) { items.push({ kind: 'poly', pts: stickWindow(st.pts, scene.closedSlot.w, scene.closedSlot.h), tag: 'arrow', name: st.name }); });
     }
     var mode = state.export.closedHole;
     if (mode === 'round') items.push({ kind: 'circle', x: scene.closedRound.x, y: scene.closedRound.y, d: d, tag: 'closed' });
@@ -887,7 +901,7 @@
     Glyph: Glyph, glyphFromPolygons: glyphFromPolygons, placeText: placeText, holeStatus: holeStatus, suggestHole: suggestHole, holeOffsetFor: holeOffsetFor,
     stripPoly: stripPoly, stripContains: stripContains, stripSamples: stripSamples, stripHandle: stripHandle, stripAngleTo: stripAngleTo, stripCentre: stripCentre, normRot: normRot,
     frameCounts: frameCounts, unionBox: unionBox, boxesTouch: boxesTouch, bandSelection: bandSelection, groupScaleLimits: groupScaleLimits, groupCentre: groupCentre, scrollDelta: scrollDelta, resizePlate: resizePlate, frameSides: frameSides, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripPoly: stripPoly, stripContains: stripContains, stripSamples: stripSamples, stripHandle: stripHandle, stripAngleTo: stripAngleTo, stripCentre: stripCentre, normRot: normRot, stripCoverage: stripCoverage,
-    drillItems: drillItems, mirrorItems: mirrorItems, epsFromItems: epsFromItems, cutEps: cutEps, polyPath: polyPath, circlePath: circlePath, cutNum: cutNum, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, frameBars: frameBars, frameSheet: frameSheet, nestShelves: nestShelves,
+    drillItems: drillItems, stickWindow: stickWindow, mirrorItems: mirrorItems, epsFromItems: epsFromItems, cutEps: cutEps, polyPath: polyPath, circlePath: circlePath, cutNum: cutNum, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, frameBars: frameBars, frameSheet: frameSheet, nestShelves: nestShelves,
     defaultState: defaultState, fromJson: fromJson, toJson: toJson
   };
 });

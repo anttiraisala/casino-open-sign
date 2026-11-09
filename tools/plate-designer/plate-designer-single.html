@@ -84,9 +84,9 @@
 
   <h3>Export</h3>
   <div class="row"><span>CLOSED hole</span><select id="closedHole"><option value="round">round (wires)</option><option value="slot">slot (LED stick)</option><option value="none">none</option></select></div>
-  <div class="row"><span>Slot w x h mm</span><input type="number" id="slotW" min="1" max="300" step="0.5"><input type="number" id="slotH" min="1" max="100" step="0.5"></div>
+  <div class="row"><span>LED window w x h mm</span><input type="number" id="slotW" min="1" max="300" step="0.5"><input type="number" id="slotH" min="1" max="100" step="0.5"></div>
   <label><input type="checkbox" id="exOutline"> plate outline in the drill pattern</label>
-  <label><input type="checkbox" id="exArrow"> arrow stick outlines in the drill pattern</label>
+  <label><input type="checkbox" id="exArrow"> arrow LED windows in the drill pattern</label>
   <label><input type="checkbox" id="exMirrorDrill"> mirror image of the drill pattern (EPS, DXF, PDF)</label>
   <label><input type="checkbox" id="exPdfRef"> letters, arrow and labels in the drill PDF</label>
   <label><input type="checkbox" id="exPdfDims"> distances to all plate edges around every hole (PDF)</label>
@@ -575,8 +575,21 @@
 
   function fmt(n) { return String(Math.round(n * 1000) / 1000); }
 
+  // LED window of an arrow stick: a w x h mm rectangle centred on the stick body, along the long edge of the body (4 corner points).
+  function stickWindow(pts, w, h) {
+    var n = pts.length, cx = 0, cy = 0, i;
+    for (i = 0; i < n; i++) { cx += pts[i][0] / n; cy += pts[i][1] / n; }
+    var e1 = [pts[1][0] - pts[0][0], pts[1][1] - pts[0][1]], e2 = [pts[2][0] - pts[1][0], pts[2][1] - pts[1][1]];
+    var e = Math.hypot(e1[0], e1[1]) >= Math.hypot(e2[0], e2[1]) ? e1 : e2, len = Math.hypot(e[0], e[1]), ux = e[0] / len, uy = e[1] / len, vx = -uy, vy = ux;
+    function r3(v) { return Math.round(v * 1000) / 1000; }
+    return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(function (q) {
+      var a = q[0] * w / 2, b = q[1] * h / 2;
+      return [r3(cx + a * ux + b * vx), r3(cy + a * uy + b * vy)];
+    });
+  }
+
   // Primitives of the drilling pattern in plate millimetres. state.holes lists are made by the caller (app or test):
-  // items: {kind:'circle', x, y, d, tag} | {kind:'rect', x, y, w, h, tag} | {kind:'poly', pts:[[x,y],...], tag} (closed outline, e.g. an arrow stick) | {kind:'outline', w, h}
+  // items: {kind:'circle', x, y, d, tag} | {kind:'rect', x, y, w, h, tag} | {kind:'poly', pts:[[x,y],...], tag} (closed outline, e.g. the LED window of an arrow stick) | {kind:'outline', w, h}
   function drillItems(state, scene) {
     var items = [];
     if (state.export.plateOutline) items.push({ kind: 'outline', w: state.plate.w, h: state.plate.h, tag: 'plate' });
@@ -587,7 +600,8 @@
       t.cells.forEach(function (c) { if (c.hole) items.push({ kind: 'circle', x: c.hole.x, y: c.hole.y, d: d, tag: key }); (c.extras || []).forEach(function (e) { items.push({ kind: 'circle', x: e.x, y: e.y, d: d, tag: key }); }); });
     });
     if (state.export.arrow && scene.arrow) {
-      (scene.arrow.sticks || []).forEach(function (st) { items.push({ kind: 'poly', pts: st.pts, tag: 'arrow', name: st.name }); });
+      // every arrow stick gets its LED window (the same w x h as the CLOSED slot), whatever the CLOSED hole mode is
+      (scene.arrow.sticks || []).forEach(function (st) { items.push({ kind: 'poly', pts: stickWindow(st.pts, scene.closedSlot.w, scene.closedSlot.h), tag: 'arrow', name: st.name }); });
     }
     var mode = state.export.closedHole;
     if (mode === 'round') items.push({ kind: 'circle', x: scene.closedRound.x, y: scene.closedRound.y, d: d, tag: 'closed' });
@@ -1004,7 +1018,7 @@
     Glyph: Glyph, glyphFromPolygons: glyphFromPolygons, placeText: placeText, holeStatus: holeStatus, suggestHole: suggestHole, holeOffsetFor: holeOffsetFor,
     stripPoly: stripPoly, stripContains: stripContains, stripSamples: stripSamples, stripHandle: stripHandle, stripAngleTo: stripAngleTo, stripCentre: stripCentre, normRot: normRot,
     frameCounts: frameCounts, unionBox: unionBox, boxesTouch: boxesTouch, bandSelection: bandSelection, groupScaleLimits: groupScaleLimits, groupCentre: groupCentre, scrollDelta: scrollDelta, resizePlate: resizePlate, frameSides: frameSides, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripPoly: stripPoly, stripContains: stripContains, stripSamples: stripSamples, stripHandle: stripHandle, stripAngleTo: stripAngleTo, stripCentre: stripCentre, normRot: normRot, stripCoverage: stripCoverage,
-    drillItems: drillItems, mirrorItems: mirrorItems, epsFromItems: epsFromItems, cutEps: cutEps, polyPath: polyPath, circlePath: circlePath, cutNum: cutNum, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, frameBars: frameBars, frameSheet: frameSheet, nestShelves: nestShelves,
+    drillItems: drillItems, stickWindow: stickWindow, mirrorItems: mirrorItems, epsFromItems: epsFromItems, cutEps: cutEps, polyPath: polyPath, circlePath: circlePath, cutNum: cutNum, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, frameBars: frameBars, frameSheet: frameSheet, nestShelves: nestShelves,
     defaultState: defaultState, fromJson: fromJson, toJson: toJson
   };
 });
@@ -1769,8 +1783,8 @@ if (typeof module === 'object' && module.exports) module.exports = ARROW_DATA;
     snap: 'When on, dragging a box snaps its vertical and horizontal centre line to the centre lines of the other boxes and of the plate when they are within 3 mm (pink guide line); dragged holes and LED strip pieces snap to the plate centre lines. Hold Ctrl while dragging to move without snapping.',
     grid: 'Show the grid lines and the ruler numbers (mm) on the plate.',
     closedHole: 'What the drill pattern contains for CLOSED: a round hole for the wires, a slot for the LED stick window, or nothing. Both are drawn on screen; the unused one is dashed.',
-    slotW: 'Width in mm of the CLOSED slot. Default 74 mm = LED window of a Grove stick (an assumption: check it on the real stick).', slotH: 'Height in mm of the CLOSED slot. Default 4 mm = LED window of a Grove stick (an assumption).',
-    exOutline: 'Include the plate outline (blue) in the drill pattern exports.', exArrow: 'Include the outlines of the 10 arrow LED sticks (83 x 10 mm bodies, the wings turned 30 degrees) in the drill pattern exports, drawn like the CLOSED slot (layer ARROW in the DXF).', exMirrorDrill: 'Write the drill pattern (EPS, DXF and PDF) as a mirror image, left <-> right, for marking or cutting from the back. Off by default. The letter cut has its own mirror option.',
+    slotW: 'Length in mm of the LED window: the CLOSED slot and the rectangle cut for each of the 10 arrow sticks (always, whatever the CLOSED hole mode). Default 74 mm = LED window of a Grove stick (an assumption: check it on the real stick).', slotH: 'Width in mm of the LED window: the CLOSED slot and the rectangle cut for each of the 10 arrow sticks. Default 4 mm (an assumption).',
+    exOutline: 'Include the plate outline (blue) in the drill pattern exports.', exArrow: 'Include the 10 arrow LED windows (rectangles of the LED window size above, centred on each stick, the wings turned 30 degrees) in the drill pattern exports, drawn like the CLOSED slot (layer ARROW in the DXF).', exMirrorDrill: 'Write the drill pattern (EPS, DXF and PDF) as a mirror image, left <-> right, for marking or cutting from the back. Off by default. The letter cut has its own mirror option.',
     exFrame: 'Download the frame material page as a PDF (A4 landscape): the four 45 degree mitred bars drawn to one scale with their long and short edge lengths. The same page is also the last page of the drill PDFs.', exEps: 'Download the drill pattern as EPS (1 unit = 1 mm, 5 mm margin).', exA4: 'Download the drill pattern as a 1:1 PDF on A4 sheets (tiles). Print at 100 %, no scaling, and tape the tiles together.', exA3: 'Download the drill pattern as a 1:1 PDF on A3 sheets (tiles). Print at 100 %, no scaling.',
     exDxf: 'Download the drill pattern as DXF (R12, mm, layers PLATE, HOLES, SLOT) for a cutter or CAD program.',
     exPdfRef: 'Draw the letters and the arrow sticks (with letter numbers such as C1, A2 and stick names such as L-CAP D2) in light grey under the holes of the drill PDF, so the sheet is also a layout drawing. Print it twice: drill through one copy and read the other to see what goes where.',

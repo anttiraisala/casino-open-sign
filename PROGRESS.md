@@ -47,3 +47,4 @@
 - Plate Designer: EPS exports rewritten for Roland CutStudio (m/l/c only, pt, y up, extra 0 0 m); the plate is centred in the Export sheet w x h; 208 mutants.
 - Plate Designer: strip pieces turn freely (rotation field, drag handle with Shift 15 degree snap, R = 90 degree step); strips JSON v2 (older rot 0/90 converted); 227 mutants.
 - Plate Designer: arrow drill export = outlines of the 10 LED sticks (no round holes; DXF layer ARROW); new option mirror image of the drill pattern (EPS/DXF/PDF, default off); 240 mutants.
+- Plate Designer: the arrow drill export is the 74 x 4 mm LED window of each stick (size from the LED window fields shared with the CLOSED slot, written whatever the CLOSED mode); 247 mutants.

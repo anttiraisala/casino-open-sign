@@ -322,6 +322,14 @@ with sync_playwright() as p:
     check(S()['strips'][0]['rot'] == 30 and abs(S()['strips'][0]['x'] - sx0 - 15) < 3.5, 'dragging the turned piece moves it and keeps the angle (snap may nudge it)')
     pg.evaluate('PlateApp.commit()'); pg.reload(); pg.wait_for_timeout(300); check(S()['strips'][0]['rot'] == 30 and S()['stripsV'] == 2, 'the angle survives a reload')
     pg.evaluate("PlateApp.state().strips[0].rot = 30"); info = pg.evaluate("document.getElementById('stripInfo').textContent"); check('piece' in info.lower(), 'strip info still shows: ' + info)
+    # arrow LED windows come from the LED window fields, whatever the CLOSED mode is
+    pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate(LEGACY_JS); pg.wait_for_timeout(50)
+    for mode in ('round', 'slot', 'none'):
+        pg.select_option('#closedHole', mode); dd = pg.evaluate('PlateApp.drillDxf()')
+        check(dd.count('POLYLINE\n8\nARROW') == 10 and '8\nARROW\n10\n115.38\n20\n119.34\n' in dd, 'CLOSED mode %s: the 10 arrow windows are written; RAIL-UP-L window corner (115.38, 180.66 -> y flipped 119.34)' % mode)
+    pg.select_option('#closedHole', 'none'); pg.fill('#slotW', '60'); pg.fill('#slotH', '6'); pg.wait_for_timeout(100); dd = pg.evaluate('PlateApp.drillDxf()')
+    check('8\nARROW\n10\n122.38\n20\n120.34\n' in dd and 'LED window' in pg.inner_text('#panel'), 'the LED window fields (60 x 6) size the arrow windows even with no CLOSED hole')
+    pg.select_option('#closedHole', 'round'); pg.fill('#slotW', '74'); pg.fill('#slotH', '4'); pg.wait_for_timeout(100)
     # arrow stick outlines and the mirrored drill pattern
     pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate(LEGACY_JS); pg.wait_for_timeout(50)
     check(S()['export']['mirrorDrill'] is False and not pg.is_checked('#exMirrorDrill') and pg.is_checked('#exArrow'), 'mirror image of the drill pattern is off by default; arrow outlines on')

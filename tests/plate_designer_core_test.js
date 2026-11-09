@@ -264,7 +264,7 @@ function scene() {
   const circles = items.filter(i => i.kind === 'circle'), rects = items.filter(i => i.kind === 'rect');
   const polys = items.filter(i => i.kind === 'poly');
   check(circles.length === 4 + 1 && rects.length === 0 && polys.length === 2 && items[0].kind === 'outline', 'drill items: outline, 4 letter holes, 2 arrow stick outlines (no round arrow holes), 1 CLOSED round hole');
-  check(circles.filter(c => c.d === 10).length === 5 && circles.filter(c => c.d === 8).length === 0 && JSON.stringify(polys[0].pts) === '[[10,10],[30,10],[30,15],[10,15]]' && polys[1].name === 'B' && polys.every(q => q.tag === 'arrow'), 'letter and CLOSED holes use 10 mm; the stick outlines carry the stick points and the arrow tag');
+  check(circles.filter(c => c.d === 10).length === 5 && circles.filter(c => c.d === 8).length === 0 && JSON.stringify(polys[0].pts) === '[[-17,10.5],[57,10.5],[57,14.5],[-17,14.5]]' && polys[1].name === 'B' && polys.every(q => q.tag === 'arrow'), 'letter and CLOSED holes use 10 mm; the stick windows are 74 x 4 mm rectangles centred on the stick (stick A centre (20, 12.5)) with the arrow tag');
   s.st.export.closedHole = 'slot'; s.st.export.arrow = false; s.st.export.plateOutline = false;
   const it2 = core.drillItems(s.st, s.scene);
   check(it2.filter(i => i.kind === 'circle').length === 4 && it2.filter(i => i.kind === 'rect').length === 1 && !it2.some(i => i.kind === 'outline') && !it2.some(i => i.kind === 'poly'), 'slot mode: 4 circles, 1 slot, no outline, no arrow outlines');
@@ -423,7 +423,7 @@ function finish() {
   const one = core.epsFromItems([{ kind: 'poly', pts: [[10, 10], [30, 10], [30, 15], [10, 15]] }], { w: 100, h: 50 }, 'T', { w: 100, h: 50 }).text;
   check(one.indexOf('\n4 M q\n28.346 113.386 m\n85.039 113.386 l\n85.039 99.213 l\n28.346 99.213 l\n28.346 113.386 l\n% CutStudio') > 0, 'stick outline in the EPS: closed polygon, y flipped, closed by repeating the first point');
   const dx = core.dxfFromItems(items, s.st.plate);
-  check((dx.match(/POLYLINE\n8\nARROW\n/g) || []).length === 2 && dx.indexOf('8\nARROW\n10\n10\n20\n40\n') > 0 && dx.indexOf('8\nARROW\n10\n30\n20\n35\n') > 0 && dx.indexOf('8\nARROW\n10\n40\n20\n38\n') > 0, 'DXF: each stick is a closed polyline on layer ARROW, y flipped (10,10 -> 10,40)');
+  check((dx.match(/POLYLINE\n8\nARROW\n/g) || []).length === 2 && dx.indexOf('8\nARROW\n10\n-17\n20\n39.5\n') > 0 && dx.indexOf('8\nARROW\n10\n57\n20\n35.5\n') > 0, 'DXF: each stick window is a closed polyline on layer ARROW, y flipped (-17, 10.5 -> -17, 39.5)');
   const pdf = core.pdfTiles(items, s.st.plate, 'A4', 't', []).text;
   check(pdf.indexOf('h S\n') > 0 && (pdf.match(/ h S\n/g) || []).length === 2, 'PDF: the stick outlines are stroked closed paths');
   const dims = core.holeDimItems([{ kind: 'poly', pts: [[10, 10], [30, 10], [30, 15], [10, 15]] }], { w: 100, h: 50 }).filter(q => q.kind === 'text').map(q => q.s);
@@ -433,13 +433,34 @@ function finish() {
   const c0 = items.find(i => i.kind === 'circle'), mc0 = m.find(i => i.kind === 'circle');
   check(mc0.x === 100 - c0.x && mc0.y === c0.y && mc0.d === c0.d, 'a circle moves to x -> 100 - x');
   const p0 = items.find(i => i.kind === 'poly'), mp0 = m.find(i => i.kind === 'poly');
-  check(JSON.stringify(mp0.pts) === '[[90,10],[70,10],[70,15],[90,15]]' && JSON.stringify(p0.pts) === '[[10,10],[30,10],[30,15],[10,15]]', 'a stick outline is mirrored point by point and the original is untouched');
+  check(JSON.stringify(mp0.pts) === '[[117,10.5],[43,10.5],[43,14.5],[117,14.5]]' && JSON.stringify(p0.pts) === '[[-17,10.5],[57,10.5],[57,14.5],[-17,14.5]]', 'a stick outline is mirrored point by point and the original is untouched');
   const sl = core.mirrorItems([{ kind: 'rect', x: 13, y: 23, w: 74, h: 4 }], 100)[0];
   check(sl.x === 13 && sl.w === 74 && sl.y === 23, 'the centred slot maps onto itself');
   const sl2 = core.mirrorItems([{ kind: 'rect', x: 10, y: 23, w: 20, h: 4 }], 100)[0];
   check(sl2.x === 70 && sl2.w === 20, 'a rectangle: x -> width - x - w (10 -> 70)');
-  check(JSON.stringify(core.mirrorItems(m, 100)) === JSON.stringify(items), 'mirroring twice gives the original');
+  const rnd = (v) => JSON.stringify(v, (k, x) => typeof x === 'number' ? Math.round(x * 1e6) / 1e6 : x);
+  check(rnd(core.mirrorItems(m, 100)) === rnd(items), 'mirroring twice gives the original');
   check(core.defaultState().export.mirrorDrill === false && core.fromJson(JSON.stringify({ version: 1, export: { mirrorDrill: true } })).export.mirrorDrill === true && core.fromJson(JSON.stringify({ version: 1, export: {} })).export.mirrorDrill === false && core.fromJson(JSON.stringify({ version: 1, export: { mirrorDrill: 'x' } })).export.mirrorDrill === true, 'mirrorDrill: off by default, saved in the JSON');
+}
+
+// ---- LED windows of the arrow sticks
+{
+  const sw = (pts, w, h) => JSON.stringify(core.stickWindow(pts, w, h));
+  check(sw([[90.88, 27.66], [173.88, 27.66], [173.88, 37.66], [90.88, 37.66]], 74, 4) === '[[95.38,30.66],[169.38,30.66],[169.38,34.66],[95.38,34.66]]', 'RAIL-UP-L: 74 x 4 window centred in the 83 x 10 body');
+  check(sw([[88.88, 9.66], [88.88, 92.66], [78.88, 92.66], [78.88, 9.66]], 74, 4) === '[[85.88,14.16],[85.88,88.16],[81.88,88.16],[81.88,14.16]]', 'L-CAP: the window runs along the vertical body (4 wide, 74 tall)');
+  check(sw([[0, 41.5], [71.88, 0], [76.88, 8.66], [5, 50.16]], 74, 4) === '[[5.397,41.848],[69.483,4.848],[71.483,8.312],[7.397,45.312]]', 'L-WING-UP: the window is turned 30 degrees with the wing');
+  check(sw([[0, 0], [10, 0], [10, 83], [0, 83]], 60, 6) === '[[8,11.5],[8,71.5],[2,71.5],[2,11.5]]', 'the window takes the given size (60 x 6) along the long side');
+  const poly4 = (q) => Math.abs(q.reduce((a, p, i) => a + p[0] * q[(i + 1) % 4][1] - q[(i + 1) % 4][0] * p[1], 0)) / 2;
+  const st = core.defaultState(); st.export.arrow = true; st.export.plateOutline = false;
+  const sticks = ARROW.sticks.map(x => ({ name: x.name, pts: x.pts.map(p => [p[0] + 100, p[1] + 50]) }));
+  const sc = { casino: null, open: null, arrow: { sticks: sticks, holes: [] }, closedRound: { x: 0, y: 0 }, closedSlot: { x: 0, y: 0, w: 74, h: 4 } };
+  ['round', 'slot', 'none'].forEach(mode => {
+    st.export.closedHole = mode; const it = core.drillItems(st, sc).filter(i => i.kind === 'poly');
+    check(it.length === 10 && it.every(i => Math.abs(poly4(i.pts) - 296) < 0.01), 'CLOSED mode ' + mode + ': all 10 stick windows are written, each 74 x 4 = 296 mm2');
+  });
+  st.export.closedHole = 'round'; sc.closedSlot.w = 60; sc.closedSlot.h = 6;
+  check(core.drillItems(st, sc).filter(i => i.kind === 'poly').every(i => Math.abs(poly4(i.pts) - 360) < 0.01), 'the window size follows the LED window fields (60 x 6 = 360 mm2)');
+  st.export.arrow = false; check(core.drillItems(st, sc).filter(i => i.kind === 'poly').length === 0, 'arrow option off: no windows');
 }
 setTimeout(finish, 3000);
 
