@@ -143,7 +143,7 @@
   function scene(ppm) {
     var sc = { casino: textScene('casino', ppm), open: textScene('open', ppm), closed: textScene('closed', ppm) };
     var cb = sc.closed;
-    sc.arrow = { x: S.arrow.x, y: S.arrow.y, w: ARROW.w, h: ARROW.h, holes: ARROW.sticks.filter(function (s) { return s.hole; }).map(function (s) { return { x: S.arrow.x + s.hole[0], y: S.arrow.y + s.hole[1], d: ARROW.holeD }; }) };
+    sc.arrow = { x: S.arrow.x, y: S.arrow.y, w: ARROW.w, h: ARROW.h, sticks: ARROW.sticks.map(function (s) { return { name: s.name, pts: s.pts.map(function (q) { return [S.arrow.x + q[0], S.arrow.y + q[1]]; }) }; }), holes: ARROW.sticks.filter(function (s) { return s.hole; }).map(function (s) { return { x: S.arrow.x + s.hole[0], y: S.arrow.y + s.hole[1], d: ARROW.holeD }; }) };
     sc.closedRound = { x: cb.x + cb.w / 2 + S.closedRound.dx, y: cb.y + cb.h / 2 + S.closedRound.dy };
     sc.closedSlot = { x: cb.x + cb.w / 2 + S.closedSlot.dx, y: cb.y + cb.h / 2 + S.closedSlot.dy, w: S.closedSlot.w, h: S.closedSlot.h };
     return sc;
@@ -531,6 +531,7 @@
     bind('exOutline', function () { return S.export.plateOutline; }, function (v) { S.export.plateOutline = v; });
     bind('exPdfRef', function () { return S.export.pdfRef; }, function (v) { S.export.pdfRef = v; });
     bind('exPdfDims', function () { return S.export.pdfDims; }, function (v) { S.export.pdfDims = v; });
+    bind('exMirrorDrill', function () { return S.export.mirrorDrill; }, function (v) { S.export.mirrorDrill = v; });
     bind('exArrow', function () { return S.export.arrow; }, function (v) { S.export.arrow = v; });
     bind('exMirror', function () { return S.export.mirror; }, function (v) { S.export.mirror = v; });
     bind('exBoxes', function () { return S.export.boxes; }, function (v) { S.export.boxes = v; });
@@ -740,7 +741,7 @@
     grid: 'Show the grid lines and the ruler numbers (mm) on the plate.',
     closedHole: 'What the drill pattern contains for CLOSED: a round hole for the wires, a slot for the LED stick window, or nothing. Both are drawn on screen; the unused one is dashed.',
     slotW: 'Width in mm of the CLOSED slot. Default 74 mm = LED window of a Grove stick (an assumption: check it on the real stick).', slotH: 'Height in mm of the CLOSED slot. Default 4 mm = LED window of a Grove stick (an assumption).',
-    exOutline: 'Include the plate outline (blue) in the drill pattern exports.', exArrow: 'Include the 10 arrow cable holes in the drill pattern exports.',
+    exOutline: 'Include the plate outline (blue) in the drill pattern exports.', exArrow: 'Include the outlines of the 10 arrow LED sticks (83 x 10 mm bodies, the wings turned 30 degrees) in the drill pattern exports, drawn like the CLOSED slot (layer ARROW in the DXF).', exMirrorDrill: 'Write the drill pattern (EPS, DXF and PDF) as a mirror image, left <-> right, for marking or cutting from the back. Off by default. The letter cut has its own mirror option.',
     exFrame: 'Download the frame material page as a PDF (A4 landscape): the four 45 degree mitred bars drawn to one scale with their long and short edge lengths. The same page is also the last page of the drill PDFs.', exEps: 'Download the drill pattern as EPS (1 unit = 1 mm, 5 mm margin).', exA4: 'Download the drill pattern as a 1:1 PDF on A4 sheets (tiles). Print at 100 %, no scaling, and tape the tiles together.', exA3: 'Download the drill pattern as a 1:1 PDF on A3 sheets (tiles). Print at 100 %, no scaling.',
     exDxf: 'Download the drill pattern as DXF (R12, mm, layers PLATE, HOLES, SLOT) for a cutter or CAD program.',
     exPdfRef: 'Draw the letters and the arrow sticks (with letter numbers such as C1, A2 and stick names such as L-CAP D2) in light grey under the holes of the drill PDF, so the sheet is also a layout drawing. Print it twice: drill through one copy and read the other to see what goes where.',
@@ -1091,7 +1092,8 @@
 
   // ------------------------------------------------------------------ exports
   function drillScene() { return scene(PPM); }
-  function buildDrillEpsFull() { return core.epsFromItems(core.drillItems(S, drillScene()), S.plate, 'Casino plate drill pattern', { w: S.export.sheetW, h: S.export.sheetH }); }
+  function drillItemsOut() { var it = core.drillItems(S, drillScene()); return S.export.mirrorDrill ? core.mirrorItems(it, S.plate.w) : it; }
+  function buildDrillEpsFull() { return core.epsFromItems(drillItemsOut(), S.plate, 'Casino plate drill pattern', { w: S.export.sheetW, h: S.export.sheetH }); }
   function buildDrillEps() { return buildDrillEpsFull().text; }
   // Light grey letters and arrow sticks with labels under the drill pattern: the PDF is then also a layout drawing.
   function pdfReference() {
@@ -1113,14 +1115,18 @@
       });
     });
     ref.push({ kind: 'text', x: sc.closedRound.x + r + 8, y: sc.closedRound.y + r + 3, s: 'CLOSED', size: 6 });
+    if (S.export.mirrorDrill) {   // same mirror image as the drill pattern; the label texts stay readable (only their positions move)
+      var W = S.plate.w;
+      ref.forEach(function (it) { if (it.kind === 'poly') it.loops = it.loops.map(function (lp) { return lp.map(function (q) { return [W - q[0], q[1]]; }); }); else if (it.kind === 'text') it.x = W - it.x; });
+    }
     return ref;
   }
   function buildDrillPdf(paper) {
-    var items = core.drillItems(S, drillScene()), ref = (S.export.pdfRef ? pdfReference() : []).concat(S.export.pdfDims ? core.holeDimItems(items, S.plate) : []);
+    var items = drillItemsOut(), ref = (S.export.pdfRef ? pdfReference() : []).concat(S.export.pdfDims ? core.holeDimItems(items, S.plate) : []);
     return core.pdfTiles(items, S.plate, paper, 'Casino plate drill pattern', ref, S.frameWidth > 0 ? [core.frameSheet(S.plate, S.frameWidth, 'Casino plate')] : []);
   }
   function buildFramePdf() { return core.pdfTiles(null, S.plate, 'A4', '', [], [core.frameSheet(S.plate, S.frameWidth, 'Casino plate')]); }
-  function buildDrillDxf() { return core.dxfFromItems(core.drillItems(S, drillScene()), S.plate); }
+  function buildDrillDxf() { return core.dxfFromItems(drillItemsOut(), S.plate); }
   function bboxOf(polys) {
     var a = 1e9, b = 1e9, c = -1e9, d = -1e9;
     polys.forEach(function (p) { p.forEach(function (q) { a = Math.min(a, q[0]); b = Math.min(b, q[1]); c = Math.max(c, q[0]); d = Math.max(d, q[1]); }); });

@@ -46,3 +46,4 @@
 - Plate Designer: frame material calculator (frameWidth 0-100, default 30; mitred bars, perimeter and material needed, frame page in the drill PDFs + "Frame PDF (A4)"); default plate 600 x 300 with new default text/arrow positions; 188 mutants.
 - Plate Designer: EPS exports rewritten for Roland CutStudio (m/l/c only, pt, y up, extra 0 0 m); the plate is centred in the Export sheet w x h; 208 mutants.
 - Plate Designer: strip pieces turn freely (rotation field, drag handle with Shift 15 degree snap, R = 90 degree step); strips JSON v2 (older rot 0/90 converted); 227 mutants.
+- Plate Designer: arrow drill export = outlines of the 10 LED sticks (no round holes; DXF layer ARROW); new option mirror image of the drill pattern (EPS/DXF/PDF, default off); 240 mutants.

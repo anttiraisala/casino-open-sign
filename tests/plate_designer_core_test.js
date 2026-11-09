@@ -257,16 +257,17 @@ function scene() {
   const g = fakeGlyph(20), st = core.defaultState();
   st.plate = { w: 100, h: 50 }; st.holeD = 10;
   const mk = (x) => core.placeText({ x: x, y: 5, h: 40, mode: 'uniform', cellW: 30, spacing: 0, holeOffsets: [] }, [g, g], true);
-  return { st, scene: { casino: mk(0), open: mk(60), arrow: { holes: [{ x: 10, y: 10, d: 8 }, { x: 20, y: 10, d: 8 }] }, closedRound: { x: 50, y: 25 }, closedSlot: { x: 50, y: 25, w: 74, h: 4 } } };
+  return { st, scene: { casino: mk(0), open: mk(60), arrow: { holes: [{ x: 10, y: 10, d: 8 }, { x: 20, y: 10, d: 8 }], sticks: [{ name: 'A', pts: [[10, 10], [30, 10], [30, 15], [10, 15]] }, { name: 'B', pts: [[40, 12], [60, 10], [61, 14], [41, 16]] }] }, closedRound: { x: 50, y: 25 }, closedSlot: { x: 50, y: 25, w: 74, h: 4 } } };
 }
 {
   const s = scene(), items = core.drillItems(s.st, s.scene);
   const circles = items.filter(i => i.kind === 'circle'), rects = items.filter(i => i.kind === 'rect');
-  check(circles.length === 4 + 2 + 1 && rects.length === 0 && items[0].kind === 'outline', 'drill items: outline, 4 letter holes, 2 arrow holes, 1 CLOSED round hole');
-  check(circles.filter(c => c.d === 10).length === 5 && circles.filter(c => c.d === 8).length === 2, 'letter and CLOSED holes use 10 mm, arrow holes 8 mm');
+  const polys = items.filter(i => i.kind === 'poly');
+  check(circles.length === 4 + 1 && rects.length === 0 && polys.length === 2 && items[0].kind === 'outline', 'drill items: outline, 4 letter holes, 2 arrow stick outlines (no round arrow holes), 1 CLOSED round hole');
+  check(circles.filter(c => c.d === 10).length === 5 && circles.filter(c => c.d === 8).length === 0 && JSON.stringify(polys[0].pts) === '[[10,10],[30,10],[30,15],[10,15]]' && polys[1].name === 'B' && polys.every(q => q.tag === 'arrow'), 'letter and CLOSED holes use 10 mm; the stick outlines carry the stick points and the arrow tag');
   s.st.export.closedHole = 'slot'; s.st.export.arrow = false; s.st.export.plateOutline = false;
   const it2 = core.drillItems(s.st, s.scene);
-  check(it2.filter(i => i.kind === 'circle').length === 4 && it2.filter(i => i.kind === 'rect').length === 1 && !it2.some(i => i.kind === 'outline'), 'slot mode: 4 circles, 1 slot, no outline, no arrow holes');
+  check(it2.filter(i => i.kind === 'circle').length === 4 && it2.filter(i => i.kind === 'rect').length === 1 && !it2.some(i => i.kind === 'outline') && !it2.some(i => i.kind === 'poly'), 'slot mode: 4 circles, 1 slot, no outline, no arrow outlines');
   const slot = it2.find(i => i.kind === 'rect'); check(slot.x === 13 && slot.y === 23 && slot.w === 74 && slot.h === 4, 'slot rectangle is centred at the CLOSED slot position');
   s.st.export.closedHole = 'none';
   check(core.drillItems(s.st, s.scene).length === 4, 'none: only the 4 letter holes');
@@ -278,7 +279,7 @@ function scene() {
   check(er.warnings.length === 0 && !/[a-z]{3,}/.test(eps.slice(HEAD.length, eps.length - TAIL.length)), 'no warnings; path data uses only m, l and c');
   const body = eps.slice(HEAD.length, eps.length - TAIL.length).split('\n').filter(Boolean);
   check(body[0] === '0 141.732 m' && body[1] === '283.465 141.732 l' && body[2] === '283.465 0 l' && body[3] === '0 0 l' && body[4] === '0 141.732 l', 'plate outline 100 x 50 mm, lower-left at 0 0, closed by repeating the first point: ' + body.slice(0, 5).join(' | '));
-  check(body.filter(l => / c$/.test(l)).length === 7 * 4 && body.filter(l => / m$/.test(l)).length === 8, '7 circles = 28 curves; 8 subpaths');
+  check(body.filter(l => / c$/.test(l)).length === 5 * 4 && body.filter(l => / m$/.test(l)).length === 8, '5 circles = 20 curves; 8 subpaths (outline, 5 circles, 2 stick outlines)');
   check(body[5] === '56.693 70.866 m' && body[6] === '56.693 63.038 50.347 56.693 42.52 56.693 c', 'first letter hole: centre (15, 25) mm r 5 -> start (56.693, 70.866) pt and the first quarter curve: ' + body[5] + ' / ' + body[6]);
   const wide = core.epsFromItems([{ kind: 'outline', w: 100, h: 50 }], { w: 100, h: 50 }, 'T', { w: 300, h: 150 });
   const wb = wide.text.slice(HEAD.length, wide.text.length - TAIL.length).split('\n').filter(Boolean);
@@ -414,6 +415,31 @@ function finish() {
   const o4 = core.stripRect({ x: -35, y: 65, rot: 90 });
   check(near2(o4.x, 10) && near2(o4.y, 20) && near2(o4.w, 10) && near2(o4.h, 100), 'the converted older piece occupies the same 10 x 100 mm rectangle (10, 20)');
   check(core.defaultState().stripsV === 2, 'default state is strips version 2');
+}
+
+// ---- arrow stick outlines and the mirrored drill pattern
+{
+  const s = scene(), items = core.drillItems(s.st, s.scene), K = 72 / 25.4;
+  const one = core.epsFromItems([{ kind: 'poly', pts: [[10, 10], [30, 10], [30, 15], [10, 15]] }], { w: 100, h: 50 }, 'T', { w: 100, h: 50 }).text;
+  check(one.indexOf('\n4 M q\n28.346 113.386 m\n85.039 113.386 l\n85.039 99.213 l\n28.346 99.213 l\n28.346 113.386 l\n% CutStudio') > 0, 'stick outline in the EPS: closed polygon, y flipped, closed by repeating the first point');
+  const dx = core.dxfFromItems(items, s.st.plate);
+  check((dx.match(/POLYLINE\n8\nARROW\n/g) || []).length === 2 && dx.indexOf('8\nARROW\n10\n10\n20\n40\n') > 0 && dx.indexOf('8\nARROW\n10\n30\n20\n35\n') > 0 && dx.indexOf('8\nARROW\n10\n40\n20\n38\n') > 0, 'DXF: each stick is a closed polyline on layer ARROW, y flipped (10,10 -> 10,40)');
+  const pdf = core.pdfTiles(items, s.st.plate, 'A4', 't', []).text;
+  check(pdf.indexOf('h S\n') > 0 && (pdf.match(/ h S\n/g) || []).length === 2, 'PDF: the stick outlines are stroked closed paths');
+  const dims = core.holeDimItems([{ kind: 'poly', pts: [[10, 10], [30, 10], [30, 15], [10, 15]] }], { w: 100, h: 50 }).filter(q => q.kind === 'text').map(q => q.s);
+  check(dims.join(',') === '10,70,10,35', 'dimensions of a stick outline: distances from its box to the plate edges 10, 70, 10, 35: ' + dims.join(','));
+  const m = core.mirrorItems(items, 100);
+  check(m !== items && items[0].kind === 'outline' && m[0].kind === 'outline' && m[0].w === 100 && m.length === items.length, 'mirrorItems returns a copy, the plate outline stays');
+  const c0 = items.find(i => i.kind === 'circle'), mc0 = m.find(i => i.kind === 'circle');
+  check(mc0.x === 100 - c0.x && mc0.y === c0.y && mc0.d === c0.d, 'a circle moves to x -> 100 - x');
+  const p0 = items.find(i => i.kind === 'poly'), mp0 = m.find(i => i.kind === 'poly');
+  check(JSON.stringify(mp0.pts) === '[[90,10],[70,10],[70,15],[90,15]]' && JSON.stringify(p0.pts) === '[[10,10],[30,10],[30,15],[10,15]]', 'a stick outline is mirrored point by point and the original is untouched');
+  const sl = core.mirrorItems([{ kind: 'rect', x: 13, y: 23, w: 74, h: 4 }], 100)[0];
+  check(sl.x === 13 && sl.w === 74 && sl.y === 23, 'the centred slot maps onto itself');
+  const sl2 = core.mirrorItems([{ kind: 'rect', x: 10, y: 23, w: 20, h: 4 }], 100)[0];
+  check(sl2.x === 70 && sl2.w === 20, 'a rectangle: x -> width - x - w (10 -> 70)');
+  check(JSON.stringify(core.mirrorItems(m, 100)) === JSON.stringify(items), 'mirroring twice gives the original');
+  check(core.defaultState().export.mirrorDrill === false && core.fromJson(JSON.stringify({ version: 1, export: { mirrorDrill: true } })).export.mirrorDrill === true && core.fromJson(JSON.stringify({ version: 1, export: {} })).export.mirrorDrill === false && core.fromJson(JSON.stringify({ version: 1, export: { mirrorDrill: 'x' } })).export.mirrorDrill === true, 'mirrorDrill: off by default, saved in the JSON');
 }
 setTimeout(finish, 3000);
 

@@ -30,7 +30,7 @@ with sync_playwright() as p:
     check(len(sc['arrow']['holes']) == 10, '10 arrow holes')
     # drill EPS
     eps = pg.evaluate('PlateApp.drillEps()')
-    check(ncirc(eps) == 6 + 4 + 10 + 1, 'EPS circles: 6+4 letters, 10 arrow, 1 CLOSED round, got %d' % ncirc(eps))
+    check(ncirc(eps) == 6 + 4 + 1 and nmove(eps) == 1 + 11 + 10, 'EPS: 6+4 letter circles, 1 CLOSED round, 10 stick outlines (no arrow circles), got %d circles, %d paths' % (ncirc(eps), nmove(eps)))
     check(eps.startswith('%!PS-Adobe-3.0 EPSF-3.0\n%%LanguageLevel: 2\n%%BoundingBox: -10000 -10000 10000 10000\n') and eps.endswith('0 0 m\nS Q\nQ Q\nshowpage\n%%Trailer\nend\n%%EOF\n') and 'arc' not in eps.split('%%EndPageSetup')[1].replace('Cut lines', '').split('\n4 M q\n')[1], 'EPS is in the CutStudio format')
     pdf = pg.evaluate("PlateApp.drillPdf('A4')"); check(pdf['pages'] == 9 and pdf['tilePages'] == 8 and pdf['cols'] == 4 and pdf['rows'] == 2 and pdf['text'].startswith('%PDF-1.4'), 'A4 tiling of 960 x 300: 4 x 2 pages, got %s' % ((pdf['cols'], pdf['rows']),))
     ptxt = pdf['text']; check(' B*' in ptxt and '(C1) Tj' in ptxt and '(O6) Tj' in ptxt and '(L-CAP D2) Tj' in ptxt and '(R-WING-DN A2) Tj' in ptxt and '(CLOSED) Tj' in ptxt, 'drill PDF has the letter and arrow shapes with labels (C1..N6, stick names, CLOSED)')
@@ -42,9 +42,9 @@ with sync_playwright() as p:
     check('Tj' not in pg.evaluate('PlateApp.drillEps()') and 'Tj' not in pg.evaluate('PlateApp.drillDxf()'), 'EPS and DXF have no dimension text')
     pg.uncheck('#exPdfRef'); p2 = pg.evaluate("PlateApp.drillPdf('A4')")['text']; check(' B*' not in p2 and '(C1) Tj' not in p2, 'the option turns the reference drawing off'); pg.check('#exPdfRef')
     pdf3 = pg.evaluate("PlateApp.drillPdf('A3')"); check(pdf3['pages'] == 7, 'A3 tiling: 3 x 2 pages, got %d' % pdf3['pages'])
-    dxf = pg.evaluate('PlateApp.drillDxf()'); check(dxf.count('0\nCIRCLE\n') == 21 and dxf.startswith('0\nSECTION') and dxf.endswith('0\nEOF\n'), 'DXF has 21 circles, got %d' % dxf.count('0\nCIRCLE\n'))
+    dxf = pg.evaluate('PlateApp.drillDxf()'); check(dxf.count('0\nCIRCLE\n') == 11 and dxf.count('POLYLINE\n8\nARROW') == 10 and dxf.startswith('0\nSECTION') and dxf.endswith('0\nEOF\n'), 'DXF has 11 circles and 10 arrow polylines, got %d' % dxf.count('0\nCIRCLE\n'))
     ld = pg.evaluate('PlateApp.lettersEps()'); check(ld['dxf'].count('POLYLINE\n8\nLETTERS') == ld['polys'] and ld['polys'] >= 14, 'letter DXF has one polyline per outline')
-    pg.click('#exDxf'); pg.wait_for_timeout(100); check(pg.input_value('#exName') == 'plate-drill-pattern.dxf' and pg.input_value('#exText').count('CIRCLE') == 21, 'export is also shown as text (name and content)')
+    pg.click('#exDxf'); pg.wait_for_timeout(100); check(pg.input_value('#exName') == 'plate-drill-pattern.dxf' and pg.input_value('#exText').count('CIRCLE') == 11, 'export is also shown as text (name and content)')
     # letter EPS
     le = pg.evaluate('PlateApp.lettersEps()'); check(le['polys'] >= 14, 'letter outlines exist, got %d' % le['polys']); check(nmove(le['text']) >= 14 and ' l\n' in le['text'], 'letter EPS has paths')
     # holes covered by the letters in the default layout (DejaVu Sans, uniform cells)
@@ -159,8 +159,8 @@ with sync_playwright() as p:
     pg.click('#stripAdd'); check(len(S()['strips']) == 1, 'strip piece added'); pg.keyboard.press('r'); check(S()['strips'][0]['rot'] == 90, 'R rotates the strip')
     pg.keyboard.press('Delete'); check(len(S()['strips']) == 0, 'Delete removes the strip')
     # CLOSED hole export modes
-    pg.select_option('#closedHole', 'slot'); e2 = pg.evaluate('PlateApp.drillEps()'); check(ncirc(e2) == 20 and nmove(e2) == 20 + 1 + 1, 'slot mode: 20 circles + a rectangle (+ the plate outline)')
-    pg.select_option('#closedHole', 'none'); e3 = pg.evaluate('PlateApp.drillEps()'); check(ncirc(e3) == 20 and nmove(e3) == 20 + 1, 'none mode: 20 circles (+ the plate outline)')
+    pg.select_option('#closedHole', 'slot'); e2 = pg.evaluate('PlateApp.drillEps()'); check(ncirc(e2) == 10 and nmove(e2) == 10 + 1 + 1 + 10, 'slot mode: 10 circles + a rectangle + 10 stick outlines (+ the plate outline)')
+    pg.select_option('#closedHole', 'none'); e3 = pg.evaluate('PlateApp.drillEps()'); check(ncirc(e3) == 10 and nmove(e3) == 10 + 1 + 10, 'none mode: 10 circles + 10 stick outlines (+ the plate outline)')
     pg.select_option('#closedHole', 'round')
     # quick hole buttons
     pg.click('#t-casino-fit'); offs = S()['texts']['casino']['holeOffsets']; check(len(offs) == 6, 'fit button stores 6 offsets')
@@ -322,6 +322,23 @@ with sync_playwright() as p:
     check(S()['strips'][0]['rot'] == 30 and abs(S()['strips'][0]['x'] - sx0 - 15) < 3.5, 'dragging the turned piece moves it and keeps the angle (snap may nudge it)')
     pg.evaluate('PlateApp.commit()'); pg.reload(); pg.wait_for_timeout(300); check(S()['strips'][0]['rot'] == 30 and S()['stripsV'] == 2, 'the angle survives a reload')
     pg.evaluate("PlateApp.state().strips[0].rot = 30"); info = pg.evaluate("document.getElementById('stripInfo').textContent"); check('piece' in info.lower(), 'strip info still shows: ' + info)
+    # arrow stick outlines and the mirrored drill pattern
+    pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate(LEGACY_JS); pg.wait_for_timeout(50)
+    check(S()['export']['mirrorDrill'] is False and not pg.is_checked('#exMirrorDrill') and pg.is_checked('#exArrow'), 'mirror image of the drill pattern is off by default; arrow outlines on')
+    e_n = pg.evaluate('PlateApp.drillEps()'); d_n = pg.evaluate('PlateApp.drillDxf()'); f_n = pg.evaluate("PlateApp.drillPdf('A4')")['text']
+    pg.uncheck('#exArrow'); e_x = pg.evaluate('PlateApp.drillEps()'); check(nmove(e_x) == nmove(e_n) - 10 and 'ARROW' not in pg.evaluate('PlateApp.drillDxf()'), 'arrow option off: no stick outlines'); pg.check('#exArrow')
+    pg.check('#exMirrorDrill'); e_m = pg.evaluate('PlateApp.drillEps()'); d_m = pg.evaluate('PlateApp.drillDxf()'); f_m = pg.evaluate("PlateApp.drillPdf('A4')")['text']
+    check(S()['export']['mirrorDrill'] is True, 'the mirror option is stored')
+    def first_xs(t): return [float(l.split()[0]) for l in t.split('\n4 M q\n')[1].split('\n') if l.endswith(' m') and not l.startswith('0 0')]
+    xn, xm = first_xs(e_n), first_xs(e_m); W = 960 * 72 / 25.4
+    check(len(xn) == len(xm) == 22, 'EPS: the same 22 paths when mirrored (outline, 11 circles, 10 stick outlines)')
+    def circ_centres(t): return [float(l.split()[0]) - 5 * 72 / 25.4 for l in t.split('\n4 M q\n')[1].split('\n') if l.endswith(' m') and not l.startswith('0 0')][1:11]
+    cn, cm = circ_centres(e_n), circ_centres(e_m)
+    check(len(cn) == 10 and all(abs(a + b - W) < 0.02 for a, b in zip(cn, cm)), 'EPS: every circle centre x -> plate width - x when mirrored')
+    check(d_n != d_m and d_n.count('CIRCLE') == d_m.count('CIRCLE') and d_m.count('POLYLINE\n8\nARROW') == 10, 'DXF is mirrored too')
+    check(f_n != f_m and f_m.startswith('%PDF-1.4') and f_m.count('(L-CAP D2) Tj') == f_n.count('(L-CAP D2) Tj'), 'PDF is mirrored too, labels stay readable text')
+    pg.uncheck('#exMirrorDrill'); check(pg.evaluate('PlateApp.drillEps()') == e_n and pg.evaluate('PlateApp.drillDxf()') == d_n, 'turning the mirror off gives the original files back')
+    lt = pg.evaluate('PlateApp.lettersEps()')['text']; pg.check('#exMirrorDrill'); check(pg.evaluate('PlateApp.lettersEps()')['text'] == lt, 'the drill mirror does not touch the letter cut (it has its own mirror option)'); pg.uncheck('#exMirrorDrill')
     # selecting several texts: rubber band, shift / ctrl, group move and scale, same height
     pg.goto(URL); pg.evaluate('localStorage.clear()'); pg.goto(URL); pg.wait_for_timeout(300); pg.evaluate(LEGACY_JS); pg.wait_for_timeout(50); pg.evaluate("PlateApp.useFont('casino','DejaVu Sans')"); pg.set_viewport_size({'width': 1400, 'height': 800}); pg.click('#zfit'); pg.wait_for_timeout(200)
     def box(k): return pg.evaluate('PlateApp.scene().%s' % k)

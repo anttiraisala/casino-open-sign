@@ -459,7 +459,7 @@
   function fmt(n) { return String(Math.round(n * 1000) / 1000); }
 
   // Primitives of the drilling pattern in plate millimetres. state.holes lists are made by the caller (app or test):
-  // items: {kind:'circle', x, y, d, tag} | {kind:'rect', x, y, w, h, tag} | {kind:'outline', w, h}
+  // items: {kind:'circle', x, y, d, tag} | {kind:'rect', x, y, w, h, tag} | {kind:'poly', pts:[[x,y],...], tag} (closed outline, e.g. an arrow stick) | {kind:'outline', w, h}
   function drillItems(state, scene) {
     var items = [];
     if (state.export.plateOutline) items.push({ kind: 'outline', w: state.plate.w, h: state.plate.h, tag: 'plate' });
@@ -470,7 +470,7 @@
       t.cells.forEach(function (c) { if (c.hole) items.push({ kind: 'circle', x: c.hole.x, y: c.hole.y, d: d, tag: key }); (c.extras || []).forEach(function (e) { items.push({ kind: 'circle', x: e.x, y: e.y, d: d, tag: key }); }); });
     });
     if (state.export.arrow && scene.arrow) {
-      scene.arrow.holes.forEach(function (h) { items.push({ kind: 'circle', x: h.x, y: h.y, d: h.d, tag: 'arrow' }); });
+      (scene.arrow.sticks || []).forEach(function (st) { items.push({ kind: 'poly', pts: st.pts, tag: 'arrow', name: st.name }); });
     }
     var mode = state.export.closedHole;
     if (mode === 'round') items.push({ kind: 'circle', x: scene.closedRound.x, y: scene.closedRound.y, d: d, tag: 'closed' });
@@ -522,6 +522,17 @@
     return { text: CUT_HEAD + (out.length ? out.join('\n') + '\n' : '') + CUT_TAIL, warnings: warnings };
   }
 
+  // Mirror image of the drill items left <-> right around the plate centre (x -> plate width - x), for printing / cutting from the back.
+  function mirrorItems(items, plateW) {
+    return items.map(function (it) {
+      var o = {}, k; for (k in it) o[k] = it[k];
+      if (it.kind === 'circle') o.x = plateW - it.x;
+      else if (it.kind === 'rect') o.x = plateW - it.x - it.w;
+      else if (it.kind === 'poly') o.pts = it.pts.map(function (q) { return [plateW - q[0], q[1]]; });
+      return o;
+    });
+  }
+
   // Drill pattern for CutStudio. The plate is centred in the sheet area (sheet w x h, at least the plate size).
   function epsFromItems(items, plate, title, sheet) {
     var aw = Math.max(plate.w, sheet ? sheet.w : 0), ah = Math.max(plate.h, sheet ? sheet.h : 0), ox = (aw - plate.w) / 2, oy = (ah - plate.h) / 2, paths = [];
@@ -529,6 +540,7 @@
       if (it.kind === 'outline') paths.push(rectPath(0, 0, it.w, it.h));
       else if (it.kind === 'circle') paths.push(circlePath(it.x, it.y, it.d / 2));
       else if (it.kind === 'rect') paths.push(rectPath(it.x, it.y, it.w, it.h));
+      else if (it.kind === 'poly') paths.push(polyPath(it.pts, true));
     });
     var r = cutEps(paths, ah, ox, oy);
     if (sheet && (sheet.w < plate.w || sheet.h < plate.h)) r.warnings.push('the plate is larger than the sheet: the area was enlarged to the plate size');
@@ -557,6 +569,7 @@
       if (it.kind === 'outline') t += dxfRect(0, 0, it.w, it.h, 'PLATE');
       else if (it.kind === 'circle') t += dxfCircle(it.x, plate.h - it.y, it.d / 2, 'HOLES');
       else if (it.kind === 'rect') t += dxfRect(it.x, plate.h - it.y - it.h, it.w, it.h, 'SLOT');
+      else if (it.kind === 'poly') t += dxfPoly(it.pts.map(function (q) { return [q[0], plate.h - q[1]]; }), 'ARROW');
     });
     return t + dxfEnd();
   }
@@ -593,6 +606,11 @@
     items.forEach(function (it) {
       if (it.kind === 'circle') one(it.x, it.y, it.d / 2, it.d / 2, false);
       else if (it.kind === 'rect') one(it.x + it.w / 2, it.y + it.h / 2, it.w / 2, it.h / 2, true);
+      else if (it.kind === 'poly') {
+        var x0 = 1e18, x1 = -1e18, y0 = 1e18, y1 = -1e18;
+        it.pts.forEach(function (q) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); });
+        one((x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0) / 2, (y1 - y0) / 2, true);
+      }
     });
     return out;
   }
@@ -629,6 +647,10 @@
         items.forEach(function (it) {
           if (it.kind === 'outline') {
             cs += '0 0 1 RG ' + fmt(X(0)) + ' ' + fmt(Yp(it.h)) + ' ' + fmt(it.w * K) + ' ' + fmt(it.h * K) + ' re S\n';
+          } else if (it.kind === 'poly') {
+            cs += '0 0 0 RG ';
+            it.pts.forEach(function (q, i) { cs += fmt(X(q[0])) + ' ' + fmt(Yp(q[1])) + (i ? ' l ' : ' m '); });
+            cs += 'h S\n';
           } else if (it.kind === 'rect') {
             cs += '0 0 0 RG ' + fmt(X(it.x)) + ' ' + fmt(Yp(it.y + it.h)) + ' ' + fmt(it.w * K) + ' ' + fmt(it.h * K) + ' re S\n';
           } else if (it.kind === 'circle') {
@@ -754,7 +776,7 @@
       closedRound: { dx: 0, dy: 0 },
       closedSlot: { dx: 0, dy: 0, w: 74, h: 4 },
       strips: [],
-      export: { closedHole: 'round', plateOutline: true, arrow: true, pdfRef: true, pdfDims: true, plateCut: false, mirror: false, kerf: 0, sheetW: 600, sheetH: 300, spacing: 3, boxes: false, nest: false },
+      export: { closedHole: 'round', plateOutline: true, arrow: true, pdfRef: true, pdfDims: true, plateCut: false, mirror: false, mirrorDrill: false, kerf: 0, sheetW: 600, sheetH: 300, spacing: 3, boxes: false, nest: false },
       ui: { dims: 'selected', snap: true, preview: false, grid: true }
     };
   }
@@ -797,7 +819,7 @@
     if (o.export) {
       var e2 = s.export, x = o.export;
       e2.closedHole = x.closedHole === 'slot' || x.closedHole === 'none' ? x.closedHole : 'round';
-      e2.plateOutline = x.plateOutline !== false; e2.arrow = x.arrow !== false; e2.pdfRef = x.pdfRef !== false; e2.pdfDims = x.pdfDims !== false; e2.plateCut = !!x.plateCut; e2.mirror = !!x.mirror; e2.boxes = !!x.boxes; e2.nest = !!x.nest;
+      e2.plateOutline = x.plateOutline !== false; e2.arrow = x.arrow !== false; e2.pdfRef = x.pdfRef !== false; e2.pdfDims = x.pdfDims !== false; e2.plateCut = !!x.plateCut; e2.mirror = !!x.mirror; e2.mirrorDrill = !!x.mirrorDrill; e2.boxes = !!x.boxes; e2.nest = !!x.nest;
       e2.kerf = num(x.kerf, -2, 2, 0); e2.sheetW = num(x.sheetW, 50, 3000, 600); e2.sheetH = num(x.sheetH, 50, 3000, 300); e2.spacing = num(x.spacing, 0, 50, 3);
     }
     if (o.ui) {
@@ -865,7 +887,7 @@
     Glyph: Glyph, glyphFromPolygons: glyphFromPolygons, placeText: placeText, holeStatus: holeStatus, suggestHole: suggestHole, holeOffsetFor: holeOffsetFor,
     stripPoly: stripPoly, stripContains: stripContains, stripSamples: stripSamples, stripHandle: stripHandle, stripAngleTo: stripAngleTo, stripCentre: stripCentre, normRot: normRot,
     frameCounts: frameCounts, unionBox: unionBox, boxesTouch: boxesTouch, bandSelection: bandSelection, groupScaleLimits: groupScaleLimits, groupCentre: groupCentre, scrollDelta: scrollDelta, resizePlate: resizePlate, frameSides: frameSides, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripPoly: stripPoly, stripContains: stripContains, stripSamples: stripSamples, stripHandle: stripHandle, stripAngleTo: stripAngleTo, stripCentre: stripCentre, normRot: normRot, stripCoverage: stripCoverage,
-    drillItems: drillItems, epsFromItems: epsFromItems, cutEps: cutEps, polyPath: polyPath, circlePath: circlePath, cutNum: cutNum, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, frameBars: frameBars, frameSheet: frameSheet, nestShelves: nestShelves,
+    drillItems: drillItems, mirrorItems: mirrorItems, epsFromItems: epsFromItems, cutEps: cutEps, polyPath: polyPath, circlePath: circlePath, cutNum: cutNum, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, frameBars: frameBars, frameSheet: frameSheet, nestShelves: nestShelves,
     defaultState: defaultState, fromJson: fromJson, toJson: toJson
   };
 });
