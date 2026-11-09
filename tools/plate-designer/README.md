@@ -27,13 +27,23 @@ nothing to install and nothing is sent anywhere, except that fonts are fetched f
 
 ## Exports
 - Drill pattern as EPS (1 unit = 1 mm, 5 mm margin; plate outline optional) and as DXF (R12 ASCII, mm, y up, layers PLATE / HOLES / SLOT: circles and closed polylines).
-- Drill pattern as 1:1 tiled PDF, A4 or A3 landscape (print at 100 %, tape the tiles together; crosshair at every hole). The PDF also shows the letters and the arrow sticks in light grey with labels (letter numbers C1..O6, stick names with connectors such as L-CAP D2, CLOSED), so it doubles as a layout drawing: print it twice, drill through one copy and read the other. Option "letters, arrow and labels in the drill PDF" turns this off.
+- Drill pattern as 1:1 tiled PDF, A4 or A3 landscape (print at 100 %, tape the tiles together; crosshair at every hole). The PDF also shows the letters and the arrow sticks in light grey with labels (letter numbers C1..O6, stick names with connectors such as L-CAP D2, CLOSED), so it doubles as a layout drawing: print it twice, drill through one copy and read the other. Option "letters, arrow and labels in the drill PDF" turns this off. Around every hole the PDF also writes the distance from the hole centre to all four plate edges (mm, rounded to 0.1, with thin dotted green lines to the edges; for the CLOSED slot the distances to its edges); option "distances to all plate edges around every hole (PDF)". The EPS and DXF files have no text or dimensions.
 - Letter cut as EPS: as placed on the plate or nested on a raw sheet, optional mirror (cut from the back), laser kerf, dashed bounding boxes.
   Letter cut also as DXF (layers LETTERS, BOXES; one closed polyline per outline). DXF is untested in a real cutter program. Letters are written as outlines at 0.1 mm resolution; inner contours (holes of A, O, D, P) are included.
 
 ## Saving
 - Autosave in the browser (localStorage), named layouts, undo/redo.
 - JSON textarea shows the layout live. "Copy JSON from app" puts it on the clipboard; "Paste clipboard into app" loads a layout from the clipboard (if the browser blocks reading the clipboard, press Ctrl+V anywhere on the page outside the text fields). "Apply edited JSON" loads hand-edited text. Fonts are stored by name only, no font files.
+
+## Use it online (GitHub Pages)
+Address: https://anttiraisala.github.io/casino-open-sign/tools/plate-designer/ (the root address https://anttiraisala.github.io/casino-open-sign/ redirects here). It is the same `index.html` + `app.js` + `plate-core.js` + `arrow-data.js` as in this folder, served as a static page; nothing to build. Unlike the published Claude artifact, file downloads (EPS, DXF, PDF) work there, and Google Fonts load normally.
+
+One-time setup (the repository owner, in a browser; the AI cannot do this):
+1. The repository must be public (GitHub Pages on a private repository needs a paid GitHub plan). Settings > General > Danger Zone > Change visibility, only if you want it public: the whole repository, including the sign files, becomes readable by everyone.
+2. Open https://github.com/anttiraisala/casino-open-sign/settings/pages
+3. Under "Build and deployment" choose Source: "Deploy from a branch", Branch: `master`, Folder: `/ (root)`, press Save.
+4. Wait about a minute; the page shows "Your site is live at https://anttiraisala.github.io/casino-open-sign/". Open it. Later pushes to `master` update the site automatically (about a minute).
+Notes: layouts saved in the browser (localStorage) belong to that address; copy the JSON out if you want to move a layout to another browser. If the page shows 404 right after saving, wait and reload. A custom domain is possible later (Settings > Pages) but is not needed.
 
 ## Published copy
 `python3 tools/build_plate_designer_single.py` writes `plate-designer-single.html` (everything inlined); it is published as the artifact "Plate Designer - CASINO OPEN front plate" (slug f2576151-ab61-4c1b-b072-788b0609f3cd). Downloads are blocked inside the artifact, so every export is also shown as text in the Export section (Copy button). Republish it to the same slug after changing the tool.

@@ -130,6 +130,27 @@ function fakeGlyph(wmm) { return core.glyphFromPolygons([rect(0, -100, wmm, 0, f
   const nn = core.snapCentres({ x: 0, y: 0, w: 100, h: 50 }, [{ cx: 52, cy: 27 }, { cx: 51, cy: 26 }], 3); check(nn.dx === 1 && nn.dy === 1, 'the nearest centre line wins');
   check(core.snapCentres({ x: 0, y: 0, w: 100, h: 50 }, [{ cx: 53, cy: 200 }], 3).dx === 3, 'a centre line exactly at the threshold still snaps');
 }
+// ---- hole dimensions for the PDF
+{
+  const dm = core.holeDimItems([{ kind: 'outline', w: 100, h: 50 }, { kind: 'circle', x: 15, y: 20, d: 10 }], { w: 100, h: 50 });
+  const lines = dm.filter(i => i.kind === 'line'), txt = dm.filter(i => i.kind === 'text');
+  check(dm.length === 8 && lines.length === 4 && txt.length === 4, 'a hole gets 4 lines and 4 numbers, the outline none, got ' + dm.length);
+  const byS = {}; txt.forEach(t => byS[t.s] = t);
+  check(Object.keys(byS).sort().join() === '15,20,30,85', 'distances: left 15, right 85, up 20, down 30 (' + Object.keys(byS).sort().join() + ')');
+  near(byS['15'].x, 15 - 5 - 1 - 1.0583, 0.01, 'left number sits left of the hole'); near(byS['15'].y, 18.8, 1e-9, 'left number height');
+  near(byS['85'].x, 15 + 5 + 1 + 1.0583, 0.01, 'right number sits right of the hole');
+  check(byS['20'].x === 15 && byS['20'].y === 20 - 5 - 1.5, 'upper number above the hole'); check(byS['30'].x === 15 && byS['30'].y === 20 + 5 + 3.5, 'lower number below the hole');
+  const l = lines.map(q => [q.x1, q.y1, q.x2, q.y2].join()).sort().join('|');
+  check(l === [[0, 20, 10, 20], [20, 20, 100, 20], [15, 0, 15, 15], [15, 25, 15, 50]].map(q => q.join()).sort().join('|'), 'dimension lines run from the hole edge to the plate edge: ' + l);
+  const sd = core.holeDimItems([{ kind: 'rect', x: 20, y: 10, w: 40, h: 4 }], { w: 100, h: 50 }).filter(i => i.kind === 'text').map(i => i.s).sort().join();
+  check(sd === '10,20,36,40', 'slot: distances to its edges (left 20, right 40, up 10, down 36), got ' + sd);
+  const dr = core.holeDimItems([{ kind: 'circle', x: 33.33, y: 20.06, d: 10 }], { w: 100, h: 50 }).filter(i => i.kind === 'text').map(i => i.s).sort().join();
+  check(dr === '20.1,29.9,33.3,66.7', 'numbers are rounded to 0.1 mm: ' + dr);
+  const pdf = core.pdfTiles([], { w: 100, h: 50 }, 'A4', 'T', dm).text;
+  check(pdf.indexOf('0 0.45 0.15 RG 0.1 w [1 1] 0 d ') > 0 && pdf.indexOf('(85) Tj') > 0 && pdf.indexOf('0 0.45 0.15 rg') > 0, 'PDF has dotted green dimension lines and green numbers');
+  const lm = pdf.match(/0\.45 0\.15 RG 0\.1 w \[1 1\] 0 d ([0-9.]+) ([0-9.]+) m ([0-9.]+) ([0-9.]+) l S/); near(+lm[1], 10 * 72 / 25.4, 0.01, 'first line starts at the plate edge (x = margin 10 mm)'); near(+lm[2], (10 + 190 - 20) * 72 / 25.4, 0.01, 'at the hole height'); near(+lm[3], 20 * 72 / 25.4, 0.01, 'and ends at the hole edge (10 + 10 mm)');
+  check(core.defaultState().export.pdfDims === true && core.fromJson({ version: 1, export: { pdfDims: false } }).export.pdfDims === false && core.fromJson({ version: 1, export: {} }).export.pdfDims === true, 'pdfDims option: default true, false is kept');
+}
 // ---- DXF
 {
   const dx = core.dxfFromItems([{ kind: 'outline', w: 100, h: 50 }, { kind: 'circle', x: 15, y: 20, d: 10 }, { kind: 'rect', x: 20, y: 10, w: 74, h: 4 }], { w: 100, h: 50 });

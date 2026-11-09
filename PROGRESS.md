@@ -25,6 +25,9 @@
 ## Plate Designer DONE (2026-11-09)
 - `tools/plate-designer/`: browser tool for the front plate (boxes, letter holes, CLOSED round/slot, dimension arrows, LED strip frame, strip pieces, fonts by name, thickening, thin-part warning, preview, undo, JSON, localStorage); exports drill EPS/DXF, tiled A4/A3 PDF, letter cut EPS/DXF (as placed / nested, mirror, kerf). Core logic has a node test with a mutation test (47 mutants); a Playwright test drives the UI with a local font. Not tested: real Google Fonts loading, real plate/laser.
 
+## Plate Designer online (prepared 2026-11-09)
+- Root `index.html` redirect + `.nojekyll` + README links for GitHub Pages (https://anttiraisala.github.io/casino-open-sign/). Not live until the owner enables Pages (steps in `tools/plate-designer/README.md`); not checked whether the repository is public.
+
 ## Planned / open
 - Phase 1 DONE (2026-11-07; refined the same evening: tail cap middle 6 LEDs, head cap 3 + 3 end LEDs, upper/lower routes of 36 LEDs, alternating pulse; owner saw the first version run in Wokwi and said it works): sketch.ino + diagram.json use the 10 sticks (D2-D8, A0-A2) with a simple flowing arrow animation; frame D9/D10, letters D11, switch D32, button D33; CLOSED light changed from a 6-LED strip on D31 to the 11th Grove stick (10 LEDs, A3); sign of life in sketch.ino; old strip arrow in backup/old_arrow_strips/. Not yet run in Wokwi or built for the real Arduino by the AI.
 - Phase 2 (after the owner asks): sign of life in strip_test and stick_test, old stick_test* layouts to 83x10 / 74x4 mm, richer arrow animations, 12 V WS2811 redesign, versioned releases, update the account skill ar-git-repo to v4.

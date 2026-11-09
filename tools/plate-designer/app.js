@@ -445,6 +445,7 @@
     bind('slotH', function () { return S.closedSlot.h; }, function (v) { S.closedSlot.h = cl(v, 1, 100); });
     bind('exOutline', function () { return S.export.plateOutline; }, function (v) { S.export.plateOutline = v; });
     bind('exPdfRef', function () { return S.export.pdfRef; }, function (v) { S.export.pdfRef = v; });
+    bind('exPdfDims', function () { return S.export.pdfDims; }, function (v) { S.export.pdfDims = v; });
     bind('exArrow', function () { return S.export.arrow; }, function (v) { S.export.arrow = v; });
     bind('exMirror', function () { return S.export.mirror; }, function (v) { S.export.mirror = v; });
     bind('exBoxes', function () { return S.export.boxes; }, function (v) { S.export.boxes = v; });
@@ -651,6 +652,7 @@
     exEps: 'Download the drill pattern as EPS (1 unit = 1 mm, 5 mm margin).', exA4: 'Download the drill pattern as a 1:1 PDF on A4 sheets (tiles). Print at 100 %, no scaling, and tape the tiles together.', exA3: 'Download the drill pattern as a 1:1 PDF on A3 sheets (tiles). Print at 100 %, no scaling.',
     exDxf: 'Download the drill pattern as DXF (R12, mm, layers PLATE, HOLES, SLOT) for a cutter or CAD program.',
     exPdfRef: 'Draw the letters and the arrow sticks (with letter numbers such as C1, A2 and stick names such as L-CAP D2) in light grey under the holes of the drill PDF, so the sheet is also a layout drawing. Print it twice: drill through one copy and read the other to see what goes where.',
+    exPdfDims: 'Write the distance from every hole centre to all four plate edges around the hole in the drill PDF (numbers in mm, rounded to 0.1, with thin dotted lines to the edges). For the CLOSED slot the distances are to its edges. Not in the EPS or DXF files.',
     exMirror: 'Mirror the letter cut left-to-right, for cutting from the back of the material.', exBoxes: 'Draw dashed bounding boxes in the letter cut export (the text boxes, or the pieces when nested).',
     exNest: 'Pack the letters tightly on a raw sheet of the size below instead of keeping them at their place on the plate.',
     exKerf: 'Laser kerf in mm (width of the cut). Every outline is grown by half of this so that the cut-out letter ends up the right size. Use 0 if unsure.',
@@ -809,7 +811,7 @@
       var pts = st.pts.map(function (q) { return [q[0] + S.arrow.x, q[1] + S.arrow.y]; }), mx = 0, my = 0;
       pts.forEach(function (q) { mx += q[0] / pts.length; my += q[1] / pts.length; });
       ref.push({ kind: 'poly', loops: [pts], fill: 0.93, stroke: 0.5 });
-      ref.push({ kind: 'text', x: mx, y: my + ARROW.holeD / 2 + 4, s: st.name + ' ' + st.connector, size: 5 });
+      ref.push({ kind: 'text', x: mx - 24, y: my + 3, s: st.name + ' ' + st.connector, size: 5 });
     });
     KEYS.forEach(function (key) {
       var off = S.texts[key].thicken;
@@ -817,13 +819,16 @@
         if (!c.glyph) return;
         var loops = contours(c.glyph, off, 0.03).map(function (p) { return p.map(function (q) { return [q[0] + c.gox, q[1] + c.goy]; }); });
         ref.push({ kind: 'poly', loops: loops, fill: 0.85, stroke: 0.4 });
-        if (c.hole) ref.push({ kind: 'text', x: c.hole.x, y: c.hole.y + r + 4, s: S.texts[key].text.charAt(c.index) + (c.index + 1), size: 7 });
+        if (c.hole) ref.push({ kind: 'text', x: c.hole.x + r + 4, y: c.hole.y + r + 3, s: S.texts[key].text.charAt(c.index) + (c.index + 1), size: 7 });
       });
     });
-    ref.push({ kind: 'text', x: sc.closedRound.x, y: sc.closedRound.y + r + 4, s: 'CLOSED', size: 6 });
+    ref.push({ kind: 'text', x: sc.closedRound.x + r + 8, y: sc.closedRound.y + r + 3, s: 'CLOSED', size: 6 });
     return ref;
   }
-  function buildDrillPdf(paper) { return core.pdfTiles(core.drillItems(S, drillScene()), S.plate, paper, 'Casino plate drill pattern', S.export.pdfRef ? pdfReference() : null); }
+  function buildDrillPdf(paper) {
+    var items = core.drillItems(S, drillScene()), ref = (S.export.pdfRef ? pdfReference() : []).concat(S.export.pdfDims ? core.holeDimItems(items, S.plate) : []);
+    return core.pdfTiles(items, S.plate, paper, 'Casino plate drill pattern', ref);
+  }
   function buildDrillDxf() { return core.dxfFromItems(core.drillItems(S, drillScene()), S.plate); }
   function bboxOf(polys) {
     var a = 1e9, b = 1e9, c = -1e9, d = -1e9;

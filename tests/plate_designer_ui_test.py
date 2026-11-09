@@ -30,6 +30,11 @@ with sync_playwright() as p:
     pdf = pg.evaluate("PlateApp.drillPdf('A4')"); check(pdf['pages'] == 8 and pdf['cols'] == 4 and pdf['rows'] == 2 and pdf['text'].startswith('%PDF-1.4'), 'A4 tiling of 980 x 300: 4 x 2 pages, got %s' % ((pdf['cols'], pdf['rows']),))
     ptxt = pdf['text']; check(' B*' in ptxt and '(C1) Tj' in ptxt and '(O6) Tj' in ptxt and '(L-CAP D2) Tj' in ptxt and '(R-WING-DN A2) Tj' in ptxt and '(CLOSED) Tj' in ptxt, 'drill PDF has the letter and arrow shapes with labels (C1..N6, stick names, CLOSED)')
     check(ptxt.count(' B*') >= 6 + 4 + 6 + 10, 'one filled shape per letter and per arrow stick, got %d' % ptxt.count(' B*'))
+    nl = ptxt.count('0 0.45 0.15 RG'); check(nl == 21 * 4 * pdf['pages'], 'four dimension lines for each of the 21 holes on each of the %d tiles, got %d' % (pdf['pages'], nl))
+    sc2 = pg.evaluate('PlateApp.scene()'); c0 = sc2['casino']['cells'][0]['hole']; W = 980
+    check('(%s) Tj' % ('%g' % round(c0['x'], 1)) in ptxt and '(%s) Tj' % ('%g' % round(W - c0['x'], 1)) in ptxt and '(%s) Tj' % ('%g' % round(c0['y'], 1)) in ptxt, 'the first hole distances (left %.1f, right %.1f, up %.1f) are written in the PDF' % (c0['x'], W - c0['x'], c0['y']))
+    pg.uncheck('#exPdfDims'); p3 = pg.evaluate("PlateApp.drillPdf('A4')")['text']; check('0 0.45 0.15 RG' not in p3 and ' B*' in p3, 'the dimension option turns the numbers off and keeps the reference drawing'); pg.check('#exPdfDims')
+    check('Tj' not in pg.evaluate('PlateApp.drillEps()') and 'Tj' not in pg.evaluate('PlateApp.drillDxf()'), 'EPS and DXF have no dimension text')
     pg.uncheck('#exPdfRef'); p2 = pg.evaluate("PlateApp.drillPdf('A4')")['text']; check(' B*' not in p2 and '(C1) Tj' not in p2, 'the option turns the reference drawing off'); pg.check('#exPdfRef')
     pdf3 = pg.evaluate("PlateApp.drillPdf('A3')"); check(pdf3['pages'] == 6, 'A3 tiling: 3 x 2 pages, got %d' % pdf3['pages'])
     dxf = pg.evaluate('PlateApp.drillDxf()'); check(dxf.count('0\nCIRCLE\n') == 21 and dxf.startswith('0\nSECTION') and dxf.endswith('0\nEOF\n'), 'DXF has 21 circles, got %d' % dxf.count('0\nCIRCLE\n'))
@@ -145,6 +150,9 @@ with sync_playwright() as p:
     # layouts in localStorage
     pg.fill('#layoutName', 'test one'); pg.click('#layoutSave'); check('test one' in pg.inner_text('#layoutList'), 'saved layout is listed')
     pg.evaluate('PlateApp.commit()'); pg.reload(); pg.wait_for_timeout(400); check(S()['plate']['w'] == 980 or S()['plate']['w'] == 800, 'autosave restored after reload'); check('test one' in pg.inner_text('#layoutList'), 'saved layout survives reload')
+    # the repository root page redirects to the designer (GitHub Pages entry)
+    pg.goto('file://' + ROOT + '/index.html'); pg.wait_for_url('**/tools/plate-designer/index.html', timeout=5000); check(pg.locator('#plateW').count() == 1, 'root index.html redirects to the Plate Designer')
+    pg.goto(URL); pg.wait_for_timeout(300)
     # preview and screenshots
     shot = sys.argv[1] if len(sys.argv) > 1 else '/tmp/plate_designer.png'
     pg.click('#zfit'); pg.screenshot(path=shot)
