@@ -112,14 +112,14 @@
   // centre of its box. base = snapshotText(key) taken before the change, so repeated drag steps do not drift.
   function snapshotText(key) {
     var t = S.texts[key], b = textScene(key, PPM);
-    return { h: t.h, cellW: t.cellW, spacing: t.spacing, holeOffsets: JSON.parse(JSON.stringify(t.holeOffsets || [])),
+    return { h: t.h, cellW: t.cellW, spacing: t.spacing, holeOffsets: JSON.parse(JSON.stringify(t.holeOffsets || [])), extraHoles: JSON.parse(JSON.stringify(t.extraHoles || [])),
       rd: { dx: S.closedRound.dx, dy: S.closedRound.dy }, sd: { dx: S.closedSlot.dx, dy: S.closedSlot.dy }, cx: b.x + b.w / 2, cy: b.y + b.h / 2, w: b.w, boxH: b.h };
   }
   function scaleText(key, base, s) {
     var lim = core.scaleLimits(base), t = S.texts[key];
     s = cl(s, lim.min, lim.max);
     var n = core.scaledText(base, s);
-    t.h = n.h; t.cellW = n.cellW; t.spacing = n.spacing; t.holeOffsets = n.holeOffsets;
+    t.h = n.h; t.cellW = n.cellW; t.spacing = n.spacing; t.holeOffsets = n.holeOffsets; t.extraHoles = n.extraHoles;
     if (key === 'closed') {
       S.closedRound.dx = Math.round(base.rd.dx * s * 1000) / 1000; S.closedRound.dy = Math.round(base.rd.dy * s * 1000) / 1000;
       S.closedSlot.dx = Math.round(base.sd.dx * s * 1000) / 1000; S.closedSlot.dy = Math.round(base.sd.dy * s * 1000) / 1000;
@@ -152,7 +152,7 @@
     svg.setAttribute('viewBox', (view.cx - w / 2) + ' ' + (view.cy - h / 2) + ' ' + w + ' ' + h);
   }
   function fit() {
-    var sw = S.frame.stripWidth, W = S.plate.w + 2 * sw + 60, H = S.plate.h + 2 * sw + 60;
+    var sw = S.frame.inside ? 0 : S.frame.stripWidth, W = S.plate.w + 2 * sw + 60, H = S.plate.h + 2 * sw + 60;
     view.k = Math.min(svg.clientWidth / W, svg.clientHeight / H) || 1;
     view.cx = S.plate.w / 2; view.cy = S.plate.h / 2; render();
   }
@@ -172,26 +172,25 @@
     return s;
   }
   function frameSvg(preview) {
-    var W = S.plate.w, H = S.plate.h, sw = S.frame.stripWidth, unit = S.frame.unit, fc = core.frameCounts(W, H, S.frame.layout, unit, sw), s = '';
-    var tb = S.frame.layout === 'topbottom';
-    var sides = [
-      { x: tb ? -sw : 0, y: -sw, len: tb ? W + 2 * sw : W, horiz: true, info: fc.top },
-      { x: tb ? -sw : 0, y: H, len: tb ? W + 2 * sw : W, horiz: true, info: fc.bottom },
-      { x: -sw, y: tb ? 0 : -sw, len: tb ? H : H + 2 * sw, horiz: false, info: fc.left },
-      { x: W, y: tb ? 0 : -sw, len: tb ? H : H + 2 * sw, horiz: false, info: fc.right }
-    ];
+    var W = S.plate.w, H = S.plate.h, sw = S.frame.stripWidth, unit = S.frame.unit, fc = core.frameCounts(W, H, S.frame.layout, unit, sw, S.frame.inside), s = '';
+    var geo = core.frameSides(W, H, S.frame.layout, sw, S.frame.inside), infos = [fc.top, fc.bottom, fc.left, fc.right];
+    var sides = geo.map(function (g, i) { return { x: g.x, y: g.y, len: g.len, horiz: g.horiz, info: infos[i] }; });
     sides.forEach(function (sd, si) {
       var w = sd.horiz ? sd.len : sw, h = sd.horiz ? sw : sd.len;
-      s += '<rect x="' + sd.x + '" y="' + sd.y + '" width="' + w + '" height="' + h + '" fill="' + (preview ? '#000' : '#4a4a4a') + '" stroke="#222" stroke-width="' + 0.4 / view.k * 2 + '"/>';
+      var ghost = S.frame.inside;
+      s += '<rect x="' + sd.x + '" y="' + sd.y + '" width="' + w + '" height="' + h + '" fill="' + (ghost ? (preview ? '#000' : '#e8a000') : (preview ? '#000' : '#4a4a4a')) + '"' + (ghost ? ' fill-opacity="' + (preview ? 0.5 : 0.3) + '" stroke="#e8a000" stroke-dasharray="' + 4 / view.k + ' ' + 2 / view.k + '"' : ' stroke="#222"') + ' stroke-width="' + 0.4 / view.k * 2 + '"/>';
       var n = sd.info.n, i, j;
       for (i = 0; i < n; i++) {
+        // each 100 mm unit (3 LEDs) is one group: alternate tint plus a clear divider
+        var ux = sd.horiz ? sd.x + i * unit : sd.x, uy = sd.horiz ? sd.y : sd.y + i * unit, uw = sd.horiz ? unit : sw, uh = sd.horiz ? sw : unit;
+        if (i % 2) s += '<rect x="' + ux + '" y="' + uy + '" width="' + uw + '" height="' + uh + '" fill="#fff" fill-opacity="' + (ghost ? 0.25 : 0.12) + '"/>';
         var hue = (si * 70 + i * 47) % 360, col = 'hsl(' + hue + ',90%,58%)';
         for (j = 0; j < 3; j++) {
           var t = i * unit + unit * (1 + 2 * j) / 6;
           var cx = sd.horiz ? sd.x + t : sd.x + sw / 2, cy = sd.horiz ? sd.y + sw / 2 : sd.y + t;
           s += '<circle cx="' + f2(cx) + '" cy="' + f2(cy) + '" r="2.4" fill="' + col + '"' + (preview ? ' filter="url(#glow)"' : '') + '/>';
         }
-        if (i > 0) { var b = i * unit; s += sd.horiz ? '<line x1="' + (sd.x + b) + '" y1="' + sd.y + '" x2="' + (sd.x + b) + '" y2="' + (sd.y + sw) + '" stroke="#999" stroke-width="' + 0.5 / view.k + '"/>' : '<line x1="' + sd.x + '" y1="' + (sd.y + b) + '" x2="' + (sd.x + sw) + '" y2="' + (sd.y + b) + '" stroke="#999" stroke-width="' + 0.5 / view.k + '"/>'; }
+        if (i > 0) { var b = i * unit; s += sd.horiz ? '<line x1="' + (sd.x + b) + '" y1="' + sd.y + '" x2="' + (sd.x + b) + '" y2="' + (sd.y + sw) + '" stroke="#ddd" stroke-width="' + 1.5 / view.k + '"/>' : '<line x1="' + sd.x + '" y1="' + (sd.y + b) + '" x2="' + (sd.x + sw) + '" y2="' + (sd.y + b) + '" stroke="#ddd" stroke-width="' + 1.5 / view.k + '"/>'; }
       }
       if (sd.info.left > 0.05) {
         var o = n * unit;
@@ -232,9 +231,10 @@
     s += '<defs><marker id="arr" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L6 3L0 6z" fill="#0a7a3c"/></marker>' +
       '<pattern id="hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="4" height="4" fill="#777"/><line x1="0" y1="0" x2="0" y2="4" stroke="#bbb" stroke-width="1.5"/></pattern>' +
       '<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
-    s += frameSvg(pv);
+    if (!S.frame.inside) s += frameSvg(pv);
     s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="' + (pv ? '#101010' : '#f3efe0') + '" stroke="#000" stroke-width="' + px + '"/>';
     if (S.ui.grid && !pv) s += gridSvg();
+    if (S.frame.inside) s += '<g pointer-events="none">' + frameSvg(pv) + '</g>';
     // strip pieces (behind the letters)
     S.strips.forEach(function (t, i) {
       var r = core.stripRect(t), on = sel.type === 'strip' && sel.idx === i;
@@ -258,9 +258,12 @@
       ['casino', 'open'].forEach(function (key) {
         sc[key].cells.forEach(function (c) {
           if (!c.hole) return;
-          var ok = core.holeStatus(c, S.holeD / 2, S.texts[key].thicken).covered;
-          s += '<circle cx="' + f2(c.hole.x) + '" cy="' + f2(c.hole.y) + '" r="' + S.holeD / 2 + '" fill="#fff" fill-opacity="0.9" stroke="' + (ok ? '#1b9a35' : '#e00') + '" stroke-width="' + 1.5 * px + '"/>' +
-            '<path d="M' + (c.hole.x - 2 * px * 3) + ' ' + c.hole.y + 'H' + (c.hole.x + 6 * px) + 'M' + c.hole.x + ' ' + (c.hole.y - 6 * px) + 'V' + (c.hole.y + 6 * px) + '" stroke="' + (ok ? '#1b9a35' : '#e00') + '" stroke-width="' + px + '"/>';
+          [c.hole].concat(c.extras || []).forEach(function (h, hi) {
+            var extra = hi > 0, on = extra && selX && selX.key === key && selX.k === h.k;
+            var ok = core.holeStatus(c, S.holeD / 2, S.texts[key].thicken, h).covered, col = ok ? '#1b9a35' : '#e00';
+            s += '<circle cx="' + f2(h.x) + '" cy="' + f2(h.y) + '" r="' + S.holeD / 2 + '" fill="' + (extra ? '#eaf3ff' : '#fff') + '" fill-opacity="0.9" stroke="' + col + '" stroke-width="' + (on ? 3 : 1.5) * px + '"' + (extra ? ' stroke-dasharray="' + 4 * px + ' ' + 2 * px + '"' : '') + '/>' +
+              '<path d="M' + (h.x - 2 * px * 3) + ' ' + h.y + 'H' + (h.x + 6 * px) + 'M' + h.x + ' ' + (h.y - 6 * px) + 'V' + (h.y + 6 * px) + '" stroke="' + col + '" stroke-width="' + px + '"/>';
+          });
         });
       });
       var mode = S.export.closedHole;
@@ -289,7 +292,7 @@
         if (sel.type === 'strip' && S.strips[sel.idx]) pts = boxPts(core.stripRect(S.strips[sel.idx]));
         else if (sel.type) {
           pts = boxPts(boxOf(sc, sel.type));
-          if (sel.type === 'casino' || sel.type === 'open') sc[sel.type].cells.forEach(function (c) { if (c.hole) pts.push(c.hole); });
+          if (sel.type === 'casino' || sel.type === 'open') sc[sel.type].cells.forEach(function (c) { if (c.hole) pts.push(c.hole); (c.extras || []).forEach(function (e) { pts.push(e); }); });
           if (sel.type === 'closed') pts.push(sc.closedRound);
           if (sel.type === 'arrow') sc.arrow.holes.forEach(function (h) { pts.push(h); });
         }
@@ -321,11 +324,12 @@
   }
   function updateInfo() {
     var sc = cur || scene(PPM), r = S.holeD / 2;
+    renderAllExtras();
     KEYS.forEach(function (key) {
       var t = S.texts[key], f = effFont(key), wf = wantedFont(key), el = $('info-' + key), cells = sc[key].cells, thin = [], cov = 0, holes = 0, st = fontState[wf.font];
       cells.forEach(function (c, i) {
         if (!c.glyph) return;
-        if (c.hole) { holes++; if (core.holeStatus(c, r, t.thicken).covered) cov++; }
+        if (c.hole) [c.hole].concat(c.extras || []).forEach(function (h) { holes++; if (core.holeStatus(c, r, t.thicken, h).covered) cov++; });
         var a = thinOf(c.glyph, t.thicken);
         if (a > 1) thin.push(t.text[i] + ' ' + Math.round(a) + ' mm2');
       });
@@ -339,7 +343,7 @@
     updateFrameInfo();
   }
   function updateFrameInfo() {
-    var fc = core.frameCounts(S.plate.w, S.plate.h, S.frame.layout, S.frame.unit, S.frame.stripWidth);
+    var fc = core.frameCounts(S.plate.w, S.plate.h, S.frame.layout, S.frame.unit, S.frame.stripWidth, S.frame.inside);
     function sd(n, o) { return o.n + ' x 100 mm' + (o.left > 0.05 ? ' + ' + f2(o.left) + ' mm left over' : ''); }
     $('frameInfo').innerHTML = 'Top: ' + sd('top', fc.top) + '<br>Bottom: ' + sd('bottom', fc.bottom) + '<br>Left: ' + sd('left', fc.left) + '<br>Right: ' + sd('right', fc.right) +
       '<br><b>Total ' + fc.totalUnits + ' units = ' + fc.totalLeds + ' LEDs</b> (3 LEDs per 100 mm)';
@@ -432,10 +436,18 @@
         '<div class="row"><span>Thicken mm</span><input type="range" id="t-' + k + '-th" min="-3" max="8" step="0.1"><input type="number" id="t-' + k + '-thn" min="-5" max="10" step="0.1"></div>' +
         '<div class="row"><span>Position x, y</span><input type="number" id="t-' + k + '-x" step="1"><input type="number" id="t-' + k + '-y" step="1"></div>' +
         (k === 'closed' ? '<div class="row"><span>Hole offset</span><input type="number" id="t-closed-hdx" step="0.5"><input type="number" id="t-closed-hdy" step="0.5"></div>' :
-          '<div class="row"><button id="t-' + k + '-centre">Centre holes in cells</button><button id="t-' + k + '-fit">Fit holes into thick parts</button></div>') +
+          '<div class="row"><button id="t-' + k + '-centre">Centre holes in cells</button><button id="t-' + k + '-fit">Fit holes into thick parts</button></div>' +
+          '<div class="xbox" id="t-' + k + '-xbox"></div>') +
         '<div class="note" id="info-' + k + '"></div></div>';
     });
     $('texts').innerHTML = h;
+    $('texts').addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('button') : null; if (!b) return;
+      var box = b.closest('.xbox'); if (!box) return;
+      var key = box.id.replace(/^t-/, '').replace(/-xbox$/, '');
+      if (b.classList.contains('xadd')) addExtraHole(key, parseInt(b.getAttribute('data-i'), 10));
+      else if (b.classList.contains('xdel')) removeExtraHole(key, parseInt(b.getAttribute('data-k'), 10));
+    });
   }
   function addFontOption(key, name) {
     var sel2 = $('t-' + key + '-font');
@@ -469,6 +481,8 @@
     bind('holeDn', function () { return S.holeD; }, function (v) { S.holeD = cl(v, 5, 30); });
     bind('minStroke', function () { return S.minStroke; }, function (v) { S.minStroke = cl(v, 0.5, 20); });
     bind('minStrokeN', function () { return S.minStroke; }, function (v) { S.minStroke = cl(v, 0.5, 20); });
+    bind('frameInside', function () { return S.frame.inside; }, function (v) { S.frame.inside = v; fit(); });
+    bind('exPlateCut', function () { return S.export.plateCut; }, function (v) { S.export.plateCut = v; });
     bind('frameLayout', function () { return S.frame.layout; }, function (v) { S.frame.layout = v; });
     bind('dims', function () { return S.ui.dims; }, function (v) { S.ui.dims = v; });
     bind('snap', function () { return S.ui.snap; }, function (v) { S.ui.snap = v; });
@@ -675,7 +689,9 @@
     plateW: 'Width of the vinyl plate in mm (100-980). This is the final cut size; the dimension arrows measure to its edges.', plateH: 'Height of the vinyl plate in mm (100-300). This is the final cut size; the dimension arrows measure to its edges.',
     holeD: 'Diameter in mm of the round holes: one behind every CASINO and OPEN letter, and the round CLOSED hole. One value for all (5-30 mm). 10 mm leaves room for about 6 wires.',
     minStroke: 'Minimum stroke thickness in mm. Parts of a letter thinner than this (hairlines, thin serifs, narrow joins) are listed as "thin parts" because they can break or burn away when cut. It is only a warning, nothing is changed. Default 3 mm.',
-    frameLayout: 'How the 10 mm wide LED strip frame outside the plate edge meets at the corners. "Top and bottom over the corners": the top and bottom strips are as long as the plate plus both side strips. "Sides over the corners": the side strips are longer instead. Only whole 100 mm units (3 LEDs each) are counted; the leftover is hatched.',
+    frameInside: 'Put the LED strip frame on the plate, against its edges, instead of outside the plate edge. The strips then cover the outer 10 mm of the plate.',
+    exPlateCut: 'Also draw the outer edge of the plate as a cut line in the letter cut exports (EPS and DXF; DXF layer PLATE_CUT).',
+    frameLayout: 'How the 10 mm wide LED strip frame meets at the corners. "Top and bottom over the corners": the top and bottom strips are as long as the plate plus both side strips. "Sides over the corners": the side strips are longer instead. Only whole 100 mm units (3 LEDs each) are counted; the leftover is hatched.',
     stripAdd: 'Add a 100 x 10 mm LED strip piece (one 3-LED unit) in the middle of the plate. Drag it behind a letter.', stripRot: 'Rotate the selected strip piece between horizontal and vertical (key R).', stripDel: 'Delete the selected strip piece (key Delete).',
     dims: 'Which mm dimension arrows to draw to the final plate edge: from the centre, corners and hole centres of the selected object, from every object, or none.',
     snap: 'When on, dragging a box snaps its vertical and horizontal centre line to the centre lines of the other boxes and of the plate when they are within 3 mm (pink guide line).',
@@ -750,6 +766,10 @@
     }
     for (k = 0; k < 2; k++) {
       key = KEYS[k];
+      for (i = 0; i < sc[key].cells.length; i++) {
+        var cx0 = sc[key].cells[i], xe = cx0.extras || [], q;
+        for (q = 0; q < xe.length; q++) if (Math.hypot(p.x - xe[q].x, p.y - xe[q].y) <= Math.max(r, tol)) return { kind: 'xhole', key: key, k: xe[q].k, idx: i };
+      }
       for (i = 0; i < sc[key].cells.length; i++) { var c = sc[key].cells[i]; if (c.hole && Math.hypot(p.x - c.hole.x, p.y - c.hole.y) <= Math.max(r, tol)) return { kind: 'hole', key: key, idx: i }; }
     }
     if (S.export.closedHole === 'round' && Math.hypot(p.x - sc.closedRound.x, p.y - sc.closedRound.y) <= Math.max(r, tol)) return { kind: 'closedRound' };
@@ -764,12 +784,16 @@
     return best;
   }
   svg.addEventListener('pointerdown', function (e) {
-    var p = toMm(e), h = e.button === 1 ? null : hit(p);
-    svg.setPointerCapture(e.pointerId);
+    var p = toMm(e), now = Date.now(), dbl = e.button === 0 && lastDown && now - lastDown.t < 400 && Math.hypot(e.clientX - lastDown.x, e.clientY - lastDown.y) < 5;
+    lastDown = dbl ? null : { t: now, x: e.clientX, y: e.clientY };
+    if (dbl && onDouble(p)) { drag = null; return; }
+    var h = e.button === 1 ? null : hit(p);
+    svg.setPointerCapture(e.pointerId); selX = null;
     if (!h) { drag = { kind: 'pan', sx: e.clientX, sy: e.clientY, cx: view.cx, cy: view.cy, moved: false }; return; }
     var sc = cur;
     if (h.kind === 'handle') { var bs = snapshotText(h.key); drag = { kind: 'scale', key: h.key, hx: h.hx, hy: h.hy, base: bs }; }
     else if (h.kind === 'hole') { sel = { type: h.key }; var c = sc[h.key].cells[h.idx]; drag = { kind: 'hole', key: h.key, idx: h.idx, gx: c.hole.x - p.x, gy: c.hole.y - p.y }; }
+    else if (h.kind === 'xhole') { sel = { type: h.key }; selX = { key: h.key, k: h.k }; var xe0 = S.texts[h.key].extraHoles[h.k], c0 = sc[h.key].cells[h.idx]; drag = { kind: 'xhole', key: h.key, k: h.k, idx: h.idx, gx: c0.cx + xe0.dx - p.x, gy: c0.cy + xe0.dy - p.y }; }
     else if (h.kind === 'closedRound') { sel = { type: 'closed' }; drag = { kind: 'closedRound', gx: sc.closedRound.x - p.x, gy: sc.closedRound.y - p.y }; }
     else if (h.kind === 'closedSlot') { sel = { type: 'closed' }; drag = { kind: 'closedSlot', gx: sc.closedSlot.x - p.x, gy: sc.closedSlot.y - p.y }; }
     else if (h.kind === 'strip') { sel = { type: 'strip', idx: h.idx }; var s0 = S.strips[h.idx]; drag = { kind: 'strip', idx: h.idx, ox: s0.x, oy: s0.y, sx: p.x, sy: p.y }; }
@@ -814,6 +838,9 @@
       var c = cur[drag.key].cells[drag.idx], t = S.texts[drag.key];
       while (t.holeOffsets.length <= drag.idx) t.holeOffsets.push({ dx: 0, dy: 0 });
       t.holeOffsets[drag.idx] = { dx: Math.round((p.x + drag.gx - c.cx) * 100) / 100, dy: Math.round((p.y + drag.gy - c.cy) * 100) / 100 };
+    } else if (drag.kind === 'xhole') {
+      var cx1 = cur[drag.key].cells[drag.idx], xe1 = S.texts[drag.key].extraHoles[drag.k];
+      xe1.dx = Math.round((p.x + drag.gx - cx1.cx) * 100) / 100; xe1.dy = Math.round((p.y + drag.gy - cx1.cy) * 100) / 100;
     } else if (drag.kind === 'closedRound' || drag.kind === 'closedSlot') {
       var cb = cur.closed, dx2 = Math.round((p.x + drag.gx - (cb.x + cb.w / 2)) * 100) / 100, dy2 = Math.round((p.y + drag.gy - (cb.y + cb.h / 2)) * 100) / 100;
       S.closedRound.dx = S.closedSlot.dx = dx2; S.closedRound.dy = S.closedSlot.dy = dy2; syncControls();
@@ -838,7 +865,36 @@
     render();
   }, { passive: false });
   function rotateStrip() { if (sel.type === 'strip' && S.strips[sel.idx]) { var s0 = S.strips[sel.idx]; s0.rot = s0.rot === 90 ? 0 : 90; changed(); updateInfo(); } }
-  function deleteStrip() { if (sel.type === 'strip' && S.strips[sel.idx]) { S.strips.splice(sel.idx, 1); sel = { type: null }; changed(); updateInfo(); } }
+  var selX = null;   // selected extra hole {key, k}
+  function addExtraHole(key, i, at) {
+    var t = S.texts[key], sc = scene(PPM), c = sc[key].cells[i], r = S.holeD / 2;
+    if (!c || !c.glyph || t.extraHoles.length >= 40) return false;
+    var o;
+    if (at) o = { dx: Math.round((at.x - c.cx) * 100) / 100, dy: Math.round((at.y - c.cy) * 100) / 100 };
+    else o = core.suggestHole(c, r, t.thicken, [c.hole].concat(c.extras || []));
+    t.extraHoles.push({ i: i, dx: o.dx, dy: o.dy }); selX = { key: key, k: t.extraHoles.length - 1 }; sel = { type: key };
+    changed(); updateInfo(); return true;
+  }
+  function removeExtraHole(key, k) {
+    var t = S.texts[key]; if (!t.extraHoles[k]) return;
+    t.extraHoles.splice(k, 1); selX = null; changed(); updateInfo();
+  }
+  // buttons "add a hole to letter X" and the list of the extra holes of one text
+  function renderExtras(key) {
+    var t = S.texts[key], box = $('t-' + key + '-xbox'); if (!box) return;
+    var h = '<div class="xrow"><span class="xl">Add a hole to</span>', i, sc = cur || scene(PPM);
+    for (i = 0; i < t.text.length; i++) if (t.text.charAt(i) !== ' ') h += '<button class="xadd" data-i="' + i + '" title="Add one more hole to letter ' + (i + 1) + ' (' + t.text.charAt(i) + ') at the roomiest spot, then drag it where you want it.">' + t.text.charAt(i) + (i + 1) + ' +</button>';
+    h += '</div>';
+    var chips = '';
+    t.extraHoles.forEach(function (e, k) {
+      if (e.i >= t.text.length) return;
+      chips += '<span class="xchip' + (selX && selX.key === key && selX.k === k ? ' on' : '') + '" data-k="' + k + '">' + t.text.charAt(e.i) + (e.i + 1) + ' hole ' + (k + 1) + ' <button class="xdel" data-k="' + k + '" title="Remove this extra hole">&times;</button></span>';
+    });
+    h += '<div class="xlist">' + (chips || '<span class="xnone">No extra holes. Double-click inside a letter to add one, double-click a hole to remove it.</span>') + '</div>';
+    box.innerHTML = h;
+  }
+  function renderAllExtras() { KEYS.forEach(function (k) { if (k !== 'closed') renderExtras(k); }); }
+  function deleteStrip() { if (selX) { removeExtraHole(selX.key, selX.k); return; } if (sel.type === 'strip' && S.strips[sel.idx]) { S.strips.splice(sel.idx, 1); sel = { type: null }; changed(); updateInfo(); } }
   document.addEventListener('keydown', function (e) {
     var tag = (e.target.tagName || '').toLowerCase();
     if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) { if (tag === 'textarea' || (tag === 'input' && e.target.type === 'text')) return; e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
@@ -846,7 +902,7 @@
     if (tag === 'input' || tag === 'select' || tag === 'textarea' || (e.target.classList && e.target.classList.contains('dd-btn'))) return;
     if (e.key === 'r' || e.key === 'R') { rotateStrip(); return; }
     if (e.key === 'Delete' || e.key === 'Backspace') { deleteStrip(); return; }
-    if (e.key === 'Escape') { sel = { type: null }; render(); updateInfo(); return; }
+    if (e.key === 'Escape') { sel = { type: null }; selX = null; render(); updateInfo(); return; }
     var step = e.altKey ? 0.1 : e.shiftKey ? 10 : 1, dx = 0, dy = 0;
     if (e.key === 'ArrowLeft') dx = -step; else if (e.key === 'ArrowRight') dx = step; else if (e.key === 'ArrowUp') dy = -step; else if (e.key === 'ArrowDown') dy = step; else return;
     e.preventDefault();
@@ -854,6 +910,20 @@
     if (!o) return;
     o.x = Math.round((o.x + dx) * 100) / 100; o.y = Math.round((o.y + dy) * 100) / 100; syncControls(); changed();
   });
+  // Double click (own detection: the SVG is rebuilt on every pointer press, so the browser's dblclick event never fires).
+  // On an extra hole: remove it. Inside a letter: add an extra hole at that spot. Returns true when it did something.
+  var lastDown = null;
+  function onDouble(p) {
+    var h = hit(p), done = false;
+    if (h && h.kind === 'xhole') { removeExtraHole(h.key, h.k); return true; }
+    ['casino', 'open'].forEach(function (key) {
+      if (h && ['hole', 'handle', 'closedRound', 'closedSlot'].indexOf(h.kind) >= 0) return;
+      cur[key].cells.forEach(function (c, i) {
+        if (c.glyph && c.glyph.insideDist(p.x - c.gox, p.y - c.goy, S.texts[key].thicken) >= 0) done = addExtraHole(key, i, p) || done;
+      });
+    });
+    return done;
+  }
   window.addEventListener('resize', render);
 
   // ------------------------------------------------------------------ exports
@@ -875,6 +945,7 @@
         var loops = contours(c.glyph, off, 0.03).map(function (p) { return p.map(function (q) { return [q[0] + c.gox, q[1] + c.goy]; }); });
         ref.push({ kind: 'poly', loops: loops, fill: 0.85, stroke: 0.4 });
         if (c.hole) ref.push({ kind: 'text', x: c.hole.x + r + 4, y: c.hole.y + r + 3, s: S.texts[key].text.charAt(c.index) + (c.index + 1), size: 7 });
+        (c.extras || []).forEach(function (e, q) { ref.push({ kind: 'text', x: e.x + r + 4, y: e.y + r + 3, s: S.texts[key].text.charAt(c.index) + (c.index + 1) + String.fromCharCode(98 + q), size: 7 }); });
       });
     });
     ref.push({ kind: 'text', x: sc.closedRound.x + r + 8, y: sc.closedRound.y + r + 3, s: 'CLOSED', size: 6 });
@@ -903,25 +974,29 @@
     return { pieces: pieces, sc: sc };
   }
   function buildLettersEps() {
-    var lp = letterPieces(PPM_EXPORT), pieces = lp.pieces, ex = S.export, W = S.plate.w, H = S.plate.h, polys = [], boxes = [], message = '', areaW = W, areaH = H;
+    var lp = letterPieces(PPM_EXPORT), pieces = lp.pieces, ex = S.export, W = S.plate.w, H = S.plate.h, polys = [], boxes = [], plateCuts = [], message = '', areaW = W, areaH = H;
+    var plateRect = [[0, 0], [W, 0], [W, H], [0, H]];
+    if (ex.plateCut && !ex.nest) { plateCuts.push(plateRect); polys.push(plateRect); }
     if (!ex.nest) {
       pieces.forEach(function (p) { p.polys.forEach(function (poly) { polys.push(ex.mirror ? poly.map(function (q) { return [W - q[0], q[1]]; }) : poly); }); });
       if (ex.boxes) KEYS.forEach(function (k) { var b = boxOf(lp.sc, k); boxes.push({ x: ex.mirror ? W - b.x - b.w : b.x, y: b.y, w: b.w, h: b.h }); });
-      message = pieces.length + ' letters as placed on the plate' + (ex.mirror ? ' (mirrored)' : '');
+      message = (pieces.length) + ' letters' + (ex.plateCut ? ' + plate edge' : '') + ' as placed on the plate' + (ex.mirror ? ' (mirrored)' : '');
     } else {
+      if (ex.plateCut) pieces = pieces.concat([{ polys: [plateRect], bb: { x0: 0, y0: 0, x1: W, y1: H }, plate: true }]);
       var items = pieces.map(function (p, i) { return { id: i, w: p.bb.x1 - p.bb.x0, h: p.bb.y1 - p.bb.y0 }; });
       var res = core.nestShelves(items, ex.sheetW, ex.sheetH, ex.spacing);
       res.placed.forEach(function (pl) {
         var p = pieces[pl.id], w = p.bb.x1 - p.bb.x0, h = p.bb.y1 - p.bb.y0;
         p.polys.forEach(function (poly) {
-          polys.push(poly.map(function (q) { var x = ex.mirror ? p.bb.x0 + p.bb.x1 - q[0] : q[0]; return [x - p.bb.x0 + pl.x, q[1] - p.bb.y0 + pl.y]; }));
+          var moved = poly.map(function (q) { var x = ex.mirror ? p.bb.x0 + p.bb.x1 - q[0] : q[0]; return [x - p.bb.x0 + pl.x, q[1] - p.bb.y0 + pl.y]; });
+          polys.push(moved); if (p.plate) plateCuts.push(moved);
         });
         if (ex.boxes) boxes.push({ x: pl.x, y: pl.y, w: w, h: h });
       });
       areaW = ex.sheetW; areaH = Math.max(ex.sheetH, res.usedH);
-      message = res.fits ? 'nested ' + pieces.length + ' letters, ' + f2(res.usedH) + ' mm of the ' + ex.sheetH + ' mm sheet used' : 'WARNING: the letters do not fit the ' + ex.sheetW + ' x ' + ex.sheetH + ' mm sheet (need ' + f2(res.usedH) + ' mm height)';
+      message = res.fits ? 'nested ' + (pieces.length - (ex.plateCut ? 1 : 0)) + ' letters' + (ex.plateCut ? ' + plate edge' : '') + ', ' + f2(res.usedH) + ' mm of the ' + ex.sheetH + ' mm sheet used' : 'WARNING: the letters do not fit the ' + ex.sheetW + ' x ' + ex.sheetH + ' mm sheet (need ' + f2(res.usedH) + ' mm height)';
     }
-    return { text: core.epsFromPolys(polys, areaW, areaH, 'Casino plate letters', boxes), dxf: core.dxfFromPolys(polys, areaH, boxes), message: message, polys: polys.length };
+    return { text: core.epsFromPolys(polys, areaW, areaH, 'Casino plate letters', boxes), dxf: core.dxfFromPolys(polys.filter(function (p) { return plateCuts.indexOf(p) < 0; }), areaH, boxes, plateCuts), message: message, polys: polys.length };
   }
   function download(name, text, type) {
     $('exName').value = name; $('exText').value = text;

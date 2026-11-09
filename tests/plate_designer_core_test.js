@@ -108,6 +108,43 @@ function fakeGlyph(wmm) { return core.glyphFromPolygons([rect(0, -100, wmm, 0, f
   near(off.dx, 0, 1, 'fit puts the hole back to the middle of the bar (centre already fits)');
   check(core.holeOffsetFor(c, 5, 0, 'centre').dx === 0, 'centre mode gives no offset');
 }
+// extra holes: several holes in one letter
+{
+  const gl2 = [fakeGlyph(20), fakeGlyph(60)];
+  const def2 = { x: 0, y: 0, h: 100, mode: 'uniform', cellW: 90, spacing: 0, holeOffsets: [{ dx: 0, dy: -35 }], extraHoles: [{ i: 0, dx: 5, dy: 10 }, { i: 0, dx: 1, dy: 2 }, { i: 1, dx: 9, dy: 9 }] };
+  const t2 = core.placeText(def2, gl2, true);
+  check(t2.cells[0].extras.length === 2 && t2.cells[1].extras.length === 1, 'extra holes are grouped by letter: 2 in letter 0, 1 in letter 1');
+  check(t2.cells[0].extras[0].x === 50 && t2.cells[0].extras[0].y === 60 && t2.cells[0].extras[0].k === 0, 'extra hole 0 = cell centre (45, 50) + (5, 10), list index 0');
+  check(t2.cells[0].extras[1].x === 46 && t2.cells[0].extras[1].y === 52 && t2.cells[0].extras[1].k === 1, 'extra hole 1 = (46, 52), list index 1');
+  check(t2.cells[1].extras[0].x === 144 && t2.cells[1].extras[0].y === 59 && t2.cells[1].extras[0].k === 2, 'extra hole of letter 1 = (135 + 9, 50 + 9), list index 2');
+  check(core.placeText({ x: 0, y: 0, h: 100, mode: 'uniform', cellW: 90, spacing: 0, holeOffsets: [] }, gl2, true).cells[0].extras.length === 0, 'no extraHoles in the definition: empty list');
+  check(core.placeText(def2, [null, fakeGlyph(60)], true).cells[0].extras === undefined, 'a space has no extra holes');
+  check(core.holeStatus(t2.cells[0], 4, 0, { x: 45, y: 50 }).covered && !core.holeStatus(t2.cells[0], 4, 0, { x: 80, y: 50 }).covered, 'holeStatus can check a given extra hole');
+  check(core.holeStatus(t2.cells[0], 4, 0, t2.cells[0].extras[0]).covered === core.holeStatus(t2.cells[0], 4, 0, { x: 50, y: 60 }).covered, 'extra hole object works as the hole argument');
+  const st = core.defaultState(); st.export.plateOutline = false; st.export.arrow = false; st.export.closedHole = 'none';
+  const it = core.drillItems(st, { casino: t2, open: null, closedRound: { x: 0, y: 0 }, closedSlot: { x: 0, y: 0, w: 1, h: 1 }, arrow: null });
+  check(it.length === 5 && it.every(function (q) { return q.kind === 'circle' && q.d === 10; }), '2 main holes + 3 extra holes = 5 drill circles, got ' + it.length);
+  check(it.some(function (q) { return q.x === 144 && q.y === 59; }) && it.some(function (q) { return q.x === 46 && q.y === 52; }), 'extra holes are in the drill items');
+  // suggestion
+  const cellB = core.placeText({ x: 0, y: 0, h: 100, mode: 'uniform', cellW: 90, spacing: 0, holeOffsets: [{ dx: 0, dy: -35 }] }, [fakeGlyph(20)], true).cells[0];
+  const sg = core.suggestHole(cellB, 4, 0, [cellB.hole]);
+  check(sg.covered === true && Math.abs(sg.dy - 45) <= 1.5 && Math.abs(sg.dx) <= 6, 'second hole goes to the far end of the bar: dy about +45, got ' + JSON.stringify(sg));
+  check(core.holeStatus(cellB, 4, 0, { x: cellB.cx + sg.dx, y: cellB.cy + sg.dy }).covered, 'the suggested hole is covered by the letter');
+  const sg2 = core.suggestHole(cellB, 15, 0, [cellB.hole]);
+  check(sg2.covered === false && sg2.dx === 0 && sg2.dy === 0, 'no room (hole larger than the bar): centre, not covered');
+  check(core.suggestHole({ glyph: null }, 4, 0, []).covered === false, 'no glyph: not covered');
+  const sg3 = core.suggestHole(cellB, 4, 0, [cellB.hole, { x: cellB.cx + sg.dx, y: cellB.cy + sg.dy }]);
+  check(Math.abs(sg3.dy - (-5)) <= 12, 'third hole goes into the gap between the two: dy near the middle, got ' + sg3.dy);
+  const sc2 = core.scaledText({ h: 100, cellW: 90, spacing: 6, holeOffsets: [], extraHoles: [{ i: 1, dx: 10, dy: -4 }] }, 2);
+  check(sc2.extraHoles.length === 1 && sc2.extraHoles[0].i === 1 && sc2.extraHoles[0].dx === 20 && sc2.extraHoles[0].dy === -8, 'scaling a text scales the extra holes (i unchanged)');
+  check(core.scaledText({ h: 100, cellW: 90, spacing: 6, holeOffsets: [] }, 2).extraHoles.length === 0, 'scaledText without extraHoles gives an empty list');
+  check(core.defaultState().texts.casino.extraHoles.length === 0 && core.defaultState().texts.open.extraHoles.length === 0 && core.defaultState().texts.closed.extraHoles.length === 0, 'default: no extra holes');
+  const fj2 = core.fromJson({ version: 1, texts: { casino: { extraHoles: [{ i: 25, dx: 999, dy: -999 }, null, { i: 'x' }, { i: 2.4, dx: 1.5, dy: 2 }] } } }).texts.casino.extraHoles;
+  check(fj2.length === 2 && fj2[0].i === 19 && fj2[0].dx === 300 && fj2[0].dy === -300 && fj2[1].i === 2 && fj2[1].dx === 1.5, 'fromJson clamps extra holes and drops invalid entries, got ' + JSON.stringify(fj2));
+  const many = []; for (let q = 0; q < 60; q++) many.push({ i: 0, dx: 0, dy: 0 });
+  check(core.fromJson({ version: 1, texts: { open: { extraHoles: many } } }).texts.open.extraHoles.length === 40, 'at most 40 extra holes');
+  check(core.fromJson({ version: 1 }).texts.casino.extraHoles.length === 0 && JSON.stringify(core.fromJson(core.toJson(core.fromJson({ version: 1, texts: { casino: { extraHoles: [{ i: 1, dx: 2, dy: 3 }] } } }))).texts.casino.extraHoles) === '[{"i":1,"dx":2,"dy":3}]', 'extra holes round-trip through JSON');
+}
 // ---- frame strips, dimensions, snapping
 {
   const f = core.frameCounts(980, 300, 'topbottom', 100, 10);
@@ -116,6 +153,20 @@ function fakeGlyph(wmm) { return core.glyphFromPolygons([rect(0, -100, wmm, 0, f
   check(g.top.n === 9 && Math.round(g.top.left) === 80 && g.left.n === 3 && Math.round(g.left.left) === 20 && g.totalUnits === 24, 'frame with sides over the corners: 24 units, leftovers 80 and 20');
   const h = core.frameCounts(599.9, 300, 'sides', 100, 10);
   check(h.top.n === 5 && Math.round(h.top.left) === 100, 'just under a multiple counts one unit less (599.9 mm: 5 units, 99.9 mm left over)');
+  const fi = core.frameCounts(980, 300, 'topbottom', 100, 10, true);
+  check(fi.top.len === 980 && fi.top.n === 9 && fi.left.len === 280 && fi.left.n === 2 && fi.totalUnits === 22 && fi.totalLeds === 66, 'inside, top and bottom over the corners: 980 / 280 mm, 9+9+2+2 units, got ' + fi.totalUnits);
+  const fj = core.frameCounts(980, 300, 'sides', 100, 10, true);
+  check(fj.top.len === 960 && fj.top.n === 9 && fj.left.len === 300 && fj.left.n === 3 && fj.totalUnits === 24, 'inside, sides over the corners: 960 / 300 mm, 9+9+3+3 units, got ' + fj.totalUnits);
+  check(core.frameCounts(980, 300, 'topbottom', 100, 10, false).totalUnits === 26 && core.frameCounts(980, 300, 'topbottom', 100, 10).totalUnits === 26, 'outside is the default');
+  const jo = JSON.stringify(core.frameSides(980, 300, 'topbottom', 10, false)), ji = JSON.stringify(core.frameSides(980, 300, 'topbottom', 10, true));
+  check(jo === JSON.stringify([{ x: -10, y: -10, len: 1000, horiz: true }, { x: -10, y: 300, len: 1000, horiz: true }, { x: -10, y: 0, len: 300, horiz: false }, { x: 980, y: 0, len: 300, horiz: false }]), 'outside strip positions (top and bottom layout): ' + jo);
+  check(ji === JSON.stringify([{ x: 0, y: 0, len: 980, horiz: true }, { x: 0, y: 290, len: 980, horiz: true }, { x: 0, y: 10, len: 280, horiz: false }, { x: 970, y: 10, len: 280, horiz: false }]), 'inside strip positions (top and bottom layout): ' + ji);
+  const si = JSON.stringify(core.frameSides(980, 300, 'sides', 10, true)), so = JSON.stringify(core.frameSides(980, 300, 'sides', 10, false));
+  check(si === JSON.stringify([{ x: 10, y: 0, len: 960, horiz: true }, { x: 10, y: 290, len: 960, horiz: true }, { x: 0, y: 0, len: 300, horiz: false }, { x: 970, y: 0, len: 300, horiz: false }]), 'inside strip positions (sides layout): ' + si);
+  check(so === JSON.stringify([{ x: 0, y: -10, len: 980, horiz: true }, { x: 0, y: 300, len: 980, horiz: true }, { x: -10, y: -10, len: 320, horiz: false }, { x: 980, y: -10, len: 320, horiz: false }]), 'outside strip positions (sides layout): ' + so);
+  check(core.frameSides(15, 12, 'topbottom', 10, true)[2].len === 0, 'a plate too small for the strips gives length 0, not negative');
+  check(core.defaultState().frame.inside === false && core.fromJson({ version: 1, frame: { inside: true } }).frame.inside === true && core.fromJson({ version: 1, frame: {} }).frame.inside === false, 'frame.inside option: default false');
+  check(core.defaultState().export.plateCut === false && core.fromJson({ version: 1, export: { plateCut: true } }).export.plateCut === true && core.fromJson({ version: 1, export: {} }).export.plateCut === false, 'export.plateCut option: default false');
   check(core.frameCounts(600, 300, 'sides', 100, 10).top.n === 6, 'exactly 600 mm holds 6 units');
   check(core.frameCounts(0.3, 0.3, 'sides', 0.1, 0).top.n === 3, 'floating point error does not lose a unit (0.3 / 0.1)');
   const d = core.dimsForPoint(100, 40, 980, 300);
@@ -187,6 +238,8 @@ function fakeGlyph(wmm) { return core.glyphFromPolygons([rect(0, -100, wmm, 0, f
   check((dx.match(/0\nSEQEND/g) || []).length === 2, 'two polylines closed with SEQEND');
   const dp = core.dxfFromPolys([[[0, 0], [10, 0], [10, 20]], [[1, 1], [2, 2]]], 50, [{ x: 0, y: 0, w: 10, h: 20 }]);
   check(dp.indexOf('8\nLETTERS\n10\n10\n20\n50\n') > 0 && dp.indexOf('8\nLETTERS\n10\n10\n20\n30\n') > 0, 'letter polygon y flipped (0 -> 50, 20 -> 30)');
+  const dc = core.dxfFromPolys([], 50, [], [[[0, 0], [100, 0], [100, 50], [0, 50]]]);
+  check(dc.indexOf('POLYLINE\n8\nPLATE_CUT\n66\n1\n70\n1\n0\nVERTEX\n8\nPLATE_CUT\n10\n0\n20\n50\n') > 0 && dc.indexOf('8\nPLATE_CUT\n10\n100\n20\n0\n') > 0 && dc.indexOf('LETTERS') < 0, 'plate edge on layer PLATE_CUT, y flipped (0 -> 50, 50 -> 0)');
   check((dp.match(/POLYLINE\n8\nLETTERS/g) || []).length === 1, 'polygons with fewer than 3 points are skipped');
   check(dp.indexOf('8\nBOXES\n10\n0\n20\n30\n') > 0, 'bounding box on layer BOXES, lower-left (0, 50-0-20 = 30)');
 }

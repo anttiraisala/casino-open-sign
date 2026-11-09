@@ -35,3 +35,6 @@
 - Add the sign-of-life rule to `strip_test/`, `stick_test/` (done in `sketch.ino` and `stick_test_direct/`).
 - Write the full arrow program (more patterns); phase 1 has only the flow animation.
 - Open: second Grove connector on the sticks?, shield 5 V switch position (user says: 5 V), final stick count (11 work), whether the partco parts list needs a refresh (only on request).
+- Plate Designer: options "LED strips inside the plate" (top bar) and "plate edge as a cut line in the letter cut" added, with tests (115 mutants detected).
+- Plate Designer: strips inside the plate are drawn as translucent orange dashed ghosts over the plate; 100 mm LED groups alternate in tint with clear dividers (also outside).
+- Plate Designer: several holes per letter (extraHoles): add buttons per letter, double-click add/remove, drag, Delete, drill exports, PDF labels, tests + mutants (132).

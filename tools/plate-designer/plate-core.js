@@ -278,6 +278,9 @@
       if (withHoles && g) {
         var o = (def.holeOffsets && def.holeOffsets[i]) || { dx: 0, dy: 0 };
         cell.hole = { x: cell.cx + (o.dx || 0), y: cell.cy + (o.dy || 0) };
+        // extra holes of this letter: def.extraHoles [{i, dx, dy}] (offsets from the cell centre); k = index in that list
+        cell.extras = [];
+        (def.extraHoles || []).forEach(function (e, k) { if (e.i === i) cell.extras.push({ x: cell.cx + (e.dx || 0), y: cell.cy + (e.dy || 0), k: k }); });
       }
       cells.push(cell);
       x += cw;
@@ -286,9 +289,11 @@
   }
 
   // Is the hole circle (radius r) fully behind the letter (grown by offsetMm)? clearance = how much room is left (mm).
-  function holeStatus(cell, r, offsetMm) {
-    if (!cell.glyph || !cell.hole) return { covered: false, clearance: -1e3 };
-    var d = cell.glyph.insideDist(cell.hole.x - cell.gox, cell.hole.y - cell.goy, offsetMm);
+  // hole (optional): another hole of the same cell (an extra hole); default is the main hole.
+  function holeStatus(cell, r, offsetMm, hole) {
+    var h = hole || cell.hole;
+    if (!cell.glyph || !h) return { covered: false, clearance: -1e3 };
+    var d = cell.glyph.insideDist(h.x - cell.gox, h.y - cell.goy, offsetMm);
     return { covered: d >= r - 1e-6, clearance: d - r };
   }
 
@@ -303,12 +308,27 @@
 
   // How many whole 3-LED units (100 mm) fit on each side of the frame. layout: 'topbottom' (top and bottom run over the
   // corners) or 'sides' (the sides run over the corners). The strip (width sw) lies just outside the plate edge.
-  function frameCounts(W, H, layout, unit, sw) {
-    var topLen = layout === 'sides' ? W : W + 2 * sw, sideLen = layout === 'sides' ? H + 2 * sw : H;
+  function frameCounts(W, H, layout, unit, sw, inside) {
+    var fs = frameSides(W, H, layout, sw, inside);
     function side(len) { var n = Math.floor(len / unit + 1e-9); return { len: len, n: n, left: len - n * unit }; }
-    var t = side(topLen), b = side(topLen), l = side(sideLen), r = side(sideLen);
+    var t = side(fs[0].len), b = side(fs[1].len), l = side(fs[2].len), r = side(fs[3].len);
     var total = t.n + b.n + l.n + r.n;
     return { top: t, bottom: b, left: l, right: r, totalUnits: total, totalLeds: total * 3 };
+  }
+  // The four strips of the frame in plate millimetres (y down), in the order top, bottom, left, right:
+  // {x, y, len, horiz}. Outside the plate (default) the strips lie beyond the plate edge; inside they lie on the plate,
+  // against its edge. layout 'topbottom': the top and bottom strips run over the corners, 'sides': the side strips do.
+  function frameSides(W, H, layout, sw, inside) {
+    var tb = layout !== 'sides', o = inside ? 0 : -sw, lenH, lenV, y0, x0;
+    if (inside) { lenH = tb ? W : W - 2 * sw; lenV = tb ? H - 2 * sw : H; x0 = tb ? 0 : sw; y0 = tb ? sw : 0; }
+    else { lenH = tb ? W + 2 * sw : W; lenV = tb ? H : H + 2 * sw; x0 = tb ? -sw : 0; y0 = tb ? 0 : -sw; }
+    lenH = Math.max(0, lenH); lenV = Math.max(0, lenV);
+    return [
+      { x: x0, y: o, len: lenH, horiz: true },
+      { x: x0, y: inside ? H - sw : H, len: lenH, horiz: true },
+      { x: o, y: y0, len: lenV, horiz: false },
+      { x: inside ? W - sw : W, y: y0, len: lenV, horiz: false }
+    ];
   }
 
   // Distances from a point to the four plate edges (the little dimension arrows).
@@ -357,6 +377,21 @@
     return best ? { s: best.s, vertical: best.v, horizontal: best.h } : { s: s, vertical: null, horizontal: null };
   }
   // Allowed scale factors of a text (height 5-600, cell width 5-600, gap -50..100 mm), so the state stays valid.
+  // Where to put one more hole in a letter: the point inside the letter (hole circle fully covered, 0.5 mm spare) that is
+  // farthest from the holes already there (cell holes: [{x, y}], absolute mm). Sampled on a 1 mm grid over the cell.
+  // Returns {dx, dy} relative to the cell centre and covered (false = no covered spot, the cell centre is used).
+  function suggestHole(cell, r, offsetMm, holes) {
+    var best = null, bestD = -1, x, y, min = 1e9;
+    if (!cell.glyph) return { dx: 0, dy: 0, covered: false };
+    for (x = cell.x; x <= cell.x + cell.w; x += 1) for (y = cell.y; y <= cell.y + cell.h; y += 1) {
+      if (cell.glyph.insideDist(x - cell.gox, y - cell.goy, offsetMm) < r + 0.5) continue;
+      min = 1e9;
+      holes.forEach(function (h) { min = Math.min(min, Math.hypot(h.x - x, h.y - y)); });
+      if (min > bestD + 1e-9) { bestD = min; best = { x: x, y: y }; }
+    }
+    if (!best) return { dx: 0, dy: 0, covered: false };
+    return { dx: Math.round((best.x - cell.cx) * 100) / 100, dy: Math.round((best.y - cell.cy) * 100) / 100, covered: true };
+  }
   function scaleLimits(t) {
     var lo = Math.max(5 / t.h, 5 / t.cellW), hi = Math.min(600 / t.h, 600 / t.cellW);
     if (t.spacing > 0) hi = Math.min(hi, 100 / t.spacing); else if (t.spacing < 0) hi = Math.min(hi, 50 / -t.spacing);
@@ -365,7 +400,7 @@
   // The sizes of a text scaled uniformly by s (3 decimals): height, cell width, gap and the hole offsets.
   function scaledText(t, s) {
     function r(v) { return Math.round(v * 1000) / 1000; }
-    return { h: r(t.h * s), cellW: r(t.cellW * s), spacing: r(t.spacing * s), holeOffsets: (t.holeOffsets || []).map(function (o) { return { dx: r(o.dx * s), dy: r(o.dy * s) }; }) };
+    return { h: r(t.h * s), cellW: r(t.cellW * s), spacing: r(t.spacing * s), holeOffsets: (t.holeOffsets || []).map(function (o) { return { dx: r(o.dx * s), dy: r(o.dy * s) }; }), extraHoles: (t.extraHoles || []).map(function (o) { return { i: o.i, dx: r(o.dx * s), dy: r(o.dy * s) }; }) };
   }
 
   // ------------------------------------------------------------------ strip pieces behind the letters
@@ -401,7 +436,7 @@
     ['casino', 'open'].forEach(function (key) {
       var t = scene[key];
       if (!t) return;
-      t.cells.forEach(function (c) { if (c.hole) items.push({ kind: 'circle', x: c.hole.x, y: c.hole.y, d: d, tag: key }); });
+      t.cells.forEach(function (c) { if (c.hole) items.push({ kind: 'circle', x: c.hole.x, y: c.hole.y, d: d, tag: key }); (c.extras || []).forEach(function (e) { items.push({ kind: 'circle', x: e.x, y: e.y, d: d, tag: key }); }); });
     });
     if (state.export.arrow && scene.arrow) {
       scene.arrow.holes.forEach(function (h) { items.push({ kind: 'circle', x: h.x, y: h.y, d: h.d, tag: 'arrow' }); });
@@ -473,9 +508,11 @@
     return t + dxfEnd();
   }
   // Letter outlines (closed polygons, y down) in an area of height h; layer LETTERS, optional bounding boxes on layer BOXES.
-  function dxfFromPolys(polys, h, boxes) {
+  // plateCuts (optional): closed polygons of the plate edge, written on the layer PLATE_CUT.
+  function dxfFromPolys(polys, h, boxes, plateCuts) {
     var t = dxfStart();
     polys.forEach(function (p) { if (p.length >= 3) t += dxfPoly(p.map(function (q) { return [q[0], h - q[1]]; }), 'LETTERS'); });
+    (plateCuts || []).forEach(function (p) { t += dxfPoly(p.map(function (q) { return [q[0], h - q[1]]; }), 'PLATE_CUT'); });
     (boxes || []).forEach(function (b) { t += dxfRect(b.x, h - b.y - b.h, b.w, b.h, 'BOXES'); });
     return t + dxfEnd();
   }
@@ -604,17 +641,17 @@
       plate: { w: 980, h: 300 },
       holeD: 10,
       minStroke: 3,
-      frame: { layout: 'topbottom', unit: 100, stripWidth: 10 },
+      frame: { layout: 'topbottom', unit: 100, stripWidth: 10, inside: false },
       texts: {
-        casino: { text: 'CASINO', font: 'Limelight', weight: 400, x: 20, y: 20, h: 100, mode: 'uniform', cellW: 90, spacing: 6, thicken: 0, holeOffsets: [] },
-        open: { text: 'OPEN', font: 'Limelight', weight: 400, x: 600, y: 20, h: 100, mode: 'uniform', cellW: 90, spacing: 6, thicken: 0, holeOffsets: [], sameFont: true },
-        closed: { text: 'CLOSED', font: 'Limelight', weight: 400, x: 560, y: 190, h: 50, mode: 'natural', cellW: 45, spacing: 4, thicken: 0, holeOffsets: [], sameFont: true }
+        casino: { text: 'CASINO', font: 'Limelight', weight: 400, x: 20, y: 20, h: 100, mode: 'uniform', cellW: 90, spacing: 6, thicken: 0, holeOffsets: [], extraHoles: [] },
+        open: { text: 'OPEN', font: 'Limelight', weight: 400, x: 600, y: 20, h: 100, mode: 'uniform', cellW: 90, spacing: 6, thicken: 0, holeOffsets: [], extraHoles: [], sameFont: true },
+        closed: { text: 'CLOSED', font: 'Limelight', weight: 400, x: 560, y: 190, h: 50, mode: 'natural', cellW: 45, spacing: 4, thicken: 0, holeOffsets: [], extraHoles: [], sameFont: true }
       },
       arrow: { x: 20, y: 150 },
       closedRound: { dx: 0, dy: 0 },
       closedSlot: { dx: 0, dy: 0, w: 74, h: 4 },
       strips: [],
-      export: { closedHole: 'round', plateOutline: true, arrow: true, pdfRef: true, pdfDims: true, mirror: false, kerf: 0, sheetW: 600, sheetH: 300, spacing: 3, boxes: false, nest: false },
+      export: { closedHole: 'round', plateOutline: true, arrow: true, pdfRef: true, pdfDims: true, plateCut: false, mirror: false, kerf: 0, sheetW: 600, sheetH: 300, spacing: 3, boxes: false, nest: false },
       ui: { dims: 'selected', snap: true, preview: false, grid: true }
     };
   }
@@ -629,7 +666,7 @@
     if (o.plate) { s.plate.w = num(o.plate.w, 100, 980, d.plate.w); s.plate.h = num(o.plate.h, 100, 300, d.plate.h); }
     s.holeD = num(o.holeD, 5, 30, d.holeD);
     s.minStroke = num(o.minStroke, 0.5, 20, d.minStroke);
-    if (o.frame) { s.frame.layout = o.frame.layout === 'sides' ? 'sides' : 'topbottom'; }
+    if (o.frame) { s.frame.layout = o.frame.layout === 'sides' ? 'sides' : 'topbottom'; s.frame.inside = !!o.frame.inside; }
     ['casino', 'open', 'closed'].forEach(function (k) {
       var t = (o.texts && o.texts[k]) || {}, e = s.texts[k], dd = d.texts[k];
       e.text = typeof t.text === 'string' ? t.text.slice(0, 20) : dd.text;
@@ -639,6 +676,7 @@
       e.mode = t.mode === 'natural' ? 'natural' : (t.mode === 'uniform' ? 'uniform' : dd.mode);
       e.cellW = num(t.cellW, 5, 600, dd.cellW); e.spacing = num(t.spacing, -50, 100, dd.spacing); e.thicken = num(t.thicken, -5, 10, dd.thicken);
       e.holeOffsets = Array.isArray(t.holeOffsets) ? t.holeOffsets.slice(0, 20).map(function (h) { return h ? { dx: num(h.dx, -300, 300, 0), dy: num(h.dy, -300, 300, 0) } : { dx: 0, dy: 0 }; }) : [];
+      e.extraHoles = Array.isArray(t.extraHoles) ? t.extraHoles.slice(0, 40).filter(function (h) { return h && isFinite(h.i); }).map(function (h) { return { i: Math.max(0, Math.min(19, Math.round(h.i))), dx: num(h.dx, -300, 300, 0), dy: num(h.dy, -300, 300, 0) }; }) : [];
       if (k !== 'casino') e.sameFont = t.sameFont !== false;
     });
     if (o.arrow) { s.arrow.x = num(o.arrow.x, -2000, 3000, d.arrow.x); s.arrow.y = num(o.arrow.y, -2000, 3000, d.arrow.y); }
@@ -648,7 +686,7 @@
     if (o.export) {
       var e2 = s.export, x = o.export;
       e2.closedHole = x.closedHole === 'slot' || x.closedHole === 'none' ? x.closedHole : 'round';
-      e2.plateOutline = x.plateOutline !== false; e2.arrow = x.arrow !== false; e2.pdfRef = x.pdfRef !== false; e2.pdfDims = x.pdfDims !== false; e2.mirror = !!x.mirror; e2.boxes = !!x.boxes; e2.nest = !!x.nest;
+      e2.plateOutline = x.plateOutline !== false; e2.arrow = x.arrow !== false; e2.pdfRef = x.pdfRef !== false; e2.pdfDims = x.pdfDims !== false; e2.plateCut = !!x.plateCut; e2.mirror = !!x.mirror; e2.boxes = !!x.boxes; e2.nest = !!x.nest;
       e2.kerf = num(x.kerf, -2, 2, 0); e2.sheetW = num(x.sheetW, 50, 3000, 600); e2.sheetH = num(x.sheetH, 50, 3000, 300); e2.spacing = num(x.spacing, 0, 50, 3);
     }
     if (o.ui) {
@@ -662,8 +700,8 @@
 
   return {
     MM_TO_PT: MM_TO_PT, distanceTo: distanceTo, signedField: signedField, rasterize: rasterize, marching: marching, simplifyClosed: simplifyClosed,
-    Glyph: Glyph, glyphFromPolygons: glyphFromPolygons, placeText: placeText, holeStatus: holeStatus, holeOffsetFor: holeOffsetFor,
-    frameCounts: frameCounts, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripCoverage: stripCoverage,
+    Glyph: Glyph, glyphFromPolygons: glyphFromPolygons, placeText: placeText, holeStatus: holeStatus, suggestHole: suggestHole, holeOffsetFor: holeOffsetFor,
+    frameCounts: frameCounts, frameSides: frameSides, dimsForPoint: dimsForPoint, boxPoints: boxPoints, snapCentres: snapCentres, handleScale: handleScale, snapHandleScale: snapHandleScale, scaleLimits: scaleLimits, scaledText: scaledText, stripRect: stripRect, stripCoverage: stripCoverage,
     drillItems: drillItems, epsFromItems: epsFromItems, dxfFromItems: dxfFromItems, holeDimItems: holeDimItems, dxfFromPolys: dxfFromPolys, epsFromPolys: epsFromPolys, pdfTiles: pdfTiles, nestShelves: nestShelves,
     defaultState: defaultState, fromJson: fromJson, toJson: toJson
   };
