@@ -186,6 +186,13 @@ function scene() {
   const a4 = core.pdfTiles(items, { w: 980, h: 300 }, 'A4', 'T'), a3 = core.pdfTiles(items, { w: 980, h: 300 }, 'A3', 'T');
   check(a4.cols === 4 && a4.rows === 2 && a4.pages === 8, 'A4 landscape tiles of 277 x 190 mm: 4 x 2 = 8 pages, got ' + a4.pages);
   check(a3.cols === 3 && a3.rows === 2 && a3.pages === 6, 'A3 landscape tiles of 400 x 277 mm: 3 x 2 = 6 pages, got ' + a3.pages);
+  const ref = [{ kind: 'poly', loops: [[[10, 10], [60, 10], [60, 40], [10, 40]], [[20, 20], [30, 20], [30, 30]]], fill: 0.9, stroke: 0.5 }, { kind: 'text', x: 35, y: 25, s: 'L-CAP D2 (a)', size: 6 }];
+  const wr = core.pdfTiles(items, { w: 250, h: 100 }, 'A4', 'T', ref).text, wo = core.pdfTiles(items, { w: 250, h: 100 }, 'A4', 'T').text;
+  check(wr.indexOf('0.9 g 0.5 G 0.2 w ') > 0, 'reference polygon uses its grey levels'); check(wo.indexOf(' B*') < 0 && wo.indexOf('Tj') > 0, 'no reference drawing without ref (only the tile label text)');
+  check(/ m [0-9. ]+ l [0-9. ]+ l [0-9. ]+ l h [0-9. ]+ m [0-9. ]+ l [0-9. ]+ l h B\*/.test(wr), 'polygon has two loops (outer + hole), closed, filled even-odd');
+  check(wr.indexOf('(L-CAP D2 \\(a\\)) Tj') > 0, 'reference text is written with escaped brackets');
+  const m1 = wr.match(/0\.9 g 0\.5 G 0\.2 w ([0-9.]+) ([0-9.]+) m /); near(+m1[1], (10 + 10) * 72 / 25.4, 0.01, 'first polygon point x = margin 10 + 10 mm in pt'); near(+m1[2], (10 + 190 - 10) * 72 / 25.4, 0.01, 'first polygon point y: A4 tile 190 mm high, plate y 10 from the top');
+  check(wr.indexOf('0.9 g') < wr.indexOf('0 0 1 RG'), 'reference is drawn before the drill pattern');
   check(core.pdfTiles(items, { w: 250, h: 100 }, 'A4', 'T').pages === 1, 'a small plate fits one A4 page');
   check(a4.text.indexOf('%PDF-1.4') === 0 && a4.text.indexOf('/Count 8') > 0 && a4.text.indexOf('[0 0 841.89 595.276]') > 0, 'PDF header, page count and A4 landscape media box 841.89 x 595.276 pt');
   const sx = a4.text.lastIndexOf('startxref'), off = parseInt(a4.text.slice(sx + 10), 10);
@@ -215,6 +222,7 @@ function scene() {
   check(JSON.stringify(back) === JSON.stringify(d), 'JSON round trip keeps the state');
   const odd = core.fromJson(JSON.stringify({ version: 1, plate: { w: 5000, h: -3 }, holeD: 99, strips: [{ x: 1, y: 2, rot: 45 }], export: { closedHole: 'bogus' } }));
   check(odd.plate.w === 980 && odd.plate.h === 100 && odd.holeD === 30 && odd.strips[0].rot === 0 && odd.export.closedHole === 'round', 'values are clamped and checked');
+  check(core.defaultState().export.pdfRef === true && core.fromJson({ version: 1, export: { pdfRef: false } }).export.pdfRef === false && core.fromJson({ version: 1, export: {} }).export.pdfRef === true, 'pdfRef option: default true, false is kept');
   check(core.fromJson({ version: 1, ui: { dims: 'bogus' } }).ui.dims === 'selected', 'unknown dimension mode falls back to selected');
   const low = core.fromJson({ version: 1, holeD: 1 }); check(low.holeD === 5, 'hole diameter minimum is 5 mm');
   let threw = false; try { core.fromJson('{"version":2}'); } catch (e) { threw = true; } check(threw, 'unknown version is rejected');

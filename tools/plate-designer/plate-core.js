@@ -445,7 +445,9 @@
 
   // Tiled 1:1 PDF of the drilling pattern. paper: 'A4' | 'A3', landscape tiles. Returns {bytes: Uint8Array-like string, pages}.
   var PAPER = { A4: [297, 210], A3: [420, 297] };
-  function pdfTiles(items, plate, paper, title) {
+  // ref (optional): reference drawing under the drill pattern, so the sheet doubles as a layout drawing:
+  //   {kind:'poly', loops:[[[x,y],...],...], fill:0..1, stroke:0..1} (even-odd fill) and {kind:'text', x, y, s, size} (centred).
+  function pdfTiles(items, plate, paper, title, ref) {
     var pw = PAPER[paper][0], ph = PAPER[paper][1], margin = 10, tw = pw - 2 * margin, th = ph - 2 * margin;
     var cols = Math.max(1, Math.ceil(plate.w / tw - 1e-9)), rows = Math.max(1, Math.ceil(plate.h / th - 1e-9));
     var objs = [], pages = [];
@@ -459,6 +461,16 @@
         // transform plate mm (y down) to page points: X = margin + (x - x0), Y = margin + th - (y - y0) -> page y up
         var X = function (x) { return (margin + x - x0) * K; };
         var Yp = function (y) { return (margin + th - (y - y0)) * K; };
+        (ref || []).forEach(function (it) {
+          if (it.kind === 'poly') {
+            cs += fmt(it.fill) + ' g ' + fmt(it.stroke) + ' G 0.2 w ';
+            it.loops.forEach(function (lp) { lp.forEach(function (q, i) { cs += fmt(X(q[0])) + ' ' + fmt(Yp(q[1])) + (i ? ' l ' : ' m '); }); cs += 'h '; });
+            cs += 'B*\n0.1 w\n';
+          } else if (it.kind === 'text') {
+            var size = it.size || 7, tw = pdfEscape(it.s).length * size * 0.5;
+            cs += 'BT /F1 ' + fmt(size) + ' Tf 0.25 g ' + fmt(X(it.x) - tw / 2) + ' ' + fmt(Yp(it.y) - size * 0.35) + ' Td (' + pdfEscape(it.s) + ') Tj ET\n';
+          }
+        });
         items.forEach(function (it) {
           if (it.kind === 'outline') {
             cs += '0 0 1 RG ' + fmt(X(0)) + ' ' + fmt(Yp(it.h)) + ' ' + fmt(it.w * K) + ' ' + fmt(it.h * K) + ' re S\n';
@@ -537,7 +549,7 @@
       closedRound: { dx: 0, dy: 0 },
       closedSlot: { dx: 0, dy: 0, w: 74, h: 4 },
       strips: [],
-      export: { closedHole: 'round', plateOutline: true, arrow: true, mirror: false, kerf: 0, sheetW: 600, sheetH: 300, spacing: 3, boxes: false, nest: false },
+      export: { closedHole: 'round', plateOutline: true, arrow: true, pdfRef: true, mirror: false, kerf: 0, sheetW: 600, sheetH: 300, spacing: 3, boxes: false, nest: false },
       ui: { dims: 'selected', snap: true, preview: false, grid: true }
     };
   }
@@ -571,7 +583,7 @@
     if (o.export) {
       var e2 = s.export, x = o.export;
       e2.closedHole = x.closedHole === 'slot' || x.closedHole === 'none' ? x.closedHole : 'round';
-      e2.plateOutline = x.plateOutline !== false; e2.arrow = x.arrow !== false; e2.mirror = !!x.mirror; e2.boxes = !!x.boxes; e2.nest = !!x.nest;
+      e2.plateOutline = x.plateOutline !== false; e2.arrow = x.arrow !== false; e2.pdfRef = x.pdfRef !== false; e2.mirror = !!x.mirror; e2.boxes = !!x.boxes; e2.nest = !!x.nest;
       e2.kerf = num(x.kerf, -2, 2, 0); e2.sheetW = num(x.sheetW, 50, 3000, 600); e2.sheetH = num(x.sheetH, 50, 3000, 300); e2.spacing = num(x.spacing, 0, 50, 3);
     }
     if (o.ui) {

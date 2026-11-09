@@ -27,7 +27,7 @@ nothing to install and nothing is sent anywhere, except that fonts are fetched f
 
 ## Exports
 - Drill pattern as EPS (1 unit = 1 mm, 5 mm margin; plate outline optional) and as DXF (R12 ASCII, mm, y up, layers PLATE / HOLES / SLOT: circles and closed polylines).
-- Drill pattern as 1:1 tiled PDF, A4 or A3 landscape (print at 100 %, tape the tiles together; crosshair at every hole).
+- Drill pattern as 1:1 tiled PDF, A4 or A3 landscape (print at 100 %, tape the tiles together; crosshair at every hole). The PDF also shows the letters and the arrow sticks in light grey with labels (letter numbers C1..O6, stick names with connectors such as L-CAP D2, CLOSED), so it doubles as a layout drawing: print it twice, drill through one copy and read the other. Option "letters, arrow and labels in the drill PDF" turns this off.
 - Letter cut as EPS: as placed on the plate or nested on a raw sheet, optional mirror (cut from the back), laser kerf, dashed bounding boxes.
   Letter cut also as DXF (layers LETTERS, BOXES; one closed polyline per outline). DXF is untested in a real cutter program. Letters are written as outlines at 0.1 mm resolution; inner contours (holes of A, O, D, P) are included.
 
