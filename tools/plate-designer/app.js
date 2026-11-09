@@ -199,6 +199,14 @@
     });
     return s;
   }
+  // The centre of the plate: a vertical and a horizontal centre line and a marker at the crossing. Things snap to them.
+  function centreSvg() {
+    var W = S.plate.w, H = S.plate.h, px = 1 / view.k, cx = W / 2, cy = H / 2, c = '#0a8f8f', d = ' stroke-dasharray="' + 10 * px + ' ' + 3 * px + ' ' + 2 * px + ' ' + 3 * px + '"';
+    return '<g pointer-events="none"><line x1="' + cx + '" y1="0" x2="' + cx + '" y2="' + H + '" stroke="' + c + '" stroke-width="' + px + '"' + d + '/>' +
+      '<line x1="0" y1="' + cy + '" x2="' + W + '" y2="' + cy + '" stroke="' + c + '" stroke-width="' + px + '"' + d + '/>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="' + 5 * px + '" fill="none" stroke="' + c + '" stroke-width="' + 1.5 * px + '"/><circle cx="' + cx + '" cy="' + cy + '" r="' + 1.5 * px + '" fill="' + c + '"/>' +
+      '<text x="' + (cx + 8 * px) + '" y="' + (cy - 6 * px) + '" font-size="' + 9 * px + '" fill="' + c + '">centre ' + f2(cx) + ', ' + f2(cy) + '</text></g>';
+  }
   function gridSvg() {
     var W = S.plate.w, H = S.plate.h, px = 1 / view.k, steps = [1, 2, 5, 10, 20, 50, 100, 200], st = 100, i, s = '';
     for (i = 0; i < steps.length; i++) if (steps[i] * view.k >= 9) { st = steps[i]; break; }
@@ -234,6 +242,7 @@
     if (!S.frame.inside) s += frameSvg(pv);
     s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="' + (pv ? '#101010' : '#f3efe0') + '" stroke="#000" stroke-width="' + px + '"/>';
     if (S.ui.grid && !pv) s += gridSvg();
+    if (!pv) s += centreSvg();
     if (S.frame.inside) s += '<g pointer-events="none">' + frameSvg(pv) + '</g>';
     // strip pieces (behind the letters)
     S.strips.forEach(function (t, i) {
@@ -694,7 +703,7 @@
     frameLayout: 'How the 10 mm wide LED strip frame meets at the corners. "Top and bottom over the corners": the top and bottom strips are as long as the plate plus both side strips. "Sides over the corners": the side strips are longer instead. Only whole 100 mm units (3 LEDs each) are counted; the leftover is hatched.',
     stripAdd: 'Add a 100 x 10 mm LED strip piece (one 3-LED unit) in the middle of the plate. Drag it behind a letter.', stripRot: 'Rotate the selected strip piece between horizontal and vertical (key R).', stripDel: 'Delete the selected strip piece (key Delete).',
     dims: 'Which mm dimension arrows to draw to the final plate edge: from the centre, corners and hole centres of the selected object, from every object, or none.',
-    snap: 'When on, dragging a box snaps its vertical and horizontal centre line to the centre lines of the other boxes and of the plate when they are within 3 mm (pink guide line).',
+    snap: 'When on, dragging a box snaps its vertical and horizontal centre line to the centre lines of the other boxes and of the plate when they are within 3 mm (pink guide line); dragged holes and LED strip pieces snap to the plate centre lines. Hold Ctrl while dragging to move without snapping.',
     grid: 'Show the grid lines and the ruler numbers (mm) on the plate.',
     closedHole: 'What the drill pattern contains for CLOSED: a round hole for the wires, a slot for the LED stick window, or nothing. Both are drawn on screen; the unused one is dashed.',
     slotW: 'Width in mm of the CLOSED slot. Default 74 mm = LED window of a Grove stick (an assumption: check it on the real stick).', slotH: 'Height in mm of the CLOSED slot. Default 4 mm = LED window of a Grove stick (an assumption).',
@@ -813,9 +822,16 @@
       view.cx = drag.cx - dx / view.k; view.cy = drag.cy - dy / view.k; render(); return;
     }
     var p = toMm(e); drag.moved = true; guides = { v: null, h: null };
+    var snapOn = S.ui.snap && !(e.ctrlKey || e.metaKey);   // hold Ctrl while dragging to move freely
+    // snaps a point (hole, strip centre) to the plate centre lines within 3 mm; returns the corrected point
+    function snapPt(x, y) {
+      if (!snapOn) return { x: x, y: y };
+      var sn = core.snapCentres({ x: x, y: y, w: 0, h: 0 }, [{ cx: S.plate.w / 2, cy: S.plate.h / 2 }], 3);
+      guides = { v: sn.vertical, h: sn.horizontal }; return { x: x + sn.dx, y: y + sn.dy };
+    }
     if (drag.kind === 'scale') {
       var bs2 = drag.base, sf = core.handleScale(drag.hx, drag.hy, bs2.cx, bs2.cy, bs2.w, bs2.boxH, p.x, p.y);
-      if (S.ui.snap) {
+      if (snapOn) {
         var xs = [0, S.plate.w / 2, S.plate.w], ys = [0, S.plate.h / 2, S.plate.h];
         KEYS.concat(['arrow']).forEach(function (kk) { if (kk !== drag.key) { var q = boxOf(cur, kk); xs.push(q.x, q.x + q.w / 2, q.x + q.w); ys.push(q.y, q.y + q.h / 2, q.y + q.h); } });
         var sr = core.snapHandleScale(sf, drag.hx, drag.hy, bs2.cx, bs2.cy, bs2.w, bs2.boxH, xs, ys, 6 / view.k);
@@ -826,7 +842,7 @@
     if (drag.kind === 'box') {
       var o = drag.key === 'arrow' ? S.arrow : S.texts[drag.key], b = boxOf(cur, drag.key);
       var nx = drag.ox + p.x - drag.sx, ny = drag.oy + p.y - drag.sy;
-      if (S.ui.snap) {
+      if (snapOn) {
         var targets = [{ cx: S.plate.w / 2, cy: S.plate.h / 2 }];
         KEYS.concat(['arrow']).forEach(function (kk) { if (kk !== drag.key) { var q = boxOf(cur, kk); targets.push({ cx: q.x + q.w / 2, cy: q.y + q.h / 2 }); } });
         var sn = core.snapCentres({ x: nx, y: ny, w: b.w, h: b.h }, targets, 3);
@@ -837,15 +853,20 @@
     } else if (drag.kind === 'hole') {
       var c = cur[drag.key].cells[drag.idx], t = S.texts[drag.key];
       while (t.holeOffsets.length <= drag.idx) t.holeOffsets.push({ dx: 0, dy: 0 });
-      t.holeOffsets[drag.idx] = { dx: Math.round((p.x + drag.gx - c.cx) * 100) / 100, dy: Math.round((p.y + drag.gy - c.cy) * 100) / 100 };
+      var hp = snapPt(p.x + drag.gx, p.y + drag.gy);
+      t.holeOffsets[drag.idx] = { dx: Math.round((hp.x - c.cx) * 100) / 100, dy: Math.round((hp.y - c.cy) * 100) / 100 };
     } else if (drag.kind === 'xhole') {
       var cx1 = cur[drag.key].cells[drag.idx], xe1 = S.texts[drag.key].extraHoles[drag.k];
-      xe1.dx = Math.round((p.x + drag.gx - cx1.cx) * 100) / 100; xe1.dy = Math.round((p.y + drag.gy - cx1.cy) * 100) / 100;
+      var xp = snapPt(p.x + drag.gx, p.y + drag.gy);
+      xe1.dx = Math.round((xp.x - cx1.cx) * 100) / 100; xe1.dy = Math.round((xp.y - cx1.cy) * 100) / 100;
     } else if (drag.kind === 'closedRound' || drag.kind === 'closedSlot') {
-      var cb = cur.closed, dx2 = Math.round((p.x + drag.gx - (cb.x + cb.w / 2)) * 100) / 100, dy2 = Math.round((p.y + drag.gy - (cb.y + cb.h / 2)) * 100) / 100;
+      var cb = cur.closed, cp = snapPt(p.x + drag.gx, p.y + drag.gy), dx2 = Math.round((cp.x - (cb.x + cb.w / 2)) * 100) / 100, dy2 = Math.round((cp.y - (cb.y + cb.h / 2)) * 100) / 100;
       S.closedRound.dx = S.closedSlot.dx = dx2; S.closedRound.dy = S.closedSlot.dy = dy2; syncControls();
     } else if (drag.kind === 'strip') {
-      var s1 = S.strips[drag.idx]; s1.x = Math.round((drag.ox + p.x - drag.sx) * 100) / 100; s1.y = Math.round((drag.oy + p.y - drag.sy) * 100) / 100;
+      var s1 = S.strips[drag.idx]; s1.x = drag.ox + p.x - drag.sx; s1.y = drag.oy + p.y - drag.sy;
+      var sr1 = core.stripRect(s1), sp = snapPt(sr1.x + sr1.w / 2, sr1.y + sr1.h / 2);
+      s1.x += sp.x - (sr1.x + sr1.w / 2); s1.y += sp.y - (sr1.y + sr1.h / 2);
+      s1.x = Math.round(s1.x * 100) / 100; s1.y = Math.round(s1.y * 100) / 100;
     }
     render();
   });

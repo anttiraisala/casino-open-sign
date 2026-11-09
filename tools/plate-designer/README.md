@@ -7,7 +7,7 @@ nothing to install and nothing is sent anywhere, except that fonts are fetched f
 ## What it does
 - mm-accurate canvas, vinyl plate up to 980 x 300 mm (sliders + numeric fields).
 - Boxes you drag: ARROW (fixed 349.76 x 102.32 mm, 10 cable holes of 8 mm from `tools/arrow_geometry.py`),
-  CASINO, OPEN and CLOSED (default height half of CASINO). Box centre lines snap to the other boxes and the plate centre (3 mm).
+  CASINO, OPEN and CLOSED (default height half of CASINO). The plate centre (crossing marker and dash-dot centre lines, teal) is always drawn; box centre lines snap to the other boxes and the plate centre lines (3 mm), and dragged holes and LED strip pieces snap to the plate centre lines. Hold Ctrl while dragging to move without snapping.
 - Every CASINO/OPEN letter cell has a round hole (one shared diameter, 5-30 mm, default 10 mm = 6 wires). Drag holes
   individually, or use "Centre holes in cells" / "Fit holes into thick parts". Hole outline is green when the whole
   circle is behind the letter, red when not.

@@ -220,6 +220,19 @@ with sync_playwright() as p:
     pg.fill('#t-casino-text', 'CAS'); pg.click('#t-casino-xbox .xadd[data-i="2"]'); pg.fill('#t-casino-text', 'CA'); pg.evaluate('PlateApp.commit()'); pg.wait_for_timeout(100)
     check(pg.locator('#t-casino-xbox .xchip').count() == 0, 'a hole of a letter that no longer exists is not listed')
     pg.fill('#t-casino-text', 'CASINO'); pg.evaluate('PlateApp.commit()')
+    # plate centre lines and Ctrl = no snapping
+    pg.goto(URL); pg.wait_for_timeout(300); pg.click('#zfit'); pg.wait_for_timeout(100)
+    check(pg.evaluate("document.querySelectorAll('#svg line[stroke=\"#0a8f8f\"]').length") == 2 and 'centre 490, 150' in pg.evaluate("document.getElementById('svg').textContent"), 'the plate centre lines and the centre label (490, 150) are drawn')
+    check(pg.evaluate("document.querySelector('#svg line[stroke=\"#0a8f8f\"]').getAttribute('x1')") == '490', 'vertical centre line at x = 490')
+    check(S()['ui']['snap'] is True, 'snap is on by default')
+    pg.fill('#t-casino-x', '20'); pg.fill('#t-casino-y', '20')
+    ax, ay = scr(20 + 540 * 0.2, 24); kk = pg.evaluate('(function(){var b=document.getElementById("svg").getBoundingClientRect();var vb=document.getElementById("svg").getAttribute("viewBox").split(" ");return b.width/parseFloat(vb[2])})()')
+    pg.mouse.move(ax, ay); pg.mouse.down(); pg.mouse.move(ax + 201.5 * kk, ay, steps=5); pg.mouse.up(); pg.wait_for_timeout(100)
+    near(S()['texts']['casino']['x'], 220, 0.01, 'dragging CASINO 201.5 mm snaps its centre onto the plate centre line (x = 220)')
+    pg.fill('#t-casino-x', '20'); ax, ay = scr(20 + 540 * 0.2, 24)
+    pg.keyboard.down('Control'); pg.mouse.move(ax, ay); pg.mouse.down(); pg.mouse.move(ax + 201.5 * kk, ay, steps=5); pg.mouse.up(); pg.keyboard.up('Control'); pg.wait_for_timeout(100)
+    near(S()['texts']['casino']['x'], 221.5, 0.3, 'with Ctrl held the same drag does not snap (x = 221.5)')
+    pg.fill('#t-casino-x', '20'); pg.evaluate('PlateApp.commit()')
     # preview and screenshots
     shot = sys.argv[1] if len(sys.argv) > 1 else '/tmp/plate_designer.png'
     pg.click('#zfit'); pg.screenshot(path=shot)
