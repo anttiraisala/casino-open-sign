@@ -1,0 +1,1974 @@
+{
+  "version": 1,
+  "author": "Casino sign project",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-arduino-mega",
+      "id": "mega",
+      "top": 386,
+      "left": 2,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_01",
+      "top": 276.0,
+      "left": 480.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_02",
+      "top": 276.0,
+      "left": 560.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_03",
+      "top": 276.0,
+      "left": 640.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_04",
+      "top": 276.0,
+      "left": 720.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_05",
+      "top": 276.0,
+      "left": 800.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_06",
+      "top": 276.0,
+      "left": 880.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_07",
+      "top": 212.0,
+      "left": 880.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_08",
+      "top": 148.0,
+      "left": 880.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_09",
+      "top": 84.0,
+      "left": 880.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_10",
+      "top": 20.0,
+      "left": 880.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_11",
+      "top": 20.0,
+      "left": 800.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_12",
+      "top": 20.0,
+      "left": 720.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_13",
+      "top": 20.0,
+      "left": 640.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_14",
+      "top": 20.0,
+      "left": 560.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_15",
+      "top": 20.0,
+      "left": 480.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_16",
+      "top": 84.0,
+      "left": 480.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_17",
+      "top": 148.0,
+      "left": 480.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "frame_18",
+      "top": 212.0,
+      "left": 480.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "letter_pixel_01_C",
+      "top": 80.0,
+      "left": 585.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "letter_pixel_02_A",
+      "top": 80.0,
+      "left": 623.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "letter_pixel_03_S",
+      "top": 80.0,
+      "left": 661.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "letter_pixel_04_I",
+      "top": 80.0,
+      "left": 699.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "letter_pixel_05_N",
+      "top": 80.0,
+      "left": 737.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "letter_pixel_06_O",
+      "top": 80.0,
+      "left": 775.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "letter_pixel_10_O",
+      "top": 124.0,
+      "left": 623.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "letter_pixel_09_P",
+      "top": 124.0,
+      "left": 661.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "letter_pixel_08_E",
+      "top": 124.0,
+      "left": 699.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "letter_pixel_07_N",
+      "top": 124.0,
+      "left": 737.0,
+      "attrs": {
+        "pixels": "1",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "closed_light",
+      "top": 162.0,
+      "left": 608.0,
+      "attrs": {
+        "pixels": "10",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "stick_l_cap",
+      "top": 584.6,
+      "left": 411.2,
+      "attrs": {
+        "pixels": "10",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      },
+      "rotate": 90.0
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "stick_l_wing_up",
+      "top": 528.2,
+      "left": 313.0,
+      "attrs": {
+        "pixels": "10",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      },
+      "rotate": 330.0
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "stick_l_wing_dn",
+      "top": 641.0,
+      "left": 313.0,
+      "attrs": {
+        "pixels": "10",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      },
+      "rotate": 30.0
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "stick_rail_up_l",
+      "top": 544.6,
+      "left": 516.1,
+      "attrs": {
+        "pixels": "10",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "stick_rail_up_r",
+      "top": 544.6,
+      "left": 699.9,
+      "attrs": {
+        "pixels": "10",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      },
+      "rotate": 180.0
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "stick_rail_dn_l",
+      "top": 624.6,
+      "left": 516.1,
+      "attrs": {
+        "pixels": "10",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "stick_rail_dn_r",
+      "top": 624.6,
+      "left": 699.9,
+      "attrs": {
+        "pixels": "10",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      },
+      "rotate": 180.0
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "stick_r_cap",
+      "top": 584.6,
+      "left": 804.8,
+      "attrs": {
+        "pixels": "10",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      },
+      "rotate": 90.0
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "stick_r_wing_up",
+      "top": 528.2,
+      "left": 903.0,
+      "attrs": {
+        "pixels": "10",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      },
+      "rotate": 210.0
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "stick_r_wing_dn",
+      "top": 641.0,
+      "left": 903.0,
+      "attrs": {
+        "pixels": "10",
+        "pixelShape": "square",
+        "pixelSize": "3535"
+      },
+      "rotate": 150.0
+    },
+    {
+      "type": "wokwi-text",
+      "id": "legend_0",
+      "top": 20,
+      "left": 936,
+      "attrs": {
+        "text": "Casino Open Sign V2: 2 strips + 11 sticks"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "legend_1",
+      "top": 42,
+      "left": 936,
+      "attrs": {
+        "text": "D11 frame: 18 pixels, pixel 1 lower-left, counter-clockwise (12 V WS2811)"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "legend_2",
+      "top": 64,
+      "left": 936,
+      "attrs": {
+        "text": "D12 letters: 10 pixels C A S I N O N E P O (OPEN wired reversed)"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "legend_3",
+      "top": 86,
+      "left": 936,
+      "attrs": {
+        "text": "Simulation only: the strips run from the Mega 5V here; in real life they get 12 V."
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "legend_4",
+      "top": 108,
+      "left": 936,
+      "attrs": {
+        "text": "Arrow sticks in the Grove Base Shield (drawn below the sign):"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "legend_5",
+      "top": 130,
+      "left": 936,
+      "attrs": {
+        "text": "  D2 L-CAP, D3 L-WING-UP, D4 L-WING-DN, D5 RAIL-UP-L,"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "legend_6",
+      "top": 152,
+      "left": 936,
+      "attrs": {
+        "text": "  D6 RAIL-UP-R, D7 RAIL-DN-L, D8 RAIL-DN-R,"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "legend_7",
+      "top": 174,
+      "left": 936,
+      "attrs": {
+        "text": "  A0 R-CAP, A1 R-WING-UP, A2 R-WING-DN"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "legend_8",
+      "top": 196,
+      "left": 936,
+      "attrs": {
+        "text": "A3 closedLight: 11th Grove stick, 10 white LEDs behind the CLOSED hole text"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "legend_9",
+      "top": 218,
+      "left": 936,
+      "attrs": {
+        "text": "D30: casino closed switch SW5 (handle toward GND = closed)"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "legend_10",
+      "top": 240,
+      "left": 936,
+      "attrs": {
+        "text": "D22-D25: speed of frame + arrow (hex switch SW3)"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "legend_11",
+      "top": 262,
+      "left": 936,
+      "attrs": {
+        "text": "D26-D29: speed of letters (hex switch SW4)"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "legend_12",
+      "top": 284,
+      "left": 936,
+      "attrs": {
+        "text": "D13 (LED L on the board): sign of life; Serial Monitor 115200 baud"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "legend_13",
+      "top": 306,
+      "left": 936,
+      "attrs": {
+        "text": "One Wokwi LED = one real pixel (one chip = 3 LEDs, 10 cm)."
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mode_list_1",
+      "top": 322,
+      "left": 480,
+      "attrs": {
+        "text": "Letter modes (button D33 steps through them, after 10 it wraps to 0):"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mode_list_2",
+      "top": 342,
+      "left": 480,
+      "attrs": {
+        "text": "0 breathe   1 wave   2 typewriter   3 ignite   4 word blink"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mode_list_3",
+      "top": 362,
+      "left": 480,
+      "attrs": {
+        "text": "5 alternate   6 scanner   7 sparkle   8 chase   9 pulse"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mode_list_4",
+      "top": 382,
+      "left": 480,
+      "attrs": {
+        "text": "10 random auto: a random pattern from 0-9, new one every 2 min"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mode_list_5",
+      "top": 402,
+      "left": 480,
+      "attrs": {
+        "text": "The sign starts in mode 0."
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_1",
+      "top": 583.6,
+      "left": 409.2,
+      "attrs": {
+        "text": "L-CAP D2"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_2",
+      "top": 504.7,
+      "left": 284.0,
+      "attrs": {
+        "text": "L-WING-UP D3"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_3",
+      "top": 662.5,
+      "left": 284.0,
+      "attrs": {
+        "text": "L-WING-DN D4"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_4",
+      "top": 519.6,
+      "left": 548.1,
+      "attrs": {
+        "text": "RAIL-UP-L D5"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_5",
+      "top": 519.6,
+      "left": 731.9,
+      "attrs": {
+        "text": "RAIL-UP-R D6"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_6",
+      "top": 647.6,
+      "left": 548.1,
+      "attrs": {
+        "text": "RAIL-DN-L D7"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_7",
+      "top": 647.6,
+      "left": 731.9,
+      "attrs": {
+        "text": "RAIL-DN-R D8"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_8",
+      "top": 583.6,
+      "left": 902.8,
+      "attrs": {
+        "text": "R-CAP A0"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_9",
+      "top": 504.7,
+      "left": 996.0,
+      "attrs": {
+        "text": "R-WING-UP A1"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "stick_label_10",
+      "top": 662.5,
+      "left": 996.0,
+      "attrs": {
+        "text": "R-WING-DN A2"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "closed_label",
+      "top": 161.0,
+      "left": 778.0,
+      "attrs": {
+        "text": "<- CLOSED hole text (stick on A3)"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "letter_label_1",
+      "top": 63.0,
+      "left": 589.0,
+      "attrs": {
+        "text": "C1"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "letter_label_2",
+      "top": 63.0,
+      "left": 627.0,
+      "attrs": {
+        "text": "A2"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "letter_label_3",
+      "top": 63.0,
+      "left": 665.0,
+      "attrs": {
+        "text": "S3"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "letter_label_4",
+      "top": 63.0,
+      "left": 703.0,
+      "attrs": {
+        "text": "I4"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "letter_label_5",
+      "top": 63.0,
+      "left": 741.0,
+      "attrs": {
+        "text": "N5"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "letter_label_6",
+      "top": 63.0,
+      "left": 779.0,
+      "attrs": {
+        "text": "O6"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "letter_label_7",
+      "top": 107.0,
+      "left": 627.0,
+      "attrs": {
+        "text": "O10"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "letter_label_8",
+      "top": 107.0,
+      "left": 665.0,
+      "attrs": {
+        "text": "P9"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "letter_label_9",
+      "top": 107.0,
+      "left": 703.0,
+      "attrs": {
+        "text": "E8"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "letter_label_10",
+      "top": 107.0,
+      "left": 741.0,
+      "attrs": {
+        "text": "N7"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_1",
+      "top": 296.0,
+      "left": 480.0,
+      "attrs": {
+        "text": "1"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_2",
+      "top": 296.0,
+      "left": 560.0,
+      "attrs": {
+        "text": "2"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_3",
+      "top": 296.0,
+      "left": 640.0,
+      "attrs": {
+        "text": "3"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_4",
+      "top": 296.0,
+      "left": 720.0,
+      "attrs": {
+        "text": "4"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_5",
+      "top": 296.0,
+      "left": 800.0,
+      "attrs": {
+        "text": "5"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_6",
+      "top": 296.0,
+      "left": 880.0,
+      "attrs": {
+        "text": "6"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_7",
+      "top": 232.0,
+      "left": 880.0,
+      "attrs": {
+        "text": "7"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_8",
+      "top": 168.0,
+      "left": 880.0,
+      "attrs": {
+        "text": "8"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_9",
+      "top": 104.0,
+      "left": 880.0,
+      "attrs": {
+        "text": "9"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_10",
+      "top": 40.0,
+      "left": 880.0,
+      "attrs": {
+        "text": "10"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_11",
+      "top": 40.0,
+      "left": 800.0,
+      "attrs": {
+        "text": "11"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_12",
+      "top": 40.0,
+      "left": 720.0,
+      "attrs": {
+        "text": "12"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_13",
+      "top": 40.0,
+      "left": 640.0,
+      "attrs": {
+        "text": "13"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_14",
+      "top": 40.0,
+      "left": 560.0,
+      "attrs": {
+        "text": "14"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_15",
+      "top": 40.0,
+      "left": 480.0,
+      "attrs": {
+        "text": "15"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_16",
+      "top": 104.0,
+      "left": 480.0,
+      "attrs": {
+        "text": "16"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_17",
+      "top": 168.0,
+      "left": 480.0,
+      "attrs": {
+        "text": "17"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "frame_label_18",
+      "top": 232.0,
+      "left": 480.0,
+      "attrs": {
+        "text": "18"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "arrow_switch_label",
+      "top": 38,
+      "left": 20,
+      "attrs": {
+        "text": "D32: arrow direction"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "arrow_switch",
+      "top": 76,
+      "left": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mode_button_label",
+      "top": 38,
+      "left": 170,
+      "attrs": {
+        "text": "D33: letter mode"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "mode_button",
+      "top": 76,
+      "left": 180,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "casino_closed_label",
+      "top": 20,
+      "left": 290,
+      "attrs": {
+        "text": "D30: casino closed"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "casino_closed_label_2",
+      "top": 38,
+      "left": 290,
+      "attrs": {
+        "text": "(handle left = closed)"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "casino_closed_switch",
+      "top": 76,
+      "left": 330,
+      "attrs": {
+        "value": "1"
+      }
+    },
+    {
+      "type": "wokwi-dip-switch-8",
+      "id": "speed_switches",
+      "top": 256,
+      "left": 80,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-text",
+      "id": "speed_label_1",
+      "top": 146,
+      "left": 20,
+      "attrs": {
+        "text": "Speed DIP bank (stands in for the hex switches):"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "speed_label_2",
+      "top": 166,
+      "left": 20,
+      "attrs": {
+        "text": "1-4 = SW3 bits 1,2,4,8: frame + arrow (D22-D25)"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "speed_label_3",
+      "top": 186,
+      "left": 20,
+      "attrs": {
+        "text": "5-8 = SW4 bits 1,2,4,8: letters (D26-D29)"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "speed_label_4",
+      "top": 206,
+      "left": 20,
+      "attrs": {
+        "text": "ON = bit set; click the part, press keys 1-8."
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "speed_label_5",
+      "top": 226,
+      "left": 20,
+      "attrs": {
+        "text": "All OFF = position 0 (slowest)."
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "lcd_label_1",
+      "top": 622,
+      "left": 20,
+      "attrs": {
+        "text": "LCD 2x16 (I2C 0x27): SDA = D20, SCL = D21"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "lcd_label_2",
+      "top": 640,
+      "left": 20,
+      "attrs": {
+        "text": "pages: mode, SW3, SW4, casino + arrow"
+      }
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd",
+      "top": 668,
+      "left": 20,
+      "attrs": {
+        "pins": "i2c"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "mega:20",
+      "lcd:SDA",
+      "green",
+      []
+    ],
+    [
+      "mega:21",
+      "lcd:SCL",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "lcd:VCC",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "lcd:GND",
+      "black",
+      []
+    ],
+    [
+      "mega:32",
+      "arrow_switch:2",
+      "orange",
+      []
+    ],
+    [
+      "arrow_switch:1",
+      "mega:GND.1",
+      "black",
+      []
+    ],
+    [
+      "mega:30",
+      "casino_closed_switch:2",
+      "orange",
+      []
+    ],
+    [
+      "casino_closed_switch:1",
+      "mega:GND.1",
+      "black",
+      []
+    ],
+    [
+      "mega:33",
+      "mode_button:1.r",
+      "orange",
+      []
+    ],
+    [
+      "mode_button:2.r",
+      "mega:GND.1",
+      "black",
+      []
+    ],
+    [
+      "mega:22",
+      "speed_switches:1a",
+      "orange",
+      []
+    ],
+    [
+      "speed_switches:1b",
+      "mega:GND.1",
+      "black",
+      []
+    ],
+    [
+      "mega:23",
+      "speed_switches:2a",
+      "orange",
+      []
+    ],
+    [
+      "speed_switches:2b",
+      "mega:GND.1",
+      "black",
+      []
+    ],
+    [
+      "mega:24",
+      "speed_switches:3a",
+      "orange",
+      []
+    ],
+    [
+      "speed_switches:3b",
+      "mega:GND.1",
+      "black",
+      []
+    ],
+    [
+      "mega:25",
+      "speed_switches:4a",
+      "orange",
+      []
+    ],
+    [
+      "speed_switches:4b",
+      "mega:GND.1",
+      "black",
+      []
+    ],
+    [
+      "mega:26",
+      "speed_switches:5a",
+      "orange",
+      []
+    ],
+    [
+      "speed_switches:5b",
+      "mega:GND.1",
+      "black",
+      []
+    ],
+    [
+      "mega:27",
+      "speed_switches:6a",
+      "orange",
+      []
+    ],
+    [
+      "speed_switches:6b",
+      "mega:GND.1",
+      "black",
+      []
+    ],
+    [
+      "mega:28",
+      "speed_switches:7a",
+      "orange",
+      []
+    ],
+    [
+      "speed_switches:7b",
+      "mega:GND.1",
+      "black",
+      []
+    ],
+    [
+      "mega:29",
+      "speed_switches:8a",
+      "orange",
+      []
+    ],
+    [
+      "speed_switches:8b",
+      "mega:GND.1",
+      "black",
+      []
+    ],
+    [
+      "mega:11",
+      "frame_01:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "frame_01:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "frame_01:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_01:DOUT",
+      "frame_02:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_01:VDD.2",
+      "frame_02:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_01:VSS.2",
+      "frame_02:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_02:DOUT",
+      "frame_03:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_02:VDD.2",
+      "frame_03:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_02:VSS.2",
+      "frame_03:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_03:DOUT",
+      "frame_04:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_03:VDD.2",
+      "frame_04:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_03:VSS.2",
+      "frame_04:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_04:DOUT",
+      "frame_05:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_04:VDD.2",
+      "frame_05:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_04:VSS.2",
+      "frame_05:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_05:DOUT",
+      "frame_06:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_05:VDD.2",
+      "frame_06:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_05:VSS.2",
+      "frame_06:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_06:DOUT",
+      "frame_07:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_06:VDD.2",
+      "frame_07:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_06:VSS.2",
+      "frame_07:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_07:DOUT",
+      "frame_08:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_07:VDD.2",
+      "frame_08:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_07:VSS.2",
+      "frame_08:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_08:DOUT",
+      "frame_09:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_08:VDD.2",
+      "frame_09:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_08:VSS.2",
+      "frame_09:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_09:DOUT",
+      "frame_10:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_09:VDD.2",
+      "frame_10:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_09:VSS.2",
+      "frame_10:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_10:DOUT",
+      "frame_11:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_10:VDD.2",
+      "frame_11:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_10:VSS.2",
+      "frame_11:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_11:DOUT",
+      "frame_12:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_11:VDD.2",
+      "frame_12:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_11:VSS.2",
+      "frame_12:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_12:DOUT",
+      "frame_13:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_12:VDD.2",
+      "frame_13:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_12:VSS.2",
+      "frame_13:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_13:DOUT",
+      "frame_14:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_13:VDD.2",
+      "frame_14:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_13:VSS.2",
+      "frame_14:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_14:DOUT",
+      "frame_15:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_14:VDD.2",
+      "frame_15:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_14:VSS.2",
+      "frame_15:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_15:DOUT",
+      "frame_16:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_15:VDD.2",
+      "frame_16:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_15:VSS.2",
+      "frame_16:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_16:DOUT",
+      "frame_17:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_16:VDD.2",
+      "frame_17:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_16:VSS.2",
+      "frame_17:VSS",
+      "black",
+      []
+    ],
+    [
+      "frame_17:DOUT",
+      "frame_18:DIN",
+      "green",
+      []
+    ],
+    [
+      "frame_17:VDD.2",
+      "frame_18:VDD",
+      "red",
+      []
+    ],
+    [
+      "frame_17:VSS.2",
+      "frame_18:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:12",
+      "letter_pixel_01_C:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "letter_pixel_01_C:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "letter_pixel_01_C:VSS",
+      "black",
+      []
+    ],
+    [
+      "letter_pixel_01_C:DOUT",
+      "letter_pixel_02_A:DIN",
+      "green",
+      []
+    ],
+    [
+      "letter_pixel_01_C:VDD.2",
+      "letter_pixel_02_A:VDD",
+      "red",
+      []
+    ],
+    [
+      "letter_pixel_01_C:VSS.2",
+      "letter_pixel_02_A:VSS",
+      "black",
+      []
+    ],
+    [
+      "letter_pixel_02_A:DOUT",
+      "letter_pixel_03_S:DIN",
+      "green",
+      []
+    ],
+    [
+      "letter_pixel_02_A:VDD.2",
+      "letter_pixel_03_S:VDD",
+      "red",
+      []
+    ],
+    [
+      "letter_pixel_02_A:VSS.2",
+      "letter_pixel_03_S:VSS",
+      "black",
+      []
+    ],
+    [
+      "letter_pixel_03_S:DOUT",
+      "letter_pixel_04_I:DIN",
+      "green",
+      []
+    ],
+    [
+      "letter_pixel_03_S:VDD.2",
+      "letter_pixel_04_I:VDD",
+      "red",
+      []
+    ],
+    [
+      "letter_pixel_03_S:VSS.2",
+      "letter_pixel_04_I:VSS",
+      "black",
+      []
+    ],
+    [
+      "letter_pixel_04_I:DOUT",
+      "letter_pixel_05_N:DIN",
+      "green",
+      []
+    ],
+    [
+      "letter_pixel_04_I:VDD.2",
+      "letter_pixel_05_N:VDD",
+      "red",
+      []
+    ],
+    [
+      "letter_pixel_04_I:VSS.2",
+      "letter_pixel_05_N:VSS",
+      "black",
+      []
+    ],
+    [
+      "letter_pixel_05_N:DOUT",
+      "letter_pixel_06_O:DIN",
+      "green",
+      []
+    ],
+    [
+      "letter_pixel_05_N:VDD.2",
+      "letter_pixel_06_O:VDD",
+      "red",
+      []
+    ],
+    [
+      "letter_pixel_05_N:VSS.2",
+      "letter_pixel_06_O:VSS",
+      "black",
+      []
+    ],
+    [
+      "letter_pixel_06_O:DOUT",
+      "letter_pixel_07_N:DIN",
+      "green",
+      []
+    ],
+    [
+      "letter_pixel_06_O:VDD.2",
+      "letter_pixel_07_N:VDD",
+      "red",
+      []
+    ],
+    [
+      "letter_pixel_06_O:VSS.2",
+      "letter_pixel_07_N:VSS",
+      "black",
+      []
+    ],
+    [
+      "letter_pixel_07_N:DOUT",
+      "letter_pixel_08_E:DIN",
+      "green",
+      []
+    ],
+    [
+      "letter_pixel_07_N:VDD.2",
+      "letter_pixel_08_E:VDD",
+      "red",
+      []
+    ],
+    [
+      "letter_pixel_07_N:VSS.2",
+      "letter_pixel_08_E:VSS",
+      "black",
+      []
+    ],
+    [
+      "letter_pixel_08_E:DOUT",
+      "letter_pixel_09_P:DIN",
+      "green",
+      []
+    ],
+    [
+      "letter_pixel_08_E:VDD.2",
+      "letter_pixel_09_P:VDD",
+      "red",
+      []
+    ],
+    [
+      "letter_pixel_08_E:VSS.2",
+      "letter_pixel_09_P:VSS",
+      "black",
+      []
+    ],
+    [
+      "letter_pixel_09_P:DOUT",
+      "letter_pixel_10_O:DIN",
+      "green",
+      []
+    ],
+    [
+      "letter_pixel_09_P:VDD.2",
+      "letter_pixel_10_O:VDD",
+      "red",
+      []
+    ],
+    [
+      "letter_pixel_09_P:VSS.2",
+      "letter_pixel_10_O:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:A3",
+      "closed_light:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "closed_light:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "closed_light:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:2",
+      "stick_l_cap:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "stick_l_cap:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "stick_l_cap:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:3",
+      "stick_l_wing_up:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "stick_l_wing_up:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "stick_l_wing_up:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:4",
+      "stick_l_wing_dn:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "stick_l_wing_dn:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "stick_l_wing_dn:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:5",
+      "stick_rail_up_l:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "stick_rail_up_l:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "stick_rail_up_l:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:6",
+      "stick_rail_up_r:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "stick_rail_up_r:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "stick_rail_up_r:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:7",
+      "stick_rail_dn_l:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "stick_rail_dn_l:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "stick_rail_dn_l:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:8",
+      "stick_rail_dn_r:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "stick_rail_dn_r:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "stick_rail_dn_r:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:A0",
+      "stick_r_cap:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "stick_r_cap:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "stick_r_cap:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:A1",
+      "stick_r_wing_up:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "stick_r_wing_up:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "stick_r_wing_up:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:A2",
+      "stick_r_wing_dn:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "stick_r_wing_dn:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "stick_r_wing_dn:VSS",
+      "black",
+      []
+    ]
+  ],
+  "dependencies": {}
+}

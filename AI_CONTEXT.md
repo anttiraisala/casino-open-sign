@@ -230,6 +230,17 @@ sketch, extend the harness and also run a mutation (break the feature, the test 
 A reversed-polarity build (`CASINO_CLOSED_WHEN_LOW = false`) fails the harness by design because
 the harness hard-codes LOW = closed.
 
+### Casino Open Sign V2 tests (2026-11-10)
+
+`casino_open_sign_v2/` has its own sketch; the harness is `tests/casino_open_sign_v2_harness.cpp` (derived from `tests/harness.cpp`, with the
+V2 pins, 13 strips, hard-coded frame paths for both arrow directions, letter pixel order C A S I N O N E P O and a typewriter order test) and
+`tests/mutate_v2.py` (~85 mutants):
+
+    g++ -std=c++17 -O1 -w -Itests -DSKETCH_PATH='"'$PWD'/casino_open_sign_v2/sketch.ino"' -o /tmp/v2 tests/casino_open_sign_v2_harness.cpp && /tmp/v2
+
+V2 generators: `tools/generate_v2_diagram.py` (Wokwi), `generate_v2_schematic.py`, `generate_v2_layout.py` (layout-diagram + layout-parts),
+`generate_v2_parts_list.py` (CSV + SVG), shared data `tools/v2_data.py`; all read `casino_open_sign_v2/sketch.ino`. The v1 files are unchanged.
+
 ## 9. Decisions already made (do not reopen without a reason)
 
 - 60 LEDs/m strip, plate 50 x 45 cm, arrow ~40 x 15 cm target (actual 39.1 x 16.7 cm).

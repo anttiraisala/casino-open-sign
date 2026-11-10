@@ -66,6 +66,10 @@ the strip lengths and the wiring can be tested on a screen first.
 - Everything is generated from the settings at the top of `sketch.ino`, so a different sign size
   only needs those numbers changed and the generator scripts rerun.
 
+## Version 2
+
+`casino_open_sign_v2/` is the second version of the sign program: one 12 V WS2811 frame strip (18 pixels, D11), one 12 V WS2811 letters strip (10 pixels, one per letter, D12) and the 11 Grove sticks. The frame light runs both ways round the frame from the upper corner on the side the arrow points away from to the opposite lower corner. See its README.txt.
+
 ## Status
 
 - The sketch, the Wokwi diagram, the drawings and the documents are ready and tested with a
