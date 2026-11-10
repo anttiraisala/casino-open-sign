@@ -4,8 +4,8 @@ import subprocess, os, concurrent.futures as cf
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = open(os.path.join(ROOT, 'strip_frame_demo_test', 'sketch.ino')).read()
 muts = [
- ("frame pixels 15", "FRAME_PIXELS = 16;", "FRAME_PIXELS = 15;"),
- ("frame pixels 17", "FRAME_PIXELS = 16;", "FRAME_PIXELS = 17;"),
+ ("frame pixels 15", "FRAME_PIXELS = 18;", "FRAME_PIXELS = 17;"),
+ ("frame pixels 17", "FRAME_PIXELS = 18;", "FRAME_PIXELS = 19;"),
  ("single pixels 2", "SINGLE_PIXELS = 1;", "SINGLE_PIXELS = 2;"),
  ("pin frame", "PIN_FRAME = 9;", "PIN_FRAME = 8;"),
  ("pin single", "PIN_SINGLE = 10;", "PIN_SINGLE = 11;"),
@@ -28,6 +28,10 @@ muts = [
  ("palette white", "{255, 255, 255},  // 7", "{255, 255, 200},  // 7"),
  ("palette size", "PALETTE_SIZE = 8;", "PALETTE_SIZE = 7;"),
  ("colour never changes", "      colourIndex = (colourIndex + 1) % PALETTE_SIZE;\n", ""),
+ ("route start 14", "ROUTE_START_PIXEL = 15;", "ROUTE_START_PIXEL = 14;"),
+ ("route start 16", "ROUTE_START_PIXEL = 15;", "ROUTE_START_PIXEL = 16;"),
+ ("route anticlockwise", "return (ROUTE_START_PIXEL - 1 + FRAME_PIXELS - route) % FRAME_PIXELS;", "return (ROUTE_START_PIXEL - 1 + route) % FRAME_PIXELS;"),
+ ("route from pixel 1", "return (ROUTE_START_PIXEL - 1 + FRAME_PIXELS - route) % FRAME_PIXELS;", "return (FRAME_PIXELS - route) % FRAME_PIXELS;"),
  ("no bounce", "return step < FRAME_PIXELS ? step : CYCLE_STEPS - step;", "return step % FRAME_PIXELS;"),
  ("end shown twice", "CYCLE_STEPS = 2 * (FRAME_PIXELS - 1);", "CYCLE_STEPS = 2 * FRAME_PIXELS;"),
  ("bounce one off", "CYCLE_STEPS - step;", "CYCLE_STEPS + 1 - step;"),
@@ -38,8 +42,9 @@ muts = [
  ("pulse peak low", "(uint8_t)((uint32_t)tick * TEST_LEVEL / PULSE_HALF)", "(uint8_t)((uint32_t)tick * (TEST_LEVEL - 1) / PULSE_HALF)"),
  ("pulse one-sided", "(uint8_t)((uint32_t)(PULSE_TICKS - tick) * TEST_LEVEL / PULSE_HALF)", "(uint8_t)((uint32_t)(tick - PULSE_HALF) * TEST_LEVEL / PULSE_HALF)"),
  ("single scale off", "(uint16_t)c[1] * singleLevel / 255", "(uint16_t)c[1] * singleLevel / 256"),
- ("no event at end", "return p == 0 || p == FRAME_PIXELS - 1;", "return false;"),
- ("event only at far end", "return p == 0 || p == FRAME_PIXELS - 1;", "return p == FRAME_PIXELS - 1;"),
+ ("no event at end", "return r == 0 || r == FRAME_PIXELS - 1;", "return false;"),
+ ("event only at far end", "return r == 0 || r == FRAME_PIXELS - 1;", "return r == FRAME_PIXELS - 1;"),
+ ("event only at start", "return r == 0 || r == FRAME_PIXELS - 1;", "return r == 0;"),
  ("no event on colour change", "      colourIndex = (colourIndex + 1) % PALETTE_SIZE;\n      noteEvent(now);", "      colourIndex = (colourIndex + 1) % PALETTE_SIZE;"),
  ("no inversion", "(ledState != inverted)", "(ledState != false)"),
  ("no heartbeat", "    ledState = !ledState;\n    beats++;", "    beats++;"),

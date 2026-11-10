@@ -1,17 +1,21 @@
 /*
- * Strip frame demo test - the LED strip of the sign frame (16 pixels) and a single pixel
+ * Strip frame demo test - the LED strip of the sign frame (18 pixels) and a single pixel
  *
  * Uses the same 12 V WS2811 strip as strip_knight_rider_test: one control chip ("pixel") per 3 LEDs (10 cm).
- * The frame strip is mounted so that pixel 1 is at the lower-left corner of the sign and the strip runs
- * counter-clockwise: along the bottom edge to the right, up the right side, along the top edge to the left and
- * down the left side to pixel 16 (FRAME_PIXELS). The direction matters only for how you read the result.
+ * One strip of FRAME_PIXELS = 18 pixels runs around the whole sign (60 x 30 cm): it starts at the lower-left corner
+ * and runs counter-clockwise, 6 pixels on the bottom, 3 on the right, 6 on the top, 3 on the left:
+ *   pixels  1.. 6  bottom edge, left to right      pixels 10..15  top edge, right to left
+ *   pixels  7.. 9  right edge, going up            pixels 16..18  left edge, going down (18 is right above 1)
  *
- *   Pin D9 (frame strip, 16 pixels): three Knight Rider lights on the SAME strip, each bouncing pixel 1 -> 16 -> 1
+ *   Pin D9 (frame strip, 18 pixels): three Knight Rider lights on the SAME strip. The light route starts at the
+ *     upper-left corner (pixel 15) and runs CLOCKWISE: top edge to the right (15..10), right edge down (9..7),
+ *     bottom edge to the left (6..1), left edge up (18..16). At pixel 16, the last one, a light turns around and runs
+ *     the same route backwards to pixel 15, and so on.
  *     RED   light: one step every 500 ms  (2 pixels per second, base speed)
  *     GREEN light: 1.3 x faster           (one step every 385 ms)
  *     BLUE  light: 1.5 x faster           (one step every 333 ms)
  *   The lights add their colours where they overlap (red + green = yellow, all three = white), and drift out of
- *   phase, so the strip shows how the colours mix. The end pixels are shown once per turn, so a cycle is 30 steps.
+ *   phase, so the strip shows how the colours mix. The end pixels are shown once per turn, so a cycle is 34 steps.
  *
  *   Pin D10 (single pixel, 1 chip = 3 LEDs): a pulse dark -> bright -> dark every PULSE_MS (3 s). The colour changes
  *     at every pulse: red, orange, yellow, green, cyan, blue, violet, white, then again.
@@ -23,8 +27,8 @@
  * SIGN OF LIFE: the LED on pin 13 blinks all the time while the program runs (every HEARTBEAT_MS, twice as fast
  * while many state changes happen; it is shortly inverted when a frame light turns around at an end or the pulse
  * colour changes). Once per second (DEBUG_MS) the Serial Monitor (115200 baud, SERIAL_BAUD) gets a line
- * "DBG up=.. red=.. green=.. blue=.. d10=<colour>:<level> events=.. beats=..": uptime in seconds, the pixel
- * (1..16) of each frame light, colour number and brightness of the single pixel, state changes in the last second
+ * "DBG up=.. red=.. green=.. blue=.. d10=<colour>:<level> events=.. beats=..": uptime in seconds, the strip pixel
+ * (1..18) of each frame light, colour number and brightness of the single pixel, state changes in the last second
  * and LED toggles. The values change from line to line.
  *
  * All timing uses millis(); the sketch never calls delay(). Function signatures use only built-in types
@@ -34,10 +38,11 @@
 #include <Adafruit_NeoPixel.h>
 
 // ============================== CONFIGURATION ==============================
-constexpr uint8_t PIN_FRAME = 9;             // frame strip, 16 pixels
+constexpr uint8_t PIN_FRAME = 9;             // frame strip, 18 pixels
 constexpr uint8_t PIN_SINGLE = 10;           // single pixel (one 3-LED cluster)
 constexpr uint8_t PIN_STATUS_LED = 13;       // debug LED: sign of life
-constexpr uint16_t FRAME_PIXELS = 16;        // pixels of the frame strip (16 chips = 48 LEDs = 1.6 m)
+constexpr uint16_t FRAME_PIXELS = 18;        // pixels of the frame strip (6 + 3 + 6 + 3 chips = 54 LEDs = 1.8 m)
+constexpr uint16_t ROUTE_START_PIXEL = 15;   // the light route starts here (upper-left corner), strip pixel 1..FRAME_PIXELS
 constexpr uint16_t SINGLE_PIXELS = 1;        // pixels on D10
 constexpr uint16_t COLOR_ORDER = NEO_GRB + NEO_KHZ800;   // try NEO_RGB + NEO_KHZ800 if the colours are wrong
 constexpr uint8_t TEST_LEVEL = 80;           // 0..255, peak brightness of a fully-on colour channel
@@ -71,7 +76,9 @@ constexpr uint8_t PALETTE[PALETTE_SIZE][3] = {
 Adafruit_NeoPixel frame(FRAME_PIXELS, PIN_FRAME, COLOR_ORDER);
 Adafruit_NeoPixel single(SINGLE_PIXELS, PIN_SINGLE, COLOR_ORDER);
 
-// A cycle has 2 * (FRAME_PIXELS - 1) steps: 0 .. 15 going up, then 16 .. 29 going down (pixel 30 - step).
+// The light route: position 0 is the upper-left corner (strip pixel 15), the route runs clockwise:
+// top edge (strip pixels 15..10), right edge (9..7), bottom edge (6..1), left edge (18..16). Position 17 is strip pixel 16.
+// A cycle has 2 * (FRAME_PIXELS - 1) steps: positions 0 .. 17 going out, then 16 .. 1 coming back.
 constexpr uint16_t CYCLE_STEPS = 2 * (FRAME_PIXELS - 1);
 constexpr uint16_t PULSE_HALF = PULSE_TICKS / 2;
 
@@ -86,9 +93,20 @@ bool ledState = false;
 uint8_t eventsNow = 0, eventsPrev = 0, eventsShown = 0;
 uint32_t beats = 0;
 
-// The lit pixel of a step in the cycle.
-uint16_t pixelOfStep(uint16_t step) {
+// Position on the route (0 .. FRAME_PIXELS - 1) of a step in the cycle.
+uint16_t routeOfStep(uint16_t step) {
   return step < FRAME_PIXELS ? step : CYCLE_STEPS - step;
+}
+
+// Strip pixel (0-based, 0 = strip pixel 1 at the lower-left corner) of a route position: the route runs from
+// the upper-left corner (0-based pixel ROUTE_START_PIXEL - 1) against the numbering of the strip, wrapping around.
+uint16_t pixelOfRoute(uint16_t route) {
+  return (ROUTE_START_PIXEL - 1 + FRAME_PIXELS - route) % FRAME_PIXELS;
+}
+
+// The lit strip pixel of a step in the cycle.
+uint16_t pixelOfStep(uint16_t step) {
+  return pixelOfRoute(routeOfStep(step));
 }
 
 // A state change: the status LED is shortly inverted and the event is counted.
@@ -101,8 +119,8 @@ void noteEvent(uint32_t now) {
 // Advances one light by one step; returns true when it arrived at an end of the strip.
 bool advance(uint16_t &step) {
   step = (step + 1) % CYCLE_STEPS;
-  const uint16_t p = pixelOfStep(step);
-  return p == 0 || p == FRAME_PIXELS - 1;
+  const uint16_t r = routeOfStep(step);
+  return r == 0 || r == FRAME_PIXELS - 1;
 }
 
 // Brightness of a pulse step: 0 at the start, TEST_LEVEL at the middle, back towards 0 at the end.
@@ -170,7 +188,7 @@ void setup() {
   nextPulse = now + PULSE_UPDATE_MS;
   nextBeat = now + HEARTBEAT_MS;
   nextDebug = now + DEBUG_MS;
-  Serial.println(F("Strip frame demo: D9 16 pixels, red 2/s, green 1.3x, blue 1.5x; D10 single pixel pulse"));
+  Serial.println(F("Strip frame demo: D9 18 pixels, light route clockwise from the upper-left corner, red 2/s, green 1.3x, blue 1.5x; D10 single pixel pulse"));
   Serial.print(F("Serial speed "));
   Serial.print((unsigned long)SERIAL_BAUD);
   Serial.println(F(" baud; a DBG line is printed every second."));

@@ -16,7 +16,7 @@
       "top": -60,
       "left": 140,
       "attrs": {
-        "text": "Strip frame demo: D9 frame strip 16 pixels (red, green, blue lights), D10 single pixel pulse"
+        "text": "Strip frame demo: D9 frame strip 18 pixels (red, green, blue lights), D10 single pixel pulse"
       }
     },
     {
@@ -53,7 +53,7 @@
       "left": 60,
       "rotate": 0,
       "attrs": {
-        "pixels": "16",
+        "pixels": "18",
         "pixelSize": "3535"
       }
     },

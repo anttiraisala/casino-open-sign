@@ -1,4 +1,4 @@
-STRIP FRAME DEMO TEST - kolme värivaloa 16 pikselin kehysnauhalla ja sykkivä yksittäinen pikseli
+STRIP FRAME DEMO TEST - kolme värivaloa 18 pikselin kehysnauhalla ja sykkivä yksittäinen pikseli
 ================================================================================================
 
 (Omistaja kutsui sitä nimellä "Street Frame Demo Test"; tulkittu "Strip Frame Demo Test", kansio strip_frame_demo_test.)
@@ -8,15 +8,22 @@ Tarkoitus
 Demo kyltin kehyksen ledinauhalle. Käytössä sama 12 V:n WS2811-nauha kuin strip_knight_rider_testissä (yksi ohjainpiiri
 = yksi "pikseli" = 3 LEDiä = 10 cm).
 
-  Pinni D9:  KEHYSNAUHA, 16 pikseliä (1,6 m). Pikseli 1 on kyltin vasemmassa alanurkassa ja nauha kiertää vastapäivään:
-             alareunaa oikealle, oikeaa sivua ylös, yläreunaa vasemmalle ja vasenta sivua alas pikseliin 16.
-             Samalla nauhalla kulkee kolme Knight Rider -valoa, jotka pomppivat pikseli 1 -> pikseli 16 -> pikseli 1:
-               PUNAINEN  2 pikseliä sekunnissa      (500 ms per askel, kierros 15 s)
-               VIHREÄ    1,3 x punaista nopeammin   (385 ms per askel, kierros 11,55 s)
-               SININEN   1,5 x punaista nopeammin   (333 ms per askel, kierros 9,99 s)
+  Pinni D9:  KEHYSNAUHA, 18 pikseliä (1,8 m, 54 LEDiä) koko kyltin ympäri (60 x 30 cm). Nauha alkaa vasemmasta alanurkasta
+             ja kiertää vastapäivään:
+               pikselit  1.. 6  alareuna, vasemmalta oikealle
+               pikselit  7.. 9  oikea reuna, ylöspäin
+               pikselit 10..15  yläreuna, oikealta vasemmalle
+               pikselit 16..18  vasen reuna, alaspäin (18 on heti pikselin 1 yläpuolella)
+             Samalla nauhalla kulkee kolme Knight Rider -valoa. Niiden reitti alkaa VASEMMASTA YLÄKULMASTA (pikseli 15) ja
+             kiertää MYÖTÄPÄIVÄÄN: yläreuna oikealle (15..10), oikea reuna alas (9..7), alareuna vasemmalle (6..1), vasen
+             reuna ylös (18..16). Pikselissä 16, reitin päässä, valo pomppaa takaisin ja kulkee samaa reittiä pikseliin 15
+             asti, ja niin edelleen:
+               PUNAINEN  2 pikseliä sekunnissa      (500 ms per askel, kierros 17 s)
+               VIHREÄ    1,3 x punaista nopeammin   (385 ms per askel, kierros 13,09 s)
+               SININEN   1,5 x punaista nopeammin   (333 ms per askel, kierros 11,32 s)
              Ne ajautuvat eri vaiheeseen ja värit SUMMAUTUVAT, kun valot ovat samalla pikselillä: punainen + vihreä =
              keltainen, vihreä + sininen = syaani, punainen + sininen = magenta, kaikki kolme = valkoinen.
-             Päätypikselit näytetään kerran per käännös (kierros on 30 askelta).
+             Päätypikselit näytetään kerran per käännös (kierros on 34 askelta).
   Pinni D10: YKSITTÄINEN pikseli (yksi piiri, 3 LEDiä). Pulssi pimeä -> kirkas -> pimeä 3 sekunnin välein; väri vaihtuu
              joka pulssilla: punainen, oranssi, keltainen, vihreä, syaani, sininen, violetti, valkoinen, sitten taas alusta.
 
@@ -26,7 +33,7 @@ Ei kuulu kyltin varsinaiseen ohjelmaan; kehysnauhan suunnalla ja paikalla on mer
 Tiedostot
 ---------
 sketch.ino             Ohjelma (asetukset alussa). Baudinopeus 115200.
-diagram.json           Wokwi-kytkentä (16 pikselin nauha D9:ssä, 1 pikselin nauha D10:ssä, 330 ohmin vastukset; liitä diagram.json-välilehdelle).
+diagram.json           Wokwi-kytkentä (18 pikselin nauha D9:ssä, 1 pikselin nauha D10:ssä, 330 ohmin vastukset; liitä diagram.json-välilehdelle).
 libraries.txt          Kirjasto: Adafruit NeoPixel.
 wiring-diagram.svg/.pdf  Sähkökaavio (A4 pysty).
 layout-diagram.svg/.pdf  Kehyksen reitti ja mitä pitäisi nähdä (A4 vaaka).
@@ -34,7 +41,7 @@ README.txt / README-fi.txt  Tämä tiedosto (englanti / suomi).
 
 Kytkentä (tarkasti)
 -------------------
-    Arduino D9   -> 330 ohmin vastus R1 -> kehysnauhan DIN, 16 pikseliä (pää, josta painetut nuolet osoittavat poispäin)
+    Arduino D9   -> 330 ohmin vastus R1 -> kehysnauhan DIN, 18 pikseliä (pää, josta painetut nuolet osoittavat poispäin)
     Arduino D10  -> 330 ohmin vastus R2 -> yksittäisen pikselin pätkän DIN (yksi piiri = 3 LEDiä, leikattu samalta rullalta)
     12 V:n virtalähde +  -> molempien nauhojen +12 V (vain virtalähteestä, ei koskaan Arduinon pinniin)
     12 V:n virtalähde -  -> molempien nauhojen GND JA Arduinon GND (yhteinen maa)
@@ -47,7 +54,7 @@ Kytkentä (tarkasti)
 
 Ostoslista (partco.fi; hinnat ja saatavuus ovat tilanne 2026-11-02, tarkista ennen ostoa)
   - 12 V osoitettava nauha WS2811, 5 m (SKU LED-N-RGB-W2812X150-5M): https://partco.fi/tuote/rgb-lednauha-30kpl-m-ws2812-5m-103
-    (leikkaa leikkausviivoilta: 16 pikseliä D9:lle ja 1 pikseli D10:lle; loput jää muihin testeihin)
+    (leikkaa leikkausviivoilta: 18 pikseliä D9:lle ja 1 pikseli D10:lle; loput jää muihin testeihin)
   - 12 V DC -virtalähde, väh. 1 A (pistorasiasovitin) ja ruuviliitosjatkoliitin
     DC-JATKOLIITIN 2,1mm RUUVILIITOKSELLA (SKU DCJ21RUU): https://partco.fi/tuote/dc-jatkoliitin-2-1mm-ruuviliitoksella-1875
   - 2 kpl 330 ohmin vastuksia, 1000 uF 25 V kondensaattori (valinnainen), hyppylankoja.
@@ -70,11 +77,11 @@ Elonmerkki: sisäänrakennettu LED (pinni 13) vilkkuu ohjelman ajon aikana (hetk
 ja jokaisen uuden pulssivärin alussa; kaksi kertaa nopeammin, kun muutoksia tulee paljon). Serial Monitor tulostaa
 yhden rivin sekunnissa:
     DBG up=<s> red=<pikseli> green=<pikseli> blue=<pikseli> d10=<väri 0-7>:<taso 0-80> events=<n> beats=<n>
-(pikselit 1..16; värinumerot 0 punainen, 1 oranssi, 2 keltainen, 3 vihreä, 4 syaani, 5 sininen, 6 violetti, 7 valkoinen.)
+(nauhan pikselit 1..18; värinumerot 0 punainen, 1 oranssi, 2 keltainen, 3 vihreä, 4 syaani, 5 sininen, 6 violetti, 7 valkoinen.)
 
 Asetusten muuttaminen
 ---------------------
-sketch.ino:n alussa: FRAME_PIXELS (16), SINGLE_PIXELS (1), COLOR_ORDER (NEO_GRB + NEO_KHZ800; kokeile NEO_RGB + NEO_KHZ800,
+sketch.ino:n alussa: FRAME_PIXELS (18), ROUTE_START_PIXEL (15), SINGLE_PIXELS (1), COLOR_ORDER (NEO_GRB + NEO_KHZ800; kokeile NEO_RGB + NEO_KHZ800,
 jos punainen ei ole punainen), TEST_LEVEL (80), STEP_RED_MS (500), STEP_GREEN_MS (385), STEP_BLUE_MS (333), PULSE_TICKS (150,
 yhdessä PULSE_UPDATE_MS 20:n kanssa 3 s per pulssi), PIN_FRAME (9), PIN_SINGLE (10).
 
