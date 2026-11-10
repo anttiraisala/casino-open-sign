@@ -137,12 +137,13 @@ def layout_diagram(cfg):
             % (X(ccx) - wl, Y(ccy) - ww, 2 * wl, 2 * ww, CLOSED_C))
     for k in range(1, ag.LEDS + 1):
         svg.dot(X(ccx) - wl + (k - 0.5) * ag.LED_PITCH * K, Y(ccy), CLOSED_C, 1.6)
-    svg.rect(X(ccx) - 8, Y(ccy) - 7, 16, 14, fill="#ffffff", stroke=CLOSED_C, width=1.2, rx=3)
-    svg.text(X(ccx), Y(ccy) + 4, "11", size=10, anchor="middle", weight="bold", color=DARK)
+    svg.rect(X(ccx) - 42, Y(ccy) - 7, 84, 14, fill="#ffffff", stroke=CLOSED_C, width=1.2, rx=3)
+    svg.text(X(ccx), Y(ccy) + 4, "11 CLOSED " + v2.connector_name(cfg["PIN_CLOSED_LIGHT"]), size=10, anchor="middle", weight="bold", color=DARK)
 
     # arrow sticks at real size
     geo, gw, gh = ag.shifted(ag.build())
     left, top = (PLATE_W - gw) / 2, 168.0
+    conn_of = {s["name"]: s["connector"] for s in v2.stick_info(cfg)}   # V2 wiring, from the sketch
 
     def svg_pt(mx, my):
         return X(left + mx), Y(top + my)
@@ -158,9 +159,17 @@ def layout_diagram(cfg):
         bx, by = svg_pt(st.cx + st.din_dir[0] * (ag.BODY_L / 2 - 2.5), st.cy + st.din_dir[1] * (ag.BODY_L / 2 - 2.5))
         svg.dot(bx, by, DARK, 3)
         mx, my = svg_pt(st.cx, st.cy)
-        svg.rect(mx - 8, my - 7, 16, 14, fill="#ffffff", stroke=st.stroke, width=1.2, rx=3)
-        svg.text(mx, my + 4, str(number), size=10, anchor="middle", weight="bold", color=DARK)
-    svg.text(X(left + gw / 2), Y(top + gh) + 14, "arrow %.1f x %.1f cm (sticks at real size, numbers 1-10 = arrow sticks)" % (gw / 10, gh / 10),
+        ang = st.theta % 360.0
+        if ang > 90.0 and ang <= 270.0:
+            ang -= 180.0                 # keep the text readable (never upside down)
+        elif ang > 270.0:
+            ang -= 360.0
+        label = "%d %s %s" % (number, st.name, conn_of[st.name])
+        bw = 6.2 * len(label) + 8
+        svg.add("<g transform='rotate(%g %g %g)'><rect x='%g' y='%g' width='%g' height='14' rx='3' fill='#ffffff' stroke='%s' stroke-width='1.2'/>"
+                "<text x='%g' y='%g' font-size='10' font-weight='bold' text-anchor='middle' fill='%s' %s>%s</text></g>"
+                % (ang, mx, my, mx - bw / 2, my - 7, bw, st.stroke, mx, my + 3.6, DARK, FONT, label))
+    svg.text(X(left + gw / 2), Y(top + gh) + 14, "arrow %.1f x %.1f cm (sticks at real size; names as in wiring-diagram)" % (gw / 10, gh / 10),
              size=11, anchor="middle", weight="bold")
 
     # corner call-outs for the frame animation

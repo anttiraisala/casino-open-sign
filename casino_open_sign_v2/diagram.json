@@ -498,7 +498,7 @@
       "top": 130,
       "left": 936,
       "attrs": {
-        "text": "  D2 L-CAP, D3 L-WING-UP, D4 L-WING-DN, D5 RAIL-UP-L,"
+        "text": "  D2 L-CAP, D3 RAIL-DN-L, D4 RAIL-DN-R, D5 L-WING-DN,"
       }
     },
     {
@@ -507,7 +507,7 @@
       "top": 152,
       "left": 936,
       "attrs": {
-        "text": "  D6 RAIL-UP-R, D7 RAIL-DN-L, D8 RAIL-DN-R,"
+        "text": "  D6 L-WING-UP, D7 RAIL-UP-L, D8 RAIL-UP-R,"
       }
     },
     {
@@ -516,7 +516,7 @@
       "top": 174,
       "left": 936,
       "attrs": {
-        "text": "  A0 R-CAP, A1 R-WING-UP, A2 R-WING-DN"
+        "text": "  A1 R-WING-UP, A2 R-WING-DN, A3 R-CAP"
       }
     },
     {
@@ -525,7 +525,7 @@
       "top": 196,
       "left": 936,
       "attrs": {
-        "text": "A3 closedLight: 11th Grove stick, 10 white LEDs behind the CLOSED hole text"
+        "text": "A0 closedLight: 11th Grove stick, 10 white LEDs behind the CLOSED hole text"
       }
     },
     {
@@ -633,7 +633,7 @@
       "top": 504.7,
       "left": 284.0,
       "attrs": {
-        "text": "L-WING-UP D3"
+        "text": "L-WING-UP D6"
       }
     },
     {
@@ -642,7 +642,7 @@
       "top": 662.5,
       "left": 284.0,
       "attrs": {
-        "text": "L-WING-DN D4"
+        "text": "L-WING-DN D5"
       }
     },
     {
@@ -651,7 +651,7 @@
       "top": 519.6,
       "left": 548.1,
       "attrs": {
-        "text": "RAIL-UP-L D5"
+        "text": "RAIL-UP-L D7"
       }
     },
     {
@@ -660,7 +660,7 @@
       "top": 519.6,
       "left": 731.9,
       "attrs": {
-        "text": "RAIL-UP-R D6"
+        "text": "RAIL-UP-R D8"
       }
     },
     {
@@ -669,7 +669,7 @@
       "top": 647.6,
       "left": 548.1,
       "attrs": {
-        "text": "RAIL-DN-L D7"
+        "text": "RAIL-DN-L D3"
       }
     },
     {
@@ -678,7 +678,7 @@
       "top": 647.6,
       "left": 731.9,
       "attrs": {
-        "text": "RAIL-DN-R D8"
+        "text": "RAIL-DN-R D4"
       }
     },
     {
@@ -687,7 +687,7 @@
       "top": 583.6,
       "left": 902.8,
       "attrs": {
-        "text": "R-CAP A0"
+        "text": "R-CAP A3"
       }
     },
     {
@@ -714,7 +714,7 @@
       "top": 161.0,
       "left": 778.0,
       "attrs": {
-        "text": "<- CLOSED hole text (stick on A3)"
+        "text": "<- CLOSED hole text (stick on A0)"
       }
     },
     {
@@ -1772,7 +1772,7 @@
       []
     ],
     [
-      "mega:A3",
+      "mega:A0",
       "closed_light:DIN",
       "green",
       []
@@ -1808,7 +1808,7 @@
       []
     ],
     [
-      "mega:3",
+      "mega:6",
       "stick_l_wing_up:DIN",
       "green",
       []
@@ -1826,7 +1826,7 @@
       []
     ],
     [
-      "mega:4",
+      "mega:5",
       "stick_l_wing_dn:DIN",
       "green",
       []
@@ -1844,7 +1844,7 @@
       []
     ],
     [
-      "mega:5",
+      "mega:7",
       "stick_rail_up_l:DIN",
       "green",
       []
@@ -1862,7 +1862,7 @@
       []
     ],
     [
-      "mega:6",
+      "mega:8",
       "stick_rail_up_r:DIN",
       "green",
       []
@@ -1880,7 +1880,7 @@
       []
     ],
     [
-      "mega:7",
+      "mega:3",
       "stick_rail_dn_l:DIN",
       "green",
       []
@@ -1898,7 +1898,7 @@
       []
     ],
     [
-      "mega:8",
+      "mega:4",
       "stick_rail_dn_r:DIN",
       "green",
       []
@@ -1916,7 +1916,7 @@
       []
     ],
     [
-      "mega:A0",
+      "mega:A3",
       "stick_r_cap:DIN",
       "green",
       []

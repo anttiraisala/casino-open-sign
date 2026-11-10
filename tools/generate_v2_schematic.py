@@ -22,9 +22,9 @@ def main():
     sticks = v2.all_stick_info(cfg)              # the 10 arrow sticks + the CLOSED light stick (11 shield connectors)
     total_strips, total_leds = len(strips), sum(s["leds"] for s in strips)
     stick_leds = sum(st["leds"] for st in sticks)
-    # One row per data line: the sticks first (shield connectors D2..D8, A0..A2), then the strips.
+    # One row per data line: the sticks first (shield connectors D2..D8, A0..A3), then the strips.
     rows = []
-    for st in sticks:
+    for st in sorted(sticks, key=lambda s: v2.connector_sort_key(s["connector"])):
         rows.append(dict(label=st["connector"], name=st["name"], leds=st["leds"], is_stick=True,
                          summary="Grove stick: %s" % st["desc"], feed="feed: Grove cable"))
     for strip in strips:
@@ -286,9 +286,9 @@ def main():
         "7. SW3 and SW4: pins 1, 2, 4, 8 go to D22-D25 and D26-D29, the common pin C goes to GND. A position counts in binary (0..F). "
         "If your switch gives the complement (15 - position), set SPEED_BIT_IS_LOW to false in sketch.ino.",
         "8. All inputs (SW1 to SW5) use the internal pull-ups (INPUT_PULLUP), so no resistors are needed for them.",
-        "9. CLOSED (the 11th Grove stick, 10 white LEDs, shield connector A3) sits BEHIND the plate under the CLOSED hole text and is lit only while SW5 says closed.",
+        "9. CLOSED (the 11th Grove stick, 10 white LEDs, shield connector A0) sits BEHIND the plate under the CLOSED hole text and is lit only while SW5 says closed.",
         "10. LCD1 (I2C backpack) uses the Mega's I2C pins D20 (SDA) and D21 (SCL) plus the Mega 5V and GND pins (about 30 mA with the backlight).",
-        "11. Arrow sticks: the 10 Grove RGB LED sticks go into the Grove Base Shield connectors D2-D8 and A0-A2 (A3 carries the CLOSED light stick; the shield's 3V3/5V switch "
+        "11. Arrow sticks: the 10 Grove RGB LED sticks go into the Grove Base Shield connectors D2-D8 and A1-A3 (A0 carries the CLOSED light stick; the connector of each stick is listed in the data rows above; the shield's 3V3/5V switch "
         "must be on 5 V). Connect the +5 V bus to BOTH 5V pins of the Mega's long header and the GND bus to the Mega GND pins, as in stick_test_direct (tested on real hardware).",
         "12. Pin 13 (the LED on the Mega board) blinks while the program runs; the Serial Monitor (115200 baud) shows one line per second.",
     ]

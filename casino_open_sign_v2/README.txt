@@ -6,7 +6,7 @@ V2 has exactly TWO LED strips and ELEVEN sticks:
 
   Strip 1  D11  frame     12 V WS2811, 18 pixels (one pixel = one chip = 3 LEDs = 10 cm), around the 60 x 30 cm plate
   Strip 2  D12  letters   12 V WS2811, 10 pixels, one pixel behind each letter
-  Sticks   Grove Base Shield D2-D8, A0-A2: the 10 arrow sticks (unchanged), A3: the CLOSED light stick (unchanged)
+  Sticks   Grove Base Shield D2-D8, A1-A3: the 10 arrow sticks (V2 wiring, see below), A0: the CLOSED light stick
   D13 is the status LED (sign of life), as before.
 
 Not run on real hardware or in Wokwi yet. The host tests pass (see Tests).
@@ -61,8 +61,9 @@ Wiring (exactly)
     Capacitor C2 1000 uF 25 V across +12 V and GND at the strips (plus to +12 V)
     PSU1 5 V +    -> fuse F1 (10 A) -> BOTH 5V pins of the Mega long header (the shield, the 11 sticks and the LCD run from them)
     PSU1 5 V -    -> Mega GND pins; capacitor C1 1000 uF across the 5 V rail (plus to +5 V)
-    Grove Base Shield on the Mega (3V3/5V switch on 5 V): sticks D2 L-CAP, D3 L-WING-UP, D4 L-WING-DN, D5 RAIL-UP-L, D6 RAIL-UP-R,
-                  D7 RAIL-DN-L, D8 RAIL-DN-R, A0 R-CAP, A1 R-WING-UP, A2 R-WING-DN, A3 CLOSED light stick (no wire from a supply to a stick)
+    Grove Base Shield on the Mega (3V3/5V switch on 5 V): sticks D2 L-CAP, D6 L-WING-UP, D5 L-WING-DN, D7 RAIL-UP-L, D8 RAIL-UP-R,
+                  D3 RAIL-DN-L, D4 RAIL-DN-R, A3 R-CAP, A1 R-WING-UP, A2 R-WING-DN, A0 CLOSED light stick (no wire from a supply to a stick)
+                  (V2 only: the connectors differ from version 1 and ../arrow_sticks/; the stick positions on the plate are unchanged)
     D32 -> slide switch SW1 common (contact 1 -> GND)      D30 -> slide switch SW5 common (contact 1 -> GND)
     D33 -> push button -> GND
     D22-D25 -> SW3 pins 1, 2, 4, 8 (common C -> GND)       D26-D29 -> SW4 pins 1, 2, 4, 8 (common C -> GND)

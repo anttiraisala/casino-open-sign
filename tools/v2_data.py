@@ -31,19 +31,30 @@ def strip_info(cfg):
     return sorted([frame, letters], key=lambda r: r["pin"])
 
 
+def connector_name(pin):
+    """Shield connector name of a sketch pin value: 3 -> D3, A3 -> A3."""
+    pin = str(pin)
+    return "D" + pin if pin.isdigit() else pin
+
+
+def connector_sort_key(connector):
+    """D2..D8 first, then A0..A3."""
+    return (connector[0] == "A", int(connector[1:]))
+
+
 def stick_info(cfg):
     import arrow_geometry as ag
     out = []
     for definition, pin in zip(ag.STICK_DEFS, cfg["STICK_PINS"]):
-        name, desc, _colours, connector = definition
-        if connector.lstrip("D") != pin:
-            raise SystemExit("STICK_PINS in the V2 sketch disagrees with arrow_geometry.py for %s" % name)
+        name, desc = definition[0], definition[1]
+        # V2 wiring: the shield connector comes from the V2 sketch, NOT from arrow_geometry.py (that keeps the V1 mapping)
+        connector = connector_name(pin)
         out.append(dict(name=name, desc=desc, connector=connector, pin=pin, leds=cfg["LEDS_PER_STICK"]))
     return out
 
 
 def closed_stick_info(cfg):
-    return dict(name="CLOSED", desc="CLOSED light, behind the plate", connector=cfg["PIN_CLOSED_LIGHT"],
+    return dict(name="CLOSED", desc="CLOSED light, behind the plate", connector=connector_name(cfg["PIN_CLOSED_LIGHT"]),
                 pin=cfg["PIN_CLOSED_LIGHT"], leds=cfg["CLOSED_LIGHT_LEDS"])
 
 

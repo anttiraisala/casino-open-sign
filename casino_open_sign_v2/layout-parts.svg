@@ -99,37 +99,37 @@
 <text x='340' y='656' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>left vertical bar</text>
 <rect x='30' y='662' width='700' height='20' rx='0' fill='#fafafa' stroke='#dddddd' stroke-width='1'/>
 <text x='40' y='676' font-size='12' text-anchor='start' fill='#2e7d32' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>2  L-WING-UP</text>
-<text x='190' y='676' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D3</text>
+<text x='190' y='676' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D6</text>
 <text x='280' y='676' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>10</text>
 <text x='340' y='676' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>left upper wing</text>
 <rect x='30' y='682' width='700' height='20' rx='0' fill='#ffffff' stroke='#dddddd' stroke-width='1'/>
 <text x='40' y='696' font-size='12' text-anchor='start' fill='#2e7d32' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>3  L-WING-DN</text>
-<text x='190' y='696' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D4</text>
+<text x='190' y='696' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D5</text>
 <text x='280' y='696' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>10</text>
 <text x='340' y='696' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>left lower wing</text>
 <rect x='30' y='702' width='700' height='20' rx='0' fill='#fafafa' stroke='#dddddd' stroke-width='1'/>
 <text x='40' y='716' font-size='12' text-anchor='start' fill='#2e7d32' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>4  RAIL-UP-L</text>
-<text x='190' y='716' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D5</text>
+<text x='190' y='716' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D7</text>
 <text x='280' y='716' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>10</text>
 <text x='340' y='716' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>upper rail, left stick</text>
 <rect x='30' y='722' width='700' height='20' rx='0' fill='#ffffff' stroke='#dddddd' stroke-width='1'/>
 <text x='40' y='736' font-size='12' text-anchor='start' fill='#2e7d32' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>5  RAIL-UP-R</text>
-<text x='190' y='736' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D6</text>
+<text x='190' y='736' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D8</text>
 <text x='280' y='736' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>10</text>
 <text x='340' y='736' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>upper rail, right stick</text>
 <rect x='30' y='742' width='700' height='20' rx='0' fill='#fafafa' stroke='#dddddd' stroke-width='1'/>
 <text x='40' y='756' font-size='12' text-anchor='start' fill='#2e7d32' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>6  RAIL-DN-L</text>
-<text x='190' y='756' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D7</text>
+<text x='190' y='756' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D3</text>
 <text x='280' y='756' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>10</text>
 <text x='340' y='756' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>lower rail, left stick</text>
 <rect x='30' y='762' width='700' height='20' rx='0' fill='#ffffff' stroke='#dddddd' stroke-width='1'/>
 <text x='40' y='776' font-size='12' text-anchor='start' fill='#2e7d32' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>7  RAIL-DN-R</text>
-<text x='190' y='776' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D8</text>
+<text x='190' y='776' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D4</text>
 <text x='280' y='776' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>10</text>
 <text x='340' y='776' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>lower rail, right stick</text>
 <rect x='30' y='782' width='700' height='20' rx='0' fill='#fafafa' stroke='#dddddd' stroke-width='1'/>
 <text x='40' y='796' font-size='12' text-anchor='start' fill='#2e7d32' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>8  R-CAP</text>
-<text x='190' y='796' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>A0</text>
+<text x='190' y='796' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>A3</text>
 <text x='280' y='796' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>10</text>
 <text x='340' y='796' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>right vertical bar</text>
 <rect x='30' y='802' width='700' height='20' rx='0' fill='#ffffff' stroke='#dddddd' stroke-width='1'/>
@@ -144,7 +144,7 @@
 <text x='340' y='836' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>right lower wing</text>
 <rect x='30' y='842' width='700' height='20' rx='0' fill='#ffffff' stroke='#dddddd' stroke-width='1'/>
 <text x='40' y='856' font-size='12' text-anchor='start' fill='#2e7d32' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>11  CLOSED</text>
-<text x='190' y='856' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>A3</text>
+<text x='190' y='856' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>A0</text>
 <text x='280' y='856' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>10</text>
 <text x='340' y='856' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>CLOSED light, behind the plate</text>
 <text x='40' y='880' font-size='11' text-anchor='start' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Stick body 83 x 10 mm, LED window 74 x 4 mm; arrow geometry and drill template: ../arrow_sticks/.</text>

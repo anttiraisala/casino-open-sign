@@ -73,30 +73,31 @@ int main(int argc, char **argv) {
   const uint8_t IDENT_TYPES[2] = {0, 1};
   for (uint8_t ty : IDENT_TYPES) setBrightnessCurve(ty, 0, 255, 1.0f, 0.0f, true);
   finishStartup(g_millis, true);   // the older tests below start from the normal operation
-  // Pins hard-coded here (not taken from the sketch): frame D11, letters D12, CLOSED light = 11th stick on A3 (57),
-  // sticks D2..D8 and A0..A2 (A0 = 54 on the Mega), arrow switch D32, mode button D33.
+  // Pins hard-coded here (not taken from the sketch): frame D11, letters D12, CLOSED light = 11th stick on A0 (54),
+  // sticks in the order L-CAP D2, L-WING-UP D6, L-WING-DN D5, RAIL-UP-L D7, RAIL-UP-R D8, RAIL-DN-L D3, RAIL-DN-R D4,
+  // R-CAP A3 (57), R-WING-UP A1 (55), R-WING-DN A2 (56) (A0 = 54 on the Mega), arrow switch D32, mode button D33.
   CHECK(FRAME_SPEED_MS == 200 && FRAME_BAR_LEDS == 2 && STARTUP_TEST_WINDOW_LEDS == 2, "frame step 200 ms, bar of 2 pixels, LED test window of 2 pixels");
-  CHECK(PIN_FRAME == 11 && PIN_LETTERS == 12 && PIN_CLOSED_LIGHT == 57 && PIN_STATUS_LED == 13, "strip pins (D13 stays the status LED)");
+  CHECK(PIN_FRAME == 11 && PIN_LETTERS == 12 && PIN_CLOSED_LIGHT == 54 && PIN_STATUS_LED == 13, "strip pins (D13 stays the status LED)");
   for (auto *s : g_strips) CHECK(s->pin_ != 31, "pin 31 is free: nothing is on D31 any more");
   CHECK(PIN_ARROW_SWITCH == 32 && PIN_MODE_BUTTON == 33 && PIN_CASINO_CLOSED_SWITCH == 30, "input pins");
-  const int wantStickPins[10] = {2, 3, 4, 5, 6, 7, 8, 54, 55, 56};
+  const int wantStickPins[10] = {2, 6, 5, 7, 8, 3, 4, 57, 55, 56};
   Adafruit_NeoPixel *fr=nullptr,*let=nullptr,*clo=nullptr;
   Adafruit_NeoPixel *st[10] = {};          // the sticks in the order L-CAP, L-WING-UP, L-WING-DN, RAIL-UP-L, RAIL-UP-R,
                                            // RAIL-DN-L, RAIL-DN-R, R-CAP, R-WING-UP, R-WING-DN
   for (auto *s : g_strips) {
-    if (s->pin_ == 11) fr = s; else if (s->pin_ == 12) let = s; else if (s->pin_ == 57) clo = s;
+    if (s->pin_ == 11) fr = s; else if (s->pin_ == 12) let = s; else if (s->pin_ == 54) clo = s;
     for (int k = 0; k < 10; k++) if (s->pin_ == wantStickPins[k]) st[k] = s;
   }
   { bool allThere = fr && let && clo; for (int k = 0; k < 10; k++) allThere = allThere && st[k];
     if (!allThere) { printf("RESULT: pins do not match, stopping (1 failures)\n"); return 1; } }
-  CHECK(g_strips.size() == 13 && STRIP_COUNT == 13, "13 strips: frame, letters, CLOSED light stick (A3), 10 arrow sticks (2 strips + 11 sticks)");
+  CHECK(g_strips.size() == 13 && STRIP_COUNT == 13, "13 strips: frame, letters, CLOSED light stick (A0), 10 arrow sticks (2 strips + 11 sticks)");
   CHECK(fr && let && clo, "frame, letters and CLOSED strips exist on the expected pins");
   for (int k = 0; k < 10; k++) CHECK(st[k] != nullptr && st[k]->numPixels() == 10, "every stick exists on its pin and has 10 LEDs");
   CHECK(clo && clo->numPixels() == 10 && CLOSED_LIGHT_LEDS == 10, "closed light is a 10-LED Grove stick");
   CHECK(fr->numPixels() == 18 && FRAME_PIXELS == 18, "the frame is one strip of 18 pixels");
   CHECK(let->numPixels() == 10 && LETTER_COUNT == 10, "the letters are one strip of 10 pixels (one per letter)");
   CHECK(arrowPointsRight, "arrow starts pointing right with the switch released (HIGH)");
-  CHECK(g_analogPin == 69, "the random seed is read from the free pin A15 (A0 is a stick pin now)");
+  CHECK(g_analogPin == 69, "the random seed is read from the free pin A15 (A0 carries the CLOSED stick)");
 
   // Timeline: mode k is active from MODE_MS*k. The button is pressed (with contact bounce) just before.
   const unsigned long MODE_MS = 14000, END = MODE_MS * LETTER_MODE_COUNT + 2000;

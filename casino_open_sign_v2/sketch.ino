@@ -29,11 +29,12 @@
  * the Arduino, the Grove shield and the sticks on the 5 V supply, all grounds are joined; D13 is the status LED):
  *   frame            D11  12 V WS2811, 18 pixels (see above)
  *   letters          D12  12 V WS2811, 10 pixels: C A S I N O N E P O (OPEN reversed)
- *   closedLight      A3   the 11th Grove stick (connector A3 of the shield): 10 white LEDs behind the plate
+ *   closedLight      A0   the 11th Grove stick (connector A0 of the shield): 10 white LEDs behind the plate
  *                         that light the "CLOSED" hole text
  *   Arrow sticks (Grove Base Shield connectors; LED 1 of a stick is its DIN end):
- *   L-CAP D2   L-WING-UP D3   L-WING-DN D4   RAIL-UP-L D5   RAIL-UP-R D6   RAIL-DN-L D7   RAIL-DN-R D8
- *   R-CAP A0   R-WING-UP A1   R-WING-DN A2   (connector A3: the CLOSED light stick)
+ *   (V2 wiring, chosen to be natural on the real sign; differs from version 1)
+ *   L-CAP D2   L-WING-UP D6   L-WING-DN D5   RAIL-UP-L D7   RAIL-UP-R D8   RAIL-DN-L D3   RAIL-DN-R D4
+ *   R-CAP A3   R-WING-UP A1   R-WING-DN A2   (connector A0: the CLOSED light stick)
  *
  * Inputs (both use the internal pull-up resistor, the switch pulls the pin to GND):
  *   D32 slide switch  arrow direction (handle on the GND side = LOW = the arrow points to the customer's LEFT,
@@ -114,26 +115,26 @@ constexpr uint16_t LEDS_PER_STICK = 10;    // must be even (the caps are split i
 // The CLOSED light stick is always white, so this value does not matter for it.
 constexpr bool STICK_BALL_AT_DIN_END = true;
 
-// The white light behind the "CLOSED" hole text: the 11th Grove RGB LED stick (10 LEDs, connector A3 of the
+// The white light behind the "CLOSED" hole text: the 11th Grove RGB LED stick (10 LEDs, connector A0 of the
 // Grove Base Shield), always white. It sits behind the plate; its LED window is 74 x 4 mm.
 constexpr uint16_t CLOSED_LIGHT_LEDS = 10;
 
 // --- Data pins -------------------------------------------------------------
 constexpr uint8_t PIN_FRAME = 11;          // strip 1: the frame (18 pixels)
 constexpr uint8_t PIN_LETTERS = 12;        // strip 2: the letters (10 pixels); D13 stays the status LED
-constexpr uint8_t PIN_CLOSED_LIGHT = A3;   // Grove Base Shield connector A3 (the 11th stick)
+constexpr uint8_t PIN_CLOSED_LIGHT = A0;   // Grove Base Shield connector A0 (the 11th stick)
 
 // Arrow sticks. The data pins are the signal pins of the Grove Base Shield connectors D2..D8 and
-// A0..A2 (the connector A3 carries the CLOSED light stick). Stick numbers = positions in this list.
-constexpr uint8_t STICK_PINS[STICK_COUNT] = {2, 3, 4, 5, 6, 7, 8, A0, A1, A2};
+// A1..A3 (the connector A0 carries the CLOSED light stick). Stick numbers = positions in this list.
+constexpr uint8_t STICK_PINS[STICK_COUNT] = {2, 6, 5, 7, 8, 3, 4, A3, A1, A2};
 constexpr uint8_t STICK_L_CAP = 0;       // vertical bar, left end        (D2)
-constexpr uint8_t STICK_L_WING_UP = 1;   // left arrowhead, upper wing    (D3)
-constexpr uint8_t STICK_L_WING_DN = 2;   // left arrowhead, lower wing    (D4)
-constexpr uint8_t STICK_RAIL_UP_L = 3;   // upper rail, left stick        (D5)
-constexpr uint8_t STICK_RAIL_UP_R = 4;   // upper rail, right stick       (D6)
-constexpr uint8_t STICK_RAIL_DN_L = 5;   // lower rail, left stick        (D7)
-constexpr uint8_t STICK_RAIL_DN_R = 6;   // lower rail, right stick       (D8)
-constexpr uint8_t STICK_R_CAP = 7;       // vertical bar, right end       (A0)
+constexpr uint8_t STICK_L_WING_UP = 1;   // left arrowhead, upper wing    (D6)
+constexpr uint8_t STICK_L_WING_DN = 2;   // left arrowhead, lower wing    (D5)
+constexpr uint8_t STICK_RAIL_UP_L = 3;   // upper rail, left stick        (D7)
+constexpr uint8_t STICK_RAIL_UP_R = 4;   // upper rail, right stick       (D8)
+constexpr uint8_t STICK_RAIL_DN_L = 5;   // lower rail, left stick        (D3)
+constexpr uint8_t STICK_RAIL_DN_R = 6;   // lower rail, right stick       (D4)
+constexpr uint8_t STICK_R_CAP = 7;       // vertical bar, right end       (A3)
 constexpr uint8_t STICK_R_WING_UP = 8;   // right arrowhead, upper wing   (A1)
 constexpr uint8_t STICK_R_WING_DN = 9;   // right arrowhead, lower wing   (A2)
 // Logical LED 0 of a stick is its BALL end (the black dot in the drawings); see STICK_BALL_AT_DIN_END.

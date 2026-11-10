@@ -13,7 +13,7 @@ V2 has two 12 V WS2811 strips (Wokwi has no 12 V part: the strips are simulated 
     (left to right), right edge 3 (going up), top edge 6 (right to left), left edge 3 (going down).
   * Letters (D12): 10 pixels, one per letter. Strip pixels 1-6 are C A S I N O, pixels 7-10 are N E P O: the OPEN
     letters are wired in REVERSED order (O is the last pixel). The drawing shows each pixel behind its letter.
-  * CLOSED light: the 11th Grove stick (shield connector A3).
+  * CLOSED light: the 11th Grove stick (shield connector A0).
   * Arrow: 10 Grove RGB LED sticks in the real arrow shape (tools/arrow_geometry.py), drawn below the frame at
     Wokwi's LED size.
 """
@@ -25,6 +25,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import v2_data as v2  # V2 shield connectors come from the sketch
 import arrow_geometry as ag  # the arrow sticks: names, connectors and exact geometry
 
 # ---- Geometry tuning (adjust if parts overlap or leave gaps in Wokwi) ------
@@ -222,9 +223,7 @@ class Layout:
             name = definition[0]
             geo = by_geo[name]
             pin = c["STICK_PINS"][idx]
-            if pin != geo.connector.lstrip("D"):
-                sys.exit("STICK_PINS[%d] is %s but the geometry says %s is on connector %s"
-                         % (idx, pin, name, geo.connector))
+            connector = v2.connector_name(pin)    # V2 wiring: taken from the sketch (arrow_geometry keeps the V1 mapping)
             sx, sy = arrow_left + geo.cx * k, arrow_top + geo.cy * k
             part_id = "stick_" + name.lower().replace("-", "_")
             # A Wokwi strip part has its first LED (DIN) at the start of the part. With the ball at the DIN end the
@@ -240,7 +239,7 @@ class Layout:
             mid_x, mid_y = arrow_left + geo_w * k / 2, arrow_top + geo_h * k / 2
             if (sx - mid_x) * nx + (sy - mid_y) * ny < 0:
                 nx, ny = -nx, -ny
-            text = "%s %s" % (name, geo.connector)
+            text = "%s %s" % (name, connector)
             half_w = 4.0 * len(text)                  # Wokwi text is about 8 px per character
             if name.endswith("CAP"):                  # beside the cap, left or right of it
                 lx = sx + nx * (THICKNESS / 2 + 10) + (half_w if nx > 0 else -half_w)
@@ -275,15 +274,16 @@ class Layout:
         """Text labels listing which strip uses which Arduino pin."""
         c = self.cfg
         fx, fy, width, _height = self.frame_box
+        stick_sorted = sorted(v2.stick_info(c), key=lambda s: v2.connector_sort_key(s["connector"]))
         lines = [
             "Casino Open Sign V2: 2 strips + 11 sticks",
             "D%d frame: 18 pixels, pixel 1 lower-left, counter-clockwise (12 V WS2811)" % c["PIN_FRAME"],
             "D%d letters: 10 pixels C A S I N O N E P O (OPEN wired reversed)" % c["PIN_LETTERS"],
             "Simulation only: the strips run from the Mega 5V here; in real life they get 12 V.",
             "Arrow sticks in the Grove Base Shield (drawn below the sign):",
-            "  D2 L-CAP, D3 L-WING-UP, D4 L-WING-DN, D5 RAIL-UP-L,",
-            "  D6 RAIL-UP-R, D7 RAIL-DN-L, D8 RAIL-DN-R,",
-            "  A0 R-CAP, A1 R-WING-UP, A2 R-WING-DN",
+            "  " + ", ".join("%s %s" % (s["connector"], s["name"]) for s in stick_sorted[:4]) + ",",
+            "  " + ", ".join("%s %s" % (s["connector"], s["name"]) for s in stick_sorted[4:7]) + ",",
+            "  " + ", ".join("%s %s" % (s["connector"], s["name"]) for s in stick_sorted[7:]),
             "%s closedLight: 11th Grove stick, %d white LEDs behind the CLOSED hole text" % (c["PIN_CLOSED_LIGHT"], c["CLOSED_LIGHT_LEDS"]),
             "D%d: casino closed switch SW5 (handle toward GND = closed)" % c["PIN_CASINO_CLOSED_SWITCH"],
             "D%d-D%d: speed of frame + arrow (hex switch SW3)" % (c["PIN_SPEED_FRAME_ARROW"][0], c["PIN_SPEED_FRAME_ARROW"][3]),
@@ -331,7 +331,7 @@ class Layout:
         ccx, ccy, cwidth = self.closed_box
         parts.append({"type": "wokwi-text", "id": "closed_label", "top": round(ccy - 9, 1),
                       "left": round(ccx + max(cwidth, self.closed_strip_width) / 2 + 10, 1),
-                      "attrs": {"text": "<- CLOSED hole text (stick on A3)"}})
+                      "attrs": {"text": "<- CLOSED hole text (stick on %s)" % v2.connector_name(self.cfg["PIN_CLOSED_LIGHT"])}})
         for n, (ch, pix, cx, cy) in enumerate(self.letter_labels):
             parts.append({"type": "wokwi-text", "id": "letter_label_%d" % (n + 1),
                           "top": round(cy + LABEL_OFFSET[1] - 16, 1), "left": round(cx + LABEL_OFFSET[0], 1),

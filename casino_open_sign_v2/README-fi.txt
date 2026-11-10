@@ -6,7 +6,7 @@ V2:ssa on tasan KAKSI LED-nauhaa ja YHDESTOISTA tikkua:
 
   Nauha 1  D11  frame     12 V WS2811, 18 pikseliä (yksi pikseli = yksi piiri = 3 LEDiä = 10 cm), 60 x 30 cm levyn reunus
   Nauha 2  D12  letters   12 V WS2811, 10 pikseliä, yksi pikseli jokaisen kirjaimen takana
-  Tikut    Grove Base Shield D2-D8, A0-A2: 10 nuolitikkua (ennallaan), A3: CLOSED-valotikku (ennallaan)
+  Tikut    Grove Base Shield D2-D8, A1-A3: 10 nuolitikkua (V2-johdotus, katso alla), A0: CLOSED-valotikku
   D13 on edelleen tilaledi (elonmerkki).
 
 Ei ajettu oikealla laitteistolla eikä Wokwissa. Tietokonetestit menevät läpi (katso Testit).
@@ -60,8 +60,9 @@ Johdotus (tarkasti)
     Kondensaattori C2 1000 uF 25 V +12 V:n ja GND:n välille nauhoilla (plus +12 V:iin)
     PSU1 5 V +    -> sulake F1 (10 A) -> MOLEMMAT Megan pitkän pinnirivin 5V-pinnit (shield, 11 tikkua ja LCD saavat virtansa niistä)
     PSU1 5 V -    -> Megan GND-pinnit; kondensaattori C1 1000 uF 5 V -kiskon yli (plus +5 V:iin)
-    Grove Base Shield Megan päällä (3V3/5V-kytkin asentoon 5 V): tikut D2 L-CAP, D3 L-WING-UP, D4 L-WING-DN, D5 RAIL-UP-L, D6 RAIL-UP-R,
-                  D7 RAIL-DN-L, D8 RAIL-DN-R, A0 R-CAP, A1 R-WING-UP, A2 R-WING-DN, A3 CLOSED-valotikku (ei johtoa virtalähteestä tikkuun)
+    Grove Base Shield Megan päällä (3V3/5V-kytkin asentoon 5 V): tikut D2 L-CAP, D6 L-WING-UP, D5 L-WING-DN, D7 RAIL-UP-L, D8 RAIL-UP-R,
+                  D3 RAIL-DN-L, D4 RAIL-DN-R, A3 R-CAP, A1 R-WING-UP, A2 R-WING-DN, A0 CLOSED-valotikku (ei johtoa virtalähteestä tikkuun)
+                  (vain V2: liittimet eroavat versiosta 1 ja kansiosta ../arrow_sticks/; tikkujen paikat levyllä eivät muutu)
     D32 -> liukukytkin SW1 yhteinen (kontakti 1 -> GND)    D30 -> liukukytkin SW5 yhteinen (kontakti 1 -> GND)
     D33 -> painike -> GND
     D22-D25 -> SW3 pinnit 1, 2, 4, 8 (yhteinen C -> GND)   D26-D29 -> SW4 pinnit 1, 2, 4, 8 (yhteinen C -> GND)
