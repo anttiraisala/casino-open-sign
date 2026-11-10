@@ -19,6 +19,7 @@ FRAME_PIXELS = 18
 ROUTE = [15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 18, 17, 16]   # light route as strip pixel numbers
 SINGLE_PIXELS = 1
 BAR_PIXELS = 6
+TEST_PIXELS = 10
 BAR = [("red", "#e53935"), ("green", "#43a047"), ("blue", "#1e88e5"), ("cyan", "#00acc1"), ("violet", "#8e24aa"), ("white", "#ffffff")]
 # (name, colour) of the D10 pulse palette, same order as PALETTE in sketch.ino
 PALETTE = [("red", "#e53935"), ("orange", "#fb8c00"), ("yellow", "#fdd835"), ("green", "#43a047"),
@@ -29,21 +30,24 @@ def diagram_json():
     parts = [
         {"type": "wokwi-arduino-mega", "id": "mega", "top": 0, "left": 0, "attrs": {}},
         {"type": "wokwi-text", "id": "t1", "top": -60, "left": 140,
-         "attrs": {"text": "Strip frame demo: D9 frame strip 18 pixels (red, green, blue lights), D10 single pixel pulse, D11 colour bar 6 pixels"}},
+         "attrs": {"text": "Strip frame demo: D9 frame strip 18 pixels (red, green, blue lights), D10 single pixel pulse, D11 colour bar 6 pixels, D12 pixel test 10 pixels"}},
         {"type": "wokwi-text", "id": "t2", "top": -42, "left": 140,
          "attrs": {"text": "Simulation only: the strips are powered from the Mega 5V. In real life they get 12 V from the supply."}},
         {"type": "wokwi-resistor", "id": "r1", "top": 232, "left": 120, "attrs": {"value": "330"}},
         {"type": "wokwi-resistor", "id": "r2", "top": 262, "left": 120, "attrs": {"value": "330"}},
         {"type": "wokwi-resistor", "id": "r3", "top": 292, "left": 120, "attrs": {"value": "330"}},
+        {"type": "wokwi-resistor", "id": "r4", "top": 322, "left": 120, "attrs": {"value": "330"}},
         {"type": "wokwi-led-strip", "id": "strip1", "top": 330, "left": 60, "rotate": 0,
          "attrs": {"pixels": str(FRAME_PIXELS), "pixelSize": "3535"}},
         {"type": "wokwi-led-strip", "id": "strip2", "top": 400, "left": 60, "rotate": 0,
          "attrs": {"pixels": str(SINGLE_PIXELS), "pixelSize": "3535"}},
         {"type": "wokwi-led-strip", "id": "strip3", "top": 470, "left": 60, "rotate": 0,
          "attrs": {"pixels": str(BAR_PIXELS), "pixelSize": "3535"}},
+        {"type": "wokwi-led-strip", "id": "strip4", "top": 540, "left": 60, "rotate": 0,
+         "attrs": {"pixels": str(TEST_PIXELS), "pixelSize": "3535"}},
     ]
     conns = []
-    for k, pin in enumerate((9, 10, 11)):
+    for k, pin in enumerate((9, 10, 11, 12)):
         conns.append(["mega:%d" % pin, "r%d:1" % (k + 1), "green", []])
         conns.append(["r%d:2" % (k + 1), "strip%d:DIN" % (k + 1), "green", []])
         conns.append(["mega:5V", "strip%d:VDD" % (k + 1), "red", []])
@@ -53,19 +57,20 @@ def diagram_json():
 
 
 def wiring():
-    svg = Svg(960, 900)
-    svg.text(480, 34, "Strip frame demo test - wiring (Arduino Mega 2560 + three 12 V WS2811 strip pieces)", size=17,
+    svg = Svg(960, 1000)
+    svg.text(480, 34, "Strip frame demo test - wiring (Arduino Mega 2560 + four 12 V WS2811 strip pieces)", size=17,
              anchor="middle", weight="bold")
-    svg.rect(60, 100, 200, 440, fill="#e8f0fe")
+    svg.rect(60, 100, 200, 540, fill="#e8f0fe")
     svg.text(160, 128, "Arduino Mega 2560", size=15, anchor="middle", weight="bold")
     svg.text(160, 146, "powered from USB", size=11, anchor="middle", color=GREY)
-    ys = (190, 290, 390)
-    for label, y in zip(("D9", "D10", "D11"), ys):
+    ys = (190, 290, 390, 490)
+    for label, y in zip(("D9", "D10", "D11", "D12"), ys):
         svg.text(252, y + 4, label, size=12, anchor="end")
-    svg.text(252, 504, "GND", size=12, anchor="end")
+    svg.text(252, 604, "GND", size=12, anchor="end")
     blocks = (("Frame strip: 18 pixels", "1.8 m, pixel 1 = lower left"),
               ("Single pixel: 1 pixel", "one chip = 3 LEDs = 10 cm"),
-              ("Colour bar: 6 pixels", "0.6 m, red green blue cyan violet white"))
+              ("Colour bar: 6 pixels", "0.6 m, red green blue cyan violet white"),
+              ("Pixel test: 10 pixels", "1 m, counter, fill, colours, runner"))
     for k, y in enumerate(ys):
         svg.line(260, y, 340, y, BLUE)
         svg.resistor(340, y, "R%d  330 ohm" % (k + 1))
@@ -85,39 +90,40 @@ def wiring():
         svg.line(820, y + 36, 890, y + 36, BLACK, 2.5)
         svg.dot(860, y + 18, RED, 4)
         svg.dot(890, y + 36, BLACK, 4)
-    svg.line(860, ys[0] + 18, 860, 550, RED, 2.5)
-    svg.line(890, ys[0] + 36, 890, 660, BLACK, 2.5)
+    svg.line(860, ys[0] + 18, 860, 650, RED, 2.5)
+    svg.line(890, ys[0] + 36, 890, 760, BLACK, 2.5)
     # 12 V supply
-    svg.rect(580, 520, 240, 100, fill="#f3f3f3")
-    svg.text(600, 548, "12 V DC supply", size=13, weight="bold")
-    svg.text(600, 566, "(plug-in adapter, NOT the Arduino)", size=10.5, color=GREY)
-    svg.text(600, 584, "2.4 m of strip: 12 V 1 A is plenty", size=10.5, color=GREY)
-    svg.circle(820, 550, 3.5, RED)
-    svg.text(814, 546, "+", size=14, anchor="end", color=RED, weight="bold")
-    svg.line(820, 550, 860, 550, RED, 2.5)
-    svg.circle(820, 595, 3.5, BLACK)
-    svg.text(814, 591, "-", size=14, anchor="end", weight="bold")
-    svg.line(820, 595, 890, 595, BLACK, 2.5)
-    svg.dot(890, 595, BLACK, 4)
+    svg.rect(580, 620, 240, 100, fill="#f3f3f3")
+    svg.text(600, 648, "12 V DC supply", size=13, weight="bold")
+    svg.text(600, 666, "(plug-in adapter, NOT the Arduino)", size=10.5, color=GREY)
+    svg.text(600, 684, "3.4 m of strip: 12 V 1 A is plenty", size=10.5, color=GREY)
+    svg.circle(820, 650, 3.5, RED)
+    svg.text(814, 646, "+", size=14, anchor="end", color=RED, weight="bold")
+    svg.line(820, 650, 860, 650, RED, 2.5)
+    svg.circle(820, 695, 3.5, BLACK)
+    svg.text(814, 691, "-", size=14, anchor="end", weight="bold")
+    svg.line(820, 695, 890, 695, BLACK, 2.5)
+    svg.dot(890, 695, BLACK, 4)
     # common ground to the Arduino
-    svg.line(890, 660, 300, 660, BLACK, 2.5)
-    svg.line(300, 660, 300, 504, BLACK, 2.5)
-    svg.line(300, 504, 260, 504, BLACK, 2.5)
-    svg.dot(300, 660, BLACK, 4)
+    svg.line(890, 760, 300, 760, BLACK, 2.5)
+    svg.line(300, 760, 300, 604, BLACK, 2.5)
+    svg.line(300, 604, 260, 604, BLACK, 2.5)
+    svg.dot(300, 760, BLACK, 4)
     notes = [
         "Connections",
         "1. Arduino D9 -> 330 ohm resistor R1 -> DIN of the frame strip (18 pixels, the end where the printed arrows point away from).",
         "2. Arduino D10 -> 330 ohm resistor R2 -> DIN of the single-pixel piece (one chip, 3 LEDs, cut from the same roll).",
         "2b. Arduino D11 -> 330 ohm resistor R3 -> DIN of the colour bar (6 pixels = 18 LEDs, 60 cm, cut from the same roll).",
-        "3. The +12 V of all three strips comes from the 12 V supply, NEVER from an Arduino pin. No 12 V on any Arduino pin.",
+        "2c. Arduino D12 -> 330 ohm resistor R4 -> DIN of the pixel test strip (10 pixels = 30 LEDs, 1 m, cut from the same roll).",
+        "3. The +12 V of all four strips comes from the 12 V supply, NEVER from an Arduino pin. No 12 V on any Arduino pin.",
         "4. GND of the 12 V supply, GND of all strips and GND of the Arduino are connected together (common ground).",
         "5. The Arduino is powered from USB (the Serial Monitor, 115200 baud, shows one DBG line per second).",
         "6. Optional: a 1000 uF capacitor rated 25 V or more across +12 V and GND at the strip start (plus to +12 V).",
         "7. The built-in LED (pin 13) blinks while the program runs.",
-        "8. Brightness peaks at 80 of 255 in the sketch (TEST_LEVEL); at most about ten lit pixels need very little current.",
+        "8. Brightness peaks at 80 of 255 in the sketch (TEST_LEVEL); at most about 30 lit pixels need very little current.",
     ]
     for k, line in enumerate(notes):
-        svg.text(40, 710 + k * 20, line, size=12, weight="bold" if k == 0 else "normal")
+        svg.text(40, 810 + k * 20, line, size=12, weight="bold" if k == 0 else "normal")
     (OUT / "wiring-diagram.svg").write_text(svg.render_a4(landscape=False))
 
 
@@ -148,7 +154,7 @@ def mix(lights):
 
 
 def layout():
-    svg = Svg(1100, 900)
+    svg = Svg(1100, 1060)
     svg.text(550, 32, "Strip frame demo test - frame route and what you should see", size=19, anchor="middle", weight="bold")
     svg.text(550, 50, "D9: 18 pixels (1 pixel = 1 chip = 3 LEDs = 10 cm) around the frame. D10: one pixel (3 LEDs) pulsing.",
              size=12, anchor="middle", color=GREY)
@@ -222,6 +228,21 @@ def layout():
             svg.rect(110 + i * 104, y, 96, 36, fill=col, stroke="#546e7a", width=1.4, rx=4)
             svg.text(110 + i * 104 + 48, y + 23, "%d: %s" % (i + 1, name), size=12, anchor="middle", color="#ffffff" if name in ("blue", "violet", "red", "green") else BLACK)
     svg.text(24, by0 + 170, "After 6 s the sequence is back where it started (the colour that leaves pixel 6 returns at pixel 1). Peak brightness 80 of 255.", size=11, color=GREY)
+    # --- D12 pixel test
+    ty0 = 850
+    svg.text(24, ty0, "D12: pixel test, 10 pixels (1 m), four phases, repeats after 24.6 s - every pixel must take part in every phase", size=14, weight="bold")
+    W, K, B = "#ffffff", "#cfd8dc", "#1e88e5"
+    phases = [("1 counter, 5 s (0.5 s per pixel)", [W if i == 3 else K for i in range(10)]),
+              ("2a fill, 5 s: pixels light up 1 -> 10 and stay on", [W if i <= 6 else K for i in range(10)]),
+              ("2b empty, 5 s: pixels go out 1 -> 10", [K if i <= 3 else W for i in range(10)]),
+              ("3 colour channels, 6 s: all together red, green, blue, white (1.5 s each)", ["#e53935"] * 10),
+              ("4 runner, 3.6 s (0.2 s per step): one blue pixel 1 -> 10 -> 1", [B if i == 6 else K for i in range(10)])]
+    for k, (name, cols) in enumerate(phases):
+        y = ty0 + 14 + k * 34
+        svg.text(24, y + 16, name, size=11.5)
+        for i, c in enumerate(cols):
+            svg.rect(560 + i * 50, y, 42, 24, fill=c, stroke="#546e7a", width=1.3, rx=3)
+    svg.text(24, ty0 + 200, "If a pixel is dead, the pixels after it usually stay dark in the fill (phase 2a). Wrong colours in phase 3: change COLOR_ORDER. Peak brightness 80 of 255.", size=11, color=GREY)
     (OUT / "layout-diagram.svg").write_text(svg.render_a4(landscape=True))
 
 

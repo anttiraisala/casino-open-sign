@@ -1,4 +1,4 @@
-STRIP FRAME DEMO TEST - three colour lights on a 18-pixel frame strip, a pulsing single pixel and a colour bar
+STRIP FRAME DEMO TEST - three colour lights on a 18-pixel frame strip, a pulsing single pixel, a colour bar and a pixel test
 ================================================================================================
 
 (The owner called it "Street Frame Demo Test"; read as "Strip Frame Demo Test", folder strip_frame_demo_test.)
@@ -29,13 +29,21 @@ chip = one "pixel" = 3 LEDs = 10 cm).
   Pin D11: COLOUR BAR of 6 pixels (60 cm, 18 LEDs). The sequence red, green, blue, cyan, violet, white shows one colour per
            pixel and moves on by one pixel every second towards pixel 6; the colour leaving pixel 6 comes back at pixel 1.
 
+  Pin D12: PIXEL TEST, 10 pixels (1 m, 30 LEDs): a four-phase sequence for checking that every pixel works, repeating
+           after 24.6 s:
+             1. counter (5 s): one white pixel walks 1 -> 10, 0.5 s per pixel
+             2. fill and empty (10 s): pixels light up one by one 1 -> 10 and stay on, then go out one by one 1 -> 10,
+                0.5 s per step (a dead pixel shows as the place where the fill stops)
+             3. colour channels (6 s): all 10 pixels together red, green, blue, white, 1.5 s each
+             4. runner (3.6 s): one blue pixel runs 1 -> 10 -> 1, 0.2 s per step
+
 Peak brightness is TEST_LEVEL 80 of 255 (same as the other strip tests).
 Not part of the sign software; the direction/position of the frame strip only matters for how you read the result.
 
 Files
 -----
 sketch.ino             The program (settings at the top). Baud rate 115200.
-diagram.json           Wokwi circuit (18-pixel strip on D9, 1-pixel strip on D10, 6-pixel strip on D11, 330 ohm resistors; paste into the diagram.json tab).
+diagram.json           Wokwi circuit (18-pixel strip on D9, 1-pixel strip on D10, 6-pixel strip on D11, 10-pixel strip on D12, 330 ohm resistors; paste into the diagram.json tab).
 libraries.txt          Library: Adafruit NeoPixel.
 wiring-diagram.svg/.pdf  Electrical schematic (A4 portrait).
 layout-diagram.svg/.pdf  Frame route and what you should see (A4 landscape).
@@ -46,21 +54,22 @@ Wiring (exactly)
     Arduino D9   -> 330 ohm resistor R1 -> DIN of the frame strip, 18 pixels (the end the printed arrows point away from)
     Arduino D10  -> 330 ohm resistor R2 -> DIN of the single-pixel piece (one chip = 3 LEDs, cut from the same roll)
     Arduino D11  -> 330 ohm resistor R3 -> DIN of the colour bar, 6 pixels (60 cm piece cut from the same roll)
-    12 V supply +  -> +12 V of all three strips (supply only, never an Arduino pin)
-    12 V supply -  -> GND of all three strips AND Arduino GND (common ground)
+    Arduino D12  -> 330 ohm resistor R4 -> DIN of the pixel test strip, 10 pixels (1 m piece cut from the same roll)
+    12 V supply +  -> +12 V of all four strips (supply only, never an Arduino pin)
+    12 V supply -  -> GND of all four strips AND Arduino GND (common ground)
     Arduino        -> USB cable to the computer (power + Serial Monitor)
     Optional: 1000 uF capacitor, 25 V or more, across +12 V and GND at the strip start (plus to +12 V).
   No 12 V on any Arduino pin, and the strip's +12 V never goes to the Arduino 5V pin.
   The data pin gives 5 V into a 12 V strip: this normally works, but it is not verified.
-  Power: at most about ten lit pixels at TEST_LEVEL 80 of 255 take very little current; 12 V 1 A is plenty.
+  Power: at most about 30 lit pixels at TEST_LEVEL 80 of 255 take very little current; 12 V 1 A is plenty.
   See wiring-diagram.svg. You can also test with only some of the strips connected.
 
 Parts to buy (partco.fi, prices and stock are a snapshot of 2026-11-02, check before buying)
   - 12 V addressable strip WS2811, 5 m (SKU LED-N-RGB-W2812X150-5M): https://partco.fi/tuote/rgb-lednauha-30kpl-m-ws2812-5m-103
-    (cut at the cut lines: 18 pixels for D9, 1 pixel for D10 and 6 pixels for D11 (25 pixels in all); the rest stays for other tests)
+    (cut at the cut lines: 18 pixels for D9, 1 pixel for D10, 6 pixels for D11 and 10 pixels for D12 (35 pixels in all); the rest stays for other tests)
   - 12 V DC supply, 1 A or more (plug-in adapter) and the screw-terminal plug adapter
     DC-JATKOLIITIN 2,1mm RUUVILIITOKSELLA (SKU DCJ21RUU): https://partco.fi/tuote/dc-jatkoliitin-2-1mm-ruuviliitoksella-1875
-  - 3 pcs 330 ohm resistors, 1000 uF 25 V capacitor (optional), jumper wires.
+  - 4 pcs 330 ohm resistors, 1000 uF 25 V capacitor (optional), jumper wires.
   (Not part of the sign's parts list; see ../parts-list.*. If you already own the parts of strip_knight_rider_test, you need nothing new.)
 
 How the addressing works (short)
@@ -78,14 +87,14 @@ open the Serial Monitor at 115200 baud. Wokwi: new Arduino Mega project, paste s
 library "Adafruit NeoPixel", press Play.
 Sign of life: the built-in LED (pin 13) blinks while the program runs (shortly inverted when a frame light turns around at
 an end and at every new pulse colour; twice as fast while many changes happen). The Serial Monitor prints one line per second:
-    DBG up=<s> red=<pixel> green=<pixel> blue=<pixel> d10=<colour 0-7>:<level 0-80> d11=<shift 0-5> events=<n> beats=<n>
+    DBG up=<s> red=<pixel> green=<pixel> blue=<pixel> d10=<colour 0-7>:<level 0-80> d11=<shift 0-5> d12=<phase 1-4>:<step> events=<n> beats=<n>
 (strip pixels 1..18; colour numbers 0 red, 1 orange, 2 yellow, 3 green, 4 cyan, 5 blue, 6 violet, 7 white.)
 
 Changing the settings
 ---------------------
 At the top of sketch.ino: FRAME_PIXELS (18), ROUTE_START_PIXEL (15), SINGLE_PIXELS (1), COLOR_ORDER (NEO_GRB + NEO_KHZ800; try NEO_RGB + NEO_KHZ800
 if red is not red), TEST_LEVEL (80), STEP_RED_MS (500), STEP_GREEN_MS (385), STEP_BLUE_MS (333), PULSE_TICKS (150, with
-PULSE_UPDATE_MS 20 = 3 s per pulse), BAR_PIXELS (6), BAR_STEP_MS (1000), PIN_FRAME (9), PIN_SINGLE (10), PIN_BAR (11).
+PULSE_UPDATE_MS 20 = 3 s per pulse), BAR_PIXELS (6), BAR_STEP_MS (1000), TEST_PIXELS (10), TEST_STEP_MS (500, 500, 1500, 200 per phase), PIN_FRAME (9), PIN_SINGLE (10), PIN_BAR (11), PIN_TEST (12).
 
 Tests
 -----

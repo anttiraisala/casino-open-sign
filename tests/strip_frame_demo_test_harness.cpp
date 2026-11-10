@@ -29,6 +29,23 @@ static int expectLevel(unsigned long t) { int k = (int)((t / 20) % 150); return 
 // D11: red, green, blue, cyan, violet, white at peak 80 (violet 160 * 80 / 255 = 50); the sequence moves one pixel per second
 static const uint32_t BARC[6] = {(80u << 16), (80u << 8), 80u, (80u << 8) | 80u, (50u << 16) | 80u, (80u << 16) | (80u << 8) | 80u};
 static uint32_t expectBar(unsigned long t, int pixel) { int shift = (int)((t / 1000) % 6); return BARC[(pixel - shift + 6) % 6]; }
+// D12 pixel test, one cycle = 24600 ms: counter 10 x 500, fill+empty 20 x 500, channels 4 x 1500, runner 18 x 200
+static void expectTest(unsigned long t, uint32_t want[10]) {
+  const uint32_t W = rgb(80, 80, 80), CH[4] = {rgb(80, 0, 0), rgb(0, 80, 0), rgb(0, 0, 80), rgb(80, 80, 80)};
+  unsigned long u = t % 24600;
+  for (int i = 0; i < 10; i++) want[i] = 0;
+  if (u < 5000) { want[u / 500] = W; return; }
+  u -= 5000;
+  if (u < 10000) {
+    int st = (int)(u / 500);
+    for (int i = 0; i < 10; i++) want[i] = (st < 10 ? i <= st : i > st - 10) ? W : 0;
+    return;
+  }
+  u -= 10000;
+  if (u < 6000) { for (int i = 0; i < 10; i++) want[i] = CH[u / 1500]; return; }
+  u -= 6000;
+  int st = (int)(u / 200); want[st < 10 ? st : 18 - st] = CH[2];
+}
 static uint32_t expectSingle(unsigned long t) {
   const int *c = PAL[(t / 3000) % 8]; int lv = expectLevel(t);
   return rgb(c[0] * lv / 255, c[1] * lv / 255, c[2] * lv / 255);
@@ -39,15 +56,17 @@ int main() {
   Serial.capture = true;
   setup();
   Serial.capture = false;
-  CHECK(g_strips.size() == 3, "three strips");
-  Adafruit_NeoPixel *f = g_strips[0], *s = g_strips[1], *bar_ = g_strips[2];
-  CHECK(f->pin_ == 9 && s->pin_ == 10 && bar_->pin_ == 11, "frame strip on D9, single pixel on D10, colour bar on D11");
-  CHECK(f->numPixels() == 18 && s->numPixels() == 1 && bar_->numPixels() == 6, "18 pixels on D9, 1 pixel on D10, 6 pixels on D11");
-  CHECK(f->type_ == (NEO_GRB | NEO_KHZ800) && s->type_ == (NEO_GRB | NEO_KHZ800) && bar_->type_ == (NEO_GRB | NEO_KHZ800), "GRB, 800 kHz");
+  CHECK(g_strips.size() == 4, "four strips");
+  Adafruit_NeoPixel *f = g_strips[0], *s = g_strips[1], *bar_ = g_strips[2], *tst = g_strips[3];
+  CHECK(f->pin_ == 9 && s->pin_ == 10 && bar_->pin_ == 11 && tst->pin_ == 12, "frame strip on D9, single pixel on D10, colour bar on D11, pixel test on D12");
+  CHECK(f->numPixels() == 18 && s->numPixels() == 1 && bar_->numPixels() == 6 && tst->numPixels() == 10, "18 pixels on D9, 1 on D10, 6 on D11, 10 on D12");
+  CHECK(f->type_ == (NEO_GRB | NEO_KHZ800) && s->type_ == (NEO_GRB | NEO_KHZ800) && bar_->type_ == (NEO_GRB | NEO_KHZ800) && tst->type_ == (NEO_GRB | NEO_KHZ800), "GRB, 800 kHz");
   CHECK(Serial.baud == 115200 && Serial.captured.find("Serial speed 115200 baud") != std::string::npos, "baud rate 115200 stated and printed");
   CHECK(f->shown_[14] == rgb(80, 80, 80), "at start all three lights are on strip pixel 15 (upper-left corner): white");
   for (int i = 0; i < 18; i++) if (i != 14) CHECK(f->shown_[i] == 0, "at start only strip pixel 15 is lit");
   CHECK(s->shown_[0] == 0, "D10 starts dark");
+  CHECK(tst->shown_[0] == rgb(80, 80, 80), "D12 starts with pixel 1 white");
+  for (int i = 1; i < 10; i++) CHECK(tst->shown_[i] == 0, "D12 starts with only pixel 1 lit");
   for (int i = 0; i < 6; i++) CHECK(bar_->shown_[i] == BARC[i], "D11 starts with red, green, blue, cyan, violet, white on pixels 1..6");
 
   bool sawYellow = false, sawCyan = false, sawMagenta = false, sawWhite = false, farEnd = false, back = false;
@@ -71,6 +90,8 @@ int main() {
     CHECK(s->shown_[0] == expectSingle(t), "D10: palette colour scaled by the pulse brightness, new colour every 3 s");
     { bool okb = true; for (int i = 0; i < 6; i++) if (bar_->shown_[i] != expectBar(t, i)) okb = false;
       CHECK(okb, "D11: the colour sequence moves one pixel per second towards pixel 6 and wraps round"); }
+    { uint32_t w[10]; expectTest(t, w); bool okt = true; for (int i = 0; i < 10; i++) if (tst->shown_[i] != w[i]) okt = false;
+      CHECK(okt, "D12: counter, fill and empty, red-green-blue-white, runner there and back (24.6 s cycle)"); }
     const uint32_t v = s->shown_[0];
     const int mc = (int)std::max({(v >> 16) & 255, (v >> 8) & 255, v & 255});
     if (mc > maxChan) maxChan = mc;
@@ -78,6 +99,9 @@ int main() {
     // the LED is inverted for 120 ms after red reaches the end of the route, strip pixel 16 (step 17 at 8500 ms); no other event is near
     if (t == 8520) CHECK((g_pinOut[13] == HIGH) != ledState, "LED 13 is inverted right after a turnaround");
     if (t == 8640) CHECK((g_pinOut[13] == HIGH) == ledState, "LED 13 is back to normal 140 ms later");
+    // and right after the pixel test changes phase (counter -> fill at 5000 ms)
+    if (t == 5020) CHECK((g_pinOut[13] == HIGH) != ledState, "LED 13 is inverted right after the pixel test changes phase");
+    if (t == 5140) CHECK((g_pinOut[13] == HIGH) == ledState, "LED 13 is back to normal after the phase change");
     // and after green is back at the start of the route (step 34 at 13090 ms); no other event is near
     if (t == 13120) CHECK((g_pinOut[13] == HIGH) != ledState, "LED 13 is inverted right after a light is back at the start of the route");
     if (t == 13240) CHECK((g_pinOut[13] == HIGH) == ledState, "LED 13 is back to normal after that");

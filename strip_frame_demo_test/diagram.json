@@ -16,7 +16,7 @@
       "top": -60,
       "left": 140,
       "attrs": {
-        "text": "Strip frame demo: D9 frame strip 18 pixels (red, green, blue lights), D10 single pixel pulse, D11 colour bar 6 pixels"
+        "text": "Strip frame demo: D9 frame strip 18 pixels (red, green, blue lights), D10 single pixel pulse, D11 colour bar 6 pixels, D12 pixel test 10 pixels"
       }
     },
     {
@@ -56,6 +56,15 @@
       }
     },
     {
+      "type": "wokwi-resistor",
+      "id": "r4",
+      "top": 322,
+      "left": 120,
+      "attrs": {
+        "value": "330"
+      }
+    },
+    {
       "type": "wokwi-led-strip",
       "id": "strip1",
       "top": 330,
@@ -85,6 +94,17 @@
       "rotate": 0,
       "attrs": {
         "pixels": "6",
+        "pixelSize": "3535"
+      }
+    },
+    {
+      "type": "wokwi-led-strip",
+      "id": "strip4",
+      "top": 540,
+      "left": 60,
+      "rotate": 0,
+      "attrs": {
+        "pixels": "10",
         "pixelSize": "3535"
       }
     }
@@ -159,6 +179,30 @@
     [
       "mega:GND.1",
       "strip3:VSS",
+      "black",
+      []
+    ],
+    [
+      "mega:12",
+      "r4:1",
+      "green",
+      []
+    ],
+    [
+      "r4:2",
+      "strip4:DIN",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "strip4:VDD",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "strip4:VSS",
       "black",
       []
     ]
