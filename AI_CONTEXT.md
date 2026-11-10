@@ -66,6 +66,7 @@ tests run on the host with mock Arduino headers (section 8).
 | `stick_test/` | Separate small project: sketch + Wokwi diagram + A4 schematic + layout + READMEs for testing 10 Grove RGB LED sticks (10x WS2813) on a separate 5 V supply. Generators: `tools/generate_stick_test_{diagram,schematic,layout}.py`; host test `tests/stick_test_harness.cpp`. Chosen arrow design B (10 sticks: 4 shaft, 2 caps, 4 wings at 30 deg); NOT yet applied to the main sketch (user said 9 sticks earlier, 10 now: open). |
 | `strip_test/` | Separate small project: sketch + Wokwi diagram + A4 schematic + READMEs for testing a short piece of the candidate 12 V WS2811 strip. Schematic made by `tools/generate_strip_test_schematic.py`. |
 | `strip_single_led_test/` | Test "LED strip single LED": 3 x 12 V WS2811 strips (D9 walking white pixel, D10 coloured walking pixel, D11 ruler), 150 steps (probably only 50 real pixels). Files made by `tools/generate_strip_single_led_test.py`; tests `tests/strip_single_led_test_harness.cpp`, `tests/mutate_strip_single_led.py`. |
+| `hex_rotary_test/` | Test of a free-running 16-position hex rotary switch (legs 1, 2, 4, 8 on D34-D37, C to GND, INPUT_PULLUP, bit set = LOW): number A 2..51 (start 26, no wrap, step 1, `reverseDirection` bit) follows the switch; direction and steps from delta = (new - old) mod 16 (1..7 forward, 9..15 backward, 8 ignored), 10 ms debounce; I2C LCD 0x27 shows `A=..` and `Pos:X CW n:..`; LCD retried every second when lost, re-initialised every 5 s; I2C scan at boot; sign of life. Files by `tools/generate_hex_rotary_test.py`; tests `tests/hex_rotary_test_harness.cpp`, `tests/mutate_hex_rotary.py`. Not yet run on hardware. |
 | `strip_frame_demo_test/` | Demo "Strip frame demo" (owner's name "Street Frame Demo Test"): D9 frame strip of 18 WS2811 pixels (6 bottom, 3 right, 6 top, 3 left; pixel 1 at the lower-left corner, counter-clockwise), three Knight Rider lights whose route starts at the upper-left corner (strip pixel 15) and runs clockwise, turning at pixel 16 (34 steps per cycle), red 500 ms / green 385 ms (1.3x) / blue 333 ms (1.5x) per step with additive colour mixing; D10 single pixel pulse 3 s, 8 palette colours; D11 colour bar of 6 pixels (red, green, blue, cyan, violet, white moving 1 pixel/s towards pixel 6); D12 pixel test of 10 pixels (counter 5 s, fill/empty 10 s, red-green-blue-white 6 s, runner 3.6 s); peak 80. Files by `tools/generate_strip_frame_demo_test.py`; tests `tests/strip_frame_demo_test_harness.cpp`, `tests/mutate_strip_frame_demo.py`. |
 | `strip_knight_rider_test/` | Demo "LED strip knight rider": 3 x 12 V WS2811 strips of 50 pixels, one light bounces (D9 red 1 px/s, D10 blue 4 px/s, D11 green 10 px/s; 98 steps per cycle). Files by `tools/generate_strip_knight_rider_test.py`; tests `tests/strip_knight_rider_test_harness.cpp`, `tests/mutate_strip_knight_rider.py`. |
 | `sticks_11_test/` | Test "11 sticks": 10 arrow sticks (D2-D8, A0-A2, sign order) + the CLOSED light stick on A3, steady CLOSED light + flowing white arrow (button D33: flow <-> all on), heat check. Files by `tools/generate_sticks_11_test_{diagram,schematic,layout}.py`; tests `tests/sticks_11_test_harness.cpp`, `tests/mutate_sticks_11.py`. |
@@ -229,6 +230,18 @@ scales with SW4, reopening restores everything, a 10 ms glitch is ignored). When
 sketch, extend the harness and also run a mutation (break the feature, the test must fail).
 A reversed-polarity build (`CASINO_CLOSED_WHEN_LOW = false`) fails the harness by design because
 the harness hard-codes LOW = closed.
+
+### Hex rotary test (2026-11-10)
+
+`hex_rotary_test/sketch.ino` is tested by `tests/hex_rotary_test_harness.cpp` (mock Arduino + Wire with the fake LCD; all expected values hard-coded:
+leg-to-pin mapping, the move table with forward/backward/wrap/ambiguous cases and clamping, 10 ms debounce, `reverseDirection`, LCD text, LED and
+DBG timing, LCD loss/retry/re-initialisation, I2C scan range) and mutation-tested by `tests/mutate_hex_rotary.py` (108 mutants, all detected; the
+one "lcdShown updated on a failed send" mutant was dropped as equivalent because `lcdInit()` resets `lcdShown`):
+
+    g++ -std=c++17 -O1 -w -Itests -DSKETCH_PATH='"'$PWD'/hex_rotary_test/sketch.ino"' -o /tmp/hex_rotary_harness tests/hex_rotary_test_harness.cpp && /tmp/hex_rotary_harness
+    python3 tests/mutate_hex_rotary.py
+
+The mock cannot check the LCD set-up commands 0x28, 0x0C, 0x06 (it only models 4-bit switching, clear and cursor/data writes).
 
 ### Casino Open Sign V2 tests (2026-11-10)
 

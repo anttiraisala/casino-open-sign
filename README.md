@@ -19,6 +19,7 @@ It is a static page served by GitHub Pages straight from this repository (branch
 - `wiring-diagram`, `layout-diagram`, `layout-parts` (`.svg` / `.pdf`), `parts-list` (`.csv` / `.pdf` / `.xlsx`): electrical schematic, layout of the strips on the plate, parts list from partco.fi (a snapshot of 2026-11-02).
 - `casino_open_sign_v2/`: **Casino Open Sign V2**, the second version of the sign program: 12 V WS2811 frame strip of 18 pixels on D11, 10-pixel letters strip on D12 (OPEN wired reversed) and the 11 Grove sticks; own sketch, Wokwi diagram, schematic (5 V + 12 V supplies), layout, parts list and README (not yet run on hardware).
 - `strip_test/`, `stick_test/`, `stick_test_direct/`: separate hardware tests, each with its own sketch, Wokwi diagram, schematic, layout and README. `stick_test_direct` has been run on real hardware: 11 Grove RGB LED sticks in the Grove Base Shield work.
+- `hex_rotary_test/`: test of a 16-position hex rotary switch (legs 1, 2, 4, 8 on D34-D37, C to GND): a number A (2..51, no wrap) follows the switch and is shown on the I2C LCD; direction from the change of position; sign of life, I2C scan and LCD recovery (not yet run on hardware).
 - `strip_frame_demo_test/`: 18-pixel frame strip on D9 with three differently fast bouncing colour lights (colours add), a pulsing single pixel on D10 and a moving 6-pixel colour bar on D11, a 10-pixel pixel test on D12 (not yet run on hardware).
 - `strip_single_led_test/`, `strip_knight_rider_test/`, `sticks_11_test/`: newer hardware tests, not yet run on real hardware: one pixel walking along three 12 V WS2811 strips (counts the real pixels, checks the colour order); a knight-rider light bouncing on three 50-pixel strips; and the 10 arrow sticks plus the CLOSED light stick (A3) kept lit to see whether anything gets hot.
 - `arrow_sticks/`: the planned arrow made of 10 Grove RGB LED sticks (design B): exact 1:1 drill template (A3 PDF, or two A4 pages with half an arrow on each), indicative layout and wiring, all from one geometry file (`tools/arrow_geometry.py`). The sign sketch now drives it (phase 1: a simple flowing arrow animation; see `AI_CONTEXT.md`).
@@ -33,6 +34,7 @@ It is a static page served by GitHub Pages straight from this repository (branch
 g++ -std=c++17 -O1 -w -Itests -DSKETCH_PATH='"../sketch.ino"' -o /tmp/harness tests/harness.cpp && /tmp/harness
 for t in strip_test stick_test stick_test_direct strip_single_led_test strip_knight_rider_test sticks_11_test strip_frame_demo_test; do g++ -std=c++17 -O1 -w -Itests -o /tmp/$t tests/${t}_harness.cpp && /tmp/$t; done
 python3 tests/arrow_geometry_test.py
+g++ -std=c++17 -O1 -w -Itests -DSKETCH_PATH='"../hex_rotary_test/sketch.ino"' -o /tmp/hex_rotary_harness tests/hex_rotary_test_harness.cpp && /tmp/hex_rotary_harness
 ```
 
 ## License

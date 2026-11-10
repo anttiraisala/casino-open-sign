@@ -13,6 +13,7 @@ Raw ideas and open questions (RDD = Requirement Driven Development). An idea bec
 | IDEA-008 | EEPROM write protection: a value changed quickly by a dial is saved only after it has stayed unchanged for about two seconds. | new | AI proposal; EEPROM lasts about 100 000 writes per cell. |
 | IDEA-009 | The existing inputs of the sign (arrow switch, casino closed switch, mode button, speed switches) become bindings of the same mechanism. | new | AI proposal; changes working code, only on request. |
 | IDEA-010 | An I2C I/O expander on D20/D21 if the Mega runs out of pins for controls. | new | AI proposal. |
+| IDEA-011 | Read the hex rotary switch with only two legs (1 and 2) to save pins: gives the direction (mod 4) but not the absolute position, and a fast turn is ambiguous. The Mega has many free pins, so `hex_rotary_test/` uses all four legs. | new | AI proposal after the owner's question 2026-11-10; the hardware test decides. |
 
 ## Open questions
 - OQ-001: Does a value change live while editing (callbacks on every step, BACK restores the old value)? Assumed yes.

@@ -1,0 +1,97 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='297mm' height='210mm' viewBox='-31.3167 -91.032 1162.63 822.064'>
+<rect x='-31.3167' y='-91.032' width='1162.63' height='822.064' fill='#ffffff'/>
+<text x='550' y='28' font-size='18' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Hex rotary switch test - where the wires go (not to scale)</text>
+<text x='60' y='70' font-size='13' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Mega 2560: long double-row header (from above)</text>
+<text x='60' y='88' font-size='11' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>One column holds the even pins, the other the odd pins (read the numbers on the board).</text>
+<rect x='90' y='96' width='220' height='448' rx='0' fill='#1b2a49' stroke='#222222' stroke-width='2'/>
+<rect x='126' y='106' width='28' height='28' rx='0' fill='#455a64' stroke='#222222' stroke-width='1.5'/>
+<text x='140' y='124' font-size='11' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>5V</text>
+<rect x='246' y='106' width='28' height='28' rx='0' fill='#455a64' stroke='#222222' stroke-width='1.5'/>
+<text x='260' y='124' font-size='11' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>5V</text>
+<rect x='126' y='150' width='28' height='28' rx='0' fill='#455a64' stroke='#222222' stroke-width='1.5'/>
+<text x='140' y='168' font-size='11' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>22</text>
+<rect x='246' y='150' width='28' height='28' rx='0' fill='#455a64' stroke='#222222' stroke-width='1.5'/>
+<text x='260' y='168' font-size='11' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>23</text>
+<rect x='126' y='194' width='28' height='28' rx='0' fill='#455a64' stroke='#222222' stroke-width='1.5'/>
+<text x='140' y='212' font-size='11' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>...</text>
+<rect x='246' y='194' width='28' height='28' rx='0' fill='#455a64' stroke='#222222' stroke-width='1.5'/>
+<text x='260' y='212' font-size='11' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>...</text>
+<rect x='126' y='238' width='28' height='28' rx='0' fill='#455a64' stroke='#222222' stroke-width='1.5'/>
+<text x='140' y='256' font-size='11' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>32</text>
+<rect x='246' y='238' width='28' height='28' rx='0' fill='#455a64' stroke='#222222' stroke-width='1.5'/>
+<text x='260' y='256' font-size='11' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>33</text>
+<rect x='126' y='282' width='28' height='28' rx='0' fill='#ffd54f' stroke='#222222' stroke-width='1.5'/>
+<text x='140' y='300' font-size='11' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>34</text>
+<rect x='246' y='282' width='28' height='28' rx='0' fill='#ffd54f' stroke='#222222' stroke-width='1.5'/>
+<text x='260' y='300' font-size='11' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>35</text>
+<text x='116' y='300' font-size='12' text-anchor='end' fill='#ef6c00' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>-> switch leg 1</text>
+<text x='284' y='300' font-size='12' text-anchor='start' fill='#ef6c00' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>-> switch leg 2</text>
+<rect x='126' y='326' width='28' height='28' rx='0' fill='#ffd54f' stroke='#222222' stroke-width='1.5'/>
+<text x='140' y='344' font-size='11' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>36</text>
+<rect x='246' y='326' width='28' height='28' rx='0' fill='#ffd54f' stroke='#222222' stroke-width='1.5'/>
+<text x='260' y='344' font-size='11' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>37</text>
+<text x='116' y='344' font-size='12' text-anchor='end' fill='#ef6c00' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>-> switch leg 4</text>
+<text x='284' y='344' font-size='12' text-anchor='start' fill='#ef6c00' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>-> switch leg 8</text>
+<rect x='126' y='370' width='28' height='28' rx='0' fill='#455a64' stroke='#222222' stroke-width='1.5'/>
+<text x='140' y='388' font-size='11' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>38</text>
+<rect x='246' y='370' width='28' height='28' rx='0' fill='#455a64' stroke='#222222' stroke-width='1.5'/>
+<text x='260' y='388' font-size='11' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>39</text>
+<rect x='126' y='414' width='28' height='28' rx='0' fill='#455a64' stroke='#222222' stroke-width='1.5'/>
+<text x='140' y='432' font-size='11' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>...</text>
+<rect x='246' y='414' width='28' height='28' rx='0' fill='#455a64' stroke='#222222' stroke-width='1.5'/>
+<text x='260' y='432' font-size='11' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>...</text>
+<rect x='126' y='458' width='28' height='28' rx='0' fill='#455a64' stroke='#222222' stroke-width='1.5'/>
+<text x='140' y='476' font-size='11' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>52</text>
+<rect x='246' y='458' width='28' height='28' rx='0' fill='#455a64' stroke='#222222' stroke-width='1.5'/>
+<text x='260' y='476' font-size='11' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>53</text>
+<rect x='126' y='502' width='28' height='28' rx='0' fill='#bdbdbd' stroke='#222222' stroke-width='1.5'/>
+<text x='140' y='520' font-size='11' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>GND</text>
+<rect x='246' y='502' width='28' height='28' rx='0' fill='#455a64' stroke='#222222' stroke-width='1.5'/>
+<text x='260' y='520' font-size='11' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>GND</text>
+<text x='116' y='520' font-size='12' text-anchor='end' fill='#ef6c00' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>-> switch C</text>
+<text x='60' y='590' font-size='11' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Yellow = the four switch pins, grey = GND for the common leg C.</text>
+<text x='60' y='608' font-size='11' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Any other GND pin of the Mega works as well.</text>
+<text x='640' y='70' font-size='13' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Switch legs</text>
+<rect x='640' y='82' width='400' height='214' rx='0' fill='#f3f3f3' stroke='#222222' stroke-width='2'/>
+<text x='654' y='108' font-size='13' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Switch leg</text>
+<text x='794' y='108' font-size='13' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Bit weight</text>
+<text x='934' y='108' font-size='13' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Mega pin</text>
+<line x1='640' y1='120' x2='1040' y2='120' stroke='#666666' stroke-width='1'/>
+<text x='654' y='138' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>1</text>
+<text x='794' y='138' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>1</text>
+<text x='934' y='138' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D34</text>
+<line x1='640' y1='150' x2='1040' y2='150' stroke='#666666' stroke-width='1'/>
+<text x='654' y='168' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>2</text>
+<text x='794' y='168' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>2</text>
+<text x='934' y='168' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D35</text>
+<line x1='640' y1='180' x2='1040' y2='180' stroke='#666666' stroke-width='1'/>
+<text x='654' y='198' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>4</text>
+<text x='794' y='198' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>4</text>
+<text x='934' y='198' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D36</text>
+<line x1='640' y1='210' x2='1040' y2='210' stroke='#666666' stroke-width='1'/>
+<text x='654' y='228' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>8</text>
+<text x='794' y='228' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>8</text>
+<text x='934' y='228' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D37</text>
+<line x1='640' y1='240' x2='1040' y2='240' stroke='#666666' stroke-width='1'/>
+<text x='654' y='258' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>C (one of two)</text>
+<text x='794' y='258' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>common</text>
+<text x='934' y='258' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>GND</text>
+<line x1='640' y1='270' x2='1040' y2='270' stroke='#666666' stroke-width='1'/>
+<text x='654' y='288' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>C (other)</text>
+<text x='794' y='288' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>-</text>
+<text x='934' y='288' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>free</text>
+<text x='640' y='330' font-size='11' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>The legs of the switch are marked 1, 2, 4, 8 and C on its body.</text>
+<text x='640' y='346' font-size='11' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>The order of the legs on the case differs between makers: read the marks.</text>
+<text x='640' y='390' font-size='13' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>LCD (I2C backpack)</text>
+<rect x='640' y='402' width='400' height='120' rx='0' fill='#f3f3f3' stroke='#222222' stroke-width='2'/>
+<text x='654' y='430' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>GND</text>
+<text x='794' y='430' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>-> Mega GND</text>
+<text x='654' y='456' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>VCC</text>
+<text x='794' y='456' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>-> Mega 5V</text>
+<text x='654' y='482' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>SDA</text>
+<text x='794' y='482' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>-> Mega D20</text>
+<text x='654' y='508' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>SCL</text>
+<text x='794' y='508' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>-> Mega D21</text>
+<text x='640' y='546' font-size='11' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D20 (SDA) and D21 (SCL) are on the communication header; the pins</text>
+<text x='640' y='562' font-size='11' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>marked SDA and SCL next to AREF are the same two lines.</text>
+</svg>

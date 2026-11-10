@@ -1,0 +1,132 @@
+{
+  "version": 1,
+  "author": "Casino sign project - hex rotary switch test",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-arduino-mega",
+      "id": "mega",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-text",
+      "id": "t1",
+      "top": -120,
+      "left": 20,
+      "attrs": {
+        "text": "Hex rotary switch test: A (2..51) follows the switch, shown on the LCD"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "t2",
+      "top": -102,
+      "left": 20,
+      "attrs": {
+        "text": "Wokwi has no hex rotary switch: the DIP bank 1-4 stands in (ON = leg connected to C = bit set)"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "t3",
+      "top": -84,
+      "left": 20,
+      "attrs": {
+        "text": "Switch 1 = leg 1 (D34), 2 = leg 2 (D35), 3 = leg 4 (D36), 4 = leg 8 (D37)"
+      }
+    },
+    {
+      "type": "wokwi-dip-switch-8",
+      "id": "hex",
+      "top": -50,
+      "left": 20,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd",
+      "top": 480,
+      "left": 20,
+      "attrs": {
+        "pins": "i2c"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "mega:34",
+      "hex:1b",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "hex:1a",
+      "black",
+      []
+    ],
+    [
+      "mega:35",
+      "hex:2b",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "hex:2a",
+      "black",
+      []
+    ],
+    [
+      "mega:36",
+      "hex:3b",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "hex:3a",
+      "black",
+      []
+    ],
+    [
+      "mega:37",
+      "hex:4b",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "hex:4a",
+      "black",
+      []
+    ],
+    [
+      "mega:5V",
+      "lcd:VCC",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "lcd:GND",
+      "black",
+      []
+    ],
+    [
+      "mega:20",
+      "lcd:SDA",
+      "green",
+      []
+    ],
+    [
+      "mega:21",
+      "lcd:SCL",
+      "green",
+      []
+    ]
+  ],
+  "dependencies": {}
+}
