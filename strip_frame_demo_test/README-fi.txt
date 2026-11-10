@@ -1,4 +1,4 @@
-STRIP FRAME DEMO TEST - kolme värivaloa 18 pikselin kehysnauhalla ja sykkivä yksittäinen pikseli
+STRIP FRAME DEMO TEST - kolme värivaloa 18 pikselin kehysnauhalla, sykkivä yksittäinen pikseli ja väripalkki
 ================================================================================================
 
 (Omistaja kutsui sitä nimellä "Street Frame Demo Test"; tulkittu "Strip Frame Demo Test", kansio strip_frame_demo_test.)
@@ -27,13 +27,17 @@ Demo kyltin kehyksen ledinauhalle. Käytössä sama 12 V:n WS2811-nauha kuin str
   Pinni D10: YKSITTÄINEN pikseli (yksi piiri, 3 LEDiä). Pulssi pimeä -> kirkas -> pimeä 3 sekunnin välein; väri vaihtuu
              joka pulssilla: punainen, oranssi, keltainen, vihreä, syaani, sininen, violetti, valkoinen, sitten taas alusta.
 
+  Pinni D11: VÄRIPALKKI, 6 pikseliä (60 cm, 18 LEDiä). Sarja punainen, vihreä, sininen, syaani, violetti, valkoinen näkyy
+             yksi väri per pikseli ja siirtyy yhden pikselin eteenpäin sekunnin välein kohti pikseliä 6; pikseliltä 6
+             poistuva väri tulee takaisin pikselille 1.
+
 Kirkkauden huippu on TEST_LEVEL 80 / 255 (sama kuin muissa nauhatesteissä).
 Ei kuulu kyltin varsinaiseen ohjelmaan; kehysnauhan suunnalla ja paikalla on merkitystä vain tuloksen lukemisessa.
 
 Tiedostot
 ---------
 sketch.ino             Ohjelma (asetukset alussa). Baudinopeus 115200.
-diagram.json           Wokwi-kytkentä (18 pikselin nauha D9:ssä, 1 pikselin nauha D10:ssä, 330 ohmin vastukset; liitä diagram.json-välilehdelle).
+diagram.json           Wokwi-kytkentä (18 pikselin nauha D9:ssä, 1 pikselin nauha D10:ssä, 6 pikselin nauha D11:ssä, 330 ohmin vastukset; liitä diagram.json-välilehdelle).
 libraries.txt          Kirjasto: Adafruit NeoPixel.
 wiring-diagram.svg/.pdf  Sähkökaavio (A4 pysty).
 layout-diagram.svg/.pdf  Kehyksen reitti ja mitä pitäisi nähdä (A4 vaaka).
@@ -43,21 +47,22 @@ Kytkentä (tarkasti)
 -------------------
     Arduino D9   -> 330 ohmin vastus R1 -> kehysnauhan DIN, 18 pikseliä (pää, josta painetut nuolet osoittavat poispäin)
     Arduino D10  -> 330 ohmin vastus R2 -> yksittäisen pikselin pätkän DIN (yksi piiri = 3 LEDiä, leikattu samalta rullalta)
-    12 V:n virtalähde +  -> molempien nauhojen +12 V (vain virtalähteestä, ei koskaan Arduinon pinniin)
-    12 V:n virtalähde -  -> molempien nauhojen GND JA Arduinon GND (yhteinen maa)
+    Arduino D11  -> 330 ohmin vastus R3 -> väripalkin DIN, 6 pikseliä (60 cm:n pätkä samalta rullalta)
+    12 V:n virtalähde +  -> kaikkien kolmen nauhan +12 V (vain virtalähteestä, ei koskaan Arduinon pinniin)
+    12 V:n virtalähde -  -> kaikkien kolmen nauhan GND JA Arduinon GND (yhteinen maa)
     Arduino              -> USB-kaapeli tietokoneeseen (virta + Serial Monitor)
     Valinnainen: 1000 uF kondensaattori, väh. 25 V, +12 V ja GND välille nauhan alussa (plus +12 V:iin).
   Ei 12 V:a mihinkään Arduinon pinniin, eikä nauhan +12 V koskaan mene Arduinon 5V-pinniin.
   Datapinni antaa 5 V:a 12 V:n nauhalle: tämä yleensä toimii, mutta sitä ei ole varmistettu.
-  Teho: enintään kolme palavaa pikseliä tasolla TEST_LEVEL 80 / 255 vie hyvin vähän virtaa; 12 V 1 A riittää reilusti.
-  Katso kuva: wiring-diagram.svg. Voit testata myös vain toisella nauhalla.
+  Teho: enintään noin kymmenen palavaa pikseliä tasolla TEST_LEVEL 80 / 255 vie hyvin vähän virtaa; 12 V 1 A riittää reilusti.
+  Katso kuva: wiring-diagram.svg. Voit testata myös vain osalla nauhoista.
 
 Ostoslista (partco.fi; hinnat ja saatavuus ovat tilanne 2026-11-02, tarkista ennen ostoa)
   - 12 V osoitettava nauha WS2811, 5 m (SKU LED-N-RGB-W2812X150-5M): https://partco.fi/tuote/rgb-lednauha-30kpl-m-ws2812-5m-103
-    (leikkaa leikkausviivoilta: 18 pikseliä D9:lle ja 1 pikseli D10:lle; loput jää muihin testeihin)
+    (leikkaa leikkausviivoilta: 18 pikseliä D9:lle, 1 pikseli D10:lle ja 6 pikseliä D11:lle (yhteensä 25 pikseliä); loput jää muihin testeihin)
   - 12 V DC -virtalähde, väh. 1 A (pistorasiasovitin) ja ruuviliitosjatkoliitin
     DC-JATKOLIITIN 2,1mm RUUVILIITOKSELLA (SKU DCJ21RUU): https://partco.fi/tuote/dc-jatkoliitin-2-1mm-ruuviliitoksella-1875
-  - 2 kpl 330 ohmin vastuksia, 1000 uF 25 V kondensaattori (valinnainen), hyppylankoja.
+  - 3 kpl 330 ohmin vastuksia, 1000 uF 25 V kondensaattori (valinnainen), hyppylankoja.
   (Ei kuulu kyltin osalistaan; katso ../parts-list.*. Jos sinulla on jo strip_knight_rider_testin osat, mitään uutta ei tarvita.)
 
 Miten osoitus toimii (lyhyesti)
@@ -76,14 +81,14 @@ kirjasto "Adafruit NeoPixel", paina Play.
 Elonmerkki: sisäänrakennettu LED (pinni 13) vilkkuu ohjelman ajon aikana (hetkeksi käännetty, kun kehysvalo kääntyy päässä
 ja jokaisen uuden pulssivärin alussa; kaksi kertaa nopeammin, kun muutoksia tulee paljon). Serial Monitor tulostaa
 yhden rivin sekunnissa:
-    DBG up=<s> red=<pikseli> green=<pikseli> blue=<pikseli> d10=<väri 0-7>:<taso 0-80> events=<n> beats=<n>
+    DBG up=<s> red=<pikseli> green=<pikseli> blue=<pikseli> d10=<väri 0-7>:<taso 0-80> d11=<siirtymä 0-5> events=<n> beats=<n>
 (nauhan pikselit 1..18; värinumerot 0 punainen, 1 oranssi, 2 keltainen, 3 vihreä, 4 syaani, 5 sininen, 6 violetti, 7 valkoinen.)
 
 Asetusten muuttaminen
 ---------------------
 sketch.ino:n alussa: FRAME_PIXELS (18), ROUTE_START_PIXEL (15), SINGLE_PIXELS (1), COLOR_ORDER (NEO_GRB + NEO_KHZ800; kokeile NEO_RGB + NEO_KHZ800,
 jos punainen ei ole punainen), TEST_LEVEL (80), STEP_RED_MS (500), STEP_GREEN_MS (385), STEP_BLUE_MS (333), PULSE_TICKS (150,
-yhdessä PULSE_UPDATE_MS 20:n kanssa 3 s per pulssi), PIN_FRAME (9), PIN_SINGLE (10).
+yhdessä PULSE_UPDATE_MS 20:n kanssa 3 s per pulssi), BAR_PIXELS (6), BAR_STEP_MS (1000), PIN_FRAME (9), PIN_SINGLE (10), PIN_BAR (11).
 
 Testit
 ------

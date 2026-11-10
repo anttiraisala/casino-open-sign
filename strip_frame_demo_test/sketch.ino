@@ -20,6 +20,10 @@
  *   Pin D10 (single pixel, 1 chip = 3 LEDs): a pulse dark -> bright -> dark every PULSE_MS (3 s). The colour changes
  *     at every pulse: red, orange, yellow, green, cyan, blue, violet, white, then again.
  *
+ *   Pin D11 (colour bar, 6 pixels = 60 cm): a colour sequence red, green, blue, cyan, violet, white shows one colour
+ *     per pixel and moves on by one pixel every BAR_STEP_MS (1 s) in the direction of the pixel numbers (1 -> 6); the
+ *     colour that leaves pixel 6 comes back at pixel 1, so the bar goes round and round.
+ *
  * Peak brightness is TEST_LEVEL = 80 (of 255) for every colour channel that is fully on, same as the other tests.
  * The strips are powered from a 12 V supply and the Arduino from USB (see README.txt).
  * If the colours are wrong (red looks green), change COLOR_ORDER (see README.txt).
@@ -27,8 +31,8 @@
  * SIGN OF LIFE: the LED on pin 13 blinks all the time while the program runs (every HEARTBEAT_MS, twice as fast
  * while many state changes happen; it is shortly inverted when a frame light turns around at an end or the pulse
  * colour changes). Once per second (DEBUG_MS) the Serial Monitor (115200 baud, SERIAL_BAUD) gets a line
- * "DBG up=.. red=.. green=.. blue=.. d10=<colour>:<level> events=.. beats=..": uptime in seconds, the strip pixel
- * (1..18) of each frame light, colour number and brightness of the single pixel, state changes in the last second
+ * "DBG up=.. red=.. green=.. blue=.. d10=<colour>:<level> d11=<shift> events=.. beats=..": uptime in seconds, the strip
+ * pixel (1..18) of each frame light, colour number and brightness of the single pixel, the shift of the colour bar, state changes in the last second
  * and LED toggles. The values change from line to line.
  *
  * All timing uses millis(); the sketch never calls delay(). Function signatures use only built-in types
@@ -40,15 +44,18 @@
 // ============================== CONFIGURATION ==============================
 constexpr uint8_t PIN_FRAME = 9;             // frame strip, 18 pixels
 constexpr uint8_t PIN_SINGLE = 10;           // single pixel (one 3-LED cluster)
+constexpr uint8_t PIN_BAR = 11;              // colour bar strip, 6 pixels
 constexpr uint8_t PIN_STATUS_LED = 13;       // debug LED: sign of life
 constexpr uint16_t FRAME_PIXELS = 18;        // pixels of the frame strip (6 + 3 + 6 + 3 chips = 54 LEDs = 1.8 m)
 constexpr uint16_t ROUTE_START_PIXEL = 15;   // the light route starts here (upper-left corner), strip pixel 1..FRAME_PIXELS
 constexpr uint16_t SINGLE_PIXELS = 1;        // pixels on D10
+constexpr uint16_t BAR_PIXELS = 6;           // pixels on D11 (60 cm)
 constexpr uint16_t COLOR_ORDER = NEO_GRB + NEO_KHZ800;   // try NEO_RGB + NEO_KHZ800 if the colours are wrong
 constexpr uint8_t TEST_LEVEL = 80;           // 0..255, peak brightness of a fully-on colour channel
 constexpr uint32_t STEP_RED_MS = 500;        // red: 2 pixels per second
 constexpr uint32_t STEP_GREEN_MS = 385;      // green: 1.3 x faster (500 / 1.3 = 384.6)
 constexpr uint32_t STEP_BLUE_MS = 333;       // blue: 1.5 x faster (500 / 1.5 = 333.3)
+constexpr uint32_t BAR_STEP_MS = 1000;        // D11: the colour sequence moves on by one pixel
 constexpr uint32_t PULSE_UPDATE_MS = 20;     // D10: brightness update interval
 constexpr uint16_t PULSE_TICKS = 150;        // updates per pulse: 150 x 20 ms = 3 s per pulse (dark -> bright -> dark)
 constexpr uint32_t HEARTBEAT_MS = 250;       // LED toggle interval
@@ -72,9 +79,13 @@ constexpr uint8_t PALETTE[PALETTE_SIZE][3] = {
   {255, 255, 255},  // 7 white
 };
 
+// D11 colour sequence: red, green, blue, cyan, violet, white (indices into PALETTE).
+constexpr uint8_t BAR_COLOURS[BAR_PIXELS] = {0, 3, 5, 4, 6, 7};
+
 // One named object per strip (NeoPixel objects must not be copied).
 Adafruit_NeoPixel frame(FRAME_PIXELS, PIN_FRAME, COLOR_ORDER);
 Adafruit_NeoPixel single(SINGLE_PIXELS, PIN_SINGLE, COLOR_ORDER);
+Adafruit_NeoPixel bar(BAR_PIXELS, PIN_BAR, COLOR_ORDER);
 
 // The light route: position 0 is the upper-left corner (strip pixel 15), the route runs clockwise:
 // top edge (strip pixels 15..10), right edge (9..7), bottom edge (6..1), left edge (18..16). Position 17 is strip pixel 16.
@@ -88,6 +99,8 @@ uint16_t pulseTick = 0;                                // 0 .. PULSE_TICKS - 1
 uint8_t colourIndex = 0;                               // palette entry of the current pulse
 uint8_t singleLevel = 0;                               // brightness of the current pulse step
 uint32_t nextPulse = 0;
+uint8_t barShift = 0;                                  // 0 .. BAR_PIXELS - 1: how far the colour sequence has moved
+uint32_t nextBar = 0;
 uint32_t nextBeat = 0, invertUntil = 0, nextDebug = 0;
 bool ledState = false;
 uint8_t eventsNow = 0, eventsPrev = 0, eventsShown = 0;
@@ -155,6 +168,16 @@ void drawSingle() {
   single.show();
 }
 
+// Colour bar: pixel i shows sequence entry (i - barShift) modulo BAR_PIXELS, scaled so that the largest channel is TEST_LEVEL.
+void drawBar() {
+  for (uint16_t i = 0; i < BAR_PIXELS; i++) {
+    const uint8_t *c = PALETTE[BAR_COLOURS[(i + BAR_PIXELS - barShift) % BAR_PIXELS]];
+    bar.setPixelColor(i, Adafruit_NeoPixel::Color((uint16_t)c[0] * TEST_LEVEL / 255, (uint16_t)c[1] * TEST_LEVEL / 255,
+                                                  (uint16_t)c[2] * TEST_LEVEL / 255));
+  }
+  bar.show();
+}
+
 void printDebug(uint32_t now) {
   Serial.print(F("DBG up="));
   Serial.print((unsigned long)(now / 1000));
@@ -168,6 +191,8 @@ void printDebug(uint32_t now) {
   Serial.print(colourIndex);
   Serial.print(F(":"));
   Serial.print(singleLevel);
+  Serial.print(F(" d11="));
+  Serial.print(barShift);
   Serial.print(F(" events="));
   Serial.print(eventsShown);
   Serial.print(F(" beats="));
@@ -179,16 +204,19 @@ void setup() {
   pinMode(PIN_STATUS_LED, OUTPUT);
   frame.begin();
   single.begin();
+  bar.begin();
   drawFrame();
   drawSingle();
+  drawBar();
   const uint32_t now = millis();
   nextRed = now + STEP_RED_MS;
   nextGreen = now + STEP_GREEN_MS;
   nextBlue = now + STEP_BLUE_MS;
   nextPulse = now + PULSE_UPDATE_MS;
+  nextBar = now + BAR_STEP_MS;
   nextBeat = now + HEARTBEAT_MS;
   nextDebug = now + DEBUG_MS;
-  Serial.println(F("Strip frame demo: D9 18 pixels, light route clockwise from the upper-left corner, red 2/s, green 1.3x, blue 1.5x; D10 single pixel pulse"));
+  Serial.println(F("Strip frame demo: D9 18 pixels, light route clockwise from the upper-left corner, red 2/s, green 1.3x, blue 1.5x; D10 single pixel pulse, D11 colour bar"));
   Serial.print(F("Serial speed "));
   Serial.print((unsigned long)SERIAL_BAUD);
   Serial.println(F(" baud; a DBG line is printed every second."));
@@ -224,6 +252,12 @@ void loop() {
     }
     singleLevel = pulseLevel(pulseTick);
     drawSingle();
+  }
+
+  if ((int32_t)(now - nextBar) >= 0) {
+    nextBar += BAR_STEP_MS;
+    barShift = (barShift + 1) % BAR_PIXELS;   // a steady rhythm, not counted as a state change event
+    drawBar();
   }
 
   // Sign of life: LED 13 blinks, twice as fast while many state changes happen, shortly inverted on a state change

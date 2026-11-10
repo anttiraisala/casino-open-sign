@@ -26,6 +26,9 @@ static int expectPixel(unsigned long t, unsigned long stepMs) { int s = (int)((t
 // D10: 150 updates of 20 ms per pulse, peak 80 after 75 updates, palette entries (full scale values)
 static const int PAL[8][3] = {{255,0,0},{255,100,0},{255,255,0},{0,255,0},{0,255,255},{0,0,255},{160,0,255},{255,255,255}};
 static int expectLevel(unsigned long t) { int k = (int)((t / 20) % 150); return k < 75 ? k * 80 / 75 : (150 - k) * 80 / 75; }
+// D11: red, green, blue, cyan, violet, white at peak 80 (violet 160 * 80 / 255 = 50); the sequence moves one pixel per second
+static const uint32_t BARC[6] = {(80u << 16), (80u << 8), 80u, (80u << 8) | 80u, (50u << 16) | 80u, (80u << 16) | (80u << 8) | 80u};
+static uint32_t expectBar(unsigned long t, int pixel) { int shift = (int)((t / 1000) % 6); return BARC[(pixel - shift + 6) % 6]; }
 static uint32_t expectSingle(unsigned long t) {
   const int *c = PAL[(t / 3000) % 8]; int lv = expectLevel(t);
   return rgb(c[0] * lv / 255, c[1] * lv / 255, c[2] * lv / 255);
@@ -36,15 +39,16 @@ int main() {
   Serial.capture = true;
   setup();
   Serial.capture = false;
-  CHECK(g_strips.size() == 2, "two strips");
-  Adafruit_NeoPixel *f = g_strips[0], *s = g_strips[1];
-  CHECK(f->pin_ == 9 && s->pin_ == 10, "frame strip on D9, single pixel on D10");
-  CHECK(f->numPixels() == 18 && s->numPixels() == 1, "18 pixels on D9, 1 pixel on D10");
-  CHECK(f->type_ == (NEO_GRB | NEO_KHZ800) && s->type_ == (NEO_GRB | NEO_KHZ800), "GRB, 800 kHz");
+  CHECK(g_strips.size() == 3, "three strips");
+  Adafruit_NeoPixel *f = g_strips[0], *s = g_strips[1], *bar_ = g_strips[2];
+  CHECK(f->pin_ == 9 && s->pin_ == 10 && bar_->pin_ == 11, "frame strip on D9, single pixel on D10, colour bar on D11");
+  CHECK(f->numPixels() == 18 && s->numPixels() == 1 && bar_->numPixels() == 6, "18 pixels on D9, 1 pixel on D10, 6 pixels on D11");
+  CHECK(f->type_ == (NEO_GRB | NEO_KHZ800) && s->type_ == (NEO_GRB | NEO_KHZ800) && bar_->type_ == (NEO_GRB | NEO_KHZ800), "GRB, 800 kHz");
   CHECK(Serial.baud == 115200 && Serial.captured.find("Serial speed 115200 baud") != std::string::npos, "baud rate 115200 stated and printed");
   CHECK(f->shown_[14] == rgb(80, 80, 80), "at start all three lights are on strip pixel 15 (upper-left corner): white");
   for (int i = 0; i < 18; i++) if (i != 14) CHECK(f->shown_[i] == 0, "at start only strip pixel 15 is lit");
   CHECK(s->shown_[0] == 0, "D10 starts dark");
+  for (int i = 0; i < 6; i++) CHECK(bar_->shown_[i] == BARC[i], "D11 starts with red, green, blue, cyan, violet, white on pixels 1..6");
 
   bool sawYellow = false, sawCyan = false, sawMagenta = false, sawWhite = false, farEnd = false, back = false;
   int maxChan = 0; bool colourSeen[8] = {false, false, false, false, false, false, false, false};
@@ -65,6 +69,8 @@ int main() {
     if (pr == 15) farEnd = true;                 // strip pixel 16: the end of the route
     if (farEnd && pr == 16) back = true;         // strip pixel 17: one step back
     CHECK(s->shown_[0] == expectSingle(t), "D10: palette colour scaled by the pulse brightness, new colour every 3 s");
+    { bool okb = true; for (int i = 0; i < 6; i++) if (bar_->shown_[i] != expectBar(t, i)) okb = false;
+      CHECK(okb, "D11: the colour sequence moves one pixel per second towards pixel 6 and wraps round"); }
     const uint32_t v = s->shown_[0];
     const int mc = (int)std::max({(v >> 16) & 255, (v >> 8) & 255, v & 255});
     if (mc > maxChan) maxChan = mc;

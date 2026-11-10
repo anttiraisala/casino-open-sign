@@ -1,5 +1,5 @@
-<svg xmlns='http://www.w3.org/2000/svg' width='297mm' height='210mm' viewBox='-31.7526 -31.3402 1163.51 822.68'>
-<rect x='-31.7526' y='-31.3402' width='1163.51' height='822.68' fill='#ffffff'/>
+<svg xmlns='http://www.w3.org/2000/svg' width='297mm' height='210mm' viewBox='-138.918 -37.1134 1377.84 974.227'>
+<rect x='-138.918' y='-37.1134' width='1377.84' height='974.227' fill='#ffffff'/>
 <text x='550' y='32' font-size='19' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Strip frame demo test - frame route and what you should see</text>
 <text x='550' y='50' font-size='12' text-anchor='middle' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D9: 18 pixels (1 pixel = 1 chip = 3 LEDs = 10 cm) around the frame. D10: one pixel (3 LEDs) pulsing.</text>
 <rect x='126' y='86' width='608' height='288' rx='6' fill='#ffffff' stroke='#8d6e63' stroke-width='3'/>
@@ -137,4 +137,45 @@
 <text x='24' y='576' font-size='11' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Each box: dark (start) - bright (peak, 80 of 255 on the strongest channel, after 1.5 s) - dark again. Order: red, orange, yellow, green, cyan, blue, violet, white, then again.</text>
 <text x='24' y='594' font-size='11' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>The LED on pin 13 is shortly inverted at every turnaround of a frame light and at every new pulse colour.</text>
 <text x='24' y='612' font-size='11' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Wrong colours: change COLOR_ORDER in the sketch (see README).</text>
+<text x='24' y='650' font-size='14' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>D11: colour bar of 6 pixels (60 cm): red, green, blue, cyan, violet, white, moving on one pixel every second towards pixel 6</text>
+<text x='40' y='692' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>t = 0 s</text>
+<rect x='110' y='668' width='96' height='36' rx='4' fill='#e53935' stroke='#546e7a' stroke-width='1.4'/>
+<text x='158' y='691' font-size='12' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>1: red</text>
+<rect x='214' y='668' width='96' height='36' rx='4' fill='#43a047' stroke='#546e7a' stroke-width='1.4'/>
+<text x='262' y='691' font-size='12' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>2: green</text>
+<rect x='318' y='668' width='96' height='36' rx='4' fill='#1e88e5' stroke='#546e7a' stroke-width='1.4'/>
+<text x='366' y='691' font-size='12' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>3: blue</text>
+<rect x='422' y='668' width='96' height='36' rx='4' fill='#00acc1' stroke='#546e7a' stroke-width='1.4'/>
+<text x='470' y='691' font-size='12' text-anchor='middle' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>4: cyan</text>
+<rect x='526' y='668' width='96' height='36' rx='4' fill='#8e24aa' stroke='#546e7a' stroke-width='1.4'/>
+<text x='574' y='691' font-size='12' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>5: violet</text>
+<rect x='630' y='668' width='96' height='36' rx='4' fill='#ffffff' stroke='#546e7a' stroke-width='1.4'/>
+<text x='678' y='691' font-size='12' text-anchor='middle' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>6: white</text>
+<text x='40' y='738' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>t = 1 s</text>
+<rect x='110' y='714' width='96' height='36' rx='4' fill='#ffffff' stroke='#546e7a' stroke-width='1.4'/>
+<text x='158' y='737' font-size='12' text-anchor='middle' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>1: white</text>
+<rect x='214' y='714' width='96' height='36' rx='4' fill='#e53935' stroke='#546e7a' stroke-width='1.4'/>
+<text x='262' y='737' font-size='12' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>2: red</text>
+<rect x='318' y='714' width='96' height='36' rx='4' fill='#43a047' stroke='#546e7a' stroke-width='1.4'/>
+<text x='366' y='737' font-size='12' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>3: green</text>
+<rect x='422' y='714' width='96' height='36' rx='4' fill='#1e88e5' stroke='#546e7a' stroke-width='1.4'/>
+<text x='470' y='737' font-size='12' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>4: blue</text>
+<rect x='526' y='714' width='96' height='36' rx='4' fill='#00acc1' stroke='#546e7a' stroke-width='1.4'/>
+<text x='574' y='737' font-size='12' text-anchor='middle' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>5: cyan</text>
+<rect x='630' y='714' width='96' height='36' rx='4' fill='#8e24aa' stroke='#546e7a' stroke-width='1.4'/>
+<text x='678' y='737' font-size='12' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>6: violet</text>
+<text x='40' y='784' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>t = 2 s</text>
+<rect x='110' y='760' width='96' height='36' rx='4' fill='#8e24aa' stroke='#546e7a' stroke-width='1.4'/>
+<text x='158' y='783' font-size='12' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>1: violet</text>
+<rect x='214' y='760' width='96' height='36' rx='4' fill='#ffffff' stroke='#546e7a' stroke-width='1.4'/>
+<text x='262' y='783' font-size='12' text-anchor='middle' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>2: white</text>
+<rect x='318' y='760' width='96' height='36' rx='4' fill='#e53935' stroke='#546e7a' stroke-width='1.4'/>
+<text x='366' y='783' font-size='12' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>3: red</text>
+<rect x='422' y='760' width='96' height='36' rx='4' fill='#43a047' stroke='#546e7a' stroke-width='1.4'/>
+<text x='470' y='783' font-size='12' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>4: green</text>
+<rect x='526' y='760' width='96' height='36' rx='4' fill='#1e88e5' stroke='#546e7a' stroke-width='1.4'/>
+<text x='574' y='783' font-size='12' text-anchor='middle' fill='#ffffff' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>5: blue</text>
+<rect x='630' y='760' width='96' height='36' rx='4' fill='#00acc1' stroke='#546e7a' stroke-width='1.4'/>
+<text x='678' y='783' font-size='12' text-anchor='middle' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>6: cyan</text>
+<text x='24' y='820' font-size='11' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>After 6 s the sequence is back where it started (the colour that leaves pixel 6 returns at pixel 1). Peak brightness 80 of 255.</text>
 </svg>
