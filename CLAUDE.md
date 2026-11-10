@@ -15,7 +15,8 @@ files (Finnish translation of the README.txt next to them) and product names tha
 - Deliver project files together in ONE zip (the whole folder), sent as an attachment.
 - Any test the AI asks the owner to run lives in its own sub-folder, self-contained (own layouts, wirings,
   `sketch.ino`, `diagram.json`, README and README-fi).
-- Parts-list prices, stock and links are a snapshot (2026-11-02). Do not refresh them unless asked; remind the owner now and then.
+- Parts-list prices, stock and links are a snapshot (2026-11-02). Do not refresh them unless asked. Do not remind the owner about the snapshot or mention parts lists/prices any more; he asks for them separately when needed.
+- After publishing (implement, commit, push) a program, end the final report by naming the program that was changed (demo program or main program, e.g. "Casino Open Sign V2"), so the owner does not run the wrong one.
 - Sign of life rule for every Arduino sketch: the LED on pin 13 blinks while the program runs (shortly inverted on
   state changes, faster when many changes happen) and the Serial Monitor gets one line per second with changing values;
   the baud rate (115200) is stated at the top of the sketch, printed at start-up and written in the README. Skip the
