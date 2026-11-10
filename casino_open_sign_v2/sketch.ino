@@ -64,6 +64,8 @@
  * LCD display (I2C, SDA = D20, SCL = D21, 5 V, GND): four rotating pages with the current
  * settings (mode, SW3/SW4 position and speed, casino open/closed, arrow direction). A changed
  * setting shows its page at once and holds it for 6 s; the pages rotate every 3 s.
+ * At boot an I2C scan (addresses 0x08-0x77) prints every device that answers to the Serial Monitor, and
+ * a hint if nothing answers on the LCD address (many displays use 0x3F instead of 0x27).
  *
  * Letter modes (the push button steps through them, then wraps to 0; the sign starts in mode 0):
  *   0 breathe  1 wave  2 typewriter  3 ignite  4 word blink  5 alternate
@@ -1183,6 +1185,33 @@ bool lcdCommand(uint8_t command) {
   return Wire.endTransmission() == 0;
 }
 
+// Boot-time I2C scan: prints every device that acknowledges its address (an empty write, so the display
+// is not disturbed) and tells whether the LCD address answered. Returns the number of devices found.
+uint8_t scanI2cBus() {
+  Serial.println(F("I2C scan (0x08-0x77):"));
+  uint8_t found = 0;
+  bool lcdFound = false;
+  for (uint8_t address = 0x08; address <= 0x77; address++) {
+    Wire.beginTransmission(address);
+    if (Wire.endTransmission() != 0) continue;
+    found++;
+    if (address == LCD_I2C_ADDRESS) lcdFound = true;
+    Serial.print(F("  found 0x"));
+    if (address < 16) Serial.print(F("0"));
+    Serial.print((int)address, HEX);
+    Serial.println(address == LCD_I2C_ADDRESS ? F("  (LCD address in this sketch)") : F(""));
+  }
+  Serial.print(F("I2C scan done: "));
+  Serial.print((int)found);
+  Serial.println(F(" device(s)"));
+  if (!lcdFound) {
+    Serial.print(F("No device on the LCD address 0x"));
+    Serial.print((int)LCD_I2C_ADDRESS, HEX);
+    Serial.println(F(": check SDA D20 / SCL D21; if the scan lists another address, set LCD_I2C_ADDRESS to it."));
+  }
+  return found;
+}
+
 // The start-up sequence of the HD44780 (4-bit mode). It runs once in setup(), so the short
 // delays here do not affect the animations.
 void lcdInit() {
@@ -1450,6 +1479,7 @@ void setup() {
 
   Wire.begin();
   Wire.setClock(400000UL);
+  scanI2cBus();
   lcdInit();
 
   Serial.println(F("Casino Open Sign V2: see the top of sketch.ino."));

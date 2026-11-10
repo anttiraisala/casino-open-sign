@@ -67,6 +67,8 @@ Johdotus (tarkasti)
     D33 -> painike -> GND
     D22-D25 -> SW3 pinnit 1, 2, 4, 8 (yhteinen C -> GND)   D26-D29 -> SW4 pinnit 1, 2, 4, 8 (yhteinen C -> GND)
     D20 SDA, D21 SCL, 5V, GND -> LCD:n I2C-taustalevy
+                  (käynnistyksessä sketch skannaa I2C-väylän ja tulostaa löydetyt laitteet sarjamonitoriin, 115200 baud;
+                  sketch puhuu näytölle osoitteessa 0x27: jos skannaus näyttää esim. 0x3F, aseta LCD_I2C_ADDRESS sketch.inossa)
     D13 -> ei mitään (Mega-kortin LED)
   ÄLÄ KOSKAAN kytke +12 V:ta Arduinon pinniin tai 5 V:n osiin. USB vain kun PSU1 JA PSU2 on sammutettu.
   5 V:n datasignaali 12 V WS2811 -nauhalle toimii yleensä (kuten nauhatesteissä), mutta sitä ei ole varmistettu lopullisessa kyltissä.

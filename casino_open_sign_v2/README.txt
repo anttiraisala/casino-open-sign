@@ -68,6 +68,8 @@ Wiring (exactly)
     D33 -> push button -> GND
     D22-D25 -> SW3 pins 1, 2, 4, 8 (common C -> GND)       D26-D29 -> SW4 pins 1, 2, 4, 8 (common C -> GND)
     D20 SDA, D21 SCL, 5V, GND -> LCD I2C backpack
+                  (at boot the sketch scans the I2C bus and prints every device found to the Serial Monitor, 115200 baud;
+                  the sketch talks to the display at 0x27: if the scan shows e.g. 0x3F, set LCD_I2C_ADDRESS in sketch.ino)
     D13 -> nothing (the LED on the Mega board)
   NEVER connect +12 V to an Arduino pin or to the 5 V parts. USB only while PSU1 AND PSU2 are switched off.
   The 5 V data signal into a 12 V WS2811 strip normally works (as in the strip tests) but is not verified on the final sign.

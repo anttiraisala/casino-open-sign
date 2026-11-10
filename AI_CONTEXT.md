@@ -242,6 +242,7 @@ V2 generators: `tools/generate_v2_diagram.py` (Wokwi), `generate_v2_schematic.py
 `generate_v2_parts_list.py` (CSV + SVG), shared data `tools/v2_data.py`; all read `casino_open_sign_v2/sketch.ino`. The v1 files are unchanged.
 V2 stick wiring (differs from v1 and `arrow_sticks/`; positions unchanged): L-CAP D2, L-WING-UP D6, L-WING-DN D5, RAIL-UP-L D7, RAIL-UP-R D8,
 RAIL-DN-L D3, RAIL-DN-R D4, R-CAP A3, R-WING-UP A1, R-WING-DN A2, CLOSED stick A0. The connectors come from the sketch, not from `arrow_geometry.py`.
+V2 boot: `scanI2cBus()` (0x08-0x77, empty write) prints the found I2C devices to Serial before `lcdInit()` and warns if nothing answers on `LCD_I2C_ADDRESS` (0x27); one LCD only, its address is a constant (tests: "I2C scan" checks + 9 mutants).
 
 ## 9. Decisions already made (do not reopen without a reason)
 

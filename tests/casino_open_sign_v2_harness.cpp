@@ -549,6 +549,33 @@ int main(int argc, char **argv) {
     lcdShowPage(LCD_PAGE_MODE, g_millis, true); run(400);
     CHECK(line0() == "Mode 0" && printable(), "LCD: shows the mode page again after re-initialisation");
     CHECK(true || text().empty(), "");
+
+    // boot-time I2C scan: the log lists the display and the scan hint appears only when the LCD address is silent
+    {
+      const std::string boot = Serial.captured;
+      CHECK(boot.find("I2C scan (0x08-0x77):") != std::string::npos, "I2C scan: runs at boot and says so");
+      CHECK(boot.find("  found 0x27  (LCD address in this sketch)\n") != std::string::npos, "I2C scan: boot log lists the display at 0x27");
+      CHECK(boot.find("I2C scan done: 1 device(s)\n") != std::string::npos, "I2C scan: boot log counts one device");
+      CHECK(boot.find("No device on the LCD address") == std::string::npos, "I2C scan: no warning when the display answers");
+      CHECK(boot.find("I2C scan done") < boot.find("Serial speed 115200 baud"), "I2C scan: happens before the start-up lines");
+      Serial.captured.clear();
+      Wire.address = 0x3F;
+      const uint8_t n3f = scanI2cBus();
+      CHECK(n3f == 1 && Serial.captured.find("  found 0x3F\n") != std::string::npos, "I2C scan: finds a display at 0x3F (no LCD marker)");
+      CHECK(Serial.captured.find("No device on the LCD address 0x27: check SDA D20 / SCL D21") != std::string::npos,
+            "I2C scan: warns when nothing answers on the LCD address");
+      Serial.captured.clear();
+      Wire.present = false;
+      const uint8_t n0 = scanI2cBus();
+      CHECK(n0 == 0 && Serial.captured.find("I2C scan done: 0 device(s)") != std::string::npos, "I2C scan: reports no devices on an empty bus");
+      Wire.present = true; Wire.address = 0x0A;
+      Serial.captured.clear();
+      CHECK(scanI2cBus() == 1 && Serial.captured.find("  found 0x0A\n") != std::string::npos, "I2C scan: addresses below 0x10 are printed with a leading zero");
+      Wire.address = 0x27;
+      Serial.captured.clear();
+      CHECK(scanI2cBus() == 1 && Serial.captured.find("  found 0x08") == std::string::npos, "I2C scan: finds exactly the display (0x08 and 0x77 are the limits)");
+      Serial.captured = boot;
+    }
   }
   // ---- Power-on LED test ----
   {
