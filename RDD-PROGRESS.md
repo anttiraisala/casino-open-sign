@@ -19,7 +19,7 @@ Statuses: planned, in progress, done, verified, changed, dropped.
 | REQ-013 | changed | Host only (2026-11-11): V2 sketch reads the program switch D34-D37 (positions 0..E, F random), 15 letter programs and 15 frame patterns; `tests/casino_open_sign_v2_harness.cpp` with hard-coded tables from the independent `tests/frame_pattern_reference.py` passes, `tests/mutate_v2.py` all mutants detected. Not run on hardware or Wokwi; not verified. |
 | REQ-014 | planned | - |
 | REQ-015 | changed | - (menu JSON updated 2026-11-11, editor tests pass. 2026-11-11 host evidence for the C++ menu engine in `menu_test/`: `tests/menu_diff_test.py` 18006 random events, JS engine and C++ engine rows/callbacks/EEPROM batches identical; `tests/menu_engine_harness.cpp` checks pass (EEPROM image, texts, pins, debounce, sign of life); `tests/mutate_menu_engine.py` 99/99 mutants detected (equivalent mutants listed in the script). Not run on hardware; the V2 sketch does not contain the menu yet) |
-| REQ-016 | planned | - |
+| REQ-016 | changed | - |
 | REQ-017 | done | 2026-11-11: `tests/menu_core_test.js` passes (V2 menu valid, loop and read-only quick-pick rejected, 16-character rows, EEPROM image), `tests/mutate_menu_core.py` 128/128 mutants detected, `tests/menu_editor_ui_test.py` passes (also for the single-file page; JSON round trip). Published as an artifact. Not yet verified by the maintainer. |
 
 Action points are added per requirement when the maintainer asks for them.

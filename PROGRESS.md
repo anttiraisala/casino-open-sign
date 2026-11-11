@@ -1,6 +1,7 @@
 # PROGRESS.md - status (2026-11-07)
 
 ## Done
+- 2026-11-11: Requirement texts updated after the answers to OQ-006, 007, 010, 011, 012: REQ-005 (OK-menu button name, relative menu rotary, timer only at root while browsing), REQ-007 (long row text scrolls), REQ-016 (read-only target = warning); REQ-016 status changed. Documents only; the menu engine and `menu_test/` already behave this way except the generator warning for a read-only preset target (to check).
 - 2026-11-11: OQ-001..005, 008, 009 answered, OQ-011 pins accepted; OK button to be renamed OK/menu (recorded only, nothing implemented).
 - 2026-11-11: OQ-006, OQ-007, OQ-010, OQ-011, OQ-012 answered by the maintainer (recorded in RDD-IDEAS.md). Documents only; no requirement text changed yet.
 - 2026-11-11: OQ-013 answered by the maintainer (program switch is read all the time); REQ-013 wording changed (status changed). Documents only.
