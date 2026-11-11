@@ -674,6 +674,13 @@ Button buttonShift = {PIN_SHIFT, false, false, 0};
 Button switchArrow = {PIN_ARROW_SWITCH, false, false, 0};     // true = pin LOW
 Button switchCasino = {PIN_CASINO_SWITCH, false, false, 0};
 
+// Functions below take an index, not a struct: the Arduino IDE builds the function prototypes before the struct
+// definitions, so a user-defined type in a signature does not compile.
+constexpr uint8_t HEX_PROGRAM = 0, HEX_MENU = 1;
+HexSwitch *const hexSwitches[2] = {&programSwitch, &menuSwitch};
+constexpr uint8_t BTN_OK = 0, BTN_BACK = 1, BTN_SHIFT = 2, BTN_ARROW = 3, BTN_CASINO = 4;
+Button *const buttons[5] = {&buttonOk, &buttonBack, &buttonShift, &switchArrow, &switchCasino};
+
 unsigned long eventCount = 0;          // key and switch events (sign of life)
 unsigned long keyCount = 0;
 unsigned long menuStepCount = 0;
@@ -693,7 +700,8 @@ char lcdWanted[LCD_ROWS][LCD_COLS + 1];
 char lcdShown[LCD_ROWS][LCD_COLS];
 unsigned long lcdLastBuild = 0, lcdLastTry = 0, lcdLastInit = 0;
 
-uint8_t readHexRaw(const HexSwitch &s) {
+uint8_t readHexRaw(uint8_t which) {
+  const HexSwitch &s = *hexSwitches[which];
   uint8_t value = 0;
   for (uint8_t k = 0; k < 4; k++) {
     const bool low = (digitalRead(s.pins[k]) == LOW);
@@ -703,8 +711,9 @@ uint8_t readHexRaw(const HexSwitch &s) {
 }
 
 // Debounces a hex switch; returns true and sets `from` when a new stable position was reached.
-bool pollHex(HexSwitch &s, unsigned long now, uint8_t &from) {
-  const uint8_t raw = readHexRaw(s);
+bool pollHex(uint8_t which, unsigned long now, uint8_t &from) {
+  HexSwitch &s = *hexSwitches[which];
+  const uint8_t raw = readHexRaw(which);
   if (raw != s.candidate) { s.candidate = raw; s.since = now; return false; }
   if (s.candidate == s.stable) return false;
   if (now - s.since < HEX_DEBOUNCE_MS) return false;
@@ -714,7 +723,8 @@ bool pollHex(HexSwitch &s, unsigned long now, uint8_t &from) {
 }
 
 // Debounces a push button or slide switch; returns true when its state just changed.
-bool pollButton(Button &b, unsigned long now) {
+bool pollButton(uint8_t which, unsigned long now) {
+  Button &b = *buttons[which];
   const bool raw = (digitalRead(b.pin) == LOW);
   if (raw != b.candidate) { b.candidate = raw; b.since = now; return false; }
   if (b.candidate == b.stable) return false;
@@ -765,11 +775,11 @@ void menuCallback(uint8_t cb, uint8_t prop) {
 
 void pollInputs(unsigned long now) {
   uint8_t from = 0;
-  if (pollHex(programSwitch, now, from)) {
+  if (pollHex(HEX_PROGRAM, now, from)) {
     noteEvent(now);
     menuPhysical(P_program, programSwitch.stable, now);
   }
-  if (pollHex(menuSwitch, now, from)) {
+  if (pollHex(HEX_MENU, now, from)) {
     noteEvent(now);
     uint8_t delta = (uint8_t)((menuSwitch.stable - from) & 15);
     if (delta != 8) {                           // exactly half a turn: the direction cannot be told, ignored
@@ -780,11 +790,11 @@ void pollInputs(unsigned long now) {
       menuTurn(steps, buttonShift.stable, now);
     }
   }
-  if (pollButton(buttonShift, now)) noteEvent(now);
-  if (pollButton(buttonOk, now) && buttonOk.stable) { keyCount++; noteEvent(now); menuKey(MENU_KEY_OK, now); }
-  if (pollButton(buttonBack, now) && buttonBack.stable) { keyCount++; noteEvent(now); menuKey(MENU_KEY_BACK, now); }
-  if (pollButton(switchArrow, now)) { noteEvent(now); menuPhysical(P_arrow, arrowPosition(), now); }
-  if (pollButton(switchCasino, now)) { noteEvent(now); menuPhysical(P_casino, casinoPosition(), now); }
+  if (pollButton(BTN_SHIFT, now)) noteEvent(now);
+  if (pollButton(BTN_OK, now) && buttonOk.stable) { keyCount++; noteEvent(now); menuKey(MENU_KEY_OK, now); }
+  if (pollButton(BTN_BACK, now) && buttonBack.stable) { keyCount++; noteEvent(now); menuKey(MENU_KEY_BACK, now); }
+  if (pollButton(BTN_ARROW, now)) { noteEvent(now); menuPhysical(P_arrow, arrowPosition(), now); }
+  if (pollButton(BTN_CASINO, now)) { noteEvent(now); menuPhysical(P_casino, casinoPosition(), now); }
 }
 
 // Test only: the real sign changes the program after the delay property; here only the countdown is shown.
@@ -994,8 +1004,8 @@ void setup() {
   eepromWasValid = menuBegin();
   Serial.println(eepromWasValid ? F("EEPROM: saved menu values loaded.") : F("EEPROM: no saved values for this menu layout, defaults used."));
 
-  programSwitch.stable = programSwitch.candidate = readHexRaw(programSwitch);
-  menuSwitch.stable = menuSwitch.candidate = readHexRaw(menuSwitch);
+  programSwitch.stable = programSwitch.candidate = readHexRaw(HEX_PROGRAM);
+  menuSwitch.stable = menuSwitch.candidate = readHexRaw(HEX_MENU);
   switchArrow.stable = switchArrow.candidate = (digitalRead(PIN_ARROW_SWITCH) == LOW);
   switchCasino.stable = switchCasino.candidate = (digitalRead(PIN_CASINO_SWITCH) == LOW);
   menuSet(P_program, programSwitch.stable);

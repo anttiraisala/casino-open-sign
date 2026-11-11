@@ -97,8 +97,8 @@
   // ---- shell: debounced inputs on the real pins ----
   for (int k = 0; k < 64; k++) g_pinLevel[k] = HIGH;
   menuBegin();
-  programSwitch.stable = programSwitch.candidate = readHexRaw(programSwitch);
-  menuSwitch.stable = menuSwitch.candidate = readHexRaw(menuSwitch);
+  programSwitch.stable = programSwitch.candidate = readHexRaw(HEX_PROGRAM);
+  menuSwitch.stable = menuSwitch.candidate = readHexRaw(HEX_MENU);
   CHECK(programSwitch.stable == 0 && menuSwitch.stable == 0, "all legs open reads 0");
   unsigned long now = 100;
   auto settle = [&](unsigned long ms) { pollInputs(now); now += ms; pollInputs(now); };

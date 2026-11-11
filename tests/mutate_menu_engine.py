@@ -99,7 +99,7 @@ muts = [
  ("ambiguous jump", "if (delta != 8) {", "if (delta != 9) {"),
  ("backward steps", "if (delta > 8) steps = (int)delta - 16;", ""),
  ("shift pressed", "menuTurn(steps, buttonShift.stable, now);", "menuTurn(steps, false, now);"),
- ("keys on press only", "if (pollButton(buttonOk, now) && buttonOk.stable)", "if (pollButton(buttonOk, now))"),
+ ("keys on press only", "if (pollButton(BTN_OK, now) && buttonOk.stable)", "if (pollButton(BTN_OK, now))"),
  ("arrow reverse", "if (menuPos(P_arrowReverse) == 1) left = !left;", ""),
  ("casino reverse", "if (menuPos(P_casinoReverse) == 1) closed = !closed;", ""),
  ("apply switches", "if (shellApplySwitches && cb == CB_applySwitches) {", "if (false) {"),
