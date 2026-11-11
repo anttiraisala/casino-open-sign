@@ -26,11 +26,11 @@ Raw ideas and open questions (RDD = Requirement Driven Development). An idea bec
 - OQ-003: Default shift step: 16 times the normal step, at most one fifth of the number of steps, overridable per property (`shiftStep`). OK?
 - OQ-004: Logarithmic scale: min > 0 required, negative-only ranges by mirroring, ranges crossing zero not supported (see IDEA-002). OK?
 - OQ-005: Menu data: the JSON file is turned into tables by a generator at build time (recommended: checks at build time, no JSON parser on the Mega), or the JSON text is embedded in the sketch and parsed at start-up?
-- OQ-006: Does the display return to the status pages after some inactivity (how long), and is an unfinished edit then cancelled?
-- OQ-007: A rotary switch bound to a property: absolute or relative as the default, and at boot does the physical position win over the saved value?
+- OQ-006: Does the display return to the status pages after some inactivity (how long), and is an unfinished edit then cancelled? ANSWERED 2026-11-11: no, the display does not return to the status pages by itself (so there is no inactivity timeout and no automatic cancel of an edit).
+- OQ-007: A rotary switch bound to a property: absolute or relative as the default, and at boot does the physical position win over the saved value? ANSWERED 2026-11-11: the program switch selects absolutely (the position is the program, not stored, so the position always wins); menu selection by rotary is relative. Still open: any other rotary bound to a stored property (none planned).
 - OQ-008: While a property is edited in the menu, controls bound to it are ignored (the menu wins). OK?
 - OQ-009: Texts on the LCD are English under the repository rule; Finnish texts need an explicit exception.
-- OQ-010: A row text longer than 16 characters: build error, or scrolling text?
-- OQ-011: Which program gets the menu (Casino Open Sign V2 assumed), and which hex switches, buttons (OK, BACK, SHIFT) and pins are used?
-- OQ-012: A quick-pick row that targets a read-only property: warning or error?
+- OQ-010: A row text longer than 16 characters: build error, or scrolling text? ANSWERED 2026-11-11: scrolling text.
+- OQ-011: Which program gets the menu (Casino Open Sign V2 assumed), and which hex switches, buttons (OK, BACK, SHIFT) and pins are used? ANSWERED 2026-11-11: the menu goes into Casino Open Sign V2. Hex switches, buttons and pins beyond D34-D37 (program) are still to be fixed.
+- OQ-012: A quick-pick row that targets a read-only property: warning or error? ANSWERED 2026-11-11: warning (at build time); the row does not try to set the read-only property.
 - OQ-013: REQ-013 says the program switch is read at boot. The sign and `menu_test/` read it all the time (turning it changes the program at once, and closes the menu in the test), which is what the maintainer tried and approved on the test. ANSWERED 2026-11-11: read all the time; REQ-013 wording changed.
