@@ -47,7 +47,7 @@ What to try and write down
 --------------------------
   1. Status page: do the program number, Casino and the arrow follow the three switches (and the Reverse properties)?
   2. OK opens the menu; does the menu switch move one item per click, in the right direction, and stop at the ends?
-  3. Edit a value (for example Brightness > Strip > Max): does it change live, does SHIFT make steps of 10, does OK save,
+  3. Edit a value (for example Brightness > Frame > Max): does it change live, does SHIFT make steps of 10, does OK save,
      does BACK restore? Power the Mega off and on: is the saved value still there (Serial Monitor "EEPROM: saved ...")?
   4. Restore defaults: confirm page, OK = yes, BACK = no.
   5. Do the arrow symbols on row 1 look like arrows? (Otherwise "arrowAscii".)

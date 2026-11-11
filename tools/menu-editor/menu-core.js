@@ -11,7 +11,7 @@
 
   var COLS = 16;
   var LEFT_ARROW = '\x7f', RIGHT_ARROW = '\x7e';          // HD44780 ROM characters
-  var TIMEOUT_MS = 60000, MARQUEE_PAUSE_MS = 1000, MARQUEE_STEP_MS = 400, STATUS_ALT_MS = 3000;
+  var LOCK_CHAR = '\u0001', TIMEOUT_MS = 60000, MARQUEE_PAUSE_MS = 1000, MARQUEE_STEP_MS = 400, STATUS_ALT_MS = 3000;
   var MAX_PRESET_VALUES = 16;
   var KINDS = { int: 1, float: 1, choice: 1, bool: 1 };
   var BUILTIN = {
@@ -323,13 +323,15 @@
       if (name === 'BACK') { if (this.stack.length > 1) { this.stack.pop(); this._touch(now, true); } else this._toStatus(now); return; }
       var it = this._item();
       if (it.type === 'menu') { this.stack.push({ menu: it, idx: 0 }); this._touch(now, true); }
-      else if (it.type === 'prop') { var p = this.m.props[it.id]; if (!p.readOnly) { this.mode = 'edit'; this.edit = { id: it.id, start: this.pos[it.id] }; this._touch(now, true); } }
+      else if (it.type === 'prop') { var p = this.m.props[it.id]; this.mode = p.readOnly ? 'view' : 'edit'; this.edit = { id: it.id, start: this.pos[it.id] }; this._touch(now, true); }
       else if (it.type === 'preset') {
         if (it.confirm) { this.mode = 'confirm'; this.confirmItem = it; this._touch(now, true); }
         else { this._apply(it); this._touch(now, false); }
       }
     } else if (this.mode === 'edit') {
       if (name === 'OK') this._save([this.edit.id]); else this._setPos(this.edit.id, this.edit.start);
+      this.mode = 'menu'; this.edit = null; this._touch(now, true);
+    } else if (this.mode === 'view') {                 // a read-only property: shown like an edit page with a lock, nothing to change
       this.mode = 'menu'; this.edit = null; this._touch(now, true);
     } else if (this.mode === 'confirm') {
       if (name === 'OK') this._apply(this.confirmItem);
@@ -353,9 +355,9 @@
       }
       return [fit(r0, '', now, since), fit(dir, '', now, since)];
     }
-    if (this.mode === 'edit') {
+    if (this.mode === 'edit' || this.mode === 'view') {
       var p = m.props[this.edit.id];
-      return [fit(p.name, '', now, since), fit('> ' + this.text(p.id), '', now, since)];
+      return [fit(p.name, '', now, since), fit((this.mode === 'view' ? LOCK_CHAR : '>') + ' ' + this.text(p.id), '', now, since)];
     }
     if (this.mode === 'confirm') {
       var c = this.confirmItem;
@@ -367,13 +369,17 @@
       r0 = fit(l.menu.name, sec + 's', now, since);
     } else r0 = fit(l.menu.name, '', now, since);
     if (it.type === 'menu') r1 = fit(it.text || it.name, '>', now, since);
-    else if (it.type === 'prop') r1 = fit(it.text || m.props[it.id].name, this.text(it.id), now, since);
+    else if (it.type === 'prop') {
+      var pn = it.text || m.props[it.id].name, pv = this.text(it.id);
+      // name and value that do not fit together scroll as one text "Name: value" (pause, scroll, pause)
+      r1 = pn.length + 1 + pv.length <= COLS ? fit(pn, pv, now, since) : fit(pn + ': ' + pv, '', now, since);
+    }
     else r1 = fit(it.text || it.name, '', now, since);
     return [r0, r1];
   };
 
   return {
-    COLS: COLS, TIMEOUT_MS: TIMEOUT_MS, MAX_PRESET_VALUES: MAX_PRESET_VALUES, LEFT_ARROW: LEFT_ARROW, RIGHT_ARROW: RIGHT_ARROW,
+    COLS: COLS, TIMEOUT_MS: TIMEOUT_MS, MAX_PRESET_VALUES: MAX_PRESET_VALUES, LEFT_ARROW: LEFT_ARROW, RIGHT_ARROW: RIGHT_ARROW, LOCK_CHAR: LOCK_CHAR,
     build: build, Engine: Engine, count: count, valueAt: valueAt, posOf: posOf, movePos: movePos, valueText: valueText,
     fit: fit, layoutTag: layoutTag, persistIds: persistIds
   };

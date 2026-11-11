@@ -174,13 +174,14 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   eq(e.mode, 'menu', 'OK opens the menu'); eq(e.rows(1000), ['Menu         60s', 'Controls       >'], 'menu opens at the root, first item');
   e.turn(-1, false, 1100); eq(e.rows(1100)[1], 'Controls       >', 'list stops at the first item');
   e.turn(10, false, 1200); eq(e.rows(1200)[1], 'Restore defaults', 'list stops at the last item (no wrap)');
-  e.turn(-1, false, 1300); eq(e.rows(1300)[1], 'Brightness     >', 'previous item'); e.turn(-1, false, 1400); e.turn(-1, false, 1500);
+  e.turn(-1, false, 1300); eq(e.rows(1300)[1], 'Random program >', 'previous item'); for (let k = 0; k < 5; k++) e.turn(-1, false, 1400 + k);
   eq(e.rows(1500)[1], 'Speed          >', 'back to Speed');
-  e.key('OK', 2000); eq(e.rows(2000), ['Speed           ', 'Frame     1.000x'], 'submenu shows its first property');
-  e.turn(1, false, 2100); eq(e.rows(2100)[1], 'Letters   1.000x', 'second property');
+  e.key('OK', 2000); eq(e.rows(2000), ['Speed           ', 'Frame speed: 1.0'], 'submenu shows its first property (name and value scroll as one text)');
+  eq(e.rows(3399)[1], 'Frame speed: 1.0', 'still at the start during the first pause'); eq(e.rows(3400)[1], 'rame speed: 1.00', 'then one character per 400 ms'); eq(e.rows(5199)[1], 'me speed: 1.000x', 'the last character stays at the right edge during the end pause');
+  e.turn(1, false, 2100); eq(e.rows(2100)[1], 'Letters speed: 1', 'second property');
   e.key('BACK', 2200); eq(e.rows(2200)[1], 'Speed          >', 'BACK returns to the submenu item that was selected');
   e.key('OK', 2300); e.key('OK', 2400);
-  eq(e.mode, 'edit', 'OK on a property starts editing'); eq(e.rows(2400), ['Frame           ', '> 1.000x        '], 'edit rows');
+  eq(e.mode, 'edit', 'OK on a property starts editing'); eq(e.rows(2400), ['Frame speed     ', '> 1.000x        '], 'edit rows');
   e.turn(1, false, 2500); eq(e.text('speedFrame'), '1.122x', 'one step up'); eq(log, ['applySpeeds:speedFrame:' + e.get('speedFrame')], 'callback runs on every change while editing');
   e.turn(1, true, 2600); eq(e.getPos('speedFrame'), 18 + 1 + 10, 'shift multiplies the step by 10');
   e.turn(5, true, 2700); eq(e.getPos('speedFrame'), 30, 'shift step is capped at the range end');
@@ -194,11 +195,15 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
 {
   const e = eng();
   e.key('OK', 0); e.key('OK', 10); e.key('OK', 20);        // Controls, Program (read-only)
-  eq(e.rows(20)[1], 'Program        0', 'read-only row shows its value'); e.key('OK', 30);
-  eq(e.mode, 'menu', 'OK on a read-only property does not start editing');
+  eq(e.mode, 'view', 'OK on a read-only property opens the view page'); eq(e.rows(20), ['Program         ', '\u0001 0             '], 'view page: name, lock and value');
+  e.turn(3, true, 25); eq(e.text('program'), '0', 'turning does not change a read-only value'); e.key('OK', 30);
+  eq(e.mode, 'menu', 'OK on the view page goes back'); eq(e.rows(30)[1], 'Program        0', 'read-only row shows its value');
+  e.key('OK', 32); eq(e.mode, 'view', 'opened again'); e.key('BACK', 34); eq(e.mode, 'menu', 'BACK on the view page goes back');
+  e.key('OK', 36); e.physical('program', 3, 38); eq(e.mode, 'status', 'a physical change closes the view page'); e.physical('program', 0, 39);
+  e.key('OK', 39); e.key('OK', 39.5); e.key('OK', 39.6);
   e.physical('program', 9, 40); eq(e.mode, 'status', 'program switch while browsing goes to the status page');
   e.key('OK', 50); eq(e.stack.length, 1, 'menu always opens at the root'); eq(e.rows(50)[1], 'Controls       >', 'at the first item again');
-  e.key('OK', 60); e.key('OK', 70); e.turn(1, false, 80);
+  e.key('OK', 60); e.turn(1, false, 80);
   // edit a reverse flag, then turn the arrow switch: edit cancelled
   e.turn(1, false, 90); eq(e.rows(90)[1], 'Arrow reverse No', 'bool row'); e.key('OK', 100); e.turn(1, false, 110);
   eq(e.text('arrowReverse'), 'Yes', 'edited live'); e.physical('arrow', 1, 120);
@@ -220,7 +225,7 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   const s = eng(); s.key('OK', 0); s.key('OK', 10); s.tick(1e6); eq(s.mode, 'menu', 'no timeout inside a submenu');
   const t = eng(); t.key('OK', 0); t.key('OK', 10); t.key('OK', 20); t.key('OK', 30); t.physical('program', 0, 1e6);
   const u = eng(); u.key('OK', 0); u.turn(2, false, 5); u.key('OK', 10); u.key('OK', 20); u.tick(1e6); eq(u.mode, 'edit', 'no timeout while editing');
-  const v = eng(); v.key('OK', 0); v.turn(4, false, 5); v.key('OK', 10); eq(v.mode, 'confirm', 'confirm page open'); v.tick(1e6); eq(v.mode, 'confirm', 'no timeout on the confirm page');
+  const v = eng(); v.key('OK', 0); v.turn(7, false, 5); v.key('OK', 10); eq(v.mode, 'confirm', 'confirm page open'); v.tick(1e6); eq(v.mode, 'confirm', 'no timeout on the confirm page');
 }
 
 // ---- presets
@@ -280,7 +285,7 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   const e = eng(), log = [];
   e.opts.onCallback = (cb, id, v) => log.push(cb);
   e.key('OK', 0); e.key('OK', 1); e.turn(2, false, 2);
-  e.set('arrowReverse', 1); eq(e.rows(3)[1], 'Arrow revers Yes', 'a value changed elsewhere shows in the next rows() call');
+  e.set('arrowReverse', 1); eq(e.rows(3)[1], 'Arrow reverse: Y', 'a value changed elsewhere shows in the next rows() call');
   eq(log, ['applySwitches'], 'external set calls the callbacks'); eq(e.batches, [], 'external set does not write EEPROM');
 }
 

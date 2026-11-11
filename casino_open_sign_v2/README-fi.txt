@@ -30,7 +30,7 @@ Pikseli 1 on ALAVASEMMASSA kulmassa; nauha kulkee vastapäivään:
     pikselit  7-9    oikea reuna ylöspäin
     pikselit 10-15   yläreuna oikealta vasemmalle (10 = oikea yläkulma, 15 = vasen yläkulma)
     pikselit 16-18   vasen reuna alaspäin
-Reunuksen valo (2 pikselin palkki valaisee, 2 pimeänä, toistuu; yksi askel 200 ms oletusnopeudella x1; valikko: Speed > Frame):
+Reunuksen valo (2 pikselin palkki valaisee, 2 pimeänä, toistuu; yksi askel 200 ms oletusnopeudella x1; valikko: Speed > Frame speed):
     nuoli osoittaa VASEMMALLE (asiakkaan vasemmalle): alkaa OIKEASTA YLÄKULMASTA (pikseli 10) ja kulkee kumpaakin suuntaa
                                               reunuksen ympäri - myötäpäivään (10, 9, 8, 7, 6, 5 ... 1) ja vastapäivään
                                               (10, 11 ... 15, 16, 17, 18, 1) - VASEMPAAN ALAKULMAAN (pikseli 1).
@@ -97,9 +97,14 @@ Asetusvalikko (valikkokytkin SW3 D42-D45, painikkeet OK D48, BACK D49, SHIFT D50
 Tilasivu (näyttö käynnistyksen jälkeen): rivi 0 näyttää ohjelman (#0..#E, #F = satunnainen) ja kasinon tilan (Open/Closed); rivi 1 näyttää
 nuolisymbolin ja asiakkaan puolen ("<- Customer right" = nuoli osoittaa asiakkaan oikealle) ja ohjelmassa F vuorottelee tekstin
 "Change in M:SS" (aika seuraavaan satunnaisohjelmaan) kanssa. OK avaa valikon; käyttöliittymässä painikkeen nimi on aina OK.
-Valikko: Controls (program, arrow, casino: vain luettavia kytkinasentoja; Arrow reverse / Casino reverse -liput), Speed (Frame, Letters, Arrow:
-x0.125..x4 (logaritminen, 30 askelta, kolme desimaalia), oletus x1), Random program (Change delay 0..30 min, 0 = satunnainen 1..30, oletus 2), Brightness (reunusnauha, kirjaimet, tikut:
-min, max, eksponentti, mix; käyrän max on raja, yleistä kirkkautta ei ole), Restore defaults (kysyy vahvistuksen).
+Valikko: Controls (program, arrow, casino: vain luettavia kytkinasentoja; Arrow reverse / Casino reverse -liput), Speed (Frame speed, Letters speed,
+Arrow speed: x0.125..x4, logaritminen, 30 askelta, kolme desimaalia, oletus x1), sitten yksi ryhmä per LED-tyyppi: Frame (reunuksen LED-nauha),
+Letters (kirjainten LED-nauha) ja Arrow (nuolen tikut), kussakin oma nopeus sekä kirkkauden Min, Max, Exponent ja Mix (käyrän max on raja,
+yleistä kirkkautta ei ole); Brightness (samat kirkkausarvot uudelleen ryhmiteltynä Frame / Letters / Arrow: yksi ominaisuus, kaksi paikkaa),
+Random program (Change delay), Restore defaults (kysyy vahvistuksen).
+Ominaisuusrivi näyttää "Nimi  arvo" (arvo oikeassa reunassa); jos ne eivät mahdu 16 merkkiin, rivi vierii yhtenä tekstinä "Nimi: arvo"
+(tauko alussa, yksi merkki askeleessa, tauko viimeisen merkin ollessa oikeassa reunassa). OK vain luettavan arvon kohdalla avaa saman sivun kuin
+muokkaus (nimi, sitten lukko ja arvo), mutta mitään ei voi muuttaa; BACK tai OK palaa.
 Valikkokytkin SW3 on vapaasti pyörivä ja SUHTEELLINEN: koodin muutos on askel (1..7 eteen, 9..15 taakse, tasan 8 ohitetaan).
 SHIFT pohjassa kierrettäessä askel on isompi. OK menee alivalikkoon / aloittaa muokkauksen / hyväksyy, BACK menee tason ylös / peruu muokkauksen.
 Pitkä rivinteksti vierii. Valikon juuressa, kun mitään ominaisuutta ei ole auki eikä muokata, 60 s ilman syötettä palauttaa näytön tilasivulle.

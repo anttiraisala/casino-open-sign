@@ -21,6 +21,8 @@ with sync_playwright() as p:
     eq(lcd()[1], 'Change in 2:05  ', 'program F alternates to the countdown after 3 s')
     pg.click('#k-ok'); eq(lcd()[1], 'Controls       >', 'OK opens the menu at the first item')
     check(pg.inner_text('#lcd0').startswith('Menu') and pg.inner_text('#lcd0').rstrip().endswith('s'), 'countdown at the right edge: ' + pg.inner_text('#lcd0'))
+    pg.click('#k-ok'); pg.click('#k-ok'); eq(lcd()[1].rstrip(), '🔒 F', 'a read-only value opens the view page with a padlock')
+    pg.click('#k-back'); pg.click('#k-back'); eq(lcd()[1], 'Controls       >', 'BACK twice returns to the root')
     pg.click('#k-right'); pg.click('#k-ok'); pg.click('#k-ok')
     eq(lcd()[1].rstrip(), '> 1.000x', 'edit page of the frame speed')
     pg.click('#k-right'); eq(lcd()[1].rstrip(), '> 1.122x', 'one step up')
@@ -29,7 +31,7 @@ with sync_playwright() as p:
     check('applySpeeds(speedFrame' in pg.inner_text('#log-cb'), 'callbacks are listed')
     pg.click('#btn-restart'); pg.wait_for_timeout(100)
     check(pg.inner_text('#lcd0').startswith('#F'), 'restart returns to the status page')
-    pg.click('#k-ok'); pg.click('#k-right'); pg.click('#k-ok'); eq(lcd()[1].rstrip(), 'Frame     3.564x', 'the saved value survived the restart')
+    pg.click('#k-ok'); pg.click('#k-right'); pg.click('#k-ok'); eq(lcd()[1].rstrip(), 'Frame speed: 3.5', 'the saved value survived the restart')
     pg.keyboard.press('Escape'); pg.keyboard.press('Escape'); pg.keyboard.press('Escape')
     # editing: change a property name and see it in the preview
     pg.click('button[data-tab="properties"]'); pg.click('#list div:has-text("speedFrame")')

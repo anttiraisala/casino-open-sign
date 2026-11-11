@@ -36,6 +36,8 @@ struct TwoWire {
   int addr = 0;                 // 0x00..0x0F row 0, 0x40..0x4F row 1
   long dataWrites = 0, clears = 0;
   bool backlight = false;
+  uint8_t cgram[64] = {0};      // custom characters (8 bytes each); written after a command 0x40..0x7F
+  bool inCgram = false;
 
   TwoWire() { memset(ddram, ' ', sizeof(ddram)); }
   std::string row(int r) const { return std::string(ddram[r], 16); }
@@ -60,9 +62,11 @@ struct TwoWire {
   }
   void command(uint8_t v) {
     if (v == 0x01) { memset(ddram, ' ', sizeof(ddram)); addr = 0; clears++; }
-    else if (v & 0x80) addr = v & 0x7F;
+    else if (v & 0x80) { addr = v & 0x7F; inCgram = false; }
+    else if (v & 0x40) { addr = v & 0x3F; inCgram = true; }
   }
   void data(uint8_t v) {
+    if (inCgram) { cgram[addr & 0x3F] = v; addr++; dataWrites++; return; }
     const int r = addr >= 0x40 ? 1 : 0, c = addr & 0x3F;
     if (c < 16) ddram[r][c] = (char)v;
     addr++;

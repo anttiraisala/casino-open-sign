@@ -63,7 +63,7 @@ static int diffMode(const char *scenario, const char *traceOut) {
     batchSeen = menuLogBatchLen;
     fprintf(out, " ");
     for (uint8_t p = 0; p < MENU_PROP_COUNT; p++) fprintf(out, "%s%u", p ? "." : "", (unsigned)menuPosArr[p]);
-    fprintf(out, " %c\n", "smec"[menuMode]);
+    fprintf(out, " %c\n", "smecv"[menuMode]);
   }
   fclose(in); fclose(out);
   return 0;

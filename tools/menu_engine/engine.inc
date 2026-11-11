@@ -11,11 +11,12 @@ constexpr unsigned long MENU_STATUS_ALT_MS = 3000UL;      // status row 1 altern
 constexpr uint8_t MENU_MAX_DEPTH = 8;
 constexpr char MENU_LEFT_ARROW = 0x7F;                    // HD44780 ROM arrows
 constexpr char MENU_RIGHT_ARROW = 0x7E;
+constexpr char MENU_LOCK_CHAR = 1;                        // custom character 1 (a padlock) drawn by the sketch; 0 is not usable in C strings
 constexpr uint8_t MENU_KEY_OK = 0;
 constexpr uint8_t MENU_KEY_BACK = 1;
 constexpr uint8_t MENU_NO_SLOT = 255;                    // property is not stored in EEPROM
 
-constexpr uint8_t MM_STATUS = 0, MM_MENU = 1, MM_EDIT = 2, MM_CONFIRM = 3;
+constexpr uint8_t MM_STATUS = 0, MM_MENU = 1, MM_EDIT = 2, MM_CONFIRM = 3, MM_VIEW = 4;   // MM_VIEW: a read-only property shown like an edit page
 constexpr uint8_t MK_INT = 0, MK_FLOAT = 1, MK_LOG = 2, MK_CHOICE = 3;
 constexpr uint8_t MF_READONLY = 1, MF_PERSIST = 2, MF_WRAP = 4, MF_HEX = 8;
 
@@ -212,11 +213,11 @@ void menuRows(unsigned long now, char *row0, char *row1) {
     menuFit(row1, b, "", now, menuSince);
     return;
   }
-  if (menuMode == MM_EDIT) {
+  if (menuMode == MM_EDIT || menuMode == MM_VIEW) {
     menuStr(menuRd16(PP_NAME, menuEditProp), a, sizeof(a));
     char v[24];
     menuValueText(menuEditProp, menuPosArr[menuEditProp], v);
-    snprintf(b, sizeof(b), "> %s", v);
+    snprintf(b, sizeof(b), "%c %s", menuMode == MM_VIEW ? MENU_LOCK_CHAR : '>', v);
     menuFit(row0, a, "", now, menuSince);
     menuFit(row1, b, "", now, menuSince);
     return;
@@ -260,7 +261,11 @@ void menuRows(unsigned long now, char *row0, char *row1) {
     menuStr(text != MENU_NO_STR16 ? text : menuRd16(PP_NAME, prop), a, sizeof(a));
     char v[24];
     menuValueText(prop, menuPosArr[prop], v);
-    menuFit(row1, a, v, now, menuSince);
+    if (strlen(a) + 1 + strlen(v) <= MENU_COLS) menuFit(row1, a, v, now, menuSince);
+    else {                                          // name and value that do not fit together scroll as one text
+      snprintf(b, sizeof(b), "%s: %s", a, v);
+      menuFit(row1, b, "", now, menuSince);
+    }
   } else {                                          // preset
     menuStr(text != MENU_NO_STR16 ? text : menuRd16(IT_NAME, item), a, sizeof(a));
     menuFit(row1, a, "", now, menuSince);
@@ -427,12 +432,10 @@ void menuKey(uint8_t key, unsigned long now) {
         menuTouch(now, true);
       }
     } else if (type == 1) {
-      if (!(menuRd8(PP_FLAGS, a) & MF_READONLY)) {
-        menuMode = MM_EDIT;
-        menuEditProp = a;
-        menuEditStart = menuPosArr[a];
-        menuTouch(now, true);
-      }
+      menuMode = (menuRd8(PP_FLAGS, a) & MF_READONLY) ? MM_VIEW : MM_EDIT;
+      menuEditProp = a;
+      menuEditStart = menuPosArr[a];
+      menuTouch(now, true);
     } else if (menuRd8(PR_FLAGS, a) & 1) {          // preset with confirmation
       menuMode = MM_CONFIRM;
       menuConfirmPreset = a;
@@ -441,6 +444,11 @@ void menuKey(uint8_t key, unsigned long now) {
       menuApplyPreset(a);
       menuTouch(now, false);
     }
+    return;
+  }
+  if (menuMode == MM_VIEW) {                        // a read-only property: any key goes back
+    menuMode = MM_MENU;
+    menuTouch(now, true);
     return;
   }
   if (menuMode == MM_EDIT) {

@@ -92,21 +92,21 @@
         ]
       },
       "speedFrame": {
-        "name": "Frame",
+        "name": "Frame speed",
         "type": "speed",
         "callbacks": [
           "applySpeeds"
         ]
       },
       "speedArrow": {
-        "name": "Arrow",
+        "name": "Arrow speed",
         "type": "speed",
         "callbacks": [
           "applySpeeds"
         ]
       },
       "speedLetters": {
-        "name": "Letters",
+        "name": "Letters speed",
         "type": "speed",
         "callbacks": [
           "applySpeeds"
@@ -216,7 +216,7 @@
     },
     "menus": {
       "stripBrightness": {
-        "name": "Strip",
+        "name": "Frame",
         "items": [
           {
             "propertyRef": "stripMin"
@@ -250,7 +250,7 @@
         ]
       },
       "stickBrightness": {
-        "name": "Stick",
+        "name": "Arrow",
         "items": [
           {
             "propertyRef": "stickMin"
@@ -313,10 +313,62 @@
         ]
       },
       {
-        "menu": "Random program",
+        "menu": "Frame",
         "items": [
           {
-            "propertyRef": "randomDelay"
+            "propertyRef": "speedFrame"
+          },
+          {
+            "propertyRef": "stripMin"
+          },
+          {
+            "propertyRef": "stripMax"
+          },
+          {
+            "propertyRef": "stripExp"
+          },
+          {
+            "propertyRef": "stripMix"
+          }
+        ]
+      },
+      {
+        "menu": "Letters",
+        "items": [
+          {
+            "propertyRef": "speedLetters"
+          },
+          {
+            "propertyRef": "lettersMin"
+          },
+          {
+            "propertyRef": "lettersMax"
+          },
+          {
+            "propertyRef": "lettersExp"
+          },
+          {
+            "propertyRef": "lettersMix"
+          }
+        ]
+      },
+      {
+        "menu": "Arrow",
+        "items": [
+          {
+            "propertyRef": "speedArrow"
+          },
+          {
+            "propertyRef": "stickMin"
+          },
+          {
+            "propertyRef": "stickMax"
+          },
+          {
+            "propertyRef": "stickExp"
+          },
+          {
+            "propertyRef": "stickMix"
           }
         ]
       },
@@ -331,6 +383,14 @@
           },
           {
             "menuRef": "stickBrightness"
+          }
+        ]
+      },
+      {
+        "menu": "Random program",
+        "items": [
+          {
+            "propertyRef": "randomDelay"
           }
         ]
       },

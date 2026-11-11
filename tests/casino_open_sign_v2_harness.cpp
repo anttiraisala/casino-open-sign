@@ -674,7 +674,7 @@ int main(int argc, char **argv) {
     CHECK(line0().rfind("Menu", 0) == 0 && line1().rfind("Controls", 0) == 0, "root: title Menu, first item Controls");
     printf("  menu root: '%s' / '%s'\n", Wire.row(0).c_str(), Wire.row(1).c_str());
     turn(1); settle(); CHECK(line1().rfind("Speed", 0) == 0, "one step on the menu switch moves to Speed");
-    turn(1); settle(); CHECK(line1().rfind("Random program", 0) == 0, "next: Random program");
+    turn(1); settle(); CHECK(line1().rfind("Frame", 0) == 0, "after Speed comes the Frame menu");
     turn(-1); turn(-1); turn(-5); settle(); CHECK(line1().rfind("Controls", 0) == 0, "the selection stops at the top (no wrap)");
     turn(1); settle(); key(PIN_OK);                    // Speed
     CHECK(menuDepth == 2 && line1().rfind("Frame", 0) == 0, "OK enters Speed (first row Frame)");
@@ -704,6 +704,34 @@ int main(int argc, char **argv) {
     key(PIN_OK); run(65000); CHECK(menuMode == MM_EDIT, "while editing there is no timeout");
     key(PIN_BACK); key(PIN_BACK); key(PIN_BACK); settle();
     CHECK(menuMode == MM_STATUS, "BACK at the root returns to the status page");
+
+    // ---- the menu structure: Frame / Letters / Arrow groups, a view page with a padlock for read-only values ----
+    { static const uint8_t lock[8] = {0x0E, 0x11, 0x11, 0x1F, 0x1B, 0x1B, 0x1F, 0x00};
+      bool lockLoaded = true; for (int k = 0; k < 8; k++) if (Wire.cgram[8 + k] != lock[k]) lockLoaded = false;
+      CHECK(lockLoaded, "the padlock is loaded into custom character 1 of the display");
+      menuSetPos(P_speedFrame, 18); run(50);
+      key(PIN_OK); turn(2); settle();
+      CHECK(line1().rfind("Frame", 0) == 0, "root item 2 is the Frame group");
+      key(PIN_OK); settle();
+      printf("  Frame group rows: '%s' / '%s'\n", line0().c_str(), line1().c_str());
+      CHECK(line0() == "Frame" && line1() == "Frame speed: 1.0", "Frame group: first row is the Frame speed (name and value scroll together)");
+      turn(1); settle(); CHECK(line1() == "Min:           0" || line1().rfind("Min", 0) == 0, "Frame group: then the brightness Min");
+      key(PIN_BACK); turn(1); settle(); CHECK(line1().rfind("Letters", 0) == 0, "root item 3 is the Letters group");
+      turn(1); settle(); CHECK(line1().rfind("Arrow", 0) == 0, "root item 4 is the Arrow group");
+      turn(1); settle(); key(PIN_OK); settle();
+      CHECK(line0() == "Brightness" && line1().rfind("Frame", 0) == 0, "Brightness has Frame, Letters and Arrow groups");
+      key(PIN_OK); settle(); CHECK(line0() == "Frame" && line1().rfind("Min", 0) == 0, "Brightness > Frame starts with Min");
+      key(PIN_BACK); key(PIN_BACK); key(PIN_BACK); settle();
+      CHECK(menuMode == MM_STATUS, "back at the status page");
+      key(PIN_OK); key(PIN_OK); key(PIN_OK); settle();                      // Controls > Program (read-only)
+      CHECK(menuMode == MM_VIEW && line0() == "Program" && line1().size() >= 3 && line1()[0] == (char)1 && line1()[1] == ' ', "a read-only property opens the view page: name, padlock, value");
+      turn(3); settle(); CHECK(menuMode == MM_VIEW, "turning does nothing on the view page");
+      key(PIN_OK); settle(); CHECK(menuMode == MM_MENU, "OK leaves the view page");
+      key(PIN_OK); settle(); key(PIN_BACK); settle(); CHECK(menuMode == MM_MENU, "BACK leaves the view page");
+      key(PIN_OK); settle(); setProgramPins(2); run(200); setProgramPins(0); run(200);
+      CHECK(menuMode == MM_STATUS, "the program switch closes the view page");
+      key(PIN_OK); key(PIN_OK); key(PIN_OK); run(65000); CHECK(menuMode == MM_VIEW, "no timeout on the view page");
+      key(PIN_BACK); key(PIN_BACK); key(PIN_BACK); settle(); }
 
     // ---- reverse flags: the slide switches follow the flags at once ----
     g_pinLevel[PIN_ARROW_SWITCH] = SW_RIGHT; g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; run(200);
@@ -742,7 +770,7 @@ int main(int argc, char **argv) {
 
     // ---- Restore defaults through the menu: asks OK / BACK, sets every stored value to its default ----
     menuSetPos(P_speedArrow, 20); menuSetPos(P_randomDelay, 7); run(10);
-    key(PIN_OK); turn(4); key(PIN_OK);                   // root item 4 = Restore defaults
+    key(PIN_OK); turn(7); key(PIN_OK);                   // root item 7 = Restore defaults
     CHECK(menuMode == MM_CONFIRM, "Restore defaults asks for confirmation");
     key(PIN_BACK); CHECK(menuMode == MM_MENU && menuPos(P_speedArrow) == 20, "BACK at the question changes nothing");
     key(PIN_OK); key(PIN_OK); settle();

@@ -50,7 +50,7 @@
     if (!engine) { $('lcd0').textContent = '(menu has errors)'; $('lcd1').textContent = ''; return; }
     engine.setRuntime({ changeInSec: Math.max(0, +$('rt').value || 0) });
     var r = engine.rows(now());
-    var map = function (s) { return s.replace(/\x7e/g, '→').replace(/\x7f/g, '←'); };
+    var map = function (s) { return s.replace(/\x7e/g, '→').replace(/\x7f/g, '←').replace(/\x01/g, '🔒'); };
     $('lcd0').textContent = map(r[0]); $('lcd1').textContent = map(r[1]);
     $('log-cb').textContent = cbLog.join('\n');
     $('log-ee').textContent = engine.batches.map(function (b, i) { return (i + 1) + ': ' + b.join(', '); }).join('\n') + '\nimage: ' + JSON.stringify(engine.eeprom());

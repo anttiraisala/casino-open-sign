@@ -153,8 +153,8 @@
   menuTo(1);  CHECK(menuLevelItem[0] == 1, "menu switch 3 -> 1 moves back two items");
   menuTo(9);  CHECK(menuLevelItem[0] == 1, "a jump of exactly half a turn is ignored");
   menuTo(10); CHECK(menuLevelItem[0] == 2, "9 -> 10 moves one item");
-  menuTo(1);  CHECK(menuLevelItem[0] == 4, "10 -> 1 (seven steps forward) is clamped to the last item");
-  menuTo(15); CHECK(menuLevelItem[0] == 2, "1 -> 15 (two steps back) moves two items up");
+  menuTo(1);  CHECK(menuLevelItem[0] == 7, "10 -> 1 (seven steps forward) is clamped to the last item");
+  menuTo(15); CHECK(menuLevelItem[0] == 5, "1 -> 15 (two steps back) moves two items up");
   // the pins map to the right bits one by one
   menuTo(0); menuLevelItem[0] = 2;
   g_pinLevel[43] = LOW; settle(20); settle(20);
@@ -162,7 +162,7 @@
   g_pinLevel[43] = HIGH; settle(20); settle(20);
   menuLevelItem[0] = 0;
   g_pinLevel[44] = LOW; settle(20); settle(20);
-  CHECK(menuLevelItem[0] == 4, "leg 4 = D44 (0 -> 4 clamps at 4)");
+  CHECK(menuLevelItem[0] == 4, "leg 4 = D44 (0 -> 4)");
   g_pinLevel[44] = HIGH; settle(20); settle(20);
 
   // SHIFT on D50: ten times larger steps while editing

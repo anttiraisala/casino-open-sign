@@ -93,21 +93,21 @@ window.MENU_V2 = {
     ]
    },
    "speedFrame": {
-    "name": "Frame",
+    "name": "Frame speed",
     "type": "speed",
     "callbacks": [
      "applySpeeds"
     ]
    },
    "speedArrow": {
-    "name": "Arrow",
+    "name": "Arrow speed",
     "type": "speed",
     "callbacks": [
      "applySpeeds"
     ]
    },
    "speedLetters": {
-    "name": "Letters",
+    "name": "Letters speed",
     "type": "speed",
     "callbacks": [
      "applySpeeds"
@@ -217,7 +217,7 @@ window.MENU_V2 = {
   },
   "menus": {
    "stripBrightness": {
-    "name": "Strip",
+    "name": "Frame",
     "items": [
      {
       "propertyRef": "stripMin"
@@ -251,7 +251,7 @@ window.MENU_V2 = {
     ]
    },
    "stickBrightness": {
-    "name": "Stick",
+    "name": "Arrow",
     "items": [
      {
       "propertyRef": "stickMin"
@@ -314,10 +314,62 @@ window.MENU_V2 = {
     ]
    },
    {
-    "menu": "Random program",
+    "menu": "Frame",
     "items": [
      {
-      "propertyRef": "randomDelay"
+      "propertyRef": "speedFrame"
+     },
+     {
+      "propertyRef": "stripMin"
+     },
+     {
+      "propertyRef": "stripMax"
+     },
+     {
+      "propertyRef": "stripExp"
+     },
+     {
+      "propertyRef": "stripMix"
+     }
+    ]
+   },
+   {
+    "menu": "Letters",
+    "items": [
+     {
+      "propertyRef": "speedLetters"
+     },
+     {
+      "propertyRef": "lettersMin"
+     },
+     {
+      "propertyRef": "lettersMax"
+     },
+     {
+      "propertyRef": "lettersExp"
+     },
+     {
+      "propertyRef": "lettersMix"
+     }
+    ]
+   },
+   {
+    "menu": "Arrow",
+    "items": [
+     {
+      "propertyRef": "speedArrow"
+     },
+     {
+      "propertyRef": "stickMin"
+     },
+     {
+      "propertyRef": "stickMax"
+     },
+     {
+      "propertyRef": "stickExp"
+     },
+     {
+      "propertyRef": "stickMix"
      }
     ]
    },
@@ -332,6 +384,14 @@ window.MENU_V2 = {
      },
      {
       "menuRef": "stickBrightness"
+     }
+    ]
+   },
+   {
+    "menu": "Random program",
+    "items": [
+     {
+      "propertyRef": "randomDelay"
      }
     ]
    },

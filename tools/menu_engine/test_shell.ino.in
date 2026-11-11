@@ -260,6 +260,19 @@ bool lcdCommand(uint8_t command) {
   return Wire.endTransmission() == 0;
 }
 
+// Loads the padlock into custom character 1 (shown in front of the value of a read-only property).
+// Custom character 0 is not used: code 0 would end a C string.
+void lcdLoadLock() {
+  static const uint8_t lock[8] = {0x0E, 0x11, 0x11, 0x1F, 0x1B, 0x1B, 0x1F, 0x00};
+  lcdCommand(0x48);                         // CGRAM address of character 1
+  for (uint8_t k = 0; k < 8; k++) {
+    Wire.beginTransmission(LCD_I2C_ADDRESS);
+    lcdQueue(lock[k], LCD_BIT_RS);
+    Wire.endTransmission();
+  }
+  lcdCommand(0x80);                         // back to the display memory
+}
+
 bool lcdInit() {
   lcdOk = false;
   delay(50);
@@ -276,6 +289,7 @@ bool lcdInit() {
   lcdCommand(0x06);
   lcdCommand(0x01);
   delay(3);
+  lcdLoadLock();
   for (uint8_t row = 0; row < LCD_ROWS; row++) {
     for (uint8_t col = 0; col < LCD_COLS; col++) lcdShown[row][col] = ' ';
   }
@@ -361,6 +375,7 @@ char modeLetter() {
   if (menuMode == MM_MENU) return 'M';
   if (menuMode == MM_EDIT) return 'E';
   if (menuMode == MM_CONFIRM) return 'C';
+  if (menuMode == MM_VIEW) return 'V';
   return 'S';
 }
 

@@ -30,7 +30,7 @@ Pixel 1 is in the LOWER-LEFT corner; the strip runs counter-clockwise:
     pixels  7-9    right edge, going up
     pixels 10-15   top edge, right to left (10 = upper-right corner, 15 = upper-left corner)
     pixels 16-18   left edge, going down
-Frame light (a bar of 2 lit pixels, 2 dark, repeating; one step every 200 ms at the default speed x1; menu: Speed > Frame):
+Frame light (a bar of 2 lit pixels, 2 dark, repeating; one step every 200 ms at the default speed x1; menu: Speed > Frame speed):
     arrow points LEFT (the customer's left):  starts at the UPPER-RIGHT corner (pixel 10) and runs both ways round the frame -
                                               clockwise (10, 9, 8, 7, 6, 5 ... 1) and counter-clockwise (10, 11 ... 15, 16, 17, 18, 1) -
                                               to the LOWER-LEFT corner (pixel 1).
@@ -99,9 +99,14 @@ Settings menu (menu switch SW3 D42-D45, buttons OK D48, BACK D49, SHIFT D50)
 Status page (the display after power-up): row 0 shows the program (#0..#E, #F = random), the casino state (Open/Closed); row 1 shows the arrow
 symbol and the customer side ("<- Customer right" = the arrow points to the customer's right) and, in program F, alternates with
 "Change in M:SS" (time to the next random program). OK opens the menu; the display shows the LCD button name OK.
-Menu: Controls (program, arrow, casino: read-only switch positions; Arrow reverse / Casino reverse flags), Speed (Frame, Letters, Arrow:
-x0.125..x4 (logarithmic, 30 steps, shown with 3 decimals), default x1), Random program (Change delay 0..30 min, 0 = random 1..30, default 2), Brightness (frame strip, letters, sticks:
-min, max, exponent, mix; the curve max is the limit, there is no global brightness), Restore defaults (asks for confirmation).
+Menu: Controls (program, arrow, casino: read-only switch positions; Arrow reverse / Casino reverse flags), Speed (Frame speed, Letters speed,
+Arrow speed: x0.125..x4, logarithmic, 30 steps, shown with 3 decimals, default x1), then one group per LED type: Frame (the frame LED strip),
+Letters (the letter LED strip) and Arrow (the arrow sticks), each with its speed and the brightness Min, Max, Exponent and Mix (the curve max is the
+limit, there is no global brightness); Brightness (the same brightness values again, grouped Frame / Letters / Arrow: one property, two places),
+Random program (Change delay), Restore defaults (asks for confirmation).
+A property row shows "Name  value" (value at the right edge); if the two do not fit in 16 characters the row scrolls as one text "Name: value"
+(pause at the start, one character per step, pause with the last character at the right edge). OK on a read-only value opens the same page as
+an edit (name, then a padlock and the value) but nothing can be changed; BACK or OK returns.
 The menu switch SW3 is free-running and RELATIVE: the change of its code is a step (1..7 forward, 9..15 back, exactly 8 ignored).
 Holding SHIFT while turning makes the step bigger. OK enters / starts an edit / accepts, BACK goes one level up / cancels an edit.
 Long row text scrolls. At the menu root, with no property open and no edit, 60 s without any input returns the display to the status page.

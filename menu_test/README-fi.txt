@@ -47,7 +47,7 @@ Mitä kokeilla ja kirjata ylös
 -----------------------------
   1. Tilasivu: seuraavatko ohjelman numero, Casino ja nuoli kolmea kytkintä (ja Reverse-asetuksia)?
   2. OK avaa valikon; liikkuuko valinta yhden kohdan per napsahdus oikeaan suuntaan ja pysähtyykö se päihin?
-  3. Muokkaa arvoa (esim. Brightness > Strip > Max): muuttuuko heti, tekeekö SHIFT kymmenen askelta, tallentaako OK,
+  3. Muokkaa arvoa (esim. Brightness > Frame > Max): muuttuuko heti, tekeekö SHIFT kymmenen askelta, tallentaako OK,
      peruuttaako BACK? Katkaise Megan virta ja kytke uudelleen: onko tallennettu arvo tallella (sarjamonitori "EEPROM: saved ...")?
   4. Restore defaults: vahvistussivu, OK = kyllä, BACK = ei.
   5. Näyttävätkö rivin 1 nuolet nuolilta? (Muuten "arrowAscii".)
