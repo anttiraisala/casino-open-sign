@@ -33,4 +33,4 @@ Raw ideas and open questions (RDD = Requirement Driven Development). An idea bec
 - OQ-010: A row text longer than 16 characters: build error, or scrolling text?
 - OQ-011: Which program gets the menu (Casino Open Sign V2 assumed), and which hex switches, buttons (OK, BACK, SHIFT) and pins are used?
 - OQ-012: A quick-pick row that targets a read-only property: warning or error?
-- OQ-013: REQ-013 says the program switch is read at boot. The sign and `menu_test/` read it all the time (turning it changes the program at once, and closes the menu in the test), which is what the maintainer tried and approved on the test. Keep reading it all the time and change the REQ-013 wording?
+- OQ-013: REQ-013 says the program switch is read at boot. The sign and `menu_test/` read it all the time (turning it changes the program at once, and closes the menu in the test), which is what the maintainer tried and approved on the test. ANSWERED 2026-11-11: read all the time; REQ-013 wording changed.

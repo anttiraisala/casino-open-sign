@@ -1,6 +1,7 @@
 # PROGRESS.md - status (2026-11-07)
 
 ## Done
+- 2026-11-11: OQ-013 answered by the maintainer (program switch is read all the time); REQ-013 wording changed (status changed). Documents only.
 - 2026-11-11: Casino Open Sign V2: program switch SW6 (hex rotary D34-D37, read all the time), 15 letter programs (new: converge, words swap, slot machine, twin chase, marquee; F = random every 2 min) and 15 frame patterns, D33 now only skips the LED test (IDEA-015, IDEA-016, OQ-013; REQ-013 in progress, AP-007). Wiring diagram, Wokwi diagram.json (second DIP bank) and READMEs updated. Run: V2 harness, mutate_v2.py (all detected), arduino_signature_lint. Host only, not run on hardware or Wokwi. `menu_test/` unchanged.
 - Sign sketch (`sketch.ino`) for the first design: 10 WS2812B strips (pins D4-D12, D31), inputs D2, D3, D30, D22-D29, I2C LCD. Simulated in Wokwi by the owner earlier.
 - Drawings, parts list (snapshot 2026-11-02), host test harnesses (all four pass on a host compiler with mock libraries).
