@@ -98,7 +98,7 @@ Tilasivu (näyttö käynnistyksen jälkeen): rivi 0 näyttää ohjelman (#0..#E,
 nuolisymbolin ja asiakkaan puolen ("<- Customer right" = nuoli osoittaa asiakkaan oikealle) ja ohjelmassa F vuorottelee tekstin
 "Change in M:SS" (aika seuraavaan satunnaisohjelmaan) kanssa. OK avaa valikon; käyttöliittymässä painikkeen nimi on aina OK.
 Valikko: Controls (program, arrow, casino: vain luettavia kytkinasentoja; Arrow reverse / Casino reverse -liput), Speed (Frame, Letters, Arrow:
-x0.25..x4, oletus x1), Random program (Change delay 0..30 min, 0 = satunnainen 1..30, oletus 2), Brightness (reunusnauha, kirjaimet, tikut:
+x0.125..x4 (logaritminen, 30 askelta, kolme desimaalia), oletus x1), Random program (Change delay 0..30 min, 0 = satunnainen 1..30, oletus 2), Brightness (reunusnauha, kirjaimet, tikut:
 min, max, eksponentti, mix; käyrän max on raja, yleistä kirkkautta ei ole), Restore defaults (kysyy vahvistuksen).
 Valikkokytkin SW3 on vapaasti pyörivä ja SUHTEELLINEN: koodin muutos on askel (1..7 eteen, 9..15 taakse, tasan 8 ohitetaan).
 SHIFT pohjassa kierrettäessä askel on isompi. OK menee alivalikkoon / aloittaa muokkauksen / hyväksyy, BACK menee tason ylös / peruu muokkauksen.

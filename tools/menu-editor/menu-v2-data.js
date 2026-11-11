@@ -12,11 +12,11 @@ window.MENU_V2 = {
    "speed": {
     "kind": "float",
     "scale": "log",
-    "min": 0.25,
+    "min": 0.125,
     "max": 4,
-    "steps": 24,
+    "steps": 30,
     "default": 1,
-    "decimals": 2,
+    "decimals": 3,
     "unit": "x"
    },
    "exponent": {

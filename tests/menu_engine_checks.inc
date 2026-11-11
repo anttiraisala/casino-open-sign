@@ -6,7 +6,7 @@
   auto text = [&](uint8_t prop, uint16_t pos) { menuValueText(prop, pos, t); return std::string(t); };
   // ---- value texts ----
   CHECK(text(P_stripMax, 0) == "0" && text(P_stripMax, 255) == "255" && text(P_stripMax, 80) == "80", "int texts");
-  CHECK(text(P_speedFrame, 0) == "0.25x" && text(P_speedFrame, 12) == "1.00x" && text(P_speedFrame, 24) == "4.00x", "speed texts");
+  CHECK(text(P_speedFrame, 0) == "0.125x" && text(P_speedFrame, 18) == "1.000x" && text(P_speedFrame, 30) == "4.000x", "speed texts");
   CHECK(text(P_stripExp, 0) == "0.10" && text(P_stripExp, 31) == "2.67" && text(P_stripExp, 50) == "20.00", "exponent texts");
   CHECK(text(P_stripMix, 0) == "0.00" && text(P_stripMix, 25) == "0.50" && text(P_stripMix, 50) == "1.00", "mix texts");
   CHECK(text(P_arrowReverse, 0) == "No" && text(P_arrowReverse, 1) == "Yes", "bool texts");
@@ -18,7 +18,7 @@
   menuMode = MM_MENU; menuDepth = 3;
   CHECK(menuBegin() == false, "empty EEPROM is not valid");
   CHECK(menuMode == MM_STATUS && menuDepth == 0, "start-up shows the status page");
-  CHECK(menuPos(P_stripMax) == 80 && menuPos(P_stripExp) == 31 && menuPos(P_stripMix) == 50 && menuPos(P_speedFrame) == 12 && menuPos(P_randomDelay) == 2, "defaults");
+  CHECK(menuPos(P_stripMax) == 80 && menuPos(P_stripExp) == 31 && menuPos(P_stripMix) == 50 && menuPos(P_speedFrame) == 18 && menuPos(P_randomDelay) == 2, "defaults");
   CHECK(EEPROM.writes == 0, "begin writes nothing");
 
   uint8_t roFirst = P_program;
@@ -33,9 +33,9 @@
   menuSet(P_stripMax, 200);
   uint8_t one = P_stripMax;
   menuSave(&one, 1);
-  CHECK(EEPROM.mem[0] == 0x48 && EEPROM.mem[1] == 0x2E && EEPROM.mem[2] == 0x80 && EEPROM.mem[3] == 0xA1, "tag, little endian");
+  CHECK(EEPROM.mem[0] == 0x93 && EEPROM.mem[1] == 0x4F && EEPROM.mem[2] == 0x87 && EEPROM.mem[3] == 0x36, "tag, little endian");
   CHECK(EEPROM.mem[4 + 7] == 200, "stripMax in slot 7");
-  CHECK(EEPROM.mem[4 + 0] == 0 && EEPROM.mem[4 + 2] == 12 && EEPROM.mem[4 + 5] == 2, "other slots hold defaults (arrowReverse, speedFrame, randomDelay)");
+  CHECK(EEPROM.mem[4 + 0] == 0 && EEPROM.mem[4 + 2] == 18 && EEPROM.mem[4 + 5] == 2, "other slots hold defaults (arrowReverse, speedFrame, randomDelay)");
   CHECK(EEPROM.mem[4 + 8] == 31 && EEPROM.mem[4 + 12] == 50 && EEPROM.mem[4 + 17] == 50, "exponent and mix slots");
   CHECK(menuEepromValid, "valid after the first save");
   CHECK(EEPROM.writes > 4, "image written");
@@ -67,7 +67,7 @@
   EEPROM.mem[0] = 0;
   menuBegin();
   menuSet(P_stickMin, 7); one = P_stickMin; menuSave(&one, 1);
-  CHECK(EEPROM.mem[0] == 0x48 && EEPROM.mem[4 + 9] == 7 && EEPROM.mem[4 + 7] == 80, "rewritten after a mismatch");
+  CHECK(EEPROM.mem[0] == 0x93 && EEPROM.mem[4 + 9] == 7 && EEPROM.mem[4 + 7] == 80, "rewritten after a mismatch");
 
   // ---- status page strings ----
   menuBegin(); menuSet(P_program, 11); menuSet(P_casino, 1); menuSet(P_arrow, 0);

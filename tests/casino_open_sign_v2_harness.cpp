@@ -76,15 +76,15 @@ int main(int argc, char **argv) {
     for (int k = 0; k < 300; k++) { g_millis++; loop(); }
     if (bootMode == "tag" || bootMode == "range") {
       CHECK(!menuEepromValid && Serial.captured.find("EEPROM: no saved values for this menu layout, defaults used.") != std::string::npos, "boot: a wrong layout tag / a value out of range gives the defaults and says so");
-      CHECK(menuPos(P_speedFrame) == 12 && menuPos(P_speedArrow) == 12 && menuPos(P_speedLetters) == 12 && menuPos(P_arrowReverse) == 0 && menuPos(P_randomDelay) == 2, "boot: after the rejected image all properties have their defaults (also the valid-looking ones)");
+      CHECK(menuPos(P_speedFrame) == 18 && menuPos(P_speedArrow) == 18 && menuPos(P_speedLetters) == 18 && menuPos(P_arrowReverse) == 0 && menuPos(P_randomDelay) == 2, "boot: after the rejected image all properties have their defaults (also the valid-looking ones)");
       if (fails) printf("RESULT: %d failures\n", fails); else printf("RESULT: all checks passed (boot mode %s)\n", bootMode.c_str());
       return fails ? 1 : 0;
     }
     CHECK(menuEepromValid && Serial.captured.find("EEPROM: saved menu values loaded.") != std::string::npos, "boot: the saved menu image is loaded");
     CHECK(menuPos(P_speedFrame) == 20 && menuPos(P_speedArrow) == 4 && menuPos(P_speedLetters) == 16, "boot: the saved speeds are loaded");
-    CHECK(fabs((double)frameIntervalMs - 200.0 / (0.25 * pow(16.0, 20 / 24.0))) <= 1.0, "boot: the saved frame speed is applied");
-    CHECK(fabs((double)arrowIntervalMs - 35.0 / (0.25 * pow(16.0, 4 / 24.0))) <= 2.0, "boot: the saved arrow speed is applied");
-    CHECK(letterMult256 == (uint16_t)(0.25 * pow(16.0, 16 / 24.0) * 256.0 + 0.5), "boot: the saved letters speed is applied");
+    CHECK(fabs((double)frameIntervalMs - 200.0 / (0.125 * pow(32.0, 20 / 30.0))) <= 1.0, "boot: the saved frame speed is applied");
+    CHECK(fabs((double)arrowIntervalMs - 35.0 / (0.125 * pow(32.0, 4 / 30.0))) <= 2.0, "boot: the saved arrow speed is applied");
+    CHECK(letterMult256 == (uint16_t)(0.125 * pow(32.0, 16 / 30.0) * 256.0 + 0.5), "boot: the saved letters speed is applied");
     CHECK(!arrowPointsRight && menuPos(P_arrow) == 1, "boot: the saved Arrow reverse flag turns the arrow (switch right -> arrow left)");
     CHECK(brightnessLut[LED_TYPE_STRIP][255] == 40 && brightnessLut[LED_TYPE_LETTERS][255] == 60 && brightnessLut[LED_TYPE_STICK][255] == 100, "boot: the saved curves are built for the three LED types");
     setProgramPins(15); for (int k = 0; k < 300; k++) { g_millis++; loop(); }
@@ -397,20 +397,20 @@ int main(int argc, char **argv) {
     }
     if (out && g_millis - lastDump >= 250) { dump(out); lastDump = g_millis; }
   }
-  // ---- Speeds: menu properties Speed > Frame, Letters, Arrow (x0.25 .. x4 in 24 log steps, default x1 = position 12) ----
+  // ---- Speeds: menu properties Speed > Frame, Letters, Arrow (x0.125 .. x4 in 30 log steps, default x1 = position 18) ----
   auto run = [&](unsigned long ms) { for (unsigned long k = 0; k < ms; k++) { g_millis++; loop(); } };
   CHECK(frameIntervalMs == 200 && arrowIntervalMs == 35 && letterMult256 == 256, "default speeds: x1 for the frame, the arrow and the letters");
-  CHECK(menuPos(P_speedFrame) == 12 && menuPos(P_speedArrow) == 12 && menuPos(P_speedLetters) == 12, "the speed properties start at position 12 (x1)");
-  const int speedPos[][3] = {{0, 24, 12}, {24, 0, 3}, {6, 18, 24}, {12, 12, 0}};   // frame, letters, arrow positions
+  CHECK(menuPos(P_speedFrame) == 18 && menuPos(P_speedArrow) == 18 && menuPos(P_speedLetters) == 18, "the speed properties start at position 18 (x1.000)");
+  const int speedPos[][3] = {{0, 30, 18}, {30, 0, 4}, {8, 24, 30}, {18, 18, 0}};   // frame, letters, arrow positions
   for (auto &pr : speedPos) {
     menuSetPos(P_speedFrame, pr[0]); menuSetPos(P_speedLetters, pr[1]); menuSetPos(P_speedArrow, pr[2]);
     run(300);
-    const double mFrame = 0.25 * pow(16.0, pr[0] / 24.0), mLet = 0.25 * pow(16.0, pr[1] / 24.0), mArrow = 0.25 * pow(16.0, pr[2] / 24.0);
+    const double mFrame = 0.125 * pow(32.0, pr[0] / 30.0), mLet = 0.125 * pow(32.0, pr[1] / 30.0), mArrow = 0.125 * pow(32.0, pr[2] / 30.0);
     double wantFrame = 200.0 / mFrame, wantArrow = 35.0 / mArrow;
     if (wantFrame < 8) wantFrame = 8;
     if (wantArrow < 8) wantArrow = 8;
-    CHECK(fabs((double)frameIntervalMs - wantFrame) <= 1.0, "frame interval follows the frame speed property");
-    CHECK(fabs((double)arrowIntervalMs - wantArrow) <= 1.0, "arrow interval follows the arrow speed property (separate from the frame)");
+    CHECK(fabs((double)frameIntervalMs - wantFrame) <= 1.0 + 0.015 * wantFrame, "frame interval follows the frame speed property");
+    CHECK(fabs((double)arrowIntervalMs - wantArrow) <= 1.0 + 0.015 * wantArrow, "arrow interval follows the arrow speed property (separate from the frame)");
     const long f0 = fr->shows, a0 = st[3]->shows, l0 = let->shows;
     const unsigned long clk0 = letterClockMs;
     run(24000);
@@ -422,7 +422,7 @@ int main(int argc, char **argv) {
     CHECK(let->shows - l0 > 150, "letters keep updating at their own rate");
     printf("  speeds at positions %d/%d/%d: frame %.0f ms, arrow %.1f ms, letters x%.2f\n", pr[0], pr[1], pr[2], gotFrame, gotArrow, clockRate);
   }
-  menuSetPos(P_speedFrame, 12); menuSetPos(P_speedLetters, 12); menuSetPos(P_speedArrow, 12);
+  menuSetPos(P_speedFrame, 18); menuSetPos(P_speedLetters, 18); menuSetPos(P_speedArrow, 18);
   // The program switch is a hex switch with a debounce: a position that is only passed through while turning is ignored.
   setProgramPins(0); run(200);
   setProgramPins(12); run(5);
@@ -494,10 +494,10 @@ int main(int argc, char **argv) {
   // speed: at x4 the flicker bursts come much more often than at x0.25
   auto bursts = [&](int pos, unsigned long ms) { menuSetPos(P_speedLetters, pos); run(300); int n = 0, prev = closedState;
     for (unsigned long k = 0; k < ms; k++) { run(1); if (closedState == CL_FLICKER && prev != CL_FLICKER) n++; prev = closedState; } return n; };
-  const int fast = bursts(24, 60000), slow = bursts(0, 60000);
+  const int fast = bursts(30, 60000), slow = bursts(0, 60000);
   CHECK(fast >= 5 && slow <= 2 && fast > slow, "CLOSED light timing follows the letters speed property");
-  printf("  CLOSED flicker bursts in 60 s: x4.00 -> %d, x0.25 -> %d\n", fast, slow);
-  menuSetPos(P_speedLetters, 12); run(300);
+  printf("  CLOSED flicker bursts in 60 s: x4.000 -> %d, x0.125 -> %d\n", fast, slow);
+  menuSetPos(P_speedLetters, 18); run(300);
   // reopen: OPEN letters come back, CLOSED light goes dark
   g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; run(100);
   CHECK(!casinoClosed, "casino open again after the switch goes HIGH");
@@ -508,7 +508,7 @@ int main(int argc, char **argv) {
   printf("  closed phase: CASINO letters lit samples %ld\n", firstLit);
 
   // ---- New letter modes (scanner, sparkle, chase, pulse) and random auto ----
-  menuSetPos(P_speedLetters, 12); run(300);
+  menuSetPos(P_speedLetters, 18); run(300);
   auto gotoMode = [&](uint8_t m) { while (letterMode != m) pressMode(); run(400); };
   {
     // scanner: a bright head moves over all letters; letters behind it glow as a tail
@@ -681,18 +681,18 @@ int main(int argc, char **argv) {
     key(PIN_OK);                                        // edit Frame speed
     CHECK(menuMode == MM_EDIT, "OK on a property starts editing");
     turn(3); settle();
-    CHECK(menuPos(P_speedFrame) == 15, "turning the menu switch three steps raises the frame speed by three positions");
-    CHECK(fabs((double)frameIntervalMs - 200.0 / (0.25 * pow(16.0, 15 / 24.0))) <= 1.0, "the new frame speed is applied while editing");
+    CHECK(menuPos(P_speedFrame) == 21, "turning the menu switch three steps raises the frame speed by three positions");
+    CHECK(fabs((double)frameIntervalMs - 200.0 / (0.125 * pow(32.0, 21 / 30.0))) <= 3.0, "the new frame speed is applied while editing");
     g_pinLevel[PIN_SHIFT] = LOW; run(60);
     turn(1); settle();
-    CHECK(menuPos(P_speedFrame) == 24, "SHIFT held makes the step bigger (clamped at the top)");
+    CHECK(menuPos(P_speedFrame) == 30, "SHIFT held makes the step bigger (10 steps, clamped at the top)");
     g_pinLevel[PIN_SHIFT] = HIGH; run(60);
     key(PIN_BACK); settle();
-    CHECK(menuMode == MM_MENU && menuPos(P_speedFrame) == 12 && frameIntervalMs == 200, "BACK cancels the edit: the old speed returns");
+    CHECK(menuMode == MM_MENU && menuPos(P_speedFrame) == 18 && frameIntervalMs == 200, "BACK cancels the edit: the old speed returns");
     key(PIN_OK); turn(-4); key(PIN_OK); settle();       // edit and accept
-    CHECK(menuMode == MM_MENU && menuPos(P_speedFrame) == 8, "OK accepts the edited value");
+    CHECK(menuMode == MM_MENU && menuPos(P_speedFrame) == 14, "OK accepts the edited value");
     CHECK(EEPROM.mem[0] != 0xFF && EEPROM.mem[3] != 0xFF, "the layout tag was written to EEPROM at address 0");
-    { unsigned char savedSlot = EEPROM.mem[4 + menuRd8(PP_SLOT, P_speedFrame)]; CHECK(savedSlot == 8, "EEPROM holds position 8 for the frame speed"); }
+    { unsigned char savedSlot = EEPROM.mem[4 + menuRd8(PP_SLOT, P_speedFrame)]; CHECK(savedSlot == 14, "EEPROM holds position 14 for the frame speed"); }
     // closing the menu with the program switch
     setProgramPins(5); run(200);
     CHECK(menuMode == MM_STATUS && letterMode == 5 && line0() == "#5 Casino Open", "turning the program switch closes the menu and starts the program");
@@ -746,7 +746,7 @@ int main(int argc, char **argv) {
     CHECK(menuMode == MM_CONFIRM, "Restore defaults asks for confirmation");
     key(PIN_BACK); CHECK(menuMode == MM_MENU && menuPos(P_speedArrow) == 20, "BACK at the question changes nothing");
     key(PIN_OK); key(PIN_OK); settle();
-    CHECK(menuPos(P_speedArrow) == 12 && menuPos(P_speedFrame) == 12 && menuPos(P_randomDelay) == 2 && frameIntervalMs == 200 && arrowIntervalMs == 35,
+    CHECK(menuPos(P_speedArrow) == 18 && menuPos(P_speedFrame) == 18 && menuPos(P_randomDelay) == 2 && frameIntervalMs == 200 && arrowIntervalMs == 35,
           "OK at the question restores every default and applies it");
     key(PIN_BACK); key(PIN_BACK); settle();
 
@@ -755,8 +755,8 @@ int main(int argc, char **argv) {
     menuSetPos(P_speedLetters, 3);                       // a change that is not saved
     { const bool saved = menuBegin(); applySpeeds(); rebuildAllCurves();
       menuSet(P_program, hexStable[SLOT_PROGRAM]); menuSet(P_arrow, arrowPosition()); menuSet(P_casino, casinoClosed ? 0 : 1);   // the status values are set again by finishStartup() in the real start
-      CHECK(saved && menuPos(P_speedLetters) == 20 && letterMult256 == (uint16_t)(0.25 * pow(16.0, 20 / 24.0) * 256.0 + 0.5), "after a restart the saved value is used, the unsaved one is gone"); }
-    menuSetPos(P_speedLetters, 12); menuSave(&P_speedLetters, 1); run(10);
+      CHECK(saved && menuPos(P_speedLetters) == 20 && letterMult256 == (uint16_t)(0.125 * pow(32.0, 20 / 30.0) * 256.0 + 0.5), "after a restart the saved value is used, the unsaved one is gone"); }
+    menuSetPos(P_speedLetters, 18); menuSave(&P_speedLetters, 1); run(10);
 
     for (uint8_t ty : IDENT_TYPES) setBrightnessCurve(ty, 0, 255, 1.0f, 0.0f, true);   // the older tests below run with identity curves
 

@@ -359,3 +359,4 @@ curves are menu properties saved in EEPROM (layout tag checked at start-up). The
 the status properties with `menuPhysical`, which also closes an open menu. Tests: `tests/casino_open_sign_v2_harness.cpp` (a boot
 mode `V2_BOOT=1` loads a saved EEPROM image), `tests/mutate_v2.py` (171 mutants, each run in both modes), `tests/menu_diff_test.py`,
 `tests/menu_engine_harness.cpp`. Host only: not run on hardware or Wokwi.
+Speed properties (V2): float, logarithmic, 0.125..4.0, 30 steps (31 positions), default 1.0 at position 18, shown with 3 decimals; layout tag 0x36874F93.

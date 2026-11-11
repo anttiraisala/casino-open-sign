@@ -100,7 +100,7 @@ Status page (the display after power-up): row 0 shows the program (#0..#E, #F = 
 symbol and the customer side ("<- Customer right" = the arrow points to the customer's right) and, in program F, alternates with
 "Change in M:SS" (time to the next random program). OK opens the menu; the display shows the LCD button name OK.
 Menu: Controls (program, arrow, casino: read-only switch positions; Arrow reverse / Casino reverse flags), Speed (Frame, Letters, Arrow:
-x0.25..x4, default x1), Random program (Change delay 0..30 min, 0 = random 1..30, default 2), Brightness (frame strip, letters, sticks:
+x0.125..x4 (logarithmic, 30 steps, shown with 3 decimals), default x1), Random program (Change delay 0..30 min, 0 = random 1..30, default 2), Brightness (frame strip, letters, sticks:
 min, max, exponent, mix; the curve max is the limit, there is no global brightness), Restore defaults (asks for confirmation).
 The menu switch SW3 is free-running and RELATIVE: the change of its code is a step (1..7 forward, 9..15 back, exactly 8 ignored).
 Holding SHIFT while turning makes the step bigger. OK enters / starts an edit / accepts, BACK goes one level up / cancels an edit.

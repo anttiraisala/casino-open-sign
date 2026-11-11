@@ -74,10 +74,10 @@ constexpr uint8_t LCD_BIT_E = 0x04;
 constexpr uint8_t LCD_BIT_BACKLIGHT = 0x08;
 
 // BEGIN GENERATED MENU TABLES (do not edit: made by tools/menu_engine/generate_menu_tables.js from menu-v2.json)
-// 21 properties, 29 items, 8 menus, 1 presets; EEPROM layout tag a1802e48, 18 stored properties
+// 21 properties, 29 items, 8 menus, 1 presets; EEPROM layout tag 36874f93, 18 stored properties
 constexpr uint8_t MENU_PROP_COUNT = 21;
 constexpr uint8_t MENU_STORED_COUNT = 18;
-constexpr uint32_t MENU_LAYOUT_TAG = 0xA1802E48UL;
+constexpr uint32_t MENU_LAYOUT_TAG = 0x36874F93UL;
 constexpr uint16_t MENU_NO_STR16 = 0xFFFF;
 constexpr uint8_t P_program = 0;
 constexpr uint8_t P_arrow = 1;
@@ -154,12 +154,12 @@ const uint16_t MENU_STR_OFF[] PROGMEM = {0, 8, 14, 19, 25, 32, 39, 44, 58, 61, 6
 const uint8_t PP_KIND[] PROGMEM = {0, 3, 3, 3, 3, 2, 2, 2, 0, 0, 0, 2, 0, 0, 2, 1, 0, 0, 2, 1, 1};
 const uint8_t PP_FLAGS[] PROGMEM = {9, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
 const uint8_t PP_SHIFT[] PROGMEM = {10, 1, 1, 1, 1, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
-const uint8_t PP_DEC[] PROGMEM = {0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 2, 2, 2};
-const uint16_t PP_COUNT[] PROGMEM = {16, 2, 2, 2, 2, 25, 25, 25, 31, 256, 256, 51, 256, 256, 51, 51, 256, 256, 51, 51, 51};
-const uint16_t PP_DEFPOS[] PROGMEM = {0, 0, 0, 0, 0, 12, 12, 12, 2, 0, 80, 31, 0, 80, 31, 50, 0, 80, 31, 50, 50};
-const float PP_MIN[] PROGMEM = {0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.250000000f, 0.250000000f, 0.250000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f};
+const uint8_t PP_DEC[] PROGMEM = {0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 2, 2, 2};
+const uint16_t PP_COUNT[] PROGMEM = {16, 2, 2, 2, 2, 31, 31, 31, 31, 256, 256, 51, 256, 256, 51, 51, 256, 256, 51, 51, 51};
+const uint16_t PP_DEFPOS[] PROGMEM = {0, 0, 0, 0, 0, 18, 18, 18, 2, 0, 80, 31, 0, 80, 31, 50, 0, 80, 31, 50, 50};
+const float PP_MIN[] PROGMEM = {0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.125000000f, 0.125000000f, 0.125000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f};
 const float PP_MAX[] PROGMEM = {15.0000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 4.00000000f, 4.00000000f, 4.00000000f, 30.0000000f, 255.000000f, 255.000000f, 20.0000000f, 255.000000f, 255.000000f, 20.0000000f, 1.00000000f, 255.000000f, 255.000000f, 20.0000000f, 1.00000000f, 1.00000000f};
-const uint16_t PP_AUX[] PROGMEM = {1, 0, 0, 0, 0, 24, 24, 24, 1, 1, 1, 50, 1, 1, 50, 50, 1, 1, 50, 50, 50};
+const uint16_t PP_AUX[] PROGMEM = {1, 0, 0, 0, 0, 30, 30, 30, 1, 1, 1, 50, 1, 1, 50, 50, 1, 1, 50, 50, 50};
 const uint16_t PP_NAME[] PROGMEM = {0, 1, 4, 7, 10, 11, 1, 13, 14, 17, 18, 19, 17, 18, 19, 20, 17, 18, 19, 20, 20};
 const uint16_t PP_UNIT[] PROGMEM = {MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, 12, 12, 12, 15, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16};
 const uint8_t PP_VT_FIRST[] PROGMEM = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
