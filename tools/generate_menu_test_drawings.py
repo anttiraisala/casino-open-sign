@@ -77,7 +77,7 @@ def hex_switch(svg, x, y, title, subtitle, pins, ard_x0):
     svg.text(x + 70, y + 100, "0 .. F", size=12, anchor="middle")
     for k, (weight, pin) in enumerate(zip((1, 2, 4, 8), pins)):
         yy = y + 20 + k * 24
-        svg.text(x + 162 - 12, yy + 4, "leg %d" % weight, size=10, anchor="end")
+        svg.text(x + 140, yy + 5, "leg %d" % weight, size=14, anchor="end", weight="bold")
         svg.circle(x + 150, yy, 3.5, ORANGE)
         svg.line(x + 150, yy, ard_x0, yy, ORANGE)
         svg.text(ard_x0 + 8, yy + 4, "D%d" % pin, size=13)
@@ -85,7 +85,7 @@ def hex_switch(svg, x, y, title, subtitle, pins, ard_x0):
     svg.circle(x + 100, yc, 3.5, ORANGE)
     svg.line(x + 100, yc, x + 100, yc + 10, ORANGE)
     svg.ground(x + 100, yc + 10)
-    svg.text(x + 108, yc + 4, "C (one leg) -> GND", size=10)
+    svg.text(x + 122, yc + 5, "C (common) -> GND", size=12, weight="bold")
 
 
 def button(svg, x, y, name, pin, ard_x0):

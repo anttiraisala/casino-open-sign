@@ -11,6 +11,7 @@ files (Finnish translation of the README.txt next to them) and product names tha
 - Flag contradictions in a request before building.
 - Hardware/Arduino work always comes with: `README.txt` and `README-fi.txt` containing exact wiring (component to pin)
   and a parts-to-buy list from partco.fi; an SVG electrical schematic in circuit-diagram style (symbols).
+- Every wiring diagram must label each connector, leg or contact of every part with its number or name (for example rotary switch legs 1, 2, 4, 8 and C, button contacts, LCD pins), clearly readable, so the part can be wired without guessing (owner rule 2026-11-11).
 - Every wiring diagram and layout drawing is delivered as SVG and as PDF (same name). `python3 tools/export_pdf.py` creates the PDFs from the SVGs; run it after regenerating any SVG.
 - Deliver project files together in ONE zip (the whole folder), sent as an attachment.
 - Any test the AI asks the owner to run lives in its own sub-folder, self-contained (own layouts, wirings,

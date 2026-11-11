@@ -80,13 +80,13 @@ def schematic(pins):
     svg.text(110, y0 + 112, "0 .. F", size=12, anchor="middle")
     for k, (weight, pin) in enumerate(zip((1, 2, 4, 8), pins)):
         y = y0 + 25 + k * 28
-        svg.text(202, y + 4, "leg %d" % weight, size=11, anchor="end")
+        svg.text(198, y + 5, "leg %d" % weight, size=14, anchor="end", weight="bold")
         svg.circle(210, y, 3.5, ORANGE)
         svg.line(210, y, ard_x0, y, ORANGE)
         svg.text(ard_x0 + 8, y + 4, "D%d" % pin, size=13)
         svg.text(300, y - 5, "bit %d (weight %d)" % (k, weight), size=10, color=GREY)
     yc = y0 + 150
-    svg.text(160, yc - 8, "C", size=12, anchor="middle")
+    svg.text(160, yc - 8, "C (common)", size=12, anchor="middle", weight="bold")
     svg.circle(160, yc, 3.5, ORANGE)
     svg.line(160, yc, 160, yc + 14, ORANGE)
     svg.ground(160, yc + 14)
