@@ -231,4 +231,17 @@
   CHECK(lcdOk && Wire.address == 0x27 && Wire.fourBit, "LCD found at 0x27");
   Serial.capture = false;
   CHECK(menuPos(P_program) == 0 && menuPos(P_arrow) == 0 && menuPos(P_casino) == 1, "start-up reads the switches");
+
+  // ---- scroll phase at the list ends and after contact bounce ----
+  menuMode = MM_MENU; menuDepth = 1; menuLevelItem[0] = 3; menuSince = 100; menuUndoValid = false;
+  menuTurn(1, false, 1000);
+  CHECK(menuLevelItem[0] == 4 && menuSince == 1000, "a real move starts a new view");
+  menuTurn(-1, false, 1100);
+  CHECK(menuLevelItem[0] == 3 && menuSince == 100, "a move straight back (100 ms) keeps the scroll of the item left");
+  menuTurn(1, false, 1150); menuTurn(-1, false, 1600);
+  CHECK(menuLevelItem[0] == 3 && menuSince == 1600, "a move back after 450 ms is a new view");
+  menuLevelItem[0] = 0; menuSince = 777; menuTurn(-1, false, 2000);
+  CHECK(menuLevelItem[0] == 0 && menuSince == 777, "a turn at the first item changes nothing");
+  menuLevelItem[0] = 3; menuTurn(1, false, 3000); menuKey(MENU_KEY_OK, 3010);
+  CHECK(!menuUndoValid, "a key press forgets the bounce memory");
 }

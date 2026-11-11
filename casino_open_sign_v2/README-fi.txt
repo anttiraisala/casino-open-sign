@@ -106,6 +106,10 @@ Ominaisuusrivi näyttää "Nimi  arvo" (arvo oikeassa reunassa); jos ne eivät m
 (tauko alussa, yksi merkki askeleessa, tauko viimeisen merkin ollessa oikeassa reunassa). OK vain luettavan arvon kohdalla avaa saman sivun kuin
 muokkaus (nimi, sitten lukko ja arvo), mutta mitään ei voi muuttaa; BACK tai OK palaa.
 Valikkokytkin SW3 on vapaasti pyörivä ja SUHTEELLINEN: koodin muutos on askel (1..7 eteen, 9..15 taakse, tasan 8 ohitetaan).
+Tässä sketchissä käytetty valikon määrittely on tallennettu tähän tiedostoon menu-v2.json (tarkka kopio tiedostosta tools/menu-editor/menu-v2.json;
+tools/generate_v2_menu.js kirjoittaa sen sketch.ino:n valikkolohkon kanssa; avaa se Menu Editorissa nähdäksesi tai muuttaaksesi valikkoa).
+Valikkokytkimen käännös ensimmäisellä tai viimeisellä kohdalla ei tee mitään (pitkän rivin vieritys jatkuu); käännös pois ja heti takaisin
+alle 300 ms sisällä (koskettimen pomppu) säilyttää myös sen rivin vierityksen.
 SHIFT pohjassa kierrettäessä askel on isompi. OK menee alivalikkoon / aloittaa muokkauksen / hyväksyy, BACK menee tason ylös / peruu muokkauksen.
 Pitkä rivinteksti vierii. Valikon juuressa, kun mitään ominaisuutta ei ole auki eikä muokata, 60 s ilman syötettä palauttaa näytön tilasivulle.
 Ohjelmakytkin SW6 on ABSOLUUTTINEN ja sitä luetaan koko ajan (myös valikon ollessa auki).

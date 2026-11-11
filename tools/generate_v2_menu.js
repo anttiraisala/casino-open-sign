@@ -1,6 +1,6 @@
 // Puts the generated menu tables and the menu engine into casino_open_sign_v2/sketch.ino (between the two marker lines).
 //   node tools/generate_v2_menu.js            (rewrites the block in place; the rest of the sketch is hand-written)
-//   node tools/generate_v2_menu.js --check    (exits 1 when the block in the sketch is out of date)
+//   node tools/generate_v2_menu.js --check    (exits 1 when the block in the sketch or the stored menu JSON copy is out of date)
 'use strict';
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
@@ -14,7 +14,12 @@ const text = fs.readFileSync(file, 'utf8');
 const a = text.indexOf('//@V2_MENU_BEGIN'), b = text.indexOf(END);
 if (a < 0 || b < 0 || b < a) { console.error('marker lines //@V2_MENU_BEGIN / //@V2_MENU_END not found in sketch.ino'); process.exit(2); }
 const block = BEGIN + tables(menu, 'menu-v2.json') + '\n' + engine + (engine.endsWith('\n') ? '' : '\n');
+// The menu JSON the sketch was generated from is stored next to the sketch (an exact copy, so the version of the menu
+// that went into each published sketch is always in casino_open_sign_v2/menu-v2.json).
+const jsonSrc = path.join(root, 'tools', 'menu-editor', 'menu-v2.json'), jsonCopy = path.join(root, 'casino_open_sign_v2', 'menu-v2.json');
+const jsonText = fs.readFileSync(jsonSrc, 'utf8');
 const out = text.slice(0, a) + block + text.slice(b);
-if (process.argv.includes('--check')) { if (out !== text) { console.error('the menu block in sketch.ino is out of date: run node tools/generate_v2_menu.js'); process.exit(1); } console.log('menu block up to date'); process.exit(0); }
+if (process.argv.includes('--check')) { if (!fs.existsSync(jsonCopy) || fs.readFileSync(jsonCopy, 'utf8') !== jsonText) { console.error('casino_open_sign_v2/menu-v2.json differs from tools/menu-editor/menu-v2.json: run node tools/generate_v2_menu.js'); process.exit(1); } if (out !== text) { console.error('the menu block in sketch.ino is out of date: run node tools/generate_v2_menu.js'); process.exit(1); } console.log('menu block up to date'); process.exit(0); }
 fs.writeFileSync(file, out);
-console.log('Updated the menu block of casino_open_sign_v2/sketch.ino');
+fs.writeFileSync(jsonCopy, jsonText);
+console.log('Updated the menu block of casino_open_sign_v2/sketch.ino and the copy casino_open_sign_v2/menu-v2.json');

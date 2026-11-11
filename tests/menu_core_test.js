@@ -353,5 +353,16 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   e.key('OK', 0); e.key('OK', 1); e.turn(1, false, 2); e.physical('ext', 4, 3);
   eq(e.mode, 'edit', 'a bound control that is not a status property leaves the edit alone'); eq(e.get('a'), 2, 'and the edited value stays'); eq(e.get('ext'), 4, 'while the bound value follows');
 }
+// ---- scroll keeps going at the list ends and after contact bounce
+{
+  const e = new core.Engine(core.build(V2));
+  e.key('OK', 0); e.turn(1, false, 10); e.key('OK', 20); e.turn(5, false, 30);
+  eq(e.rows(30)[1], 'Arrow speed: 1.0', 'last row of Speed starts scrolling');
+  e.turn(1, false, 1500); eq(e.rows(1500)[1], 'rrow speed: 1.00', 'turning down at the last item does not restart the scroll');
+  e.turn(-1, false, 1600); e.turn(1, false, 1650); eq(e.rows(1700)[1], 'rrow speed: 1.00', 'a move away and straight back within 300 ms keeps the scroll of the item');
+  e.turn(-1, false, 2000); e.turn(1, false, 2400); eq(e.rows(2400)[1], 'Arrow speed: 1.0', 'a return after more than 300 ms restarts the scroll');
+  e.turn(-1, false, 7000); e.turn(-1, false, 7100); eq(e.rows(7100)[1], 'Frame speed: 1.0', 'two moves in a row are not a bounce: the new item starts from the beginning');
+  e.turn(1, false, 7200); e.turn(-1, false, 9000); e.key('OK', 9001); e.key('BACK', 9002); e.turn(1, false, 9100); eq(e.rows(9100)[1], 'Letters speed: 1', 'a key press forgets the bounce memory');
+}
 if (fails) { console.log(fails + ' check(s) failed'); process.exit(1); }
 console.log('menu core tests passed');

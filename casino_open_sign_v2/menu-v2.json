@@ -1,0 +1,406 @@
+{
+  "format": 1,
+  "name": "Casino Open Sign V2 settings menu",
+  "common": {
+    "types": {
+      "level255": {
+        "kind": "int",
+        "min": 0,
+        "max": 255
+      },
+      "speed": {
+        "kind": "float",
+        "scale": "log",
+        "min": 0.125,
+        "max": 4,
+        "steps": 30,
+        "default": 1,
+        "decimals": 3,
+        "unit": "x"
+      },
+      "exponent": {
+        "kind": "float",
+        "scale": "log",
+        "min": 0.1,
+        "max": 20,
+        "steps": 50,
+        "default": 2.67,
+        "decimals": 2
+      },
+      "yesno": {
+        "kind": "bool",
+        "trueText": "Yes",
+        "falseText": "No"
+      },
+      "readOnlySwitch": {
+        "readOnly": true,
+        "persist": false
+      },
+      "mix": {
+        "kind": "float",
+        "scale": "linear",
+        "min": 0,
+        "max": 1,
+        "steps": 50,
+        "default": 1,
+        "decimals": 2
+      }
+    },
+    "properties": {
+      "program": {
+        "name": "Program",
+        "kind": "int",
+        "type": "readOnlySwitch",
+        "min": 0,
+        "max": 15,
+        "default": 0,
+        "format": "hex",
+        "bind": "D34-D37 program switch"
+      },
+      "arrow": {
+        "name": "Arrow",
+        "kind": "choice",
+        "type": "readOnlySwitch",
+        "choices": [
+          "Left",
+          "Right"
+        ],
+        "bind": "D32 arrow switch"
+      },
+      "casino": {
+        "name": "Casino",
+        "kind": "choice",
+        "type": "readOnlySwitch",
+        "choices": [
+          "Closed",
+          "Open"
+        ],
+        "bind": "D30 casino switch"
+      },
+      "arrowReverse": {
+        "name": "Arrow reverse",
+        "type": "yesno",
+        "callbacks": [
+          "applySwitches"
+        ]
+      },
+      "casinoReverse": {
+        "name": "Casino reverse",
+        "type": "yesno",
+        "callbacks": [
+          "applySwitches"
+        ]
+      },
+      "speedFrame": {
+        "name": "Frame speed",
+        "type": "speed",
+        "callbacks": [
+          "applySpeeds"
+        ]
+      },
+      "speedArrow": {
+        "name": "Arrow speed",
+        "type": "speed",
+        "callbacks": [
+          "applySpeeds"
+        ]
+      },
+      "speedLetters": {
+        "name": "Letters speed",
+        "type": "speed",
+        "callbacks": [
+          "applySpeeds"
+        ]
+      },
+      "randomDelay": {
+        "name": "Change delay",
+        "kind": "int",
+        "min": 0,
+        "max": 30,
+        "default": 2,
+        "unit": " min",
+        "valueTexts": {
+          "0": "random"
+        }
+      },
+      "stripMin": {
+        "name": "Min",
+        "type": "level255",
+        "default": 0,
+        "callbacks": [
+          "rebuildStripCurve"
+        ]
+      },
+      "stripMax": {
+        "name": "Max",
+        "type": "level255",
+        "default": 80,
+        "callbacks": [
+          "rebuildStripCurve"
+        ]
+      },
+      "stripExp": {
+        "name": "Exponent",
+        "type": "exponent",
+        "callbacks": [
+          "rebuildStripCurve"
+        ]
+      },
+      "stickMin": {
+        "name": "Min",
+        "type": "level255",
+        "default": 0,
+        "callbacks": [
+          "rebuildStickCurve"
+        ]
+      },
+      "stickMax": {
+        "name": "Max",
+        "type": "level255",
+        "default": 80,
+        "callbacks": [
+          "rebuildStickCurve"
+        ]
+      },
+      "stickExp": {
+        "name": "Exponent",
+        "type": "exponent",
+        "callbacks": [
+          "rebuildStickCurve"
+        ]
+      },
+      "stripMix": {
+        "name": "Mix",
+        "type": "mix",
+        "callbacks": [
+          "rebuildStripCurve"
+        ]
+      },
+      "lettersMin": {
+        "name": "Min",
+        "type": "level255",
+        "default": 0,
+        "callbacks": [
+          "rebuildLettersCurve"
+        ]
+      },
+      "lettersMax": {
+        "name": "Max",
+        "type": "level255",
+        "default": 80,
+        "callbacks": [
+          "rebuildLettersCurve"
+        ]
+      },
+      "lettersExp": {
+        "name": "Exponent",
+        "type": "exponent",
+        "callbacks": [
+          "rebuildLettersCurve"
+        ]
+      },
+      "lettersMix": {
+        "name": "Mix",
+        "type": "mix",
+        "callbacks": [
+          "rebuildLettersCurve"
+        ]
+      },
+      "stickMix": {
+        "name": "Mix",
+        "type": "mix",
+        "callbacks": [
+          "rebuildStickCurve"
+        ]
+      }
+    },
+    "menus": {
+      "stripBrightness": {
+        "name": "Frame",
+        "items": [
+          {
+            "propertyRef": "stripMin"
+          },
+          {
+            "propertyRef": "stripMax"
+          },
+          {
+            "propertyRef": "stripExp"
+          },
+          {
+            "propertyRef": "stripMix"
+          }
+        ]
+      },
+      "lettersBrightness": {
+        "name": "Letters",
+        "items": [
+          {
+            "propertyRef": "lettersMin"
+          },
+          {
+            "propertyRef": "lettersMax"
+          },
+          {
+            "propertyRef": "lettersExp"
+          },
+          {
+            "propertyRef": "lettersMix"
+          }
+        ]
+      },
+      "stickBrightness": {
+        "name": "Arrow",
+        "items": [
+          {
+            "propertyRef": "stickMin"
+          },
+          {
+            "propertyRef": "stickMax"
+          },
+          {
+            "propertyRef": "stickExp"
+          },
+          {
+            "propertyRef": "stickMix"
+          }
+        ]
+      }
+    }
+  },
+  "status": {
+    "program": "program",
+    "casino": "casino",
+    "arrow": "arrow",
+    "randomValue": 15,
+    "arrowAscii": false
+  },
+  "root": {
+    "name": "Menu",
+    "items": [
+      {
+        "menu": "Controls",
+        "items": [
+          {
+            "propertyRef": "program"
+          },
+          {
+            "propertyRef": "arrow"
+          },
+          {
+            "propertyRef": "arrowReverse"
+          },
+          {
+            "propertyRef": "casino"
+          },
+          {
+            "propertyRef": "casinoReverse"
+          }
+        ]
+      },
+      {
+        "menu": "Speed",
+        "items": [
+          {
+            "propertyRef": "speedFrame"
+          },
+          {
+            "propertyRef": "speedLetters"
+          },
+          {
+            "propertyRef": "speedArrow"
+          }
+        ]
+      },
+      {
+        "menu": "Frame",
+        "items": [
+          {
+            "propertyRef": "speedFrame"
+          },
+          {
+            "propertyRef": "stripMin"
+          },
+          {
+            "propertyRef": "stripMax"
+          },
+          {
+            "propertyRef": "stripExp"
+          },
+          {
+            "propertyRef": "stripMix"
+          }
+        ]
+      },
+      {
+        "menu": "Letters",
+        "items": [
+          {
+            "propertyRef": "speedLetters"
+          },
+          {
+            "propertyRef": "lettersMin"
+          },
+          {
+            "propertyRef": "lettersMax"
+          },
+          {
+            "propertyRef": "lettersExp"
+          },
+          {
+            "propertyRef": "lettersMix"
+          }
+        ]
+      },
+      {
+        "menu": "Arrow",
+        "items": [
+          {
+            "propertyRef": "speedArrow"
+          },
+          {
+            "propertyRef": "stickMin"
+          },
+          {
+            "propertyRef": "stickMax"
+          },
+          {
+            "propertyRef": "stickExp"
+          },
+          {
+            "propertyRef": "stickMix"
+          }
+        ]
+      },
+      {
+        "menu": "Brightness",
+        "items": [
+          {
+            "menuRef": "stripBrightness"
+          },
+          {
+            "menuRef": "lettersBrightness"
+          },
+          {
+            "menuRef": "stickBrightness"
+          }
+        ]
+      },
+      {
+        "menu": "Random program",
+        "items": [
+          {
+            "propertyRef": "randomDelay"
+          }
+        ]
+      },
+      {
+        "preset": "Restore defaults",
+        "setAll": "default",
+        "confirm": true,
+        "confirmText": "Restore defaults?",
+        "set": {}
+      }
+    ]
+  }
+}

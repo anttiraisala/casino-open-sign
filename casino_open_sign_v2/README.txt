@@ -108,6 +108,10 @@ A property row shows "Name  value" (value at the right edge); if the two do not 
 (pause at the start, one character per step, pause with the last character at the right edge). OK on a read-only value opens the same page as
 an edit (name, then a padlock and the value) but nothing can be changed; BACK or OK returns.
 The menu switch SW3 is free-running and RELATIVE: the change of its code is a step (1..7 forward, 9..15 back, exactly 8 ignored).
+The menu definition used for this sketch is stored here as menu-v2.json (an exact copy of tools/menu-editor/menu-v2.json, written by
+tools/generate_v2_menu.js together with the menu block of sketch.ino; open it in the Menu Editor to see or change the menu).
+A move of the menu switch at the first or last item does nothing (the scroll of a long row goes on); a move away and straight back
+within 300 ms (contact bounce) also keeps the scroll of that row.
 Holding SHIFT while turning makes the step bigger. OK enters / starts an edit / accepts, BACK goes one level up / cancels an edit.
 Long row text scrolls. At the menu root, with no property open and no edit, 60 s without any input returns the display to the status page.
 The program switch SW6 is ABSOLUTE and is read all the time (also while the menu is open).

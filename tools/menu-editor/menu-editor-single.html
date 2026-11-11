@@ -85,6 +85,7 @@
 
   var COLS = 16;
   var LEFT_ARROW = '\x7f', RIGHT_ARROW = '\x7e';          // HD44780 ROM characters
+  var UNDO_MS = 300;
   var LOCK_CHAR = '\u0001', TIMEOUT_MS = 60000, MARQUEE_PAUSE_MS = 1000, MARQUEE_STEP_MS = 400, STATUS_ALT_MS = 3000;
   var MAX_PRESET_VALUES = 16;
   var KINDS = { int: 1, float: 1, choice: 1, bool: 1 };
@@ -313,7 +314,7 @@
     opts = opts || {};
     this.m = model; this.pos = {}; this.opts = opts;
     this.mode = 'status'; this.stack = []; this.edit = null; this.confirmItem = null;
-    this.lastInput = 0; this.since = 0; this.runtime = { changeInSec: null };
+    this.lastInput = 0; this.since = 0; this.undo = null; this.runtime = { changeInSec: null };
     this.callLog = []; this.batches = [];
     var self = this;
     model.order.forEach(function (id) { self.pos[id] = model.props[id].defaultPos; });
@@ -359,7 +360,7 @@
   Engine.prototype._level = function () { return this.stack[this.stack.length - 1]; };
   Engine.prototype._item = function () { var l = this._level(); return l.menu.items[l.idx]; };
   Engine.prototype._touch = function (now, newView) { this.lastInput = now; if (newView) this.since = now; };
-  Engine.prototype._toStatus = function (now) { this.mode = 'status'; this.stack = []; this.edit = null; this.confirmItem = null; this.since = now; };
+  Engine.prototype._toStatus = function (now) { this.undo = null; this.mode = 'status'; this.stack = []; this.edit = null; this.confirmItem = null; this.since = now; };
 
   // physical control changed (arrow switch, casino switch, program switch): value follows; an open menu is closed
   Engine.prototype.physical = function (id, value, now) {
@@ -372,7 +373,10 @@
     if (!steps) return;
     if (this.mode === 'menu') {
       var l = this._level(), n = l.menu.items.length, k = Math.max(0, Math.min(n - 1, l.idx + steps));
-      if (k !== l.idx) { l.idx = k; this._touch(now, true); } else this._touch(now, false);
+      if (k === l.idx) this._touch(now, false);                // already at the first or last item: nothing moves, the scroll goes on
+      else if (this.undo && this.undo.idx === k && now - this.undo.at <= UNDO_MS) {
+        l.idx = k; this.since = this.undo.since; this.undo = null; this._touch(now, false);   // straight back to the item just left (contact bounce): its scroll goes on
+      } else { this.undo = { idx: l.idx, since: this.since, at: now }; l.idx = k; this._touch(now, true); }
     } else if (this.mode === 'edit') {
       var p = this.m.props[this.edit.id];
       this._setPos(this.edit.id, movePos(p, this.pos[this.edit.id], steps * (shift ? p.shift : 1)));
@@ -392,6 +396,7 @@
     this._save(changed);
   };
   Engine.prototype.key = function (name, now) {
+    this.undo = null;
     if (this.mode === 'status') { if (name === 'OK') { this.mode = 'menu'; this.stack = [{ menu: this.m.root, idx: 0 }]; this._touch(now, true); } return; }
     if (this.mode === 'menu') {
       if (name === 'BACK') { if (this.stack.length > 1) { this.stack.pop(); this._touch(now, true); } else this._toStatus(now); return; }

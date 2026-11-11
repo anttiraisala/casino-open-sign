@@ -225,6 +225,10 @@ uint16_t menuEditStart = 0;
 uint8_t menuConfirmPreset = 0;
 unsigned long menuLastInput = 0;
 unsigned long menuSince = 0;
+constexpr unsigned long MENU_UNDO_MS = 300UL;   // a move straight back to the item just left (contact bounce) keeps that item's scroll
+bool menuUndoValid = false;
+uint8_t menuUndoItem = 0;
+unsigned long menuUndoSince = 0, menuUndoAt = 0;
 long menuChangeInSec = -1;                       // seconds until the random program changes (-1 = unknown)
 bool menuEepromValid = false;                    // the stored image matches this layout
 
@@ -383,6 +387,7 @@ void menuTouch(unsigned long now, bool newView) {
 }
 
 void menuToStatus(unsigned long now) {
+  menuUndoValid = false;
   menuMode = MM_STATUS;
   menuDepth = 0;
   menuSince = now;
@@ -555,8 +560,13 @@ void menuTurn(int steps, bool shift, unsigned long now) {
     long k = (long)menuLevelItem[level] + steps;
     if (k < 0) k = 0;
     if (k > n - 1) k = n - 1;
-    if (k != menuLevelItem[level]) { menuLevelItem[level] = (uint8_t)k; menuTouch(now, true); }
-    else menuTouch(now, false);
+    if (k == menuLevelItem[level]) menuTouch(now, false);        // already at the first or last item: nothing moves, the scroll goes on
+    else if (menuUndoValid && menuUndoItem == (uint8_t)k && now - menuUndoAt <= MENU_UNDO_MS) {
+      menuLevelItem[level] = (uint8_t)k; menuSince = menuUndoSince; menuUndoValid = false; menuTouch(now, false);   // straight back: its scroll goes on
+    } else {
+      menuUndoValid = true; menuUndoItem = menuLevelItem[level]; menuUndoSince = menuSince; menuUndoAt = now;
+      menuLevelItem[level] = (uint8_t)k; menuTouch(now, true);
+    }
   } else if (menuMode == MM_EDIT) {
     const long factor = shift ? menuRd8(PP_SHIFT, menuEditProp) : 1;
     menuSetPos(menuEditProp, menuMovePos(menuEditProp, menuPosArr[menuEditProp], (long)steps * factor));
@@ -597,6 +607,7 @@ void menuApplyPreset(uint8_t preset) {
 }
 
 void menuKey(uint8_t key, unsigned long now) {
+  menuUndoValid = false;
   if (menuMode == MM_STATUS) {
     if (key == MENU_KEY_OK) {
       menuMode = MM_MENU;
