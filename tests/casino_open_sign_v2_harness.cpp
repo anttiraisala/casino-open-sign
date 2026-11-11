@@ -51,6 +51,10 @@ static uint8_t shownLevel(Adafruit_NeoPixel *let, uint8_t l) {
   return (let->shown_[PIXEL_OF_LETTER[l]] >> 16) & 0xFF;
 }
 
+static void setProgramPins(int v) {
+  for (int b = 0; b < 4; b++) g_pinLevel[PIN_PROGRAM[b]] = ((v >> b) & 1) ? LOW : HIGH;   // a set bit reads LOW
+}
+
 int main(int argc, char **argv) {
   FILE *out = argc > 1 ? fopen(argv[1], "w") : nullptr;
   Serial.capture = true;                                // everything printed is kept for the sign-of-life checks
@@ -79,7 +83,7 @@ int main(int argc, char **argv) {
   CHECK(FRAME_SPEED_MS == 200 && FRAME_BAR_LEDS == 2 && STARTUP_TEST_WINDOW_LEDS == 2, "frame step 200 ms, bar of 2 pixels, LED test window of 2 pixels");
   CHECK(PIN_FRAME == 11 && PIN_LETTERS == 12 && PIN_CLOSED_LIGHT == 54 && PIN_STATUS_LED == 13, "strip pins (D13 stays the status LED)");
   for (auto *s : g_strips) CHECK(s->pin_ != 31, "pin 31 is free: nothing is on D31 any more");
-  CHECK(PIN_ARROW_SWITCH == 32 && PIN_MODE_BUTTON == 33 && PIN_CASINO_CLOSED_SWITCH == 30, "input pins");
+  CHECK(PIN_ARROW_SWITCH == 32 && PIN_SKIP_BUTTON == 33 && PIN_CASINO_CLOSED_SWITCH == 30, "input pins");
   const int wantStickPins[10] = {2, 6, 5, 7, 8, 3, 4, 57, 55, 56};
   Adafruit_NeoPixel *fr=nullptr,*let=nullptr,*clo=nullptr;
   Adafruit_NeoPixel *st[10] = {};          // the sticks in the order L-CAP, L-WING-UP, L-WING-DN, RAIL-UP-L, RAIL-UP-R,
@@ -99,7 +103,117 @@ int main(int argc, char **argv) {
   CHECK(arrowPointsRight, "arrow starts pointing right with the switch released (HIGH)");
   CHECK(g_analogPin == 69, "the random seed is read from the free pin A15 (A0 carries the CLOSED stick)");
 
-  // Timeline: mode k is active from MODE_MS*k. The button is pressed (with contact bounce) just before.
+  // ---- Frame patterns (one per program): expected levels are hard-coded (made by an independent reference
+  // implementation, /tmp-free: see tests/frame_pattern_reference.py), 2 hex digits per pixel, pixels 0..17 ----
+  {
+    const int NSTEPS = 24;
+    struct FrameExpect { int mode; bool right; const char *rows[24]; };
+    static const int STEPS[24] = {0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 12, 13, 14, 15, 17, 20, 25, 29, 30, 33, 35, 36, 38, 39};
+    static const FrameExpect EXPECT[] = {
+{0, true, {"ffff0000ffffff0000ffff0000ffffff0000", "00ffff0000ff0000ffff0000ffff00ffff00", "0000ffff000000ffff0000ffff000000ffff", "ff0000ffff00ffff0000ffff0000ff0000ff", "ffff0000ffffff0000ffff0000ffffff0000", "00ffff0000ff0000ffff0000ffff00ffff00", "0000ffff000000ffff0000ffff000000ffff", "ff0000ffff00ffff0000ffff0000ff0000ff", "00ffff0000ff0000ffff0000ffff00ffff00", "0000ffff000000ffff0000ffff000000ffff", "ffff0000ffffff0000ffff0000ffffff0000", "00ffff0000ff0000ffff0000ffff00ffff00", "0000ffff000000ffff0000ffff000000ffff", "ff0000ffff00ffff0000ffff0000ff0000ff", "00ffff0000ff0000ffff0000ffff00ffff00", "ffff0000ffffff0000ffff0000ffffff0000", "00ffff0000ff0000ffff0000ffff00ffff00", "00ffff0000ff0000ffff0000ffff00ffff00", "0000ffff000000ffff0000ffff000000ffff", "00ffff0000ff0000ffff0000ffff00ffff00", "ff0000ffff00ffff0000ffff0000ff0000ff", "ffff0000ffffff0000ffff0000ffffff0000", "0000ffff000000ffff0000ffff000000ffff", "ff0000ffff00ffff0000ffff0000ff0000ff"}},
+  {0, false, {"ffff0000ffff0000ffffff0000ffff0000ff", "ff0000ffff0000ffff00ffff0000ffff0000", "0000ffff0000ffff000000ffff0000ffff00", "00ffff0000ffff0000ff0000ffff0000ffff", "ffff0000ffff0000ffffff0000ffff0000ff", "ff0000ffff0000ffff00ffff0000ffff0000", "0000ffff0000ffff000000ffff0000ffff00", "00ffff0000ffff0000ff0000ffff0000ffff", "ff0000ffff0000ffff00ffff0000ffff0000", "0000ffff0000ffff000000ffff0000ffff00", "ffff0000ffff0000ffffff0000ffff0000ff", "ff0000ffff0000ffff00ffff0000ffff0000", "0000ffff0000ffff000000ffff0000ffff00", "00ffff0000ffff0000ff0000ffff0000ffff", "ff0000ffff0000ffff00ffff0000ffff0000", "ffff0000ffff0000ffffff0000ffff0000ff", "ff0000ffff0000ffff00ffff0000ffff0000", "ff0000ffff0000ffff00ffff0000ffff0000", "0000ffff0000ffff000000ffff0000ffff00", "ff0000ffff0000ffff00ffff0000ffff0000", "00ffff0000ffff0000ff0000ffff0000ffff", "ffff0000ffff0000ffffff0000ffff0000ff", "0000ffff0000ffff000000ffff0000ffff00", "00ffff0000ffff0000ff0000ffff0000ffff"}},
+  {1, true, {"3700000000000000000000000000ffcd9b69", "00000000000000000000000000ffcd9b6937", "000000000000000000000000ffcd9b693700", "0000000000000000000000ffcd9b69370000", "00000000000000000000ffcd9b6937000000", "000000000000000000ffcd9b693700000000", "0000000000000000ffcd9b69370000000000", "00000000000000ffcd9b6937000000000000", "0000000000ffcd9b69370000000000000000", "00000000ffcd9b6937000000000000000000", "0000ffcd9b69370000000000000000000000", "00ffcd9b6937000000000000000000000000", "ffcd9b693700000000000000000000000000", "cd9b693700000000000000000000000000ff", "693700000000000000000000000000ffcd9b", "000000000000000000000000ffcd9b693700", "00000000000000ffcd9b6937000000000000", "000000ffcd9b693700000000000000000000", "0000ffcd9b69370000000000000000000000", "cd9b693700000000000000000000000000ff", "693700000000000000000000000000ffcd9b", "3700000000000000000000000000ffcd9b69", "000000000000000000000000ffcd9b693700", "0000000000000000000000ffcd9b69370000"}},
+  {1, false, {"000000000037699bcdff0000000000000000", "00000000000037699bcdff00000000000000", "0000000000000037699bcdff000000000000", "000000000000000037699bcdff0000000000", "00000000000000000037699bcdff00000000", "0000000000000000000037699bcdff000000", "000000000000000000000037699bcdff0000", "00000000000000000000000037699bcdff00", "ff0000000000000000000000000037699bcd", "cdff0000000000000000000000000037699b", "699bcdff0000000000000000000000000037", "37699bcdff00000000000000000000000000", "0037699bcdff000000000000000000000000", "000037699bcdff0000000000000000000000", "0000000037699bcdff000000000000000000", "0000000000000037699bcdff000000000000", "00000000000000000000000037699bcdff00", "9bcdff000000000000000000000000003769", "699bcdff0000000000000000000000000037", "000037699bcdff0000000000000000000000", "0000000037699bcdff000000000000000000", "000000000037699bcdff0000000000000000", "0000000000000037699bcdff000000000000", "000000000000000037699bcdff0000000000"}},
+  {2, true, {"0000000000000000000000000000ff000000", "00000000000000000000000000ffffff0000", "000000000000000000000000ffffffffff00", "0000000000000000000000ffffffffffffff", "ff000000000000000000ffffffffffffffff", "ffff00000000000000ffffffffffffffffff", "ffffff0000000000ffffffffffffffffffff", "ffffffff000000ffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000000000000000000000000000000000000", "000000000000000000000000000000000000", "00000000000000000000000000ffffff0000", "ff000000000000000000ffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000000000000000000000000000000000000", "00000000000000000000000000ffffff0000", "0000000000000000000000ffffffffffffff", "ff000000000000000000ffffffffffffffff", "ffffff0000000000ffffffffffffffffffff", "ffffffff000000ffffffffffffffffffffff"}},
+  {2, false, {"000000000000000000ff0000000000000000", "0000000000000000ffffff00000000000000", "00000000000000ffffffffff000000000000", "000000000000ffffffffffffff0000000000", "0000000000ffffffffffffffffff00000000", "00000000ffffffffffffffffffffff000000", "000000ffffffffffffffffffffffffff0000", "0000ffffffffffffffffffffffffffffff00", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000000000000000000000000000000000000", "000000000000000000000000000000000000", "0000000000000000ffffff00000000000000", "0000000000ffffffffffffffffff00000000", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000000000000000000000000000000000000", "0000000000000000ffffff00000000000000", "000000000000ffffffffffffff0000000000", "0000000000ffffffffffffffffff00000000", "000000ffffffffffffffffffffffffff0000", "0000ffffffffffffffffffffffffffffff00"}},
+  {4, true, {"c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414"}},
+  {4, false, {"c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8ffffffc8c8c8c8c8c8ffffff", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414", "c8c8c8c8c8c8141414c8c8c8c8c8c8141414"}},
+  {5, true, {"00ff00ff00ff00ff00ff00ff00ff00ff00ff", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "ff00ff00ff00ff00ff00ff00ff00ff00ff00"}},
+  {5, false, {"00ff00ff00ff00ff00ff00ff00ff00ff00ff", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "00ff00ff00ff00ff00ff00ff00ff00ff00ff", "ff00ff00ff00ff00ff00ff00ff00ff00ff00", "ff00ff00ff00ff00ff00ff00ff00ff00ff00"}},
+  {6, true, {"0000000000000000000000000000ff000000", "00000000000000000000000000ffb9000000", "000000000000000000000000ffb973000000", "0000000000000000000000ffb9732d000000", "00000000000000000000ffb9732d00000000", "000000000000000000ffb9732d0000000000", "0000000000000000ffb9732d000000000000", "00000000000000ffb9732d00000000000000", "0000000000ffb9732d000000000000000000", "00000000ffb9732d00000000000000000000", "0000ffb9732d000000000000000000000000", "00ffb9732d00000000000000000000000000", "ffb9732d0000000000000000000000000000", "b9732d0000000000000000000000000000ff", "2d0000000000000000000000000000ffb973", "00000000000000000000000000000073b9ff", "002d73b9ff00000000000000000000000000", "00000000002d73b9ff000000000000000000", "0000000000002d73b9ff0000000000000000", "0000000000000000002d73b9ff0000000000", "00000000000000000000002d73b9ff000000", "0000000000000000000000000000ff000000", "000000000000000000000000ffb973000000", "0000000000000000000000ffb9732d000000"}},
+  {6, false, {"000000000000000000ff0000000000000000", "000000000000000000b9ff00000000000000", "00000000000000000073b9ff000000000000", "0000000000000000002d73b9ff0000000000", "000000000000000000002d73b9ff00000000", "00000000000000000000002d73b9ff000000", "0000000000000000000000002d73b9ff0000", "000000000000000000000000002d73b9ff00", "ff00000000000000000000000000002d73b9", "b9ff00000000000000000000000000002d73", "2d73b9ff0000000000000000000000000000", "002d73b9ff00000000000000000000000000", "00002d73b9ff000000000000000000000000", "0000002d73b9ff0000000000000000000000", "00000000002d73b9ff000000000000000000", "000000000000ffb973000000000000000000", "00ffb9732d00000000000000000000000000", "2d0000000000000000000000000000ffb973", "0000000000000000000000000000ffb9732d", "0000000000000000000000ffb9732d000000", "000000000000000000ffb9732d0000000000", "000000000000000000ff0000000000000000", "00000000000000000073b9ff000000000000", "0000000000000000002d73b9ff0000000000"}},
+  {8, true, {"0000ff0000ff0000ff0000ff0000ff0000ff", "00ff0000ff0000ff0000ff0000ff0000ff00", "ff0000ff0000ff0000ff0000ff0000ff0000", "0000ff0000ff0000ff0000ff0000ff0000ff", "00ff0000ff0000ff0000ff0000ff0000ff00", "ff0000ff0000ff0000ff0000ff0000ff0000", "0000ff0000ff0000ff0000ff0000ff0000ff", "00ff0000ff0000ff0000ff0000ff0000ff00", "0000ff0000ff0000ff0000ff0000ff0000ff", "00ff0000ff0000ff0000ff0000ff0000ff00", "0000ff0000ff0000ff0000ff0000ff0000ff", "00ff0000ff0000ff0000ff0000ff0000ff00", "ff0000ff0000ff0000ff0000ff0000ff0000", "0000ff0000ff0000ff0000ff0000ff0000ff", "ff0000ff0000ff0000ff0000ff0000ff0000", "ff0000ff0000ff0000ff0000ff0000ff0000", "00ff0000ff0000ff0000ff0000ff0000ff00", "ff0000ff0000ff0000ff0000ff0000ff0000", "0000ff0000ff0000ff0000ff0000ff0000ff", "0000ff0000ff0000ff0000ff0000ff0000ff", "ff0000ff0000ff0000ff0000ff0000ff0000", "0000ff0000ff0000ff0000ff0000ff0000ff", "ff0000ff0000ff0000ff0000ff0000ff0000", "0000ff0000ff0000ff0000ff0000ff0000ff"}},
+  {8, false, {"ff0000ff0000ff0000ff0000ff0000ff0000", "00ff0000ff0000ff0000ff0000ff0000ff00", "0000ff0000ff0000ff0000ff0000ff0000ff", "ff0000ff0000ff0000ff0000ff0000ff0000", "00ff0000ff0000ff0000ff0000ff0000ff00", "0000ff0000ff0000ff0000ff0000ff0000ff", "ff0000ff0000ff0000ff0000ff0000ff0000", "00ff0000ff0000ff0000ff0000ff0000ff00", "ff0000ff0000ff0000ff0000ff0000ff0000", "00ff0000ff0000ff0000ff0000ff0000ff00", "ff0000ff0000ff0000ff0000ff0000ff0000", "00ff0000ff0000ff0000ff0000ff0000ff00", "0000ff0000ff0000ff0000ff0000ff0000ff", "ff0000ff0000ff0000ff0000ff0000ff0000", "0000ff0000ff0000ff0000ff0000ff0000ff", "0000ff0000ff0000ff0000ff0000ff0000ff", "00ff0000ff0000ff0000ff0000ff0000ff00", "0000ff0000ff0000ff0000ff0000ff0000ff", "ff0000ff0000ff0000ff0000ff0000ff0000", "ff0000ff0000ff0000ff0000ff0000ff0000", "0000ff0000ff0000ff0000ff0000ff0000ff", "ff0000ff0000ff0000ff0000ff0000ff0000", "0000ff0000ff0000ff0000ff0000ff0000ff", "ff0000ff0000ff0000ff0000ff0000ff0000"}},
+  {9, true, {"ffffffffffffffffffffffffffffffffffff", "787878787878787878787878787878787878", "c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8", "3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "ffffffffffffffffffffffffffffffffffff", "c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8", "3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "ffffffffffffffffffffffffffffffffffff", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "ffffffffffffffffffffffffffffffffffff", "3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "141414141414141414141414141414141414"}},
+  {9, false, {"ffffffffffffffffffffffffffffffffffff", "787878787878787878787878787878787878", "c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8", "3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "ffffffffffffffffffffffffffffffffffff", "c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8c8", "3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "ffffffffffffffffffffffffffffffffffff", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "ffffffffffffffffffffffffffffffffffff", "3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "141414141414141414141414141414141414", "141414141414141414141414141414141414"}},
+  {10, true, {"ff00000000ff000000ff00000000ff000000", "ffff0000ffffff00ffffff0000ffffff00ff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000000000000000000000000000000000000", "000000000000000000000000000000000000", "ffff0000ffffff00ffffff0000ffffff00ff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000000000000000000000000000000000000", "000000000000000000000000000000000000", "ffff0000ffffff00ffffff0000ffffff00ff", "ffffffffffffffffffffffffffffffffffff", "ffff0000ffffff00ffffff0000ffffff00ff", "ffffffffffffffffffffffffffffffffffff", "000000000000000000000000000000000000", "ffff0000ffffff00ffffff0000ffffff00ff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000000000000000000000000000000000000", "000000000000000000000000000000000000"}},
+  {10, false, {"ff00000000ff000000ff00000000ff000000", "ffff0000ffffff00ffffff0000ffffff00ff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000000000000000000000000000000000000", "000000000000000000000000000000000000", "ffff0000ffffff00ffffff0000ffffff00ff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000000000000000000000000000000000000", "000000000000000000000000000000000000", "ffff0000ffffff00ffffff0000ffffff00ff", "ffffffffffffffffffffffffffffffffffff", "ffff0000ffffff00ffffff0000ffffff00ff", "ffffffffffffffffffffffffffffffffffff", "000000000000000000000000000000000000", "ffff0000ffffff00ffffff0000ffffff00ff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000000000000000000000000000000000000", "000000000000000000000000000000000000"}},
+  {11, true, {"ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "ffffffffffff000000ffffffffffff000000", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff"}},
+  {11, false, {"ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "ffffffffffff000000ffffffffffff000000", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff"}},
+  {13, true, {"0000000000000000000000005fafffaf5f00", "00000000000000000000000000ffafff0000", "000000000000000000000000ffaf5fafff00", "0000000000000000000000ffaf5f005fafff", "ff000000000000000000ffaf5f0000005faf", "afff00000000000000ffaf5f00000000005f", "5fafff0000000000ffaf5f00000000000000", "005fafff000000ffaf5f0000000000000000", "0000005fafffaf5f00000000000000000000", "00000000ffafff0000000000000000000000", "0000ffaf5f005fafff000000000000000000", "00ffaf5f0000005fafff0000000000000000", "ffaf5f00000000005fafff00000000000000", "af5f000000000000005fafff0000000000ff", "00000000000000000000005fafff00ffaf5f", "000000000000000000000000ffaf5fafff00", "005fafff000000ffaf5f0000000000000000", "000000ffaf5fafff00000000000000000000", "0000ffaf5f005fafff000000000000000000", "af5f000000000000005fafff0000000000ff", "00000000000000000000005fafff00ffaf5f", "0000000000000000000000005fafffaf5f00", "000000000000000000000000ffaf5fafff00", "0000000000000000000000ffaf5f005fafff"}},
+  {13, false, {"000000000000005fafffaf5f000000000000", "0000000000000000ffafff00000000000000", "00000000000000ffaf5fafff000000000000", "000000000000ffaf5f005fafff0000000000", "0000000000ffaf5f0000005fafff00000000", "00000000ffaf5f00000000005fafff000000", "000000ffaf5f000000000000005fafff0000", "0000ffaf5f0000000000000000005fafff00", "ffaf5f000000000000000000000000005faf", "afff000000000000000000000000000000ff", "005fafff0000000000000000000000ffaf5f", "00005fafff000000000000000000ffaf5f00", "0000005fafff00000000000000ffaf5f0000", "000000005fafff0000000000ffaf5f000000", "0000000000005fafff00ffaf5f0000000000", "00000000000000ffaf5fafff000000000000", "0000ffaf5f0000000000000000005fafff00", "5fafff00000000000000000000000000ffaf", "005fafff0000000000000000000000ffaf5f", "000000005fafff0000000000ffaf5f000000", "0000000000005fafff00ffaf5f0000000000", "000000000000005fafffaf5f000000000000", "00000000000000ffaf5fafff000000000000", "000000000000ffaf5f005fafff0000000000"}},
+  {14, true, {"ffff00ffff00ffff00ffff00ffff00ffff00", "ff00ffff00ffff00ffff00ffff00ffff00ff", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00", "ff00ffff00ffff00ffff00ffff00ffff00ff", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00", "ff00ffff00ffff00ffff00ffff00ffff00ff", "ffff00ffff00ffff00ffff00ffff00ffff00", "ff00ffff00ffff00ffff00ffff00ffff00ff", "ffff00ffff00ffff00ffff00ffff00ffff00", "ff00ffff00ffff00ffff00ffff00ffff00ff", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff", "00ffff00ffff00ffff00ffff00ffff00ffff", "ff00ffff00ffff00ffff00ffff00ffff00ff", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00"}},
+  {14, false, {"00ffff00ffff00ffff00ffff00ffff00ffff", "ff00ffff00ffff00ffff00ffff00ffff00ff", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff", "ff00ffff00ffff00ffff00ffff00ffff00ff", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff", "ff00ffff00ffff00ffff00ffff00ffff00ff", "00ffff00ffff00ffff00ffff00ffff00ffff", "ff00ffff00ffff00ffff00ffff00ffff00ff", "00ffff00ffff00ffff00ffff00ffff00ffff", "ff00ffff00ffff00ffff00ffff00ffff00ff", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00", "ffff00ffff00ffff00ffff00ffff00ffff00", "ff00ffff00ffff00ffff00ffff00ffff00ff", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff"}},
+    };
+    for (const FrameExpect &e : EXPECT) {
+      for (int k = 0; k < NSTEPS; k++) {
+        std::string got;
+        char b[4];
+        for (uint16_t i = 0; i < 18; i++) { snprintf(b, sizeof b, "%02x", frameLevel(i, e.right, (uint8_t)e.mode, (uint16_t)STEPS[k])); got += b; }
+        if (got != e.rows[k]) { printf("FAIL: frame program %d arrow %s step %d: got %s expected %s\n", e.mode, e.right ? "right" : "left", STEPS[k], got.c_str(), e.rows[k]); fails++; }
+      }
+    }
+    // frame program 3: steady until step 29, dark from step 30
+    for (int right = 0; right < 2; right++) for (uint16_t i = 0; i < 18; i++) {
+      CHECK(frameLevel(i, right, 3, 29) == 230 && frameLevel(i, right, 3, 30) == 0, "frame program 3: steady until step 29, dark from step 30");
+    }
+    // frame program 12: pixel i locks at step 6 + i (spinning before, 255 from then on until step 36)
+    { bool sawDarkSpin = false;
+      for (uint16_t i = 0; i < 18; i++) { CHECK(frameLevel(i, true, 12, (uint16_t)(6 + i)) == 255, "frame program 12: pixel i is locked at step 6 + i");
+        if (frameLevel(i, true, 12, (uint16_t)(5 + i)) == 0) sawDarkSpin = true; }
+      CHECK(sawDarkSpin, "frame program 12: a pixel is still spinning at step 5 + i"); }
+    // the step counter wraps at 3600 and restarts when the program changes
+    { frameStep = 3599; updateFrame(); CHECK(frameStep == 0, "frame step wraps at 3600");
+      frameStep = 7; updateFrame(); CHECK(frameStep == 8, "frame step counts the frame updates");
+      frameStep = 7; setLetterMode(5, g_millis); CHECK(frameStep == 0, "the frame step restarts when the program changes");
+      frameStep = 7; pickAutoMode(g_millis); CHECK(frameStep == 0, "the frame step restarts when random auto picks a program");
+      setLetterMode(0, g_millis); }
+    // random-looking programs: check what is certain
+    for (int right = 0; right < 2; right++) {
+      for (uint16_t i = 0; i < 18; i++) {
+        CHECK(frameLevel(i, right, 3, 25) == 230 && frameLevel(i, right, 3, 33) == 0, "frame program 3: all steady at step 25, dark at step 33");
+        CHECK(frameLevel(i, right, 12, 30) == 255 && frameLevel(i, right, 12, 38) == 0, "frame program 12: all locked at step 30, dark at step 38");
+        for (int t = 0; t < 200; t++) { uint8_t v = frameLevel(i, right, 7, (uint16_t)t); CHECK(v == 255 || v == 30, "frame program 7: twinkle levels 255 or 30"); }
+        for (int t = 0; t < 40; t++) { uint8_t v = frameLevel(i, right, 12, (uint16_t)t); CHECK(v == 255 || v == 0, "frame program 12: spinning pixels are on or off"); }
+      }
+    }
+    // the programs that follow the arrow differ between the two directions; the others do not
+    const int FOLLOW[] = {0, 1, 2, 6, 8, 13, 14};
+    for (int m = 0; m < 15; m++) {
+      bool differs = false;
+      for (int t = 0; t < 36 && !differs; t++) for (uint16_t i = 0; i < 18; i++) if (m != 3 && m != 7 && m != 12 && frameLevel(i, true, m, t) != frameLevel(i, false, m, t)) differs = true;
+      bool follows = false; for (int f : FOLLOW) if (f == m) follows = true;
+      if (m != 3 && m != 7 && m != 12) CHECK(differs == follows, "frame programs 0, 1, 2, 6, 8, 13, 14 follow the arrow direction, the others do not");
+    }
+  }
+
+  // ---- The five new letter programs (10-14): expected levels hard-coded from the descriptions ----
+  {
+    const uint8_t saved = activeMode;
+    auto lv = [&](int mode, unsigned long t, int letter) { activeMode = (uint8_t)mode; return (int)baseLetterLevel((uint8_t)letter, t); };
+    // 10 converge: step = t / 400 mod 8; each word lights from its ends: lit (230) when the distance from the nearer end <= step
+    { const int e0[10] = {230, 25, 25, 25, 25, 230, 230, 25, 25, 230};            // step 0: CASINO ends C and O, OPEN ends O and N
+      const int e1[10] = {230, 230, 25, 25, 230, 230, 230, 230, 230, 230};        // step 1
+      for (int l = 0; l < 10; l++) { CHECK(lv(10, 0, l) == e0[l] && lv(10, 399, l) == e0[l], "converge step 0");
+        CHECK(lv(10, 400, l) == e1[l], "converge step 1"); CHECK(lv(10, 800, l) == 230 && lv(10, 2000, l) == 230, "converge: all lit from step 2 to step 5");
+        CHECK(lv(10, 2400, l) == 0 && lv(10, 2800, l) == 0 && lv(10, 3199, l) == 0 && lv(10, 3200, l) == e0[l], "converge: dark in steps 6 and 7"); } }
+    // 11 words swap: the first word follows the sine table, the second word is half a cycle behind
+    { for (int l = 0; l < 6; l++) { CHECK(lv(11, 0, l) == lv(11, 0, 0) && lv(11, 1200, l) == lv(11, 0, 6), "words swap: the first word at half a cycle equals the second word at 0"); }
+      for (int l = 6; l < 10; l++) { CHECK(lv(11, 0, l) == lv(11, 0, 6) && lv(11, 1200, l) == lv(11, 0, 0), "words swap: the second word at half a cycle equals the first word at 0"); }
+      CHECK(lv(11, 300, 0) != lv(11, 300, 6), "words swap: the words differ at the same moment");
+      CHECK(lv(11, 0, 0) >= 40 && lv(11, 0, 0) <= 255 && lv(11, 600, 0) >= 40, "words swap: never darker than 40"); }
+    // 12 slot machine: letter k locks at 1500 + 300 k ms; locked = 230 until 7200 ms, dark until 8000 ms, then again
+    { for (int l = 0; l < 10; l++) { int v = lv(12, 0, l); CHECK(v == 255 || v == 30, "slot: spinning letters are 255 or 30");
+        { int w = lv(12, 4199, 9); CHECK(w == 255 || w == 30, "slot: the last letter still spins at 4199 ms"); }
+        CHECK(lv(12, 4200, l) == 230 && lv(12, 7199, l) == 230 && lv(12, 7200, l) == 0 && lv(12, 7999, l) == 0, "slot: all locked at 4200, dark from 7200");
+        CHECK(lv(12, 8000 + 4200, l) == 230, "slot: the cycle repeats every 8000 ms"); }
+      for (int l = 0; l < 4; l++) CHECK(lv(12, 2401, l) == 230, "slot: letters 0-3 are locked at 2401 ms");
+      for (int l = 4; l < 10; l++) { int v = lv(12, 2401, l); CHECK(v == 255 || v == 30, "slot: letters 4-9 still spin at 2401 ms"); }
+      bool sawOn = false, sawOff = false; for (int t = 0; t < 1500; t += 80) { int v = lv(12, t, 9); if (v == 255) sawOn = true; if (v == 30) sawOff = true; }
+      CHECK(sawOn && sawOff, "slot: a spinning letter changes between 255 and 30"); }
+    // 13 twin chase: dim (30) letters step and 9 - step, step = t / 250 mod 10
+    { for (int step = 0; step < 10; step++) for (int l = 0; l < 10; l++) {
+        const bool dim = (l == step || l == 9 - step);
+        CHECK(lv(13, (unsigned long)step * 250 + 10, l) == (dim ? 30 : 230), "twin chase: the two dim letters run in opposite directions"); }
+      CHECK(lv(13, 2500, 0) == 30 && lv(13, 2500, 9) == 30 && lv(13, 2500, 4) == 230, "twin chase: the cycle repeats after 10 steps"); }
+    // 14 marquee: a letter is dark (40) when (letter + step) mod 4 == 0, step = t / 250 mod 4
+    { for (int step = 0; step < 4; step++) for (int l = 0; l < 10; l++)
+        CHECK(lv(14, (unsigned long)step * 250 + 5, l) == (((l + step) % 4 == 0) ? 40 : 230), "marquee: one letter in four is dark and the dark ones move");
+      CHECK(lv(14, 1000, 0) == 40 && lv(14, 1000, 1) == 230, "marquee: repeats every 4 steps"); }
+    activeMode = saved;
+  }
+
+  // Timeline: program k is active from MODE_MS*k. The program switch is turned to k (with contact bounce) just before.
   const unsigned long MODE_MS = 14000, END = MODE_MS * LETTER_MODE_COUNT + 2000;
   // Arrow switch: LOW (left) at 5 s, HIGH (right) at 25 s, short glitch at 45 s, bouncing change at 60 s.
   long lastFrameShows = fr->shows, lastArrowShows = 0; long arrowFlowChecks = 0;
@@ -114,8 +228,7 @@ int main(int argc, char **argv) {
     // ---- stimulus ----
     for (int k = 1; k < LETTER_MODE_COUNT; k++) {
       unsigned long t0 = MODE_MS * k - 200;                // press at t0, with bounce, held 120 ms
-      if (g_millis >= t0 && g_millis < t0 + 120) g_pinLevel[PIN_MODE_BUTTON] = (g_millis < t0 + 8 && (g_millis & 1)) ? HIGH : LOW;
-      else if (g_millis == t0 + 120) g_pinLevel[PIN_MODE_BUTTON] = HIGH;
+      if (g_millis >= t0 && g_millis < t0 + 120) setProgramPins((g_millis < t0 + 8 && (g_millis & 1)) ? (k ^ 8) : k);   // bounce, then settle
     }
     if (g_millis == 5000) g_pinLevel[PIN_ARROW_SWITCH] = SW_LEFT;
     if (g_millis == 25000) g_pinLevel[PIN_ARROW_SWITCH] = SW_RIGHT;
@@ -135,6 +248,7 @@ int main(int argc, char **argv) {
       // 9-14 top going left, 14 = upper-left, 15-17 left edge going down. All indices are hard-coded here.
       const bool mir = !arrowPointsRight;
       std::vector<int> A, B;
+      if (activeMode == MODE_BREATHE) {   // the bar checks below are for program 0 only (the others are tested above)
       auto lit = [&](size_t i) { return (int)(fr->shown_[i] != 0); };
       for (auto c : fr->shown_) CHECK(c == 0 || c == 0xffffff, "frame colours black/white only");
       static const int RIGHT_CW[10] = {14, 13, 12, 11, 10, 9, 8, 7, 6, 5};     // upper-left, along the top, down the right edge
@@ -157,6 +271,7 @@ int main(int argc, char **argv) {
       }
       prevPath = A; prevMirrored = mir;
       sawMirrored = sawMirrored || mir; sawNormal = sawNormal || !mir;
+      } else prevPath.clear();
     }
     // Letters: one pixel per letter, green channel follows the deep-red colour rule (green = red / 12).
     {
@@ -293,7 +408,7 @@ int main(int argc, char **argv) {
   // ---- Casino closed tests ----
   setCode(PIN_SPEED_FRAME_ARROW, 8); setCode(PIN_SPEED_LETTERS, 8); run(300);
   auto openLevel = [&](int k) { return shownLevel(let, FIRST_WORD_LETTERS + k); };
-  auto pressMode = [&]() { g_pinLevel[PIN_MODE_BUTTON] = LOW; run(120); g_pinLevel[PIN_MODE_BUTTON] = HIGH; run(60); };
+  auto pressMode = [&]() { const int to = (letterMode + 1) % 16; if (speedStable[SLOT_PROGRAM] == to) { setProgramPins(to ^ 8); run(60); } setProgramPins(to); run(180); };   // next program with the program switch
   while (letterMode != MODE_BREATHE) pressMode();
   // V2: the typewriter lights the letters in reading order C A S I N O, O P E N; on the strip that is the pixel order
   // 0 1 2 3 4 5, then 9 8 7 6 (OPEN is wired reversed). Pixel numbers are hard-coded here.
@@ -438,7 +553,7 @@ int main(int argc, char **argv) {
     CHECK(changes == 3, "random auto: a new pattern after each LETTER_RANDOM_AUTO_MS");
     CHECK(firstChange >= LETTER_RANDOM_AUTO_MS - 50 && firstChange <= LETTER_RANDOM_AUTO_MS + 100, "random auto: first change after about two minutes");
     CHECK(letterMode == MODE_RANDOM_AUTO, "random auto: the selected mode stays random auto");
-    pressMode(); CHECK(letterMode == MODE_BREATHE, "the button wraps from random auto back to mode 0");
+    pressMode(); CHECK(letterMode == MODE_BREATHE, "the program switch wraps from F (random auto) back to 0");
   }
   // ---- LCD display (fake HD44780 + PCF8574 backpack on the mock Wire) ----
   {
@@ -457,13 +572,13 @@ int main(int argc, char **argv) {
     setCode(PIN_SPEED_FRAME_ARROW, 8); setCode(PIN_SPEED_LETTERS, 8);
     while (letterMode != MODE_BREATHE) pressMode();
     run(7000);                                           // hold over, pages rotating
-    g_pinLevel[PIN_MODE_BUTTON] = LOW;
-    int ms = 0; while (line0() != "Mode 1" && ms < 400) { run(1); ms++; }
-    g_pinLevel[PIN_MODE_BUTTON] = HIGH; run(60);
-    CHECK(line0() == "Mode 1" && line1() == "wave", "LCD: the mode page shows the new mode");
-    CHECK(ms <= 150, "LCD: the new mode appears within 150 ms of the button press");
+    setProgramPins(1);
+    int ms = 0; while (line0() != "Prog 1" && ms < 400) { run(1); ms++; }
+    run(60);
+    CHECK(line0() == "Prog 1" && line1() == "wave", "LCD: the program page shows the new program");
+    CHECK(ms <= 150, "LCD: the new program appears within 150 ms of turning the program switch");
     run(5800);
-    CHECK(line0() == "Mode 1", "LCD: the mode page is held for about 6 seconds after the change");
+    CHECK(line0() == "Prog 1", "LCD: the program page is held for about 6 seconds after the change");
     run(400);
     CHECK(line0().rfind("SW3", 0) == 0, "LCD: after the hold the pages rotate on to the next page (SW3)");
     // names and widths of every mode
@@ -471,10 +586,10 @@ int main(int argc, char **argv) {
       setLetterMode(m, g_millis); lcdShowPage(LCD_PAGE_MODE, g_millis, true); run(300);
       CHECK(printable(), "LCD: only printable characters");
       if (m == MODE_RANDOM_AUTO) {
-        CHECK(line0() == "Mode 10 (auto)", "LCD: random auto title");
+        CHECK(line0() == "Prog F (random)", "LCD: random auto title");
         CHECK(line1() == std::string("now: ") + letterModeName(activeMode), "LCD: random auto shows the pattern in use");
       } else {
-        CHECK(line0() == "Mode " + std::to_string(m) && line1() == letterModeName(m), "LCD: mode number and name");
+        { char hx[4]; snprintf(hx, sizeof hx, "%X", m); CHECK(line0() == std::string("Prog ") + hx && line1() == letterModeName(m), "LCD: program number (hex) and name"); }
       }
     }
     while (letterMode != MODE_BREATHE) pressMode();
@@ -547,7 +662,7 @@ int main(int argc, char **argv) {
     Wire.address = 0x27; lcdInit();
     CHECK(lcdOk, "LCD: found again when the address matches");
     lcdShowPage(LCD_PAGE_MODE, g_millis, true); run(400);
-    CHECK(line0() == "Mode 0" && printable(), "LCD: shows the mode page again after re-initialisation");
+    CHECK(line0() == "Prog 0" && printable(), "LCD: shows the mode page again after re-initialisation");
     CHECK(true || text().empty(), "");
 
     // boot-time I2C scan: the log lists the display and the scan hint appears only when the LCD address is silent
@@ -581,7 +696,7 @@ int main(int argc, char **argv) {
   {
     auto rtrimS = [](std::string r) { while (!r.empty() && r.back() == ' ') r.pop_back(); return r; };
     auto line0 = [&]() { return rtrimS(Wire.row(0)); };
-    g_pinLevel[PIN_MODE_BUTTON] = HIGH; g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH;
+    g_pinLevel[PIN_SKIP_BUTTON] = HIGH; g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH;
     while (letterMode != MODE_BREATHE) pressMode();
     run(300);
     const unsigned long t0 = g_millis;
@@ -643,27 +758,32 @@ int main(int argc, char **argv) {
     CHECK(!startupTestActive && letterMode == MODE_BREATHE, "after the test the sign starts in mode 0");
     CHECK(casinoClosed, "a switch changed during the test takes effect when the test ends");
     run(400);
-    CHECK(line0() == "Mode 0", "after the test the LCD shows the mode page");
+    CHECK(line0() == "Prog 0", "after the test the LCD shows the mode page");
     g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; run(100);
     CHECK(!casinoClosed, "casino open again");
 
+    // the program switch position at power-up decides the first program
+    setProgramPins(6); run(100); beginStartupTest(g_millis); run(500);
+    g_pinLevel[PIN_SKIP_BUTTON] = LOW; run(100); g_pinLevel[PIN_SKIP_BUTTON] = HIGH; run(100);
+    CHECK(!startupTestActive && letterMode == 6 && activeMode == 6, "after the LED test the sign starts in the program the switch shows");
+    setProgramPins(0); run(200);
     // D33 skips the test and the same press does not change the mode
     run(300); beginStartupTest(g_millis); run(500);
     CHECK(startupTestActive, "LED test: still running after 0.5 s");
-    g_pinLevel[PIN_MODE_BUTTON] = LOW; run(100); g_pinLevel[PIN_MODE_BUTTON] = HIGH; run(100);
+    g_pinLevel[PIN_SKIP_BUTTON] = LOW; run(100); g_pinLevel[PIN_SKIP_BUTTON] = HIGH; run(100);
     CHECK(!startupTestActive, "LED test: D33 skips the test");
     CHECK(letterMode == MODE_BREATHE, "LED test: the skipping press does not change the letter mode");
-    run(400); CHECK(line0() == "Mode 0", "LED test: after a skip the LCD shows the mode page");
+    run(400); CHECK(line0() == "Prog 0", "LED test: after a skip the LCD shows the mode page");
 
     // a button held down during power-up does not skip the test until it was released and pressed again
-    g_pinLevel[PIN_MODE_BUTTON] = LOW; run(100);          // normal operation: this changes the mode
+    g_pinLevel[PIN_SKIP_BUTTON] = LOW; run(100);          // normal operation: this changes the mode
     beginStartupTest(g_millis); run(2000);
     CHECK(startupTestActive, "LED test: a button held during power-up does not skip the test");
-    g_pinLevel[PIN_MODE_BUTTON] = HIGH; run(100);
+    g_pinLevel[PIN_SKIP_BUTTON] = HIGH; run(100);
     CHECK(startupTestActive, "LED test: releasing the button does not skip it");
-    g_pinLevel[PIN_MODE_BUTTON] = LOW; run(100);
+    g_pinLevel[PIN_SKIP_BUTTON] = LOW; run(100);
     CHECK(!startupTestActive, "LED test: a new press skips it");
-    g_pinLevel[PIN_MODE_BUTTON] = HIGH; run(100);
+    g_pinLevel[PIN_SKIP_BUTTON] = HIGH; run(100);
     while (letterMode != MODE_BREATHE) pressMode();
 
     // a skipped test leaves no LED test pattern behind: the strips are cleared and the sign runs normally
@@ -672,7 +792,7 @@ int main(int argc, char **argv) {
     CHECK(shows, "after the test the normal animations are running");
     CHECK(rtrimS(Wire.row(0)).size() > 0, "LCD has text");
   }
-  CHECK(LETTER_START_MODE == 0, "the sign starts in mode 0");
+  CHECK(PIN_PROGRAM[0] == 34 && PIN_PROGRAM[1] == 35 && PIN_PROGRAM[2] == 36 && PIN_PROGRAM[3] == 37, "program switch pins D34-D37");
 
   CHECK(sawFlicker, "a letter flickers at least once");
   CHECK(modeChanges == LETTER_MODE_COUNT - 1, "bouncing button presses change the mode exactly once each");
@@ -691,7 +811,7 @@ int main(int argc, char **argv) {
     CHECK(SERIAL_BAUD == 115200 && Serial.baud == 115200, "serial speed is 115200 baud");
     CHECK(PIN_STATUS_LED == 13, "the debug LED is on pin 13");
     CHECK(Serial.captured.find("Serial speed 115200 baud") != std::string::npos, "the baud rate is printed at start-up");
-    g_pinLevel[PIN_MODE_BUTTON] = HIGH; run(3000);                // calm: no state change for a while
+    g_pinLevel[PIN_SKIP_BUTTON] = HIGH; run(3000);                // calm: no state change for a while
     // calm: the heartbeat toggles every 250 ms (3 or 4 toggles in 800 ms)
     { const unsigned long b0 = beatCount; run(800); const unsigned long d = beatCount - b0;
       CHECK(d >= 3 && d <= 4, "calm: the LED toggles every 250 ms (3-4 times in 800 ms)"); }

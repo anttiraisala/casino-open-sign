@@ -47,7 +47,7 @@ lukujärjestyksessä: OPENin kirjaimet vasemmalta oikealle O P E N ovat pikselit
 
 Mikä pysyy kuten versiossa 1
 ----------------------------
-Nuolianimaatio, CLOSED-valo (viallinen loisteputki), kirjaintilat 0-10 (painike D33), kytkimet (D32 nuolen suunta, D30 kasino kiinni,
+Nuolianimaatio, CLOSED-valo (viallinen loisteputki), kytkimet (D32 nuolen suunta, D30 kasino kiinni,
 D22-D25 SW3 reunuksen ja nuolen nopeus, D26-D29 SW4 kirjainten nopeus), LCD (I2C, SDA D20, SCL D21), kirkkauskäyrät (LED-tyypeittäin,
 max 80, eksponentti 2.67), käynnistyksen LED-testi (10 s; ikkuna nyt 2 pikseliä), elonmerkki (pinnin 13 LED vilkkuu; yksi Serial-rivi sekunnissa, 115200 baud).
 
@@ -64,7 +64,8 @@ Johdotus (tarkasti)
                   D3 RAIL-DN-L, D4 RAIL-DN-R, A3 R-CAP, A1 R-WING-UP, A2 R-WING-DN, A0 CLOSED-valotikku (ei johtoa virtalähteestä tikkuun)
                   (vain V2: liittimet eroavat versiosta 1 ja kansiosta ../arrow_sticks/; tikkujen paikat levyllä eivät muutu)
     D32 -> liukukytkin SW1 yhteinen (kontakti 1 -> GND)    D30 -> liukukytkin SW5 yhteinen (kontakti 1 -> GND)
-    D33 -> painike -> GND
+    D33 -> painike -> GND (ohittaa vain käynnistyksen LED-testin)
+    D34-D37 -> SW6 ohjelmakytkimen pinnit 1, 2, 4, 8 (yhteinen C -> GND)
     D22-D25 -> SW3 pinnit 1, 2, 4, 8 (yhteinen C -> GND)   D26-D29 -> SW4 pinnit 1, 2, 4, 8 (yhteinen C -> GND)
     D20 SDA, D21 SCL, 5V, GND -> LCD:n I2C-taustalevy
                   (käynnistyksessä sketch skannaa I2C-väylän ja tulostaa löydetyt laitteet sarjamonitoriin, 115200 baud;
@@ -88,6 +89,15 @@ kytke sitten virrat; Serial Monitor 115200 baud. Wokwi: uusi Arduino Mega -proje
 "Adafruit NeoPixel", paina Play (Wokwissa ei ole 12 V osaa: nauhat saavat siellä virran Megan 5 V:sta).
 Jos värit ovat väärin, nauhan värijärjestys voi olla toinen: vaihda NEO_GRB + NEO_KHZ800 sketchin kahdella nauharivillä.
 Käynnistyksen LED-testi (10 s) ajaa 2 pikselin ikkunan jokaisen nauhan läpi (kierros 1 valkoinen, kierros 2 punainen-vihreä-sininen); D33 ohittaa sen.
+
+Ohjelmakytkin SW6 (heksa-kiertokytkin, D34-D37, luetaan koko ajan)
+-----------------------------------------------------------------
+Asento 0..E = kirjainohjelma 0..14 ja vastaava reunuskuvio 0..14; F = satunnainen: satunnainen ohjelma 0..14 kahden minuutin välein,
+ei koskaan samaa kahdesti peräkkäin.
+  0 hengitys  1 aalto  2 kirjoituskone  3 syttyminen  4 sanojen vilkku  5 vuorottelu  6 skanneri  7 kipinä  8 jahti  9 pulssi
+  10 (A) yhtyminen  11 (B) sanojen vaihto  12 (C) hedelmäpeli  13 (D) kaksoisjahti  14 (E) markiisi
+Reunuskuviot ovat valkoisia ja seuraavat nuolen aloituskulmaa ohjelmissa 0, 1, 2, 6, 8, 13 ja 14. Molemmat ovat ensimmäisiä versioita,
+joita arvioidaan livenä kyltissä (RDD-IDEAS.md IDEA-015, IDEA-016). Testattu vain koneella, ei vielä laitteistolla.
 
 Asetusten muuttaminen
 ---------------------

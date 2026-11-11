@@ -6,7 +6,7 @@
     {
       "type": "wokwi-arduino-mega",
       "id": "mega",
-      "top": 386,
+      "top": 486,
       "left": 2,
       "attrs": {}
     },
@@ -561,13 +561,22 @@
       "top": 284,
       "left": 936,
       "attrs": {
-        "text": "D13 (LED L on the board): sign of life; Serial Monitor 115200 baud"
+        "text": "D34-D37: program switch SW6 (hex rotary 0-F): letter program + frame pattern"
       }
     },
     {
       "type": "wokwi-text",
       "id": "legend_13",
       "top": 306,
+      "left": 936,
+      "attrs": {
+        "text": "D13 (LED L on the board): sign of life; Serial Monitor 115200 baud"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "legend_14",
+      "top": 328,
       "left": 936,
       "attrs": {
         "text": "One Wokwi LED = one real pixel (one chip = 3 LEDs, 10 cm)."
@@ -579,7 +588,7 @@
       "top": 322,
       "left": 480,
       "attrs": {
-        "text": "Letter modes (button D33 steps through them, after 10 it wraps to 0):"
+        "text": "Program switch SW6 (D34-D37) picks the letter program AND the frame pattern:"
       }
     },
     {
@@ -606,7 +615,7 @@
       "top": 382,
       "left": 480,
       "attrs": {
-        "text": "10 random auto: a random pattern from 0-9, new one every 2 min"
+        "text": "A converge   B words swap   C slot machine   D twin chase   E marquee"
       }
     },
     {
@@ -615,7 +624,16 @@
       "top": 402,
       "left": 480,
       "attrs": {
-        "text": "The sign starts in mode 0."
+        "text": "F random auto: a random program from 0-E, new one every 2 min"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "mode_list_6",
+      "top": 422,
+      "left": 480,
+      "attrs": {
+        "text": "Frame patterns 0-E follow the same number. The sign starts in the switch position."
       }
     },
     {
@@ -991,7 +1009,7 @@
       "top": 38,
       "left": 170,
       "attrs": {
-        "text": "D33: letter mode"
+        "text": "D33: skip LED test"
       }
     },
     {
@@ -1033,8 +1051,15 @@
     {
       "type": "wokwi-dip-switch-8",
       "id": "speed_switches",
-      "top": 256,
+      "top": 356,
       "left": 80,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dip-switch-8",
+      "id": "program_switches",
+      "top": 356,
+      "left": 290,
       "attrs": {}
     },
     {
@@ -1084,8 +1109,44 @@
     },
     {
       "type": "wokwi-text",
+      "id": "speed_label_6",
+      "top": 246,
+      "left": 20,
+      "attrs": {
+        "text": ""
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "speed_label_7",
+      "top": 266,
+      "left": 20,
+      "attrs": {
+        "text": "Second DIP bank (right) = program switch SW6 (D34-D37):"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "speed_label_8",
+      "top": 286,
+      "left": 20,
+      "attrs": {
+        "text": "1-4 = bits 1,2,4,8; 5-8 unused. Binary 0..15 = program 0..F."
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "speed_label_9",
+      "top": 306,
+      "left": 20,
+      "attrs": {
+        "text": "Click the part, press keys 1-4."
+      }
+    },
+    {
+      "type": "wokwi-text",
       "id": "lcd_label_1",
-      "top": 622,
+      "top": 722,
       "left": 20,
       "attrs": {
         "text": "LCD 2x16 (I2C 0x27): SDA = D20, SCL = D21"
@@ -1094,16 +1155,16 @@
     {
       "type": "wokwi-text",
       "id": "lcd_label_2",
-      "top": 640,
+      "top": 740,
       "left": 20,
       "attrs": {
-        "text": "pages: mode, SW3, SW4, casino + arrow"
+        "text": "pages: program, SW3, SW4, casino + arrow"
       }
     },
     {
       "type": "wokwi-lcd1602",
       "id": "lcd",
-      "top": 668,
+      "top": 768,
       "left": 20,
       "attrs": {
         "pins": "i2c"
@@ -1263,6 +1324,54 @@
     ],
     [
       "speed_switches:8b",
+      "mega:GND.1",
+      "black",
+      []
+    ],
+    [
+      "mega:34",
+      "program_switches:1a",
+      "orange",
+      []
+    ],
+    [
+      "program_switches:1b",
+      "mega:GND.1",
+      "black",
+      []
+    ],
+    [
+      "mega:35",
+      "program_switches:2a",
+      "orange",
+      []
+    ],
+    [
+      "program_switches:2b",
+      "mega:GND.1",
+      "black",
+      []
+    ],
+    [
+      "mega:36",
+      "program_switches:3a",
+      "orange",
+      []
+    ],
+    [
+      "program_switches:3b",
+      "mega:GND.1",
+      "black",
+      []
+    ],
+    [
+      "mega:37",
+      "program_switches:4a",
+      "orange",
+      []
+    ],
+    [
+      "program_switches:4b",
       "mega:GND.1",
       "black",
       []

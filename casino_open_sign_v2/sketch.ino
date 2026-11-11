@@ -41,9 +41,11 @@
  *                     seen from the front). The switch is on the back of the sign: mount it so that, seen from
  *                     the back, the GND contact (1) is on the right-hand side; then the handle points the same
  *                     way as the arrow does in real space (toward the customer's left = the back's right).
- *   D33 push button   next letter lighting mode
+ *   D33 push button   skips the power-on LED test (it has no other function)
  *   D30 slide switch  SW5 "casino closed" (handle on the GND side = LOW = closed): the OPEN
  *                     letters go dark and the CLOSED light turns on
+ *   D34-D37  program switch: 16-position hex rotary switch (0..F, pins 1, 2, 4, 8), read all the time:
+ *                 position 0..E = letter program 0..14 (with its own frame pattern), F = random program
  *   D22-D25  SW3  16-position hex rotary switch (0..F, pins 1, 2, 4, 8): speed of the
  *                 frame and arrow patterns
  *   D26-D29  SW4  16-position hex rotary switch (0..F, pins 1, 2, 4, 8): speed of the
@@ -67,11 +69,16 @@
  * At boot an I2C scan (addresses 0x08-0x77) prints every device that answers to the Serial Monitor, and
  * a hint if nothing answers on the LCD address (many displays use 0x3F instead of 0x27).
  *
- * Letter modes (the push button steps through them, then wraps to 0; the sign starts in mode 0):
+ * Letter programs (chosen with the program switch D34-D37; the position at power-up decides the first one):
  *   0 breathe  1 wave  2 typewriter  3 ignite  4 word blink  5 alternate
  *   6 scanner (a bright spot with a tail sweeps back and forth)  7 sparkle (random twinkle)
  *   8 chase (one dim letter runs through each word)  9 pulse (heartbeat)
- *   10 random auto: a random pattern from 0..9, changed every LETTER_RANDOM_AUTO_MS (2 minutes)
+ *   10 converge (each word lights from both ends towards the middle)  11 words swap (the words breathe in opposite phase)
+ *   12 slot machine (letters flicker like reels and lock in one by one)  13 twin chase (two dim spots run in opposite directions)
+ *   14 marquee (three letters lit, one dark, moving)
+ *   15 (switch position F) random auto: a random program from 0..14, never the same twice in a row, changed every
+ *      LETTER_RANDOM_AUTO_MS (2 minutes)
+ * Every program has its own frame pattern (see frameLevel()); programs 0, 1, 2, 6, 8, 13 and 14 follow the arrow direction.
  *
  * To change the sign edit ONLY the CONFIGURATION section below and, for
  * Wokwi, regenerate diagram.json with: python3 tools/generate_v2_diagram.py
@@ -143,7 +150,8 @@ constexpr uint8_t STICK_R_WING_DN = 9;   // right arrowhead, lower wing   (A2)
 
 // --- Input pins ------------------------------------------------------------
 constexpr uint8_t PIN_ARROW_SWITCH = 32;   // slide switch: arrow direction
-constexpr uint8_t PIN_MODE_BUTTON = 33;    // push button: next letter mode
+constexpr uint8_t PIN_SKIP_BUTTON = 33;    // push button: skips the power-on LED test only
+constexpr uint8_t PIN_PROGRAM[4] = {34, 35, 36, 37};  // program switch (hex rotary, bit values 1, 2, 4, 8)
 // Direction of the arrow switch (D32, slide switch, internal pull-up). It depends on how the mechanical switch
 // is wired and mounted, so it is a source-code setting:
 //   true  = pin LOW (handle on the GND side) -> the arrow points to the customer's LEFT, pin HIGH -> RIGHT
@@ -221,8 +229,6 @@ constexpr uint8_t FRAME_BAR_LEDS = 2;      // pixels lit, then the same number d
 
 constexpr uint16_t LETTERS_SPEED_MS = 30;  // time between letter backlight updates (the letter patterns
                                            // themselves follow the speed switch SW4)
-constexpr uint8_t LETTER_START_MODE = 0;   // letter mode after power-up (see MODE_* below)
-constexpr uint32_t LETTER_MODE_AUTO_MS = 0;       // step to the next mode automatically this often (0 = never)
 constexpr uint32_t FLICKER_MIN_GAP_MS = 5000;     // shortest pause between flicker events
 constexpr uint32_t FLICKER_MAX_GAP_MS = 12000;    // longest pause between flicker events
 constexpr uint32_t FLICKER_DURATION_MS = 700;     // how long the faulty letter flickers
@@ -239,6 +245,15 @@ constexpr uint16_t LETTER_SCANNER_MS = 2400;      // scanner: one trip from the 
 constexpr uint16_t LETTER_SPARKLE_STEP_MS = 140;  // sparkle: how often the set of sparkling letters changes
 constexpr uint16_t LETTER_CHASE_STEP_MS = 300;    // chase: time the dim spot stays on one letter
 constexpr uint16_t LETTER_PULSE_MS = 1400;        // pulse: one heartbeat (two beats and a pause)
+constexpr uint16_t LETTER_CONVERGE_STEP_MS = 400; // converge: time per step (grow 3 steps, hold 3, off 2)
+constexpr uint16_t LETTER_SWAP_MS = 2400;         // words swap: one breathing cycle of the two words
+constexpr uint16_t LETTER_SLOT_REEL_MS = 80;      // slot machine: a spinning letter changes this often
+constexpr uint16_t LETTER_SLOT_FIRST_LOCK_MS = 1500;  // slot machine: the first letter locks after this long
+constexpr uint16_t LETTER_SLOT_LOCK_STEP_MS = 300;    // slot machine: time between two letters locking
+constexpr uint16_t LETTER_SLOT_HOLD_END_MS = 7200;    // slot machine: all letters go dark at this time ...
+constexpr uint16_t LETTER_SLOT_PERIOD_MS = 8000;      // ... and the cycle restarts at this time
+constexpr uint16_t LETTER_TWIN_STEP_MS = 250;     // twin chase: time the dim spots stay on a letter
+constexpr uint16_t LETTER_MARQUEE_STEP_MS = 250;  // marquee: time per step
 constexpr uint32_t LETTER_RANDOM_AUTO_MS = 120000;  // random auto: pick a new random mode this often (2 min)
 
 constexpr uint16_t ARROW_SPEED_MS = 35;    // time between arrow animation steps (at multiplier 1)
@@ -292,9 +307,14 @@ constexpr uint8_t MODE_SCANNER = 6;      // a bright spot with a tail sweeps bac
 constexpr uint8_t MODE_SPARKLE = 7;      // letters twinkle at random and fade out softly
 constexpr uint8_t MODE_CHASE = 8;        // one dim letter runs through each word (the words run separately)
 constexpr uint8_t MODE_PULSE = 9;        // all letters beat together like a heart (two beats, a pause)
-constexpr uint8_t MODE_RANDOM_AUTO = 10; // picks a random mode from 0..9 every LETTER_RANDOM_AUTO_MS
-constexpr uint8_t PATTERN_MODE_COUNT = 10;  // modes 0..9 are real patterns, mode 10 chooses among them
-constexpr uint8_t LETTER_MODE_COUNT = 11;
+constexpr uint8_t MODE_CONVERGE = 10;    // each word lights up from both ends towards its middle, holds, goes dark
+constexpr uint8_t MODE_WORDS_SWAP = 11;  // the two words breathe in opposite phase
+constexpr uint8_t MODE_SLOT = 12;        // letters flicker like slot machine reels and lock in one by one
+constexpr uint8_t MODE_TWIN_CHASE = 13;  // two dim spots run through all letters in opposite directions
+constexpr uint8_t MODE_MARQUEE = 14;     // three letters lit, one dark, moving along the letters
+constexpr uint8_t MODE_RANDOM_AUTO = 15; // program switch position F: a random program 0..14 every LETTER_RANDOM_AUTO_MS
+constexpr uint8_t PATTERN_MODE_COUNT = 15;  // programs 0..14 are real patterns, program 15 chooses among them
+constexpr uint8_t LETTER_MODE_COUNT = 16;
 
 // The ignite cycle: off, letters start one by one, hold, off again.
 constexpr uint32_t IGNITE_FIRST_MS = 500;
@@ -307,7 +327,7 @@ static_assert(LEDS_PER_STICK % 2 == 0, "LEDS_PER_STICK must be even");
 static_assert(LETTER_COUNT > 1, "At least two letters are required");
 static_assert(FRAME_PIXELS % 2 == 0 && FRAME_UPPER_RIGHT < FRAME_PIXELS && FRAME_UPPER_LEFT < FRAME_PIXELS,
               "the frame needs an even number of pixels (both light paths must be equally long)");
-static_assert(LETTER_START_MODE < LETTER_MODE_COUNT, "LETTER_START_MODE is out of range");
+static_assert(LETTER_MODE_COUNT == 16, "the program switch has 16 positions");
 static_assert(STARTUP_TEST_PASSES > 0 && STARTUP_TEST_WINDOW_LEDS > 0, "the start-up test needs a pass and a window");
 static_assert(CLOSED_LIGHT_LEDS > 0, "CLOSED_LIGHT_LEDS must be at least 1");
 static_assert(SPEED_MIN_MULTIPLIER > 0.0f && SPEED_MIN_MULTIPLIER < SPEED_MAX_MULTIPLIER,
@@ -401,7 +421,7 @@ void lcdShowPage(uint8_t page, unsigned long now, bool hold) {
 // Debounced inputs with the internal pull-up: a closed switch reads LOW.
 
 constexpr uint8_t INPUT_ARROW = 0;
-constexpr uint8_t INPUT_MODE = 1;
+constexpr uint8_t INPUT_SKIP = 1;
 constexpr uint8_t INPUT_CLOSED = 2;
 
 uint8_t inputStable[3];            // debounced level (HIGH or LOW)
@@ -441,10 +461,11 @@ void initInput(uint8_t slot, uint8_t pin) {
 
 constexpr uint8_t SLOT_SPEED_MAIN = 0;
 constexpr uint8_t SLOT_SPEED_LETTERS = 1;
+constexpr uint8_t SLOT_PROGRAM = 2;     // the program switch is read like a speed switch
 
-uint8_t speedStable[2];            // debounced switch positions
-uint8_t speedLastRaw[2];
-unsigned long speedChangedAt[2];
+uint8_t speedStable[3];            // debounced switch positions
+uint8_t speedLastRaw[3];
+unsigned long speedChangedAt[3];
 uint16_t speedMult256[16];         // speed multiplier x 256 for each position
 uint16_t frameIntervalMs = FRAME_SPEED_MS;
 uint16_t arrowIntervalMs = ARROW_SPEED_MS;
@@ -539,7 +560,10 @@ void advanceLetterClock(unsigned long now) {
 // FRAME_PIXELS / 2 steps long and meet at the end corner. The pattern is a function of (distance - phase) modulo
 // FRAME_PERIOD, where "distance" is how many steps a pixel is from the start corner along its path.
 
-uint8_t framePhase = 0;
+// Frame step counter: counts the frame updates, wraps at FRAME_STEP_WRAP (a multiple of every pattern period) and
+// restarts from 0 when the program changes.
+constexpr uint16_t FRAME_STEP_WRAP = 3600;
+uint16_t frameStep = 0;
 
 // Distance of pixel i from the start corner, along the shorter way round (clockwise = decreasing index).
 uint16_t frameDistance(uint16_t i, bool arrowRight) {
@@ -590,21 +614,6 @@ uint32_t shapeColor(uint8_t type, uint32_t color) {
   return ((uint32_t)rr << 16) | ((uint32_t)gg << 8) | (uint32_t)bb;
 }
 
-void drawFrame(bool arrowRight, uint8_t phase) {
-  const uint32_t white = shapeColor(LED_TYPE_STRIP, frame.Color(255, 255, 255));
-  for (uint16_t i = 0; i < FRAME_PIXELS; i++) {
-    const uint16_t distance = frameDistance(i, arrowRight);
-    const uint8_t pos = (uint8_t)((distance % FRAME_PERIOD + FRAME_PERIOD - phase) % FRAME_PERIOD);
-    frame.setPixelColor(i, pos < FRAME_BAR_LEDS ? white : 0);
-  }
-}
-
-void updateFrame() {
-  drawFrame(arrowPointsRight, framePhase);
-  frame.show();
-  framePhase = (framePhase + 1) % FRAME_PERIOD;
-}
-
 // ================================ LETTERS ==================================
 // Every letter is its own group of LEDs with its own brightness (0..255) that
 // depends on the current mode. On top of every mode, now and then one random letter flickers like a
@@ -612,11 +621,10 @@ void updateFrame() {
 
 constexpr uint8_t NO_LETTER = 0xFF;
 
-uint8_t letterMode = LETTER_START_MODE;
+uint8_t letterMode = 0;
 uint8_t activeMode = 0;                 // the pattern really shown (differs from letterMode only in random auto)
 unsigned long autoPickedAt = 0;         // real time when random auto last picked a pattern
 unsigned long letterModeStart = 0;      // pattern clock (letterClockMs) when the mode started
-unsigned long letterModeStartReal = 0;  // real time when the mode started (for the automatic change)
 
 uint8_t flickerLetter = NO_LETTER;
 bool flickerLit = true;
@@ -650,6 +658,11 @@ void printModeName(uint8_t mode) {
     case MODE_SPARKLE:     Serial.print(F("sparkle")); break;
     case MODE_CHASE:       Serial.print(F("chase")); break;
     case MODE_PULSE:       Serial.print(F("pulse")); break;
+    case MODE_CONVERGE:    Serial.print(F("converge")); break;
+    case MODE_WORDS_SWAP:  Serial.print(F("words swap")); break;
+    case MODE_SLOT:        Serial.print(F("slot machine")); break;
+    case MODE_TWIN_CHASE:  Serial.print(F("twin chase")); break;
+    case MODE_MARQUEE:     Serial.print(F("marquee")); break;
     default:               Serial.print(F("random auto")); break;
   }
 }
@@ -678,6 +691,7 @@ void pickAutoMode(unsigned long now) {
     pick = (uint8_t)random(PATTERN_MODE_COUNT);
   }
   activeMode = pick;
+  frameStep = 0;
   autoPickedAt = now;
   letterModeStart = letterClockMs;  // the new pattern starts from its beginning
 }
@@ -685,7 +699,7 @@ void pickAutoMode(unsigned long now) {
 void setLetterMode(uint8_t mode, unsigned long now) {
   letterMode = mode % LETTER_MODE_COUNT;
   letterModeStart = letterClockMs;
-  letterModeStartReal = now;
+  frameStep = 0;
   if (letterMode == MODE_RANDOM_AUTO) {
     activeMode = PATTERN_MODE_COUNT;  // no previous pattern to avoid
     pickAutoMode(now);
@@ -708,6 +722,112 @@ uint16_t hash16(uint16_t a, uint16_t b) {
 uint8_t pulseBump(uint16_t u, uint16_t start, uint16_t length) {
   if (u < start || u >= start + length) return 0;
   return (uint8_t)(255UL * (length - (u - start)) / length);
+}
+
+// ---- Frame patterns: one per program (the frame follows activeMode) ----
+// frameLevel() gives the brightness (0..255, white) of pixel i at step t. "q" is the position of a pixel along the
+// direction of travel, counted from the start corner of the arrow (arrow right: upper-left corner, pixel 15, going
+// clockwise; arrow left: upper-right corner, pixel 10, going counter-clockwise), so q = 0..17. The patterns of the
+// programs that follow the arrow (0, 1, 2, 6, 8, 13, 14) use q or frameDistance(); the others ignore the direction.
+//   0 bar (2 lit, 2 dark) runs from the start corner both ways to the opposite bottom corner (period 4)
+//   1 comet with a 5-pixel tail runs once round the frame (18)      2 fills from the start corner both ways, holds, off (16)
+//   3 pixels start up one by one, flickering, like cold tubes (36)  4 top and bottom edges steady, side edges blink (8)
+//   5 odd and even pixels alternate (4)                             6 one comet ping-pongs round the frame (36)
+//   7 random twinkle                                                8 one lit pixel in three runs round the frame (3)
+//   9 heartbeat of the whole frame (10)                             10 corners light first, then the edges fill in (8)
+//   11 long edges and side edges alternate (10)                     12 slot machine: pixels spin, then lock one by one (40)
+//   13 twin comets run apart from the start corner (18)             14 two lit, one dark, running round the frame (3)
+constexpr uint8_t FRAME_CORNERS[4] = {FRAME_LOWER_LEFT, FRAME_LOWER_RIGHT, FRAME_UPPER_RIGHT, FRAME_UPPER_LEFT};
+
+uint8_t frameLevel(uint16_t i, bool arrowRight, uint8_t mode, uint16_t t) {
+  const uint16_t q = arrowRight ? (uint16_t)((FRAME_UPPER_LEFT + FRAME_PIXELS - i) % FRAME_PIXELS)
+                                : (uint16_t)((i + FRAME_PIXELS - FRAME_UPPER_RIGHT) % FRAME_PIXELS);
+  const bool longEdge = i <= FRAME_LOWER_RIGHT || (i >= FRAME_UPPER_RIGHT && i <= FRAME_UPPER_LEFT);
+  switch (mode) {
+    case 1: {
+      const uint16_t k = (uint16_t)((t % FRAME_PIXELS + FRAME_PIXELS - q) % FRAME_PIXELS);
+      return k < 5 ? (uint8_t)(255 - 50 * k) : 0;
+    }
+    case 2: {
+      const uint16_t p = t % 16;
+      if (p < 10) return frameDistance(i, arrowRight) <= p ? 255 : 0;
+      return p < 14 ? 255 : 0;
+    }
+    case 3: {
+      const uint16_t p = t % 36;
+      if (p < i) return 0;
+      if (p < i + 3) return (hash16(i, t) & 1) ? 255 : 0;
+      return p < 30 ? 230 : 0;
+    }
+    case 4:
+      if (longEdge) return 200;
+      return (t % 8) < 5 ? 255 : 20;
+    case 5:
+      return ((i + t / 2) & 1) ? 255 : 0;
+    case 6: {
+      const uint16_t tri = t % 36;
+      const bool forward = tri < 18;
+      const int16_t head = forward ? (int16_t)tri : (int16_t)(35 - tri);
+      const int16_t behind = forward ? head - (int16_t)q : (int16_t)q - head;
+      if (behind == 0) return 255;
+      return (behind > 0 && behind < 4) ? (uint8_t)(255 - 70 * behind) : 0;
+    }
+    case 7:
+      return (hash16(i, t) & 7) < 2 ? 255 : 30;
+    case 8:
+      return ((q + 3 - t % 3) % 3) == 0 ? 255 : 0;
+    case 9: {
+      const uint16_t s = t % 10;
+      return s == 0 ? 255 : (s == 1 ? 120 : (s == 2 ? 200 : (s == 3 ? 60 : 20)));
+    }
+    case 10: {
+      uint16_t nearest = FRAME_PIXELS;
+      for (uint8_t c = 0; c < 4; c++) {
+        uint16_t d = i > FRAME_CORNERS[c] ? i - FRAME_CORNERS[c] : FRAME_CORNERS[c] - i;
+        if (d > FRAME_PIXELS - d) d = FRAME_PIXELS - d;   // the strip is a ring: pixel 17 is next to pixel 0
+        if (d < nearest) nearest = d;
+      }
+      const uint16_t s = t % 8;
+      if (s >= 6) return 0;
+      return nearest <= s ? 255 : 0;
+    }
+    case 11:
+      return ((t % 10) < 5) == longEdge ? 255 : 0;
+    case 12: {
+      const uint16_t p = t % 40;
+      if (p < 6 + i) return (hash16(i, t) & 1) ? 255 : 0;
+      return p < 36 ? 255 : 0;
+    }
+    case 13: {
+      const uint16_t a = t % FRAME_PIXELS;
+      const uint16_t b = (FRAME_PIXELS - a) % FRAME_PIXELS;
+      const uint16_t k1 = (a + FRAME_PIXELS - q) % FRAME_PIXELS;   // distance behind the clockwise comet
+      const uint16_t k2 = (q + FRAME_PIXELS - b) % FRAME_PIXELS;   // distance behind the counter-clockwise comet
+      const uint8_t l1 = k1 < 3 ? (uint8_t)(255 - 80 * k1) : 0;
+      const uint8_t l2 = k2 < 3 ? (uint8_t)(255 - 80 * k2) : 0;
+      return l1 > l2 ? l1 : l2;
+    }
+    case 14:
+      return ((q + 3 - t % 3) % 3) != 0 ? 255 : 0;
+    default: {  // 0: the bar pattern
+      const uint16_t distance = frameDistance(i, arrowRight);
+      const uint8_t pos = (uint8_t)((distance % FRAME_PERIOD + FRAME_PERIOD - (t % FRAME_PERIOD)) % FRAME_PERIOD);
+      return pos < FRAME_BAR_LEDS ? 255 : 0;
+    }
+  }
+}
+
+void drawFrame(bool arrowRight, uint8_t mode, uint16_t t) {
+  for (uint16_t i = 0; i < FRAME_PIXELS; i++) {
+    const uint8_t level = frameLevel(i, arrowRight, mode, t);
+    frame.setPixelColor(i, shapeColor(LED_TYPE_STRIP, frame.Color(level, level, level)));
+  }
+}
+
+void updateFrame() {
+  drawFrame(arrowPointsRight, activeMode, frameStep);
+  frame.show();
+  frameStep = (frameStep + 1) % FRAME_STEP_WRAP;
 }
 
 // Brightness of one letter in the current mode. t = milliseconds since the mode started.
@@ -750,6 +870,39 @@ uint8_t baseLetterLevel(uint8_t letter, unsigned long t) {
       const uint8_t second = (uint8_t)((uint16_t)pulseBump(u, 260, 240) * 3 / 4);
       const uint8_t beat = first > second ? first : second;
       return (uint8_t)(50 + ((uint16_t)beat * 205) / 255);
+    }
+    case MODE_CONVERGE: {
+      // Each word lights from both of its ends towards the middle (3 steps), holds (3 steps), goes dark (2 steps).
+      const uint8_t step = (uint8_t)((t / LETTER_CONVERGE_STEP_MS) % 8);
+      if (step >= 6) return 0;
+      const uint8_t wordStart = letter < FIRST_WORD_LETTERS ? 0 : FIRST_WORD_LETTERS;
+      const uint8_t wordLength = letter < FIRST_WORD_LETTERS ? FIRST_WORD_LETTERS : LETTER_COUNT - FIRST_WORD_LETTERS;
+      const uint8_t inWord = letter - wordStart;
+      const uint8_t fromEnd = inWord < wordLength - 1 - inWord ? inWord : (uint8_t)(wordLength - 1 - inWord);
+      return fromEnd <= step ? 230 : 25;
+    }
+    case MODE_WORDS_SWAP: {
+      // The first word rises while the second falls.
+      const uint8_t cycle = cycleOf(t, LETTER_SWAP_MS);
+      const uint8_t breath = sineTable[(uint8_t)(cycle + (letter < FIRST_WORD_LETTERS ? 0 : 128))];
+      return (uint8_t)(40 + ((uint16_t)breath * 215) / 255);
+    }
+    case MODE_SLOT: {
+      // Slot machine: every letter spins (random on/off) until it locks, from the first to the last letter.
+      const uint32_t p = t % LETTER_SLOT_PERIOD_MS;
+      const uint32_t lockAt = LETTER_SLOT_FIRST_LOCK_MS + (uint32_t)letter * LETTER_SLOT_LOCK_STEP_MS;
+      if (p < lockAt) return (hash16(letter, (uint16_t)(p / LETTER_SLOT_REEL_MS)) & 1) ? 255 : 30;
+      return p < LETTER_SLOT_HOLD_END_MS ? 230 : 0;
+    }
+    case MODE_TWIN_CHASE: {
+      // Two dim letters run through all the letters, one forwards and one backwards.
+      const uint8_t step = (uint8_t)((t / LETTER_TWIN_STEP_MS) % LETTER_COUNT);
+      return (letter == step || letter == LETTER_COUNT - 1 - step) ? 30 : 230;
+    }
+    case MODE_MARQUEE: {
+      // Marquee lights: three letters lit, one dark, moving along the letters.
+      const uint8_t step = (uint8_t)((t / LETTER_MARQUEE_STEP_MS) % 4);
+      return ((letter + step) % 4) != 0 ? 230 : 40;
     }
     default: break;
   }
@@ -884,10 +1037,6 @@ void updateClosedLight() {
 }
 
 void updateLetters(unsigned long now) {
-  if (LETTER_MODE_AUTO_MS > 0 && now - letterModeStartReal >= LETTER_MODE_AUTO_MS) {
-    setLetterMode(letterMode + 1, now);
-    lcdShowPage(LCD_PAGE_MODE, now, false);
-  }
   if (letterMode == MODE_RANDOM_AUTO && now - autoPickedAt >= LETTER_RANDOM_AUTO_MS) {
     pickAutoMode(now);
     printLetterMode();
@@ -1032,7 +1181,7 @@ void applyArrowSwitch() {
   if (pointsLeft == arrowPointsRight) {  // direction changes
     arrowPointsRight = !pointsLeft;
     arrowDarkDirty = true;
-    framePhase = 0;  // the frame light restarts from its new start corner
+    frameStep = 0;  // the frame light restarts from its new start corner
     Serial.println(arrowPointsRight ? F("Arrow points to customer right") : F("Arrow points to customer left"));
   }
 }
@@ -1083,6 +1232,7 @@ void finishStartup(unsigned long now, bool skipped) {
   initInput(INPUT_CLOSED, PIN_CASINO_CLOSED_SWITCH);
   initSpeedSwitch(SLOT_SPEED_MAIN, PIN_SPEED_FRAME_ARROW);
   initSpeedSwitch(SLOT_SPEED_LETTERS, PIN_SPEED_LETTERS);
+  initSpeedSwitch(SLOT_PROGRAM, PIN_PROGRAM);
   applyMainSpeed();
   applyLettersSpeed();
   lastLetterClockTick = now;
@@ -1090,7 +1240,7 @@ void finishStartup(unsigned long now, bool skipped) {
   arrowPointsRight = !((inputStable[INPUT_ARROW] == LOW) == ARROW_POINTS_LEFT_WHEN_LOW);
   arrowDarkDirty = true;
 
-  setLetterMode(LETTER_START_MODE, now);
+  setLetterMode(speedStable[SLOT_PROGRAM], now);
   setCasinoClosed(closedFromSwitch());
   nextFlickerAt = now + FLICKER_MIN_GAP_MS;
   lcdShowPage(LCD_PAGE_MODE, now, false);
@@ -1258,6 +1408,11 @@ const char *letterModeName(uint8_t mode) {
     case MODE_SPARKLE:    return "sparkle";
     case MODE_CHASE:      return "chase";
     case MODE_PULSE:      return "pulse";
+    case MODE_CONVERGE:   return "converge";
+    case MODE_WORDS_SWAP: return "words swap";
+    case MODE_SLOT:       return "slot machine";
+    case MODE_TWIN_CHASE: return "twin chase";
+    case MODE_MARQUEE:    return "marquee";
     default:              return "random auto";
   }
 }
@@ -1268,12 +1423,12 @@ void lcdBuildText() {
   switch (lcdPage) {
     case LCD_PAGE_MODE:
       if (letterMode == MODE_RANDOM_AUTO) {
-        snprintf(line, sizeof(line), "Mode %u (auto)", (unsigned int)letterMode);
+        snprintf(line, sizeof(line), "Prog %X (random)", (unsigned int)letterMode);
         lcdPut(0, line);
         snprintf(line, sizeof(line), "now: %s", letterModeName(activeMode));
         lcdPut(1, line);
       } else {
-        snprintf(line, sizeof(line), "Mode %u", (unsigned int)letterMode);
+        snprintf(line, sizeof(line), "Prog %X", (unsigned int)letterMode);
         lcdPut(0, line);
         lcdPut(1, letterModeName(letterMode));
       }
@@ -1474,7 +1629,8 @@ void setup() {
     allStrips[k]->show();
   }
 
-  initInput(INPUT_MODE, PIN_MODE_BUTTON);
+  initInput(INPUT_SKIP, PIN_SKIP_BUTTON);
+  for (uint8_t bit = 0; bit < 4; bit++) pinMode(PIN_PROGRAM[bit], INPUT_PULLUP);
   buildSpeedTable();
 
   Wire.begin();
@@ -1501,11 +1657,11 @@ void setup() {
 void loop() {
   const unsigned long now = millis();
   signOfLife(now);
-  const bool buttonChanged = pollInput(INPUT_MODE, PIN_MODE_BUTTON, now);
+  const bool buttonChanged = pollInput(INPUT_SKIP, PIN_SKIP_BUTTON, now);
 
   // Power-on LED test: only the button (skip) is watched; everything else waits for the end.
   if (startupTestActive) {
-    if (buttonChanged && inputStable[INPUT_MODE] == LOW) {
+    if (buttonChanged && inputStable[INPUT_SKIP] == LOW) {
       noteEvent(now);
       finishStartup(now, true);  // this press only skips the test, it does not change the mode
     } else {
@@ -1515,15 +1671,15 @@ void loop() {
     return;
   }
 
-  // Inputs: the slide switches set the arrow direction and casino open/closed, the button steps
-  // through the letter modes.
+  // Inputs: the slide switches set the arrow direction and casino open/closed, the program switch
+  // chooses the letter program (and with it the frame pattern).
   if (pollInput(INPUT_ARROW, PIN_ARROW_SWITCH, now)) {
     applyArrowSwitch();
     noteEvent(now);
     lcdShowPage(LCD_PAGE_STATUS, now, true);
   }
-  if (buttonChanged && inputStable[INPUT_MODE] == LOW) {
-    setLetterMode(letterMode + 1, now);
+  if (pollSpeedSwitch(SLOT_PROGRAM, PIN_PROGRAM, now)) {
+    setLetterMode(speedStable[SLOT_PROGRAM], now);
     noteEvent(now);
     lcdShowPage(LCD_PAGE_MODE, now, true);
   }

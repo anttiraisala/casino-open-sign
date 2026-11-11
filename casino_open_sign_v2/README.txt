@@ -47,7 +47,7 @@ the letters of OPEN, read left to right O P E N, are pixels 10, 9, 8, 7. A pixel
 
 What stays as in version 1
 --------------------------
-Arrow animation, CLOSED light (faulty fluorescent tube), letter modes 0-10 (button D33), the switches (D32 arrow direction,
+Arrow animation, CLOSED light (faulty fluorescent tube), the switches (D32 arrow direction,
 D30 casino closed, D22-D25 SW3 speed of frame + arrow, D26-D29 SW4 speed of letters), the LCD (I2C, SDA D20, SCL D21), the
 brightness curves (per LED type, max 80, exponent 2.67), the power-on LED test (10 s; window now 2 pixels), the sign of life
 (LED on pin 13 blinks; one Serial line per second at 115200 baud).
@@ -65,7 +65,8 @@ Wiring (exactly)
                   D3 RAIL-DN-L, D4 RAIL-DN-R, A3 R-CAP, A1 R-WING-UP, A2 R-WING-DN, A0 CLOSED light stick (no wire from a supply to a stick)
                   (V2 only: the connectors differ from version 1 and ../arrow_sticks/; the stick positions on the plate are unchanged)
     D32 -> slide switch SW1 common (contact 1 -> GND)      D30 -> slide switch SW5 common (contact 1 -> GND)
-    D33 -> push button -> GND
+    D33 -> push button -> GND (only skips the power-on LED test)
+    D34-D37 -> SW6 program switch pins 1, 2, 4, 8 (common C -> GND)
     D22-D25 -> SW3 pins 1, 2, 4, 8 (common C -> GND)       D26-D29 -> SW4 pins 1, 2, 4, 8 (common C -> GND)
     D20 SDA, D21 SCL, 5V, GND -> LCD I2C backpack
                   (at boot the sketch scans the I2C bus and prints every device found to the Serial Monitor, 115200 baud;
@@ -89,6 +90,15 @@ then power up; Serial Monitor 115200 baud. Wokwi: new Arduino Mega project, past
 "Adafruit NeoPixel", press Play (Wokwi has no 12 V part: the strips are powered from the Mega 5V there).
 If the colours are wrong, the strip's colour order may differ: change NEO_GRB + NEO_KHZ800 in the two strip lines of the sketch.
 The power-on LED test (10 s) lights a 2-pixel window running along every strip (pass 1 white, pass 2 red-green-blue); D33 skips it.
+
+Program switch SW6 (hex rotary, D34-D37, read all the time)
+-----------------------------------------------------------
+Position 0..E = letter program 0..14 and the matching frame pattern 0..14; F = random: a random program 0..14 every 2 minutes,
+never the same twice in a row.
+  0 breathe  1 wave  2 typewriter  3 ignite  4 word blink  5 alternate  6 scanner  7 sparkle  8 chase  9 pulse
+  10 (A) converge  11 (B) words swap  12 (C) slot machine  13 (D) twin chase  14 (E) marquee
+The frame patterns are white and follow the arrow's start corner in programs 0, 1, 2, 6, 8, 13 and 14. Both are first versions to be
+judged live on the sign (RDD-IDEAS.md IDEA-015, IDEA-016). Tested on the host only, not yet on hardware.
 
 Changing the settings
 ---------------------

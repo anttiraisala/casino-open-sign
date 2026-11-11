@@ -1,6 +1,7 @@
 # PROGRESS.md - status (2026-11-07)
 
 ## Done
+- 2026-11-11: Casino Open Sign V2: program switch SW6 (hex rotary D34-D37, read all the time), 15 letter programs (new: converge, words swap, slot machine, twin chase, marquee; F = random every 2 min) and 15 frame patterns, D33 now only skips the LED test (IDEA-015, IDEA-016, OQ-013; REQ-013 in progress, AP-007). Wiring diagram, Wokwi diagram.json (second DIP bank) and READMEs updated. Run: V2 harness, mutate_v2.py (all detected), arduino_signature_lint. Host only, not run on hardware or Wokwi. `menu_test/` unchanged.
 - Sign sketch (`sketch.ino`) for the first design: 10 WS2812B strips (pins D4-D12, D31), inputs D2, D3, D30, D22-D29, I2C LCD. Simulated in Wokwi by the owner earlier.
 - Drawings, parts list (snapshot 2026-11-02), host test harnesses (all four pass on a host compiler with mock libraries).
 - `strip_test/` (WS2812B strip test), `stick_test/` (sticks on a separate 5 V supply, modified cables), `strip_single_led_test/` (walking pixel on three 12 V WS2811 strips, not yet run on hardware), `sticks_11_test/` (10 arrow sticks + CLOSED light stick on A3, heat test, not yet run on hardware), `strip_knight_rider_test/` (bouncing light on three 50-pixel strips, not yet run on hardware), `strip_frame_demo_test/` (18-pixel frame strip, route from the upper-left corner clockwise, with three bouncing colour lights + single pulsing pixel + 6-pixel colour bar + 10-pixel pixel test (D12), not yet run on hardware), `stick_test_direct/` (11 sticks in the Grove shield, moving patterns, sign of life).

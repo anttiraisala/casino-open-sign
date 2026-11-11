@@ -51,16 +51,16 @@ muts=[
  ("upper-left corner off by one","FRAME_UPPER_LEFT = 2 * FRAME_EDGE_LONG + FRAME_EDGE_SHORT - 1;","FRAME_UPPER_LEFT = 2 * FRAME_EDGE_LONG + FRAME_EDGE_SHORT;"),
  ("upper-right corner off by one","FRAME_UPPER_RIGHT = FRAME_EDGE_LONG + FRAME_EDGE_SHORT;","FRAME_UPPER_RIGHT = FRAME_EDGE_LONG + FRAME_EDGE_SHORT - 1;"),
  ("only one way round","return clockwise <= FRAME_PIXELS / 2 ? clockwise : (uint16_t)(FRAME_PIXELS - clockwise);","return clockwise;"),
- ("frame runs backwards","pos = (uint8_t)((distance % FRAME_PERIOD + FRAME_PERIOD - phase) % FRAME_PERIOD)","pos = (uint8_t)((distance % FRAME_PERIOD + phase) % FRAME_PERIOD)"),
+ ("frame runs backwards","const uint8_t pos = (uint8_t)((distance % FRAME_PERIOD + FRAME_PERIOD - (t % FRAME_PERIOD)) % FRAME_PERIOD);","const uint8_t pos = (uint8_t)((distance % FRAME_PERIOD + (t % FRAME_PERIOD)) % FRAME_PERIOD);"),
  ("frame bar 3","FRAME_BAR_LEDS = 2;","FRAME_BAR_LEDS = 3;"),
  ("frame speed","FRAME_SPEED_MS = 200;","FRAME_SPEED_MS = 100;"),
- ("frame not mirrored","drawFrame(arrowPointsRight, framePhase)","drawFrame(true, framePhase)"),
- ("frame direction inverted","drawFrame(arrowPointsRight, framePhase)","drawFrame(!arrowPointsRight, framePhase)"),
+ ("frame not mirrored","drawFrame(arrowPointsRight, activeMode, frameStep)","drawFrame(true, activeMode, frameStep)"),
+ ("frame direction inverted","drawFrame(arrowPointsRight, activeMode, frameStep)","drawFrame(!arrowPointsRight, activeMode, frameStep)"),
  ("OPEN not reversed","return (uint8_t)(FIRST_WORD_LETTERS + (LETTER_COUNT - 1 - letter));","return letter;"),
  ("OPEN reversed off by one","return (uint8_t)(FIRST_WORD_LETTERS + (LETTER_COUNT - 1 - letter));","return (uint8_t)(LETTER_COUNT - 1 - letter);"),
  ("first word reversed","if (letter < FIRST_WORD_LETTERS) return letter;","if (letter < FIRST_WORD_LETTERS) return (uint8_t)(FIRST_WORD_LETTERS - 1 - letter);"),
  ("startup window 3","STARTUP_TEST_WINDOW_LEDS = 2;","STARTUP_TEST_WINDOW_LEDS = 3;"),
- ("button pin","PIN_MODE_BUTTON = 33","PIN_MODE_BUTTON = 3"),
+ ("button pin","PIN_SKIP_BUTTON = 33;","PIN_SKIP_BUTTON = 3;"),
  ("status led pin","PIN_STATUS_LED = 13","PIN_STATUS_LED = 12"),
  ("fast heartbeat","HEARTBEAT_FAST_MS = 125","HEARTBEAT_FAST_MS = 250"),
  ("no inversion","(beatOn != inverted) ? HIGH : LOW","(beatOn) ? HIGH : LOW"),
@@ -89,7 +89,7 @@ muts=[
  ("shape ignores type","const uint8_t out = brightnessLut[type][v];","const uint8_t out = brightnessLut[0][v];"),
  ("shape hue lost","const uint16_t rr = ((uint16_t)r * out + v / 2) / v, gg = ((uint16_t)g * out + v / 2) / v, bb = ((uint16_t)b * out + v / 2) / v;","const uint16_t rr = out, gg = out, bb = out;"),
  ("shape uses min channel","if (b > v) v = b;","if (b < v) v = b;"),
- ("frame not shaped","shapeColor(LED_TYPE_STRIP, frame.Color(255, 255, 255))","frame.Color(255, 255, 255)"),
+ ("frame not shaped","frame.setPixelColor(i, shapeColor(LED_TYPE_STRIP, frame.Color(level, level, level)));","frame.setPixelColor(i, frame.Color(level, level, level));"),
  ("letters not shaped","shapeColor(LED_TYPE_STRIP, letters.Color(level, level / 12, 0))","letters.Color(level, level / 12, 0)"),
  ("letters wrong type","shapeColor(LED_TYPE_STRIP, letters.Color(level, level / 12, 0))","shapeColor(LED_TYPE_STICK, letters.Color(level, level / 12, 0))"),
  ("closed not shaped","shapeColor(LED_TYPE_STICK, closedLight.Color(closedLevel, closedLevel, closedLevel))","closedLight.Color(closedLevel, closedLevel, closedLevel)"),
@@ -97,6 +97,49 @@ muts=[
  ("arrow wrong type","shapeColor(LED_TYPE_STICK, arrowPixel(*sticks[k], s, stickLowerLane(k, led)))","shapeColor(LED_TYPE_STRIP, arrowPixel(*sticks[k], s, stickLowerLane(k, led)))"),
  ("tables not built at start","  buildDefaultBrightnessCurves();\n",""),
  ("marquee text","press D33 to skip   \";","press D3 to skip   \";"),
+ # --- program switch, new letter programs, frame patterns (added with the 15 programs) ---
+ ("program pins","PIN_PROGRAM[4] = {34, 35, 36, 37};","PIN_PROGRAM[4] = {35, 34, 36, 37};"),
+ ("program not polled","  if (pollSpeedSwitch(SLOT_PROGRAM, PIN_PROGRAM, now)) {","  if (false) {"),
+ ("program not applied at start","setLetterMode(speedStable[SLOT_PROGRAM], now);\n  setCasinoClosed","setLetterMode(0, now);\n  setCasinoClosed"),
+ ("converge step","LETTER_CONVERGE_STEP_MS = 400;","LETTER_CONVERGE_STEP_MS = 300;"),
+ ("converge off phase","if (step >= 6) return 0;","if (step >= 7) return 0;"),
+ ("converge from one end","const uint8_t fromEnd = inWord < wordLength - 1 - inWord ? inWord : (uint8_t)(wordLength - 1 - inWord);","const uint8_t fromEnd = inWord;"),
+ ("converge word start","const uint8_t wordStart = letter < FIRST_WORD_LETTERS ? 0 : FIRST_WORD_LETTERS;","const uint8_t wordStart = 0;"),
+ ("words swap by letter","(letter < FIRST_WORD_LETTERS ? 0 : 128))];\n      return (uint8_t)(40 +","(letter & 1 ? 0 : 128))];\n      return (uint8_t)(40 +"),
+ ("words swap cycle","LETTER_SWAP_MS = 2400;","LETTER_SWAP_MS = 2000;"),
+ ("slot first lock","LETTER_SLOT_FIRST_LOCK_MS = 1500;","LETTER_SLOT_FIRST_LOCK_MS = 1200;"),
+ ("slot lock step","LETTER_SLOT_LOCK_STEP_MS = 300;","LETTER_SLOT_LOCK_STEP_MS = 250;"),
+ ("slot hold end","LETTER_SLOT_HOLD_END_MS = 7200;","LETTER_SLOT_HOLD_END_MS = 7000;"),
+ ("slot period","LETTER_SLOT_PERIOD_MS = 8000;","LETTER_SLOT_PERIOD_MS = 7500;"),
+ ("slot reel levels","(hash16(letter, (uint16_t)(p / LETTER_SLOT_REEL_MS)) & 1) ? 255 : 30","(hash16(letter, (uint16_t)(p / LETTER_SLOT_REEL_MS)) & 1) ? 255 : 0"),
+ ("slot lock order","const uint32_t lockAt = LETTER_SLOT_FIRST_LOCK_MS + (uint32_t)letter * LETTER_SLOT_LOCK_STEP_MS;","const uint32_t lockAt = LETTER_SLOT_FIRST_LOCK_MS + (uint32_t)(LETTER_COUNT - 1 - letter) * LETTER_SLOT_LOCK_STEP_MS;"),
+ ("twin chase one spot","return (letter == step || letter == LETTER_COUNT - 1 - step) ? 30 : 230;","return (letter == step) ? 30 : 230;"),
+ ("twin chase step","LETTER_TWIN_STEP_MS = 250;","LETTER_TWIN_STEP_MS = 200;"),
+ ("marquee modulo","return ((letter + step) % 4) != 0 ? 230 : 40;","return ((letter + step) % 3) != 0 ? 230 : 40;"),
+ ("marquee direction","return ((letter + step) % 4) != 0 ? 230 : 40;","return ((letter + 4 - step) % 4) != 0 ? 230 : 40;"),
+ ("marquee step","LETTER_MARQUEE_STEP_MS = 250;","LETTER_MARQUEE_STEP_MS = 300;"),
+ ("random auto not 15","MODE_RANDOM_AUTO = 15;","MODE_RANDOM_AUTO = 14;"),
+ ("frame step wrap","FRAME_STEP_WRAP = 3600;","FRAME_STEP_WRAP = 3601;"),
+ ("frame step not reset on program","  letterModeStart = letterClockMs;\n  frameStep = 0;\n","  letterModeStart = letterClockMs;\n"),
+ ("frame wave tail","return k < 5 ? (uint8_t)(255 - 50 * k) : 0;","return k < 5 ? (uint8_t)(255 - 40 * k) : 0;"),
+ ("frame fill hold","return p < 14 ? 255 : 0;\n    }\n    case 3:","return p < 13 ? 255 : 0;\n    }\n    case 3:"),
+ ("frame ignite hold","return p < 30 ? 230 : 0;","return p < 28 ? 230 : 0;"),
+ ("frame sides blink","return (t % 8) < 5 ? 255 : 20;","return (t % 8) < 4 ? 255 : 20;"),
+ ("frame alternate","return ((i + t / 2) & 1) ? 255 : 0;","return ((i + t) & 1) ? 255 : 0;"),
+ ("frame pingpong tail","return (behind > 0 && behind < 4) ? (uint8_t)(255 - 70 * behind) : 0;","return (behind > 0 && behind < 3) ? (uint8_t)(255 - 70 * behind) : 0;"),
+ ("frame twinkle","return (hash16(i, t) & 7) < 2 ? 255 : 30;","return (hash16(i, t) & 7) < 2 ? 255 : 0;"),
+ ("frame chase direction","return ((q + 3 - t % 3) % 3) == 0 ? 255 : 0;","return ((q + t % 3) % 3) == 0 ? 255 : 0;"),
+ ("frame heartbeat","return s == 0 ? 255 : (s == 1 ? 120 : (s == 2 ? 200 : (s == 3 ? 60 : 20)));","return s == 0 ? 255 : (s == 1 ? 120 : (s == 2 ? 200 : (s == 3 ? 60 : 30)));"),
+ ("frame corners linear distance","if (d > FRAME_PIXELS - d) d = FRAME_PIXELS - d;","(void)d;"),
+ ("frame corners dark phase","if (s >= 6) return 0;\n      return nearest","if (s >= 7) return 0;\n      return nearest"),
+ ("frame edges swap","return ((t % 10) < 5) == longEdge ? 255 : 0;","return ((t % 10) < 4) == longEdge ? 255 : 0;"),
+ ("frame slot lock","if (p < 6 + i) return","if (p < 5 + i) return"),
+ ("frame twin second comet","const uint16_t b = (FRAME_PIXELS - a) % FRAME_PIXELS;","const uint16_t b = a;"),
+ ("frame marquee","return ((q + 3 - t % 3) % 3) != 0 ? 255 : 0;","return ((q + 3 - t % 3) % 3) != 1 ? 255 : 0;"),
+ ("frame q arrow right","(uint16_t)((FRAME_UPPER_LEFT + FRAME_PIXELS - i) % FRAME_PIXELS)","(uint16_t)((FRAME_UPPER_RIGHT + FRAME_PIXELS - i) % FRAME_PIXELS)"),
+ ("frame q arrow left","(uint16_t)((i + FRAME_PIXELS - FRAME_UPPER_RIGHT) % FRAME_PIXELS)","(uint16_t)((i + FRAME_PIXELS - FRAME_UPPER_LEFT) % FRAME_PIXELS)"),
+ ("frame long edge","i <= FRAME_LOWER_RIGHT || (i >= FRAME_UPPER_RIGHT && i <= FRAME_UPPER_LEFT)","i < FRAME_LOWER_RIGHT || (i >= FRAME_UPPER_RIGHT && i <= FRAME_UPPER_LEFT)"),
+ ("lcd program hex","\"Prog %X\"","\"Prog %u\""),
 ]
 def run(i):
     name,old,new=muts[i]
@@ -105,7 +148,8 @@ def run(i):
     open(d+'/sketch.ino','w').write(SRC.replace(old,new))
     r=subprocess.run(['g++','-std=c++17','-O1','-w','-I'+ROOT+'/tests','-DSKETCH_PATH="%s/sketch.ino"'%d,'-o',d+'/h',ROOT+'/tests/casino_open_sign_v2_harness.cpp'],capture_output=True,text=True)
     if r.returncode: return name,'COMPILE ERROR '+r.stderr[:200]
-    r=subprocess.run([d+'/h'],capture_output=True,text=True)
+    try: r=subprocess.run([d+'/h'],capture_output=True,text=True,timeout=60)   # a hang (the harness waits for a change that never comes) counts as detected
+    except subprocess.TimeoutExpired: return name,'RESULT: timeout, harness hangs: 1 failures'
     last=[l for l in r.stdout.splitlines() if l.startswith('RESULT')]
     return name,(last[-1] if last else 'no result')
 # Variant with the ball bit false: the harness (EXPECT_BALL_AT_DIN=0) must pass on it and fail when the bit is ignored.
@@ -119,9 +163,13 @@ def run_variant(name,old,new,expect,extra=()):
     return name,(last[-1] if last else 'no result')
 
 
-with cf.ThreadPoolExecutor(6) as ex:
-    for name,res in ex.map(run,range(len(muts))):
+ONLY=os.environ.get('MUT_ONLY')   # MUT_ONLY=new runs only the mutants added with the 15 programs (after the 'program pins' one)
+IDX=range(len(muts)) if not ONLY else range([m[0] for m in muts].index('program pins'),len(muts))
+with cf.ThreadPoolExecutor(8) as ex:
+    for name,res in ex.map(run,IDX):
         print(("DETECTED " if 'failures' in res or 'ERROR' in res or res=='no result' else "SURVIVED ")+name+": "+res)
+
+if ONLY: sys.exit(0)
 
 FO="constexpr bool STICK_BALL_AT_DIN_END = true;"; FN="constexpr bool STICK_BALL_AT_DIN_END = false;"
 assert SRC.count(FO)==1

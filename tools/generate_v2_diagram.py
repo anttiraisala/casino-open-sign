@@ -57,7 +57,7 @@ def read_config(text):
     for name in ("FRAME_EDGE_LONG", "FRAME_EDGE_SHORT", "LEDS_PER_STICK", "STICK_COUNT",
                  "CLOSED_LIGHT_LEDS", "PIN_CASINO_CLOSED_SWITCH",
                  "PIN_FRAME", "PIN_LETTERS",
-                 "PIN_ARROW_SWITCH", "PIN_MODE_BUTTON", "PIN_STATUS_LED"):
+                 "PIN_ARROW_SWITCH", "PIN_SKIP_BUTTON", "PIN_STATUS_LED"):
         match = re.search(r"constexpr\s+\w+\s+%s\s*=\s*(\d+)\s*;" % name, text)
         if not match:
             sys.exit("Could not find constant %s in sketch.ino" % name)
@@ -84,7 +84,7 @@ def read_config(text):
         if not match:
             sys.exit("Could not find %s in sketch.ino" % name)
         config[name] = match.group(1).upper()
-    for name in ("PIN_SPEED_FRAME_ARROW", "PIN_SPEED_LETTERS"):
+    for name in ("PIN_SPEED_FRAME_ARROW", "PIN_SPEED_LETTERS", "PIN_PROGRAM"):
         match = re.search(r"constexpr\s+uint8_t\s+%s\[\d*\]\s*=\s*\{([^}]*)\}" % name, text)
         if not match:
             sys.exit("Could not find %s in sketch.ino" % name)
@@ -288,6 +288,7 @@ class Layout:
             "D%d: casino closed switch SW5 (handle toward GND = closed)" % c["PIN_CASINO_CLOSED_SWITCH"],
             "D%d-D%d: speed of frame + arrow (hex switch SW3)" % (c["PIN_SPEED_FRAME_ARROW"][0], c["PIN_SPEED_FRAME_ARROW"][3]),
             "D%d-D%d: speed of letters (hex switch SW4)" % (c["PIN_SPEED_LETTERS"][0], c["PIN_SPEED_LETTERS"][3]),
+            "D%d-D%d: program switch SW6 (hex rotary 0-F): letter program + frame pattern" % (c["PIN_PROGRAM"][0], c["PIN_PROGRAM"][3]),
             "D%d (LED L on the board): sign of life; Serial Monitor 115200 baud" % c["PIN_STATUS_LED"],
             "One Wokwi LED = one real pixel (one chip = 3 LEDs, 10 cm).",
         ]
@@ -302,7 +303,7 @@ class Layout:
         label_top = SIGN_TOP                     # first caption line of the switches and button
         inputs_top = label_top + 56              # slide switches and push button
         dip_label_top = inputs_top + 70          # caption block of the DIP bank
-        dip_top = dip_label_top + 5 * 20 + 10    # the DIP bank itself
+        dip_top = dip_label_top + 10 * 20 + 10    # the DIP bank itself
         mega_top = dip_top + 90 + 40
         parts = [{
             "type": "wokwi-arduino-mega",
@@ -316,11 +317,12 @@ class Layout:
         parts.extend(self.legend())
         # List of the letter modes under the sign (the modes are defined in sketch.ino).
         for i, line in enumerate((
-                "Letter modes (button D%d steps through them, after 10 it wraps to 0):" % self.cfg["PIN_MODE_BUTTON"],
+                "Program switch SW6 (D%d-D%d) picks the letter program AND the frame pattern:" % (self.cfg["PIN_PROGRAM"][0], self.cfg["PIN_PROGRAM"][3]),
                 "0 breathe   1 wave   2 typewriter   3 ignite   4 word blink",
                 "5 alternate   6 scanner   7 sparkle   8 chase   9 pulse",
-                "10 random auto: a random pattern from 0-9, new one every 2 min",
-                "The sign starts in mode 0.")):
+                "A converge   B words swap   C slot machine   D twin chase   E marquee",
+                "F random auto: a random program from 0-E, new one every 2 min",
+                "Frame patterns 0-E follow the same number. The sign starts in the switch position.")):
             parts.append({"type": "wokwi-text", "id": "mode_list_%d" % (i + 1),
                           "top": round(fy + height + 30 + i * 20, 1), "left": round(fx, 1),
                           "attrs": {"text": line}})
@@ -348,7 +350,7 @@ class Layout:
         parts.append({"type": "wokwi-slide-switch", "id": "arrow_switch",
                       "top": inputs_top, "left": 40, "attrs": {}})
         parts.append({"type": "wokwi-text", "id": "mode_button_label", "top": label_top + 18,
-                      "left": 170, "attrs": {"text": "D%d: letter mode" % self.cfg["PIN_MODE_BUTTON"]}})
+                      "left": 170, "attrs": {"text": "D%d: skip LED test" % self.cfg["PIN_SKIP_BUTTON"]}})
         parts.append({"type": "wokwi-pushbutton", "id": "mode_button",
                       "top": inputs_top, "left": 180, "attrs": {"color": "green"}})
         parts.append({"type": "wokwi-text", "id": "casino_closed_label", "top": label_top,
@@ -363,6 +365,8 @@ class Layout:
         # bits of SW4 (letters speed). A closed switch pulls its pin to GND = bit set.
         parts.append({"type": "wokwi-dip-switch-8", "id": "speed_switches",
                       "top": dip_top, "left": 80, "attrs": {}})
+        parts.append({"type": "wokwi-dip-switch-8", "id": "program_switches",
+                      "top": dip_top, "left": 290, "attrs": {}})
         for i, line in enumerate((
                 "Speed DIP bank (stands in for the hex switches):",
                 "1-4 = SW3 bits 1,2,4,8: frame + arrow (D%d-D%d)"
@@ -370,14 +374,18 @@ class Layout:
                 "5-8 = SW4 bits 1,2,4,8: letters (D%d-D%d)"
                 % (self.cfg["PIN_SPEED_LETTERS"][0], self.cfg["PIN_SPEED_LETTERS"][3]),
                 "ON = bit set; click the part, press keys 1-8.",
-                "All OFF = position 0 (slowest).")):
+                "All OFF = position 0 (slowest).",
+                "",
+                "Second DIP bank (right) = program switch SW6 (D%d-D%d):" % (self.cfg["PIN_PROGRAM"][0], self.cfg["PIN_PROGRAM"][3]),
+                "1-4 = bits 1,2,4,8; 5-8 unused. Binary 0..15 = program 0..F.",
+                "Click the part, press keys 1-4.")):
             parts.append({"type": "wokwi-text", "id": "speed_label_%d" % (i + 1),
                           "top": dip_label_top + i * 20, "left": 20, "attrs": {"text": line}})
 
         # I2C LCD 2x16 (PCF8574 backpack, address 0x27) below the Arduino, with its caption above it.
         lcd_top = mega_top + MEGA_HEIGHT + 90
         for i, line in enumerate(("LCD 2x16 (I2C 0x27): SDA = D20, SCL = D21",
-                                  "pages: mode, SW3, SW4, casino + arrow")):
+                                  "pages: program, SW3, SW4, casino + arrow")):
             parts.append({"type": "wokwi-text", "id": "lcd_label_%d" % (i + 1),
                           "top": lcd_top - 46 + i * 18, "left": 20, "attrs": {"text": line}})
         parts.append({"type": "wokwi-lcd1602", "id": "lcd", "top": lcd_top, "left": 20,
@@ -392,13 +400,16 @@ class Layout:
             ["arrow_switch:1", "mega:GND.1", "black", []],
             ["mega:%d" % self.cfg["PIN_CASINO_CLOSED_SWITCH"], "casino_closed_switch:2", "orange", []],
             ["casino_closed_switch:1", "mega:GND.1", "black", []],
-            ["mega:%d" % self.cfg["PIN_MODE_BUTTON"], "mode_button:1.r", "orange", []],
+            ["mega:%d" % self.cfg["PIN_SKIP_BUTTON"], "mode_button:1.r", "orange", []],
             ["mode_button:2.r", "mega:GND.1", "black", []],
         ]
         speed_pins = self.cfg["PIN_SPEED_FRAME_ARROW"] + self.cfg["PIN_SPEED_LETTERS"]
         for k, pin in enumerate(speed_pins, start=1):
             connections.append(["mega:%d" % pin, "speed_switches:%da" % k, "orange", []])
             connections.append(["speed_switches:%db" % k, "mega:GND.1", "black", []])
+        for k, pin in enumerate(self.cfg["PIN_PROGRAM"], start=1):
+            connections.append(["mega:%d" % pin, "program_switches:%da" % k, "orange", []])
+            connections.append(["program_switches:%db" % k, "mega:GND.1", "black", []])
         for _name, ids, pin in self.chains:   # pin: a number for the strips, "A0".. for the sticks on A0..A2
             first = ids[0]
             connections.append(["mega:%s" % pin, "%s:DIN" % first, "green", []])
