@@ -348,3 +348,14 @@ See `arrow_sticks/README.txt` and `tools/arrow_geometry.py` (single source for t
 ## Results from the user (2026-11-06)
 - stick_test_direct on real hardware: all 11 Grove sticks plugged unmodified into the Grove Base Shield with the Arduino + shield fed from the external 5 V supply work, all show the moving patterns. The user has at least 11 sticks. This settles the stick count for the arrow (10 for design B, an 11th: now the CLOSED light).
 - The directory is not a git repository inside the AI workspace; the user commits the files to version control himself (a .gitignore for __pycache__ is included). No GitHub repository for this project was found on the user's account by the AI.
+
+## Casino Open Sign V2 settings menu (2026-11-11)
+`casino_open_sign_v2/sketch.ino` has a generated block between `//@V2_MENU_BEGIN` and `//@V2_MENU_END` (PROGMEM tables + the C++ menu
+engine from `tools/menu_engine/engine.inc`), written by `node tools/generate_v2_menu.js` from `tools/menu-editor/menu-v2.json`
+(`--check` tells if it is current). The hand-written rest of the sketch supplies `menuCallback` (applySwitches, applySpeeds,
+curve rebuilds), the controls (menu hex switch D42-D45 relative, OK D48, BACK D49, SHIFT D50; program switch D34-D37 absolute) and
+the LCD output (`lcdBuildText` uses `menuRows`). The old speed switches (D22-D29) are removed: the speeds and the three brightness
+curves are menu properties saved in EEPROM (layout tag checked at start-up). The program switch and the two slide switches update
+the status properties with `menuPhysical`, which also closes an open menu. Tests: `tests/casino_open_sign_v2_harness.cpp` (a boot
+mode `V2_BOOT=1` loads a saved EEPROM image), `tests/mutate_v2.py` (171 mutants, each run in both modes), `tests/menu_diff_test.py`,
+`tests/menu_engine_harness.cpp`. Host only: not run on hardware or Wokwi.

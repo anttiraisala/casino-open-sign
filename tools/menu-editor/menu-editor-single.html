@@ -254,11 +254,12 @@
           var n = 0, w = it.where;
           if (it.set === undefined && it.setAll === undefined) errors.push(w + ': preset has neither set nor setAll');
           if (it.setAll !== undefined && it.setAll !== 'default') errors.push(w + ': setAll must be "default"');
+          if (it.set) it.set = Object.assign({}, it.set);
           Object.keys(it.set || {}).forEach(function (id) {
             n++;
             var p = m.props[id], v = it.set[id];
             if (!p) { errors.push(w + ': preset sets unknown property ' + id); return; }
-            if (p.readOnly) { errors.push(w + ': preset sets read-only property ' + id); return; }
+            if (p.readOnly) { warnings.push(w + ': preset sets read-only property ' + id + ' (it is skipped)'); delete it.set[id]; return; }
             if (v === 'default') return;
             if (p.kind === 'int' || p.kind === 'float') {
               if (!isNum(v) || v < p.min - 1e-9 || v > p.max + 1e-9) errors.push(w + ': value ' + v + ' for ' + id + ' outside ' + p.min + '..' + p.max);

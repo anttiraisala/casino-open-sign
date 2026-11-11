@@ -52,6 +52,7 @@ struct MockSerial {
   void print(unsigned long v) { out(std::to_string(v)); }
   void print(int v, int base) { char b[32]; snprintf(b, sizeof b, base == 16 ? "%X" : "%d", v); out(b); }
   void print(double v, int digits) { char b[64]; snprintf(b, sizeof b, "%.*f", digits, v); out(b); }
+  void println(double v, int digits) { char b[64]; snprintf(b, sizeof b, "%.*f", digits, v); out(std::string(b) + "\n"); }
   void println(const char *s) { out(std::string(s) + "\n"); }
   void println(const __FlashStringHelper *s) { out(std::string(reinterpret_cast<const char *>(s)) + "\n"); }
   void println() { out("\n"); }

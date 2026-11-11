@@ -35,7 +35,7 @@ def main():
     pin_y0, pin_dy = 250, 66                     # y of the first data pin and the pin spacing
     last_y = pin_y0 + (n - 1) * pin_dy
     ard_x0, ard_x1 = 300, 500                    # Arduino block
-    ard_y0, ard_y1 = 195, max(last_y + 45 + 700, 1590)
+    ard_y0, ard_y1 = 195, max(last_y + 45 + 700, 1740)
     res_x = 540
     blk_x0, blk_x1 = 690, 940                    # LED strip blocks
     v12_x, gnd_x = 995, 1035                     # vertical +12 V and GND buses (the 12 V strips only)
@@ -192,21 +192,26 @@ def main():
 
     slide_switch(345, cfg["PIN_ARROW_SWITCH"], "SW1  slide switch (SPDT)",
                  ["arrow direction: handle on the GND side", "= LOW = arrow points left", "mount: back view, GND contact on the right"])
-    slide_switch(1090, cfg["PIN_CASINO_CLOSED_SWITCH"], "SW5  slide switch (SPDT)",
+    slide_switch(1115, cfg["PIN_CASINO_CLOSED_SWITCH"], "SW5  slide switch (SPDT)",
                  ["casino closed: handle on the GND side = LOW =", "CLOSED (OPEN letters off, CLOSED light on);",
                   "handle on the other side = casino open"])
 
-    bt_y = 540
-    svg.text(ard_x0 + 8, bt_y + 4, "D%d" % cfg["PIN_SKIP_BUTTON"], size=12)
-    svg.line(ard_x0, bt_y, 222, bt_y, ORANGE)
-    svg.circle(222, bt_y, 3.5, ORANGE)
-    svg.circle(140, bt_y, 3.5, ORANGE)
-    svg.line(134, bt_y - 14, 228, bt_y - 14, BLACK, 2.5)
-    svg.line(181, bt_y - 14, 181, bt_y - 28, BLACK, 2)
-    svg.line(140, bt_y + 4, 140, bt_y + 30, ORANGE)
-    svg.ground(140, bt_y + 30)
-    svg.text(40, bt_y - 58, "SW2  push button (momentary), D33", size=12, weight="bold")
-    svg.text(40, bt_y - 43, "skips the power-on LED test only", size=10, color=GREY)
+    def push_button(bt_y, pin, title, subtitle):
+        svg.text(ard_x0 + 8, bt_y + 4, "D%d" % pin, size=12)
+        svg.line(ard_x0, bt_y, 222, bt_y, ORANGE)
+        svg.circle(222, bt_y, 3.5, ORANGE)
+        svg.circle(140, bt_y, 3.5, ORANGE)
+        svg.text(228, bt_y - 20, "contact 1", size=9, color=GREY)
+        svg.text(134, bt_y + 18, "contact 2", size=9, anchor="end", color=GREY)
+        svg.line(134, bt_y - 14, 228, bt_y - 14, BLACK, 2.5)
+        svg.line(181, bt_y - 14, 181, bt_y - 28, BLACK, 2)
+        svg.line(140, bt_y + 4, 140, bt_y + 30, ORANGE)
+        svg.ground(140, bt_y + 30)
+        svg.text(40, bt_y - 58, title, size=12, weight="bold")
+        svg.text(40, bt_y - 43, subtitle, size=10, color=GREY)
+
+    push_button(540, cfg["PIN_SKIP_BUTTON"], "SW2  push button (momentary), D%d" % cfg["PIN_SKIP_BUTTON"],
+                "skips the power-on LED test only")
 
     # ---- Hex rotary switches (speed) -----------------------------------------------------------
     def hex_switch(y0, title, subtitle, pins):
@@ -228,15 +233,17 @@ def main():
         svg.circle(150, y0 + 110, 3.5, ORANGE)
         svg.ground(150, y0 + 122)
 
-    hex_switch(650, "SW3  hex rotary switch 0-F", "speed of the frame and the arrow", cfg["PIN_SPEED_FRAME_ARROW"])
-    hex_switch(832, "SW4  hex rotary switch 0-F", "speed of the letters", cfg["PIN_SPEED_LETTERS"])
+    hex_switch(650, "SW3  hex rotary switch 0-F, MENU", "free-running, relative: selection / value in the menu", cfg["PIN_MENU_SWITCH"])
+    push_button(850, cfg["PIN_OK"], "SW7  push button OK, D%d" % cfg["PIN_OK"], "opens the menu, enters a submenu, starts / accepts an edit")
+    push_button(960, cfg["PIN_BACK"], "SW8  push button BACK, D%d" % cfg["PIN_BACK"], "one level up, cancels an edit")
+    push_button(1290, cfg["PIN_SHIFT"], "SW9  push button SHIFT, D%d" % cfg["PIN_SHIFT"], "held while turning the menu switch: bigger steps")
 
-    hex_switch(1290, "SW6  hex rotary switch 0-F, PROGRAM", "letter program + frame pattern (F = random)", cfg["PIN_PROGRAM"])
+    hex_switch(1440, "SW6  hex rotary switch 0-F, PROGRAM", "letter program + frame pattern (F = random)", cfg["PIN_PROGRAM"])
 
     # ---- I2C LCD (below SW6) --------------------------------------------------------------------
-    ly0 = 1500
+    ly0 = 1650
     svg.text(40, ly0 - 40, "LCD1  2x16 character LCD, I2C backpack", size=12, weight="bold")
-    svg.text(40, ly0 - 26, "shows mode, speeds, casino state, arrow", size=10, color=GREY)
+    svg.text(40, ly0 - 26, "status page (program, casino, arrow), menu", size=10, color=GREY)
     svg.text(40, ly0 - 14, "(I2C address 0x27, try 0x3F if blank)", size=10, color=GREY)
     svg.rect(60, ly0, 140, 96, fill="#f3f3f3")
     svg.text(100, ly0 + 54, "LCD", size=12, anchor="middle", weight="bold")
@@ -285,9 +292,11 @@ def main():
         "4. D12 = letters strip, 10 pixels (one per letter): 1-6 C A S I N O, then 7-10 N E P O. OPEN is wired in reverse order on the strip; the program maps the letters. D13 stays the status LED.",
         "5. Put each 330 ohm resistor close to the first pixel of its strip. Keep data wires short. The sticks plug straight into the Grove shield (no resistors, no wire from a supply).",
         "6. The Mega's 5 V data signal into a 12 V WS2811 strip normally works (as in the strip tests) but is not verified for the final sign; the 74HCT125 buffer is listed as insurance.",
-        "7. SW6 (program): pins 1, 2, 4, 8 go to D34-D37, C to GND; position 0..E = program 0..14, F = random. SW3 and SW4: pins 1, 2, 4, 8 go to D22-D25 and D26-D29, the common pin C goes to GND. A position counts in binary (0..F). "
-        "If your switch gives the complement (15 - position), set SPEED_BIT_IS_LOW to false in sketch.ino.",
-        "8. All inputs (SW1 to SW5) use the internal pull-ups (INPUT_PULLUP), so no resistors are needed for them.",
+        "7. SW6 (program, absolute): pins 1, 2, 4, 8 go to D34-D37, C to GND; position 0..E = program 0..14, F = random. SW3 (menu, relative): pins 1, 2, 4, 8 go to D42-D45, C to GND; "
+        "a change of the code is a step (1..7 forward, 9..15 back). A position counts in binary (0..F). "
+        "If your switch gives the complement (15 - position), set HEX_BIT_IS_LOW to false in sketch.ino.",
+        "8. All inputs (SW1, SW2, SW3, SW5 to SW9) use the internal pull-ups (INPUT_PULLUP), so no resistors are needed for them. "
+        "Speeds and brightness curves are menu properties (saved in EEPROM); the old speed switches SW3/SW4 on D22-D29 are gone.",
         "9. CLOSED (the 11th Grove stick, 10 white LEDs, shield connector A0) sits BEHIND the plate under the CLOSED hole text and is lit only while SW5 says closed.",
         "10. LCD1 (I2C backpack) uses the Mega's I2C pins D20 (SDA) and D21 (SCL) plus the Mega 5V and GND pins (about 30 mA with the backlight).",
         "11. Arrow sticks: the 10 Grove RGB LED sticks go into the Grove Base Shield connectors D2-D8 and A1-A3 (A0 carries the CLOSED light stick; the connector of each stick is listed in the data rows above; the shield's 3V3/5V switch "

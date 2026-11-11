@@ -125,11 +125,11 @@
   g_pinLevel[36] = HIGH; g_pinLevel[37] = LOW; settle(30); settle(30); CHECK(menuPos(P_program) == 8, "leg 8 = D37");
   g_pinLevel[37] = HIGH; settle(30); settle(30);
 
-  // arrow and casino slide switches (LOW = left / closed)
+  // arrow and casino slide switches (LOW = the arrow points to the customer's left = "Right" seen from behind / casino closed)
   g_pinLevel[32] = LOW; settle(40); settle(40);
-  CHECK(menuPos(P_arrow) == 0, "arrow switch LOW = left");
+  CHECK(menuPos(P_arrow) == 1, "arrow switch LOW = customer left = Right seen from behind");
   g_pinLevel[32] = HIGH; settle(40); settle(40);
-  CHECK(menuPos(P_arrow) == 1, "arrow switch HIGH = right");
+  CHECK(menuPos(P_arrow) == 0, "arrow switch HIGH = customer right = Left seen from behind");
   g_pinLevel[30] = LOW; settle(40); settle(40);
   CHECK(menuPos(P_casino) == 0, "casino switch LOW = closed");
   g_pinLevel[30] = HIGH; settle(40); settle(40);
@@ -182,12 +182,12 @@
   shellApplySwitches = true;
   switchArrow.stable = true; switchCasino.stable = true;
   menuSet(P_arrowReverse, 0); menuSet(P_casinoReverse, 0);
-  CHECK(arrowPosition() == 0 && casinoPosition() == 0, "LOW means left and closed");
+  CHECK(arrowPosition() == 1 && casinoPosition() == 0, "LOW means arrow to the customer's left (Right from behind) and closed");
   menuSet(P_arrowReverse, 1); menuSet(P_casinoReverse, 1);
-  CHECK(arrowPosition() == 1 && casinoPosition() == 1, "reverse flags swap them");
-  menuSet(P_arrow, 0); menuSet(P_casino, 0);
+  CHECK(arrowPosition() == 0 && casinoPosition() == 1, "reverse flags swap them");
+  menuSet(P_arrow, 1); menuSet(P_casino, 0);
   menuSet(P_arrowReverse, 0); menuSet(P_arrowReverse, 1);       // changes the property again: the callback applies the switches
-  CHECK(menuPos(P_arrow) == 1, "applySwitches updates the arrow value");
+  CHECK(menuPos(P_arrow) == 0, "applySwitches updates the arrow value");
   menuSet(P_casinoReverse, 0); menuSet(P_casinoReverse, 1);
   CHECK(menuPos(P_casino) == 1, "applySwitches updates the casino value");
   shellApplySwitches = false;
@@ -230,5 +230,5 @@
   CHECK(Serial.captured.find("Serial speed 115200 baud") != std::string::npos, "baud printed at start-up");
   CHECK(lcdOk && Wire.address == 0x27 && Wire.fourBit, "LCD found at 0x27");
   Serial.capture = false;
-  CHECK(menuPos(P_program) == 0 && menuPos(P_arrow) == 1 && menuPos(P_casino) == 1, "start-up reads the switches");
+  CHECK(menuPos(P_program) == 0 && menuPos(P_arrow) == 0 && menuPos(P_casino) == 1, "start-up reads the switches");
 }

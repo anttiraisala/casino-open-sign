@@ -1,11 +1,13 @@
 #include "Arduino.h"
 #include "Adafruit_NeoPixel.h"
 #include "Wire.h"
+#include "EEPROM.h"
 unsigned long g_millis = 0;
 uint8_t g_pinLevel[64];
 MockSerial Serial;
 uint8_t g_pinOut[64];
 TwoWire Wire;
+EEPROMClass EEPROM;
 std::vector<Adafruit_NeoPixel*> g_strips;
 #include SKETCH_PATH
 #include <cstring>
@@ -60,21 +62,49 @@ int main(int argc, char **argv) {
   Serial.capture = true;                                // everything printed is kept for the sign-of-life checks
   memset(g_pinLevel, HIGH, sizeof g_pinLevel);          // pull-ups: open switch/button read HIGH
   g_pinLevel[PIN_ARROW_SWITCH] = SW_RIGHT;             // slide switch handle right -> arrow points right
-  auto setCode = [&](const uint8_t *pins, int code) {
-    for (int b = 0; b < 4; b++) g_pinLevel[pins[b]] = (((code >> b) & 1) == 1) == SPEED_BIT_IS_LOW ? LOW : HIGH;
-  };
-  setCode(PIN_SPEED_FRAME_ARROW, 8);                    // both speed switches at position 8 (about x1.1)
-  setCode(PIN_SPEED_LETTERS, 8);
+  if (getenv("V2_BOOT")) {   // power-up with a saved menu image in EEPROM (the mutation test runs this mode, too)
+    for (int k = 0; k < 4; k++) EEPROM.mem[k] = (uint8_t)(MENU_LAYOUT_TAG >> (8 * k));
+    for (uint8_t pr = 0; pr < MENU_PROP_COUNT; pr++) { const uint8_t sl = menuRd8(PP_SLOT, pr); if (sl != MENU_NO_SLOT) EEPROM.mem[4 + sl] = (uint8_t)menuRd16(PP_DEFPOS, pr); }
+    auto saveSlot = [&](uint8_t pr, int pos) { EEPROM.mem[4 + menuRd8(PP_SLOT, pr)] = (uint8_t)pos; };
+    saveSlot(P_speedFrame, 20); saveSlot(P_speedArrow, 4); saveSlot(P_speedLetters, 16); saveSlot(P_arrowReverse, 1); saveSlot(P_stripMax, 40);
+    saveSlot(P_lettersMax, 60); saveSlot(P_stickMax, 100); saveSlot(P_randomDelay, 5);
+    const std::string bootMode = getenv("V2_BOOT");
+    if (bootMode == "tag") EEPROM.mem[1] ^= 0x55;            // a saved image of another menu layout
+    if (bootMode == "range") saveSlot(P_speedFrame, 255);    // one stored value outside its property's range
+    setup();
+    finishStartup(g_millis, true);
+    for (int k = 0; k < 300; k++) { g_millis++; loop(); }
+    if (bootMode == "tag" || bootMode == "range") {
+      CHECK(!menuEepromValid && Serial.captured.find("EEPROM: no saved values for this menu layout, defaults used.") != std::string::npos, "boot: a wrong layout tag / a value out of range gives the defaults and says so");
+      CHECK(menuPos(P_speedFrame) == 12 && menuPos(P_speedArrow) == 12 && menuPos(P_speedLetters) == 12 && menuPos(P_arrowReverse) == 0 && menuPos(P_randomDelay) == 2, "boot: after the rejected image all properties have their defaults (also the valid-looking ones)");
+      if (fails) printf("RESULT: %d failures\n", fails); else printf("RESULT: all checks passed (boot mode %s)\n", bootMode.c_str());
+      return fails ? 1 : 0;
+    }
+    CHECK(menuEepromValid && Serial.captured.find("EEPROM: saved menu values loaded.") != std::string::npos, "boot: the saved menu image is loaded");
+    CHECK(menuPos(P_speedFrame) == 20 && menuPos(P_speedArrow) == 4 && menuPos(P_speedLetters) == 16, "boot: the saved speeds are loaded");
+    CHECK(fabs((double)frameIntervalMs - 200.0 / (0.25 * pow(16.0, 20 / 24.0))) <= 1.0, "boot: the saved frame speed is applied");
+    CHECK(fabs((double)arrowIntervalMs - 35.0 / (0.25 * pow(16.0, 4 / 24.0))) <= 2.0, "boot: the saved arrow speed is applied");
+    CHECK(letterMult256 == (uint16_t)(0.25 * pow(16.0, 16 / 24.0) * 256.0 + 0.5), "boot: the saved letters speed is applied");
+    CHECK(!arrowPointsRight && menuPos(P_arrow) == 1, "boot: the saved Arrow reverse flag turns the arrow (switch right -> arrow left)");
+    CHECK(brightnessLut[LED_TYPE_STRIP][255] == 40 && brightnessLut[LED_TYPE_LETTERS][255] == 60 && brightnessLut[LED_TYPE_STICK][255] == 100, "boot: the saved curves are built for the three LED types");
+    setProgramPins(15); for (int k = 0; k < 300; k++) { g_millis++; loop(); }
+    CHECK(autoDelayMs == 300000UL, "boot: the saved Change delay (5 min) is used by random auto");
+    CHECK(menuMode == MM_STATUS && menuLastInput >= 0, "boot: the status page is shown");
+    printf(fails ? "RESULT: %d failures\n" : "RESULT: all checks passed (boot mode)\n", fails);
+    return fails ? 1 : 0;
+  }
   setup();
   CHECK(startupTestActive, "the power-on LED test starts at power-up");
   // The older tests below check the colours the sketch computes, so they run with an identity curve (min 0,
   // max 255, exponent 1, mix 0). The default curves are tested separately at the end.
-  CHECK(brightnessLut[0][128] == 13 && brightnessLut[1][128] == 13 && brightnessLut[0][255] == 80 && brightnessLut[1][192] == 38, "setup() builds the default tables");
+  CHECK(brightnessLut[0][128] == 13 && brightnessLut[1][128] == 13 && brightnessLut[2][128] == 13 && brightnessLut[0][255] == 80 && (brightnessLut[1][192] == 37 || brightnessLut[1][192] == 38) && brightnessLut[2][255] == 80, "setup() builds the default tables of the three LED types (frame, sticks, letters)");
   for (auto *s : g_strips) CHECK(s->brightness_ == 255, "no global library brightness: the curve maximum is the limit");
-  CHECK(CURVE_DEFAULT_MIN[0] == 0 && CURVE_DEFAULT_MIN[1] == 0 && CURVE_DEFAULT_MAX[0] == 80 && CURVE_DEFAULT_MAX[1] == 80 &&
-        CURVE_DEFAULT_EXPONENT[0] == 2.67f && CURVE_DEFAULT_EXPONENT[1] == 2.67f && CURVE_DEFAULT_MIX[0] == 1.0f && CURVE_DEFAULT_MIX[1] == 1.0f &&
-        CURVE_DEFAULT_KEEP_ZERO[0] && CURVE_DEFAULT_KEEP_ZERO[1], "default curve values: min 0, max 80, exponent 2.67, mix 1, keep zero dark");
-  const uint8_t IDENT_TYPES[2] = {0, 1};
+  CHECK(LED_TYPE_COUNT == 3 && CURVE_DEFAULT_MIN[0] == 0 && CURVE_DEFAULT_MIN[1] == 0 && CURVE_DEFAULT_MIN[2] == 0 &&
+        CURVE_DEFAULT_MAX[0] == 80 && CURVE_DEFAULT_MAX[1] == 80 && CURVE_DEFAULT_MAX[2] == 80 &&
+        CURVE_DEFAULT_EXPONENT[0] == 2.67f && CURVE_DEFAULT_EXPONENT[1] == 2.67f && CURVE_DEFAULT_EXPONENT[2] == 2.67f &&
+        CURVE_DEFAULT_MIX[0] == 1.0f && CURVE_DEFAULT_MIX[1] == 1.0f && CURVE_DEFAULT_MIX[2] == 1.0f &&
+        CURVE_DEFAULT_KEEP_ZERO[0] && CURVE_DEFAULT_KEEP_ZERO[1] && CURVE_DEFAULT_KEEP_ZERO[2], "default curve values: min 0, max 80, exponent 2.67, mix 1, keep zero dark");
+  const uint8_t IDENT_TYPES[3] = {0, 1, 2};
   for (uint8_t ty : IDENT_TYPES) setBrightnessCurve(ty, 0, 255, 1.0f, 0.0f, true);
   finishStartup(g_millis, true);   // the older tests below start from the normal operation
   // Pins hard-coded here (not taken from the sketch): frame D11, letters D12, CLOSED light = 11th stick on A0 (54),
@@ -367,21 +397,20 @@ int main(int argc, char **argv) {
     }
     if (out && g_millis - lastDump >= 250) { dump(out); lastDump = g_millis; }
   }
-  // ---- Speed switch tests (continue running the same sketch) ----
+  // ---- Speeds: menu properties Speed > Frame, Letters, Arrow (x0.25 .. x4 in 24 log steps, default x1 = position 12) ----
   auto run = [&](unsigned long ms) { for (unsigned long k = 0; k < ms; k++) { g_millis++; loop(); } };
-  const int pairs[][2] = {{0, 15}, {15, 0}, {5, 10}, {8, 8}};
-  for (auto &pr : pairs) {
-    setCode(PIN_SPEED_FRAME_ARROW, pr[0]);
-    setCode(PIN_SPEED_LETTERS, pr[1]);
+  CHECK(frameIntervalMs == 200 && arrowIntervalMs == 35 && letterMult256 == 256, "default speeds: x1 for the frame, the arrow and the letters");
+  CHECK(menuPos(P_speedFrame) == 12 && menuPos(P_speedArrow) == 12 && menuPos(P_speedLetters) == 12, "the speed properties start at position 12 (x1)");
+  const int speedPos[][3] = {{0, 24, 12}, {24, 0, 3}, {6, 18, 24}, {12, 12, 0}};   // frame, letters, arrow positions
+  for (auto &pr : speedPos) {
+    menuSetPos(P_speedFrame, pr[0]); menuSetPos(P_speedLetters, pr[1]); menuSetPos(P_speedArrow, pr[2]);
     run(300);
-    CHECK(speedStable[SLOT_SPEED_MAIN] == pr[0] && speedStable[SLOT_SPEED_LETTERS] == pr[1], "speed switch positions are read");
-    const double mMain = SPEED_MIN_MULTIPLIER * pow(SPEED_MAX_MULTIPLIER / SPEED_MIN_MULTIPLIER, pr[0] / 15.0);
-    const double mLet = SPEED_MIN_MULTIPLIER * pow(SPEED_MAX_MULTIPLIER / SPEED_MIN_MULTIPLIER, pr[1] / 15.0);
-    double wantFrame = FRAME_SPEED_MS / mMain, wantArrow = ARROW_SPEED_MS / mMain;
-    if (wantFrame < MIN_UPDATE_MS) wantFrame = MIN_UPDATE_MS;
-    if (wantArrow < MIN_UPDATE_MS) wantArrow = MIN_UPDATE_MS;
-    CHECK(fabs((double)frameIntervalMs - wantFrame) <= 1.0, "frame interval follows the speed switch");
-    CHECK(fabs((double)arrowIntervalMs - wantArrow) <= 1.0, "arrow interval follows the speed switch");
+    const double mFrame = 0.25 * pow(16.0, pr[0] / 24.0), mLet = 0.25 * pow(16.0, pr[1] / 24.0), mArrow = 0.25 * pow(16.0, pr[2] / 24.0);
+    double wantFrame = 200.0 / mFrame, wantArrow = 35.0 / mArrow;
+    if (wantFrame < 8) wantFrame = 8;
+    if (wantArrow < 8) wantArrow = 8;
+    CHECK(fabs((double)frameIntervalMs - wantFrame) <= 1.0, "frame interval follows the frame speed property");
+    CHECK(fabs((double)arrowIntervalMs - wantArrow) <= 1.0, "arrow interval follows the arrow speed property (separate from the frame)");
     const long f0 = fr->shows, a0 = st[3]->shows, l0 = let->shows;
     const unsigned long clk0 = letterClockMs;
     run(24000);
@@ -389,26 +418,29 @@ int main(int argc, char **argv) {
     CHECK(fabs(gotFrame - wantFrame) <= 0.03 * wantFrame + 1.5, "measured frame update period matches");
     CHECK(fabs(gotArrow - wantArrow) <= 0.03 * wantArrow + 1.5, "measured arrow update period matches");
     const double clockRate = (double)(letterClockMs - clk0) / 24000.0;
-    CHECK(fabs(clockRate - mLet) <= 0.02 * mLet + 0.005, "letter pattern clock runs at the switch multiplier");
+    CHECK(fabs(clockRate - mLet) <= 0.02 * mLet + 0.005, "letter pattern clock runs at the letters speed multiplier");
     CHECK(let->shows - l0 > 150, "letters keep updating at their own rate");
-    printf("  switches %X/%X: frame %.0f ms, arrow %.1f ms, letters x%.2f\n", pr[0], pr[1], gotFrame, gotArrow, clockRate);
+    printf("  speeds at positions %d/%d/%d: frame %.0f ms, arrow %.1f ms, letters x%.2f\n", pr[0], pr[1], pr[2], gotFrame, gotArrow, clockRate);
   }
-  // A position that is only passed through while turning must be ignored.
-  setCode(PIN_SPEED_LETTERS, 8); run(200);
-  setCode(PIN_SPEED_LETTERS, 12); run(10);
-  CHECK(speedStable[SLOT_SPEED_LETTERS] == 8, "a position held for 10 ms is not accepted");
-  setCode(PIN_SPEED_LETTERS, 3); run(10);
-  setCode(PIN_SPEED_LETTERS, 4); run(150);
-  CHECK(speedStable[SLOT_SPEED_LETTERS] == 4, "the final position is accepted after it settles");
+  menuSetPos(P_speedFrame, 12); menuSetPos(P_speedLetters, 12); menuSetPos(P_speedArrow, 12);
+  // The program switch is a hex switch with a debounce: a position that is only passed through while turning is ignored.
+  setProgramPins(0); run(200);
+  setProgramPins(12); run(5);
+  CHECK(hexStable[SLOT_PROGRAM] == 0, "a position held for 5 ms is not accepted");
+  setProgramPins(3); run(5);
+  setProgramPins(4); run(150);
+  CHECK(hexStable[SLOT_PROGRAM] == 4 && letterMode == 4, "the final position is accepted after it settles and starts that program");
+  setProgramPins(0); run(150);
   // Reading is consistent with the configured polarity.
-  g_pinLevel[PIN_SPEED_LETTERS[0]] = HIGH; g_pinLevel[PIN_SPEED_LETTERS[1]] = LOW;
-  g_pinLevel[PIN_SPEED_LETTERS[2]] = LOW; g_pinLevel[PIN_SPEED_LETTERS[3]] = HIGH;
-  CHECK(readSpeedSwitch(PIN_SPEED_LETTERS) == (SPEED_BIT_IS_LOW ? 6 : 9), "pin polarity: pins 2 and 4 LOW read as 6 (active low)");
+  g_pinLevel[PIN_PROGRAM[0]] = HIGH; g_pinLevel[PIN_PROGRAM[1]] = LOW;
+  g_pinLevel[PIN_PROGRAM[2]] = LOW; g_pinLevel[PIN_PROGRAM[3]] = HIGH;
+  CHECK(readHexSwitch(PIN_PROGRAM) == (HEX_BIT_IS_LOW ? 6 : 9), "pin polarity: pins 2 and 4 LOW read as 6 (active low)");
+  setProgramPins(0); run(150);
 
   // ---- Casino closed tests ----
-  setCode(PIN_SPEED_FRAME_ARROW, 8); setCode(PIN_SPEED_LETTERS, 8); run(300);
+  run(300);
   auto openLevel = [&](int k) { return shownLevel(let, FIRST_WORD_LETTERS + k); };
-  auto pressMode = [&]() { const int to = (letterMode + 1) % 16; if (speedStable[SLOT_PROGRAM] == to) { setProgramPins(to ^ 8); run(60); } setProgramPins(to); run(180); };   // next program with the program switch
+  auto pressMode = [&]() { const int to = (letterMode + 1) % 16; if (hexStable[SLOT_PROGRAM] == to) { setProgramPins(to ^ 8); run(60); } setProgramPins(to); run(180); };   // next program with the program switch
   while (letterMode != MODE_BREATHE) pressMode();
   // V2: the typewriter lights the letters in reading order C A S I N O, O P E N; on the strip that is the pixel order
   // 0 1 2 3 4 5, then 9 8 7 6 (OPEN is wired reversed). Pixel numbers are hard-coded here.
@@ -460,12 +492,12 @@ int main(int argc, char **argv) {
   CHECK(sawFull && sawDim && sawOffAfterStart, "CLOSED light has steady phases and flicker bursts with full, dim and dark levels");
   CHECK(startupZero && startupFull, "CLOSED light flashes while starting up");
   // speed: at x4 the flicker bursts come much more often than at x0.25
-  auto bursts = [&](int code, unsigned long ms) { setCode(PIN_SPEED_LETTERS, code); run(300); int n = 0, prev = closedState;
+  auto bursts = [&](int pos, unsigned long ms) { menuSetPos(P_speedLetters, pos); run(300); int n = 0, prev = closedState;
     for (unsigned long k = 0; k < ms; k++) { run(1); if (closedState == CL_FLICKER && prev != CL_FLICKER) n++; prev = closedState; } return n; };
-  const int fast = bursts(15, 60000), slow = bursts(0, 60000);
-  CHECK(fast >= 5 && slow <= 2 && fast > slow, "CLOSED light timing follows the letter speed switch");
+  const int fast = bursts(24, 60000), slow = bursts(0, 60000);
+  CHECK(fast >= 5 && slow <= 2 && fast > slow, "CLOSED light timing follows the letters speed property");
   printf("  CLOSED flicker bursts in 60 s: x4.00 -> %d, x0.25 -> %d\n", fast, slow);
-  setCode(PIN_SPEED_LETTERS, 8); run(300);
+  menuSetPos(P_speedLetters, 12); run(300);
   // reopen: OPEN letters come back, CLOSED light goes dark
   g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; run(100);
   CHECK(!casinoClosed, "casino open again after the switch goes HIGH");
@@ -476,7 +508,7 @@ int main(int argc, char **argv) {
   printf("  closed phase: CASINO letters lit samples %ld\n", firstLit);
 
   // ---- New letter modes (scanner, sparkle, chase, pulse) and random auto ----
-  setCode(PIN_SPEED_LETTERS, 8); run(300);
+  menuSetPos(P_speedLetters, 12); run(300);
   auto gotoMode = [&](uint8_t m) { while (letterMode != m) pressMode(); run(400); };
   {
     // scanner: a bright head moves over all letters; letters behind it glow as a tail
@@ -537,7 +569,7 @@ int main(int argc, char **argv) {
   }
   {
     // random auto: picks only real patterns, never the same twice in a row, uses all of them,
-    // and changes about every LETTER_RANDOM_AUTO_MS
+    // and changes after the Change delay (default 2 minutes)
     gotoMode(MODE_RANDOM_AUTO);
     CHECK(letterMode == MODE_RANDOM_AUTO && activeMode < PATTERN_MODE_COUNT, "random auto: shows a real pattern");
     bool used[PATTERN_MODE_COUNT] = {}; bool noRepeat = true, inRange = true;
@@ -548,16 +580,28 @@ int main(int argc, char **argv) {
     CHECK(inRange && all, "random auto: picks every pattern 0..9 and nothing else");
     setLetterMode(MODE_RANDOM_AUTO, g_millis);
     int changes = 0; uint8_t last = activeMode; unsigned long firstChange = 0, start = g_millis;
-    for (unsigned long k = 0; k < 3 * LETTER_RANDOM_AUTO_MS + 5000UL; k++) { run(1);
+    for (unsigned long k = 0; k < 3 * 120000UL + 5000UL; k++) { run(1);
       if (activeMode != last) { changes++; last = activeMode; if (!firstChange) firstChange = g_millis - start; } }
-    CHECK(changes == 3, "random auto: a new pattern after each LETTER_RANDOM_AUTO_MS");
-    CHECK(firstChange >= LETTER_RANDOM_AUTO_MS - 50 && firstChange <= LETTER_RANDOM_AUTO_MS + 100, "random auto: first change after about two minutes");
+    CHECK(changes == 3, "random auto: a new pattern after each 2 minutes (default Change delay)");
+    CHECK(firstChange >= 120000UL - 50 && firstChange <= 120000UL + 100, "random auto: first change after about two minutes");
     CHECK(letterMode == MODE_RANDOM_AUTO, "random auto: the selected mode stays random auto");
+    // the Change delay property (Random program > Change delay): 1 minute, and 0 = a random delay of 1..30 minutes
+    menuSetPos(P_randomDelay, 1); setLetterMode(MODE_RANDOM_AUTO, g_millis);
+    CHECK(autoDelayMs == 60000UL, "random auto: Change delay 1 gives a 60 s delay");
+    { unsigned long t0 = g_millis; uint8_t a0 = activeMode; int n = 0;
+      while (g_millis - t0 < 70000UL) { run(1); if (activeMode != a0) { n++; a0 = activeMode; } }
+      CHECK(n == 1, "random auto: with Change delay 1 the pattern changes after one minute"); }
+    menuSetPos(P_randomDelay, 0);
+    { bool multiple = true, inRange = true; int smallest = 99, largest = 0;
+      for (int k = 0; k < 400; k++) { pickAutoMode(g_millis); if (autoDelayMs % 60000UL != 0) multiple = false;
+        const int m = (int)(autoDelayMs / 60000UL); if (m < 1 || m > 30) inRange = false; if (m < smallest) smallest = m; if (m > largest) largest = m; }
+      CHECK(multiple && inRange, "random auto: Change delay 0 draws whole minutes from 1 to 30");
+      CHECK(smallest <= 3 && largest >= 28, "random auto: Change delay 0 uses the whole range 1..30 minutes"); }
+    menuSetPos(P_randomDelay, 2);
     pressMode(); CHECK(letterMode == MODE_BREATHE, "the program switch wraps from F (random auto) back to 0");
   }
-  // ---- LCD display (fake HD44780 + PCF8574 backpack on the mock Wire) ----
+  // ---- LCD display (fake HD44780 + PCF8574 backpack on the mock Wire) and the settings menu on the real controls ----
   {
-    auto text = [&]() { return Wire.row(0) + "|" + Wire.row(1); };
     auto rtrim = [](std::string r) { while (!r.empty() && r.back() == ' ') r.pop_back(); return r; };
     auto line0 = [&]() { return rtrim(Wire.row(0)); };
     auto line1 = [&]() { return rtrim(Wire.row(1)); };
@@ -565,105 +609,182 @@ int main(int argc, char **argv) {
     CHECK(Wire.fourBit && Wire.clears >= 1 && Wire.backlight, "LCD: initialised in 4-bit mode, cleared, backlight on");
     CHECK(lcdOk, "LCD: found at start-up");
     CHECK(!Wire.oversize, "LCD: no transmission longer than the 32 byte Wire buffer");
-    // Every row is exactly 16 characters of printable text.
-    auto printable = [&]() { for (int r = 0; r < 2; r++) for (char c : Wire.row(r)) if (c < 32 || c > 126) return false; return true; };
+    auto printable = [&]() { for (int r = 0; r < 2; r++) for (char c : Wire.row(r)) if ((c < 32 || c > 126) && c != 0x7E && c != 0x7F) return false; return true; };
+    // Hard-coded pins of the menu controls and a model of the menu switch (starts at position 0 = all pins HIGH).
+    CHECK(PIN_MENU_SWITCH[0] == 42 && PIN_MENU_SWITCH[1] == 43 && PIN_MENU_SWITCH[2] == 44 && PIN_MENU_SWITCH[3] == 45, "menu switch pins D42-D45");
+    CHECK(PIN_OK == 48 && PIN_BACK == 49 && PIN_SHIFT == 50, "OK D48, BACK D49, SHIFT D50");
+    CHECK(PIN_PROGRAM[0] == 34 && PIN_PROGRAM[3] == 37, "program switch pins D34-D37");
+    static int menuPinPos = 0;
+    auto setMenuPins = [&](int v) { for (int b = 0; b < 4; b++) g_pinLevel[PIN_MENU_SWITCH[b]] = ((v >> b) & 1) ? LOW : HIGH; };
+    auto turn = [&](int steps) { const int d = steps < 0 ? -1 : 1; for (int k = 0; k < (steps < 0 ? -steps : steps); k++) { menuPinPos = (menuPinPos + d) & 15; setMenuPins(menuPinPos); run(25); } };
+    auto key = [&](int pin) { g_pinLevel[pin] = LOW; run(60); g_pinLevel[pin] = HIGH; run(60); };
+    auto settle = [&]() { run(200); };
 
-    // mode page: appears at once (within 150 ms) when the button is pressed, and is held
-    setCode(PIN_SPEED_FRAME_ARROW, 8); setCode(PIN_SPEED_LETTERS, 8);
+    // ---- status page (row 0 "#<program> Casino Open|Closed", row 1 arrow symbol and customer direction) ----
+    g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; g_pinLevel[PIN_ARROW_SWITCH] = SW_RIGHT; run(200);
     while (letterMode != MODE_BREATHE) pressMode();
-    run(7000);                                           // hold over, pages rotating
-    setProgramPins(1);
-    int ms = 0; while (line0() != "Prog 1" && ms < 400) { run(1); ms++; }
-    run(60);
-    CHECK(line0() == "Prog 1" && line1() == "wave", "LCD: the program page shows the new program");
-    CHECK(ms <= 150, "LCD: the new program appears within 150 ms of turning the program switch");
-    run(5800);
-    CHECK(line0() == "Prog 1", "LCD: the program page is held for about 6 seconds after the change");
-    run(400);
-    CHECK(line0().rfind("SW3", 0) == 0, "LCD: after the hold the pages rotate on to the next page (SW3)");
-    // names and widths of every mode
-    for (int m = 0; m < LETTER_MODE_COUNT; m++) {
-      setLetterMode(m, g_millis); lcdShowPage(LCD_PAGE_MODE, g_millis, true); run(300);
-      CHECK(printable(), "LCD: only printable characters");
-      if (m == MODE_RANDOM_AUTO) {
-        CHECK(line0() == "Prog F (random)", "LCD: random auto title");
-        CHECK(line1() == std::string("now: ") + letterModeName(activeMode), "LCD: random auto shows the pattern in use");
-      } else {
-        { char hx[4]; snprintf(hx, sizeof hx, "%X", m); CHECK(line0() == std::string("Prog ") + hx && line1() == letterModeName(m), "LCD: program number (hex) and name"); }
-      }
-    }
-    while (letterMode != MODE_BREATHE) pressMode();
+    run(300);
+    CHECK(menuMode == MM_STATUS, "status page after start-up");
+    const std::string ARR_L = std::string(1, (char)0x7F) + " Customer right", ARR_R = std::string(1, (char)0x7E) + " Customer left";   // HD44780 ROM arrows
+    CHECK(line0() == "#0 Casino Open" && line1() == ARR_L, "status page: program 0, casino open, arrow points to the customer's right (left arrow symbol: seen from behind)");
+    printf("  status page: '%s' / '%s'\n", line0().c_str(), line1().c_str());
+    g_pinLevel[PIN_ARROW_SWITCH] = SW_LEFT; run(200);
+    CHECK(line1() == ARR_R && !arrowPointsRight, "status page follows the arrow switch (customer left, right arrow symbol)");
+    g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = LOW; run(200);
+    CHECK(line0() == "#0 Casino Closed" && casinoClosed, "status page shows Closed (and the sign follows)");
+    g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; run(200);
+    CHECK(line0() == "#0 Casino Open" && !casinoClosed, "status page shows Open again");
+    g_pinLevel[PIN_ARROW_SWITCH] = SW_RIGHT; run(200);
+    setProgramPins(10); run(200);
+    CHECK(letterMode == 10 && line0() == "#A Casino Open", "the program number is shown in hex (A = converge)");
+    setProgramPins(0); run(200);
+    for (int m = 0; m < 16; m++) { setProgramPins(m); run(200); char want[24]; snprintf(want, sizeof want, "#%X Casino Open", m);
+      CHECK(printable() && line0() == want && letterMode == m, "status page: every program position 0..F is shown"); }
+    // OK acts on the press (not on the release); a half turn (exactly 8) of the menu switch is ignored
+    { setProgramPins(0); run(200); CHECK(menuMode == MM_STATUS, "OK test starts at the status page");
+      g_pinLevel[PIN_OK] = LOW; run(60);
+      CHECK(menuMode == MM_MENU, "OK opens the menu while the button is still held (acts on the press)");
+      g_pinLevel[PIN_OK] = HIGH; run(60);
+      CHECK(menuMode == MM_MENU, "releasing OK does not do anything else");
+      const std::string h0 = line0(), h1 = line1();
+      menuPinPos = (menuPinPos + 8) & 15; setMenuPins(menuPinPos); run(300);
+      CHECK(line0() == h0 && line1() == h1, "a half turn (code change of exactly 8) of the menu switch is ignored");
+      key(PIN_BACK); run(200);
+      CHECK(menuMode == MM_STATUS, "BACK from the menu root returns to the status page"); }
+    // program F: row 1 alternates between the arrow text and "Change in M:SS"
+    { setProgramPins(0); run(200); bool noCountdown = true;   // other programs never show the countdown
+      for (int k = 0; k < 7000; k++) { run(1); if (line1().rfind("Change in ", 0) == 0) noCountdown = false; }
+      CHECK(noCountdown && menuChangeInSec == -1, "program 0: row 1 never shows the countdown");
+      setProgramPins(15); run(200); CHECK(line1() == ARR_L, "program F: row 1 starts with the arrow text, the countdown follows");
+      bool sawArrow = false, sawCountdown = false;
+      for (int k = 0; k < 7000; k++) { run(1); const std::string l1 = line1(); if (l1 == ARR_L) sawArrow = true; if (l1.rfind("Change in ", 0) == 0) sawCountdown = true; }
+      CHECK(sawArrow && sawCountdown, "program F: row 1 alternates between the arrow text and the change countdown");
+      CHECK(line0() == "#F Casino Open", "program F: row 0 shows #F");
+      // the countdown shows the time left until the next random program: 2 minutes (default) minus the time passed
+      bool okCount = false; int samples = 0;
+      for (int k = 0; k < 7000 && samples < 3; k++) { run(1); const std::string l1 = line1();
+        if (l1.rfind("Change in ", 0) == 0) { int m = 0, sec = 0; if (sscanf(l1.c_str() + 10, "%d:%d", &m, &sec) == 2) { samples++;
+          const long left = 120L - (long)((g_millis - autoPickedAt) / 1000UL); if (labs((long)(m * 60 + sec) - left) <= 1 && menuChangeInSec == (long)((120000UL - (g_millis - autoPickedAt) + 999UL) / 1000UL)) okCount = true; else { okCount = false; break; } k += 400; } } }
+      CHECK(okCount && samples >= 1, "program F: the countdown shows the time left of the 2 minutes (M:SS)"); }
+    setProgramPins(0); run(200);
 
-    // SW3: position, multiplier and the two intervals, shown at once
-    setCode(PIN_SPEED_FRAME_ARROW, 5);
-    ms = 0; while (line0().rfind("SW3:5", 0) != 0 && ms < 400) { run(1); ms++; }
-    CHECK(ms <= 150, "LCD: SW3 page appears within 150 ms of the switch change");
-    run(100);
-    { char e1[24]; snprintf(e1, sizeof e1, "Fr%ums Ar%ums", (unsigned)frameIntervalMs, (unsigned)arrowIntervalMs);
-      unsigned h = (unsigned)(((uint32_t)speedMult256[5] * 100UL + 128UL) / 256UL);
-      char e0[24]; snprintf(e0, sizeof e0, "SW3:5  x%u.%02u", h / 100, h % 100);
-      CHECK(line0() == e0 && line1() == e1, "LCD: SW3 page shows position, multiplier, frame and arrow intervals");
-      printf("  LCD SW3 page: '%s' / '%s'\n", line0().c_str(), line1().c_str()); }
-    // SW4 while SW3 is held: the new page replaces it at once
-    run(2000);
-    setCode(PIN_SPEED_LETTERS, 12); run(120);
-    CHECK(line0().rfind("SW4:C", 0) == 0 && line1() == "Letter patterns", "LCD: SW4 page replaces a held page at once");
-    { unsigned h = (unsigned)(((uint32_t)speedMult256[12] * 100UL + 128UL) / 256UL);
-      char e0[24]; snprintf(e0, sizeof e0, "SW4:C  x%u.%02u", h / 100, h % 100);
-      CHECK(line0() == e0, "LCD: SW4 page shows the multiplier"); printf("  LCD SW4 page: '%s' / '%s'\n", line0().c_str(), line1().c_str()); }
-    run(5700);
-    CHECK(line0().rfind("SW4:C", 0) == 0, "LCD: a change made 2 s into the previous hold restarts the 6 s hold");
-    run(400);
-    CHECK(line0().rfind("Casino", 0) == 0, "LCD: after SW4 the pages rotate on to the status page");
+    // ---- the menu on the real controls ----
+    key(PIN_OK);
+    CHECK(menuMode == MM_MENU && menuDepth == 1, "OK opens the menu at the root");
+    CHECK(line0().rfind("Menu", 0) == 0 && line1().rfind("Controls", 0) == 0, "root: title Menu, first item Controls");
+    printf("  menu root: '%s' / '%s'\n", Wire.row(0).c_str(), Wire.row(1).c_str());
+    turn(1); settle(); CHECK(line1().rfind("Speed", 0) == 0, "one step on the menu switch moves to Speed");
+    turn(1); settle(); CHECK(line1().rfind("Random program", 0) == 0, "next: Random program");
+    turn(-1); turn(-1); turn(-5); settle(); CHECK(line1().rfind("Controls", 0) == 0, "the selection stops at the top (no wrap)");
+    turn(1); settle(); key(PIN_OK);                    // Speed
+    CHECK(menuDepth == 2 && line1().rfind("Frame", 0) == 0, "OK enters Speed (first row Frame)");
+    key(PIN_OK);                                        // edit Frame speed
+    CHECK(menuMode == MM_EDIT, "OK on a property starts editing");
+    turn(3); settle();
+    CHECK(menuPos(P_speedFrame) == 15, "turning the menu switch three steps raises the frame speed by three positions");
+    CHECK(fabs((double)frameIntervalMs - 200.0 / (0.25 * pow(16.0, 15 / 24.0))) <= 1.0, "the new frame speed is applied while editing");
+    g_pinLevel[PIN_SHIFT] = LOW; run(60);
+    turn(1); settle();
+    CHECK(menuPos(P_speedFrame) == 24, "SHIFT held makes the step bigger (clamped at the top)");
+    g_pinLevel[PIN_SHIFT] = HIGH; run(60);
+    key(PIN_BACK); settle();
+    CHECK(menuMode == MM_MENU && menuPos(P_speedFrame) == 12 && frameIntervalMs == 200, "BACK cancels the edit: the old speed returns");
+    key(PIN_OK); turn(-4); key(PIN_OK); settle();       // edit and accept
+    CHECK(menuMode == MM_MENU && menuPos(P_speedFrame) == 8, "OK accepts the edited value");
+    CHECK(EEPROM.mem[0] != 0xFF && EEPROM.mem[3] != 0xFF, "the layout tag was written to EEPROM at address 0");
+    { unsigned char savedSlot = EEPROM.mem[4 + menuRd8(PP_SLOT, P_speedFrame)]; CHECK(savedSlot == 8, "EEPROM holds position 8 for the frame speed"); }
+    // closing the menu with the program switch
+    setProgramPins(5); run(200);
+    CHECK(menuMode == MM_STATUS && letterMode == 5 && line0() == "#5 Casino Open", "turning the program switch closes the menu and starts the program");
+    setProgramPins(0); run(200);
+    // the 60 s timer runs only at the root while browsing
+    key(PIN_OK); run(59000); CHECK(menuMode == MM_MENU, "root: still open after 59 s");
+    run(1500); CHECK(menuMode == MM_STATUS, "root: back to the status page after 60 s without input");
+    key(PIN_OK); turn(1); key(PIN_OK); run(65000); CHECK(menuMode == MM_MENU && menuDepth == 2, "inside a submenu there is no timeout");
+    key(PIN_OK); run(65000); CHECK(menuMode == MM_EDIT, "while editing there is no timeout");
+    key(PIN_BACK); key(PIN_BACK); key(PIN_BACK); settle();
+    CHECK(menuMode == MM_STATUS, "BACK at the root returns to the status page");
 
-    // status page: arrow direction and casino state
-    const uint8_t arrowPin = g_pinLevel[PIN_ARROW_SWITCH], closedPin = g_pinLevel[PIN_CASINO_CLOSED_SWITCH];
-    run(3500);
-    g_pinLevel[PIN_ARROW_SWITCH] = arrowPin == LOW ? HIGH : LOW; run(120);
-    const bool nowLeft = !arrowPointsRight;
-    CHECK(line0().rfind("Casino", 0) == 0 && line1() == (nowLeft ? "->Customer left" : "<-Customer right"), "LCD: status page follows the arrow switch");
-    g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = LOW; run(120);
-    CHECK(line0() == "Casino: CLOSED", "LCD: status page shows CLOSED");
-    g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; run(120);
-    CHECK(line0() == "Casino: OPEN", "LCD: status page shows OPEN");
-    g_pinLevel[PIN_ARROW_SWITCH] = arrowPin; g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = closedPin; run(200);
-    CHECK(line1() == (arrowPointsRight ? "<-Customer right" : "->Customer left"), "LCD: status page arrow text matches the arrow");
+    // ---- reverse flags: the slide switches follow the flags at once ----
+    g_pinLevel[PIN_ARROW_SWITCH] = SW_RIGHT; g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; run(200);
+    CHECK(arrowPointsRight && !casinoClosed, "start: arrow right, casino open");
+    menuSetPos(P_arrowReverse, 1); run(50);
+    CHECK(!arrowPointsRight && menuPos(P_arrow) == 1, "Arrow reverse swaps the arrow direction without touching the switch");
+    menuSetPos(P_casinoReverse, 1); run(50);
+    CHECK(casinoClosed && menuPos(P_casino) == 0, "Casino reverse swaps open/closed");
+    g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = LOW; run(200);
+    CHECK(!casinoClosed, "with Casino reverse on, the closed handle position means open");
+    g_pinLevel[PIN_ARROW_SWITCH] = SW_LEFT; run(200);
+    CHECK(arrowPointsRight, "with Arrow reverse on, the left handle position means right");
+    menuSetPos(P_arrowReverse, 0); menuSetPos(P_casinoReverse, 0); run(50);
+    CHECK(!arrowPointsRight && casinoClosed, "the flags off: the switch positions mean what they say again");
+    g_pinLevel[PIN_ARROW_SWITCH] = SW_RIGHT; g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; run(200);
+    CHECK(arrowPointsRight && !casinoClosed, "switches back to right / open");
 
-    // rotation: all four pages appear, 3 seconds each
-    run(7000);                                           // hold over
-    bool seen[LCD_PAGE_COUNT] = {}; uint8_t last = lcdPage; int changesSeen = 0;
-    for (int k = 0; k < 12100; k++) { run(1); seen[lcdPage] = true; if (lcdPage != last) { changesSeen++; last = lcdPage; } }
-    bool all = true; for (bool x : seen) if (!x) all = false;
-    CHECK(all && changesSeen == 4, "LCD: the pages rotate (4 pages in about 12 s)");
+    // ---- brightness curves are menu properties: each LED type has its own curve ----
+    rebuildAllCurves();                                  // the older tests ran with identity curves: back to the menu values
+    menuSetPos(P_stripMax, 40); run(10);
+    CHECK(brightnessLut[LED_TYPE_STRIP][255] == 40 && brightnessLut[LED_TYPE_LETTERS][255] == 80 && brightnessLut[LED_TYPE_STICK][255] == 80, "Strip Max changes only the frame curve");
+    menuSetPos(P_lettersMax, 60); run(10);
+    CHECK(brightnessLut[LED_TYPE_LETTERS][255] == 60 && brightnessLut[LED_TYPE_STRIP][255] == 40 && brightnessLut[LED_TYPE_STICK][255] == 80, "Letters Max changes only the letters curve");
+    menuSetPos(P_stickMax, 100); run(10);
+    CHECK(brightnessLut[LED_TYPE_STICK][255] == 100 && brightnessLut[LED_TYPE_LETTERS][255] == 60, "Stick Max changes only the stick curve");
+    menuSetPos(P_stripMax, 80); menuSetPos(P_lettersMax, 80); menuSetPos(P_stickMax, 80); run(10);
+    CHECK(brightnessLut[0][255] == 80 && brightnessLut[1][255] == 80 && brightnessLut[2][255] == 80, "the Max values back to 80");
+    // Exponent and Mix reach the curves, too (property positions: exponent 0.1..20 log 50 steps, mix 0..1 linear 50 steps)
+    menuSetPos(P_lettersMix, 0); run(10);
+    CHECK(brightnessLut[LED_TYPE_LETTERS][128] == 40 && brightnessLut[LED_TYPE_STRIP][128] == 13, "Letters Mix 0 makes only the letters curve linear (128 -> 40)");
+    menuSetPos(P_lettersMix, 50); run(10);
+    CHECK(brightnessLut[LED_TYPE_LETTERS][128] == 13, "Letters Mix 1 again");
+    menuSetPos(P_stickMin, 10); run(10);
+    CHECK(brightnessLut[LED_TYPE_STICK][255] == 80 && brightnessLut[LED_TYPE_STICK][1] == 10 && brightnessLut[LED_TYPE_STICK][0] == 0 && brightnessLut[LED_TYPE_STRIP][1] == 0, "Stick Min 10 lifts only the stick curve (zero stays dark)");
+    menuSetPos(P_stickMin, 0); run(10);
 
-    // quiet: nothing is sent when the text does not change; updates are small
-    setCode(PIN_SPEED_LETTERS, 8); run(300);
-    const long before = Wire.transactions; run(2500);   // within one 3 s page, mid-page
+    // ---- Restore defaults through the menu: asks OK / BACK, sets every stored value to its default ----
+    menuSetPos(P_speedArrow, 20); menuSetPos(P_randomDelay, 7); run(10);
+    key(PIN_OK); turn(4); key(PIN_OK);                   // root item 4 = Restore defaults
+    CHECK(menuMode == MM_CONFIRM, "Restore defaults asks for confirmation");
+    key(PIN_BACK); CHECK(menuMode == MM_MENU && menuPos(P_speedArrow) == 20, "BACK at the question changes nothing");
+    key(PIN_OK); key(PIN_OK); settle();
+    CHECK(menuPos(P_speedArrow) == 12 && menuPos(P_speedFrame) == 12 && menuPos(P_randomDelay) == 2 && frameIntervalMs == 200 && arrowIntervalMs == 35,
+          "OK at the question restores every default and applies it");
+    key(PIN_BACK); key(PIN_BACK); settle();
+
+    // ---- power cycle: the saved values come back from EEPROM ----
+    menuSetPos(P_speedLetters, 20); menuSave(&P_speedLetters, 1);
+    menuSetPos(P_speedLetters, 3);                       // a change that is not saved
+    { const bool saved = menuBegin(); applySpeeds(); rebuildAllCurves();
+      menuSet(P_program, hexStable[SLOT_PROGRAM]); menuSet(P_arrow, arrowPosition()); menuSet(P_casino, casinoClosed ? 0 : 1);   // the status values are set again by finishStartup() in the real start
+      CHECK(saved && menuPos(P_speedLetters) == 20 && letterMult256 == (uint16_t)(0.25 * pow(16.0, 20 / 24.0) * 256.0 + 0.5), "after a restart the saved value is used, the unsaved one is gone"); }
+    menuSetPos(P_speedLetters, 12); menuSave(&P_speedLetters, 1); run(10);
+
+    for (uint8_t ty : IDENT_TYPES) setBrightnessCurve(ty, 0, 255, 1.0f, 0.0f, true);   // the older tests below run with identity curves
+
+    // ---- LCD hardware behaviour ----
+    run(1000);
+    const long before = Wire.transactions; run(2500);
     CHECK(Wire.transactions - before <= 8, "LCD: the display is only written when the text changes");
     bool small = true; long worst = 0;
     for (int k = 0; k < 20000; k++) { const long t0 = Wire.transactions; run(1); if (Wire.transactions - t0 > 1) small = false; if ((long)Wire.lastBytes > worst) worst = Wire.lastBytes; }
     CHECK(small && worst <= 24 && !Wire.oversize, "LCD: at most one short I2C transmission per loop pass");
     printf("  LCD: longest I2C transmission %ld bytes\n", worst);
 
-    // random auto: the automatic change shows the mode page, without a hold
-    setLetterMode(MODE_RANDOM_AUTO, g_millis); lcdShowPage(LCD_PAGE_STATUS, g_millis, false);
-    uint8_t startPattern = activeMode; unsigned long guard = 0;
-    while (activeMode == startPattern && guard < 130000UL) { run(1); guard++; }
-    run(150);
-    CHECK(activeMode != startPattern && lcdPage == LCD_PAGE_MODE && !lcdHolding, "LCD: random auto's change jumps to the mode page without a hold");
-    CHECK(line1() == std::string("now: ") + letterModeName(activeMode), "LCD: the mode page names the new pattern");
-    while (letterMode != MODE_BREATHE) pressMode();
-
-    // a display that is missing or at another address is left out without disturbing the sign
+    // a display that is missing or at another address is left out without disturbing the sign, and found again later
     Wire.address = 0x3F; lcdOk = false; lcdInit();
     CHECK(!lcdOk, "LCD: a display at another address is not found");
     const long t1 = Wire.transactions; run(500);
-    CHECK(Wire.transactions == t1, "LCD: nothing is sent when no display answered");
-    Wire.address = 0x27; lcdInit();
-    CHECK(lcdOk, "LCD: found again when the address matches");
-    lcdShowPage(LCD_PAGE_MODE, g_millis, true); run(400);
-    CHECK(line0() == "Prog 0" && printable(), "LCD: shows the mode page again after re-initialisation");
-    CHECK(true || text().empty(), "");
+    CHECK(Wire.transactions == t1 + 1 || Wire.transactions == t1, "LCD: while no display answers only the retry probe is sent");
+    Wire.address = 0x27; run(1500);
+    CHECK(lcdOk, "LCD: found again by the periodic retry when the display answers");
+    run(400);
+    CHECK(line0() == "#0 Casino Open" && printable(), "LCD: shows the status page again after re-initialisation");
+    CHECK(Wire.present, "LCD: present");
+    Wire.present = false; g_pinLevel[PIN_ARROW_SWITCH] = SW_LEFT; run(300);          // the text changes: sending it fails
+    CHECK(!lcdOk, "LCD: a display that stops answering is noticed when the sketch writes to it");
+    g_pinLevel[PIN_ARROW_SWITCH] = SW_RIGHT;
+    Wire.present = true; run(1500);
+    CHECK(lcdOk, "LCD: and found again when it comes back");
+    run(300);
 
     // boot-time I2C scan: the log lists the display and the scan hint appears only when the LCD address is silent
     {
@@ -673,6 +794,7 @@ int main(int argc, char **argv) {
       CHECK(boot.find("I2C scan done: 1 device(s)\n") != std::string::npos, "I2C scan: boot log counts one device");
       CHECK(boot.find("No device on the LCD address") == std::string::npos, "I2C scan: no warning when the display answers");
       CHECK(boot.find("I2C scan done") < boot.find("Serial speed 115200 baud"), "I2C scan: happens before the start-up lines");
+      CHECK(boot.find("EEPROM: no saved values for this menu layout, defaults used.") != std::string::npos, "start-up: says that the EEPROM had no saved menu values");
       Serial.captured.clear();
       Wire.address = 0x3F;
       const uint8_t n3f = scanI2cBus();
@@ -758,7 +880,7 @@ int main(int argc, char **argv) {
     CHECK(!startupTestActive && letterMode == MODE_BREATHE, "after the test the sign starts in mode 0");
     CHECK(casinoClosed, "a switch changed during the test takes effect when the test ends");
     run(400);
-    CHECK(line0() == "Prog 0", "after the test the LCD shows the mode page");
+    CHECK(line0() == "#0 Casino Closed", "after the test the LCD shows the status page (the casino switch was set to closed during the test)");
     g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; run(100);
     CHECK(!casinoClosed, "casino open again");
 
@@ -773,7 +895,7 @@ int main(int argc, char **argv) {
     g_pinLevel[PIN_SKIP_BUTTON] = LOW; run(100); g_pinLevel[PIN_SKIP_BUTTON] = HIGH; run(100);
     CHECK(!startupTestActive, "LED test: D33 skips the test");
     CHECK(letterMode == MODE_BREATHE, "LED test: the skipping press does not change the letter mode");
-    run(400); CHECK(line0() == "Prog 0", "LED test: after a skip the LCD shows the mode page");
+    run(400); CHECK(line0() == "#0 Casino Open", "LED test: after a skip the LCD shows the status page");
 
     // a button held down during power-up does not skip the test until it was released and pressed again
     g_pinLevel[PIN_SKIP_BUTTON] = LOW; run(100);          // normal operation: this changes the mode
@@ -833,14 +955,14 @@ int main(int argc, char **argv) {
     int dbg = 0; size_t pos = 0;
     while ((pos = log.find("DBG up=", pos)) != std::string::npos) { dbg++; pos++; }
     CHECK(dbg == (int)(g_millis / 1000), "one DBG line per second since power-up");
-    CHECK(log.find("DBG up=1s loops=1001 mode=0 arrow=R closed=0 sw3=8 sw4=8 events=0 beats=3 tick=") != std::string::npos,
+    CHECK(log.find("DBG up=1s loops=1001 mode=0 arrow=R closed=0 menu=S events=0 beats=3 tick=") != std::string::npos,
           "DBG line at 1 s with all fields");
     CHECK(log.find("DBG up=2s loops=1000 ") != std::string::npos && log.find("DBG up=3s loops=1000 ") != std::string::npos,
           "the uptime counts up and the loop runs 1000 times a second here");
     CHECK(log.find(" arrow=L ") != std::string::npos && log.find(" arrow=R ") != std::string::npos, "the DBG line shows the arrow direction");
     CHECK(log.find(" closed=1 ") != std::string::npos, "the DBG line shows casino closed during the test");
     CHECK(log.find(" mode=10 ") != std::string::npos && log.find(" mode=5 ") != std::string::npos, "the DBG line shows the letter mode");
-    CHECK(log.find(" sw3=0 ") != std::string::npos && log.find(" sw4=F ") != std::string::npos, "the DBG line shows the speed switch positions");
+    CHECK(log.find(" menu=S ") != std::string::npos && log.find(" sw3=") == std::string::npos, "the DBG line shows the menu state (S = status page) and no speed switch positions any more");
     // the beat counter and the tick change from line to line
     { size_t a = log.find("DBG up=30s"), b = log.find("DBG up=31s");
       if (a == std::string::npos || b == std::string::npos) CHECK(false, "DBG lines at 30 s and 31 s exist");
@@ -849,18 +971,18 @@ int main(int argc, char **argv) {
         auto field = [](const std::string &l, const char *key) { size_t k = l.find(key); return k == std::string::npos ? -1L : std::stol(l.substr(k + strlen(key))); };
         CHECK(field(l31, " beats=") > field(l30, " beats=") && field(l31, " tick=") != field(l30, " tick="), "beats and tick change every second");
       } }
-    CHECK(log.find("DBG up=4s loops=1000 mode=0 arrow=R closed=0 sw3=8 sw4=8 events=0 ") != std::string::npos, "events=0 before the first change");
-    CHECK(log.find("DBG up=6s loops=1000 mode=0 arrow=L closed=0 sw3=8 sw4=8 events=1 ") != std::string::npos,
+    CHECK(log.find("DBG up=4s loops=1000 mode=0 arrow=R closed=0 menu=S events=0 ") != std::string::npos, "events=0 before the first change");
+    CHECK(log.find("DBG up=6s loops=1000 mode=0 arrow=L closed=0 menu=S events=1 ") != std::string::npos,
           "after the arrow switch moved at 5 s: arrow=L, events=1");
   }
   // ---- Brightness curves (expected values hard-coded; see the formula in the sketch) ----
   {
-    CHECK(LED_TYPE_COUNT == 2 && LED_TYPE_STRIP == 0 && LED_TYPE_STICK == 1, "two LED types: strip 0, stick 1");
+    CHECK(LED_TYPE_COUNT == 3 && LED_TYPE_STRIP == 0 && LED_TYPE_STICK == 1 && LED_TYPE_LETTERS == 2, "three LED types: frame strip 0, sticks 1, letters strip 2");
     // defaults: min 0, max 255, exponent 1.97, mix 1, keep zero dark, for both types
     buildDefaultBrightnessCurves();
     const int in[10] = {0, 1, 2, 16, 32, 64, 128, 192, 254, 255}, want[10] = {0, 0, 0, 0, 0, 2, 13, 38, 79, 80};
-    for (int ty = 0; ty < 2; ty++) for (int i = 0; i < 10; i++) CHECK(brightnessLut[ty][in[i]] == want[i], "default curve value");
-    bool mono = true; for (int ty = 0; ty < 2; ty++) for (int i = 1; i < 256; i++) if (brightnessLut[ty][i] < brightnessLut[ty][i - 1]) mono = false;
+    for (int ty = 0; ty < 3; ty++) for (int i = 0; i < 10; i++) CHECK(brightnessLut[ty][in[i]] == want[i], "default curve value");
+    bool mono = true; for (int ty = 0; ty < 3; ty++) for (int i = 1; i < 256; i++) if (brightnessLut[ty][i] < brightnessLut[ty][i - 1]) mono = false;
     CHECK(mono, "default curve never decreases");
     // custom curve: min 20, max 200, exponent 1, mix 0 (linear), keep zero dark
     setBrightnessCurve(0, 20, 200, 1.0f, 0.0f, true);
@@ -894,9 +1016,10 @@ int main(int argc, char **argv) {
     CHECK(shapeColor(0, 0xFF3300) == 0x641400, "orange keeps its ratio (255,51,0 -> 100,20,0)");
     setBrightnessCurve(1, 0, 255, 1.0f, 0.0f, true);
     CHECK(shapeColor(1, 0x123456) == 0x123456, "the stick table is separate (identity here)");
-    // each LED type has its own table in the running sketch: strips (frame, letters) vs sticks (arrow, CLOSED)
-    setBrightnessCurve(0, 0, 50, 1.0f, 0.0f, true);     // strips: at most 50
+    // each LED type has its own table in the running sketch: frame, letters and sticks (arrow, CLOSED)
+    setBrightnessCurve(0, 0, 50, 1.0f, 0.0f, true);     // frame strip: at most 50
     setBrightnessCurve(1, 0, 100, 1.0f, 0.0f, true);    // sticks: at most 100
+    setBrightnessCurve(2, 0, 70, 1.0f, 0.0f, true);     // letters strip: at most 70
     run(3000);
     auto chmax = [](uint32_t c) { unsigned r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255; unsigned m = r > g ? r : g; return b > m ? b : m; };
     unsigned fmax = 0, lmax = 0, amax = 0;
@@ -904,7 +1027,7 @@ int main(int argc, char **argv) {
     for (auto c : let->shown_) lmax = (chmax(c) > lmax ? chmax(c) : lmax);
     for (int k = 0; k < 10; k++) for (auto c : st[k]->shown_) amax = (chmax(c) > amax ? chmax(c) : amax);
     CHECK(fmax == 50, "frame LEDs reach exactly the strip maximum 50 (white 255 mapped)");
-    CHECK(lmax <= 50 && lmax >= 30, "letters stay within the strip maximum 50 and use most of it");
+    CHECK(lmax <= 70 && lmax >= 40, "letters stay within the letters maximum 70 and use most of it (own curve, type 2)");
     CHECK(amax <= 100 && amax >= 90, "arrow sticks stay within the stick maximum 100 and use most of it");
     const uint8_t closedPin = g_pinLevel[PIN_CASINO_CLOSED_SWITCH];
     g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = LOW;   // casino closed: the CLOSED light is on and flickers

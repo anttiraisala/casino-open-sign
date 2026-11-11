@@ -166,10 +166,10 @@ void noteEvent(unsigned long now) {
 }
 
 // The slide switches and their reverse flags decide the Arrow and Casino values.
-uint16_t arrowPosition() {                      // 0 = Left, 1 = Right
-  bool left = switchArrow.stable == ARROW_POINTS_LEFT_WHEN_LOW;
+uint16_t arrowPosition() {                      // 0 = Left, 1 = Right, as seen from BEHIND the sign (where the LCD is)
+  bool left = switchArrow.stable == ARROW_POINTS_LEFT_WHEN_LOW;   // true: the arrow points to the customer's left
   if (menuPos(P_arrowReverse) == 1) left = !left;
-  return left ? 0 : 1;
+  return left ? 1 : 0;                          // customer's left = right seen from behind (status page: "-> Customer left")
 }
 uint16_t casinoPosition() {                     // 0 = Closed, 1 = Open
   bool closed = switchCasino.stable == CASINO_CLOSED_WHEN_LOW;

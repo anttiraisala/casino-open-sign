@@ -30,7 +30,7 @@ Pikseli 1 on ALAVASEMMASSA kulmassa; nauha kulkee vastapäivään:
     pikselit  7-9    oikea reuna ylöspäin
     pikselit 10-15   yläreuna oikealta vasemmalle (10 = oikea yläkulma, 15 = vasen yläkulma)
     pikselit 16-18   vasen reuna alaspäin
-Reunuksen valo (2 pikselin palkki valaisee, 2 pimeänä, toistuu; yksi askel 200 ms nopeuskytkimen asennossa 8):
+Reunuksen valo (2 pikselin palkki valaisee, 2 pimeänä, toistuu; yksi askel 200 ms oletusnopeudella x1; valikko: Speed > Frame):
     nuoli osoittaa VASEMMALLE (asiakkaan vasemmalle): alkaa OIKEASTA YLÄKULMASTA (pikseli 10) ja kulkee kumpaakin suuntaa
                                               reunuksen ympäri - myötäpäivään (10, 9, 8, 7, 6, 5 ... 1) ja vastapäivään
                                               (10, 11 ... 15, 16, 17, 18, 1) - VASEMPAAN ALAKULMAAN (pikseli 1).
@@ -47,9 +47,8 @@ lukujärjestyksessä: OPENin kirjaimet vasemmalta oikealle O P E N ovat pikselit
 
 Mikä pysyy kuten versiossa 1
 ----------------------------
-Nuolianimaatio, CLOSED-valo (viallinen loisteputki), kytkimet (D32 nuolen suunta, D30 kasino kiinni,
-D22-D25 SW3 reunuksen ja nuolen nopeus, D26-D29 SW4 kirjainten nopeus), LCD (I2C, SDA D20, SCL D21), kirkkauskäyrät (LED-tyypeittäin,
-max 80, eksponentti 2.67), käynnistyksen LED-testi (10 s; ikkuna nyt 2 pikseliä), elonmerkki (pinnin 13 LED vilkkuu; yksi Serial-rivi sekunnissa, 115200 baud).
+Nuolianimaatio, CLOSED-valo (viallinen loisteputki), kytkimet (D32 nuolen suunta, D30 kasino kiinni),
+LCD (I2C, SDA D20, SCL D21), kirkkauskäyrät (LED-tyypeittäin, max 80, eksponentti 2.67; nyt valikon ominaisuuksia), käynnistyksen LED-testi (10 s; ikkuna nyt 2 pikseliä), elonmerkki (pinnin 13 LED vilkkuu; yksi Serial-rivi sekunnissa, 115200 baud).
 
 Johdotus (tarkasti)
 -------------------
@@ -64,9 +63,12 @@ Johdotus (tarkasti)
                   D3 RAIL-DN-L, D4 RAIL-DN-R, A3 R-CAP, A1 R-WING-UP, A2 R-WING-DN, A0 CLOSED-valotikku (ei johtoa virtalähteestä tikkuun)
                   (vain V2: liittimet eroavat versiosta 1 ja kansiosta ../arrow_sticks/; tikkujen paikat levyllä eivät muutu)
     D32 -> liukukytkin SW1 yhteinen (kontakti 1 -> GND)    D30 -> liukukytkin SW5 yhteinen (kontakti 1 -> GND)
-    D33 -> painike -> GND (ohittaa vain käynnistyksen LED-testin)
+    D33 -> painike SW2 -> GND (ohittaa vain käynnistyksen LED-testin)
     D34-D37 -> SW6 ohjelmakytkimen pinnit 1, 2, 4, 8 (yhteinen C -> GND)
-    D22-D25 -> SW3 pinnit 1, 2, 4, 8 (yhteinen C -> GND)   D26-D29 -> SW4 pinnit 1, 2, 4, 8 (yhteinen C -> GND)
+    D42-D45 -> SW3 valikkokytkimen pinnit 1, 2, 4, 8 (yhteinen C -> GND)
+    D48 -> painike SW7 OK -> GND     D49 -> painike SW8 BACK -> GND     D50 -> painike SW9 SHIFT -> GND
+    (jokainen painike: kontakti 1 Arduinon pinniin, kontakti 2 GND:hen; kaikki tulot käyttävät INPUT_PULLUP:ia, ei vastuksia)
+    Vanhat nopeuskytkimet SW3/SW4 (D22-D29) on poistettu: nopeudet ovat valikon ominaisuuksia. Valikon pinnit ovat samat kuin ../menu_test/-kansiossa.
     D20 SDA, D21 SCL, 5V, GND -> LCD:n I2C-taustalevy
                   (käynnistyksessä sketch skannaa I2C-väylän ja tulostaa löydetyt laitteet sarjamonitoriin, 115200 baud;
                   sketch puhuu näytölle osoitteessa 0x27: jos skannaus näyttää esim. 0x3F, aseta LCD_I2C_ADDRESS sketch.inossa)
@@ -90,7 +92,23 @@ kytke sitten virrat; Serial Monitor 115200 baud. Wokwi: uusi Arduino Mega -proje
 Jos värit ovat väärin, nauhan värijärjestys voi olla toinen: vaihda NEO_GRB + NEO_KHZ800 sketchin kahdella nauharivillä.
 Käynnistyksen LED-testi (10 s) ajaa 2 pikselin ikkunan jokaisen nauhan läpi (kierros 1 valkoinen, kierros 2 punainen-vihreä-sininen); D33 ohittaa sen.
 
-Ohjelmakytkin SW6 (heksa-kiertokytkin, D34-D37, luetaan koko ajan)
+Asetusvalikko (valikkokytkin SW3 D42-D45, painikkeet OK D48, BACK D49, SHIFT D50)
+--------------------------------------------------------------------------------
+Tilasivu (näyttö käynnistyksen jälkeen): rivi 0 näyttää ohjelman (#0..#E, #F = satunnainen) ja kasinon tilan (Open/Closed); rivi 1 näyttää
+nuolisymbolin ja asiakkaan puolen ("<- Customer right" = nuoli osoittaa asiakkaan oikealle) ja ohjelmassa F vuorottelee tekstin
+"Change in M:SS" (aika seuraavaan satunnaisohjelmaan) kanssa. OK avaa valikon; käyttöliittymässä painikkeen nimi on aina OK.
+Valikko: Controls (program, arrow, casino: vain luettavia kytkinasentoja; Arrow reverse / Casino reverse -liput), Speed (Frame, Letters, Arrow:
+x0.25..x4, oletus x1), Random program (Change delay 0..30 min, 0 = satunnainen 1..30, oletus 2), Brightness (reunusnauha, kirjaimet, tikut:
+min, max, eksponentti, mix; käyrän max on raja, yleistä kirkkautta ei ole), Restore defaults (kysyy vahvistuksen).
+Valikkokytkin SW3 on vapaasti pyörivä ja SUHTEELLINEN: koodin muutos on askel (1..7 eteen, 9..15 taakse, tasan 8 ohitetaan).
+SHIFT pohjassa kierrettäessä askel on isompi. OK menee alivalikkoon / aloittaa muokkauksen / hyväksyy, BACK menee tason ylös / peruu muokkauksen.
+Pitkä rivinteksti vierii. Valikon juuressa, kun mitään ominaisuutta ei ole auki eikä muokata, 60 s ilman syötettä palauttaa näytön tilasivulle.
+Ohjelmakytkin SW6 on ABSOLUUTTINEN ja sitä luetaan koko ajan (myös valikon ollessa auki).
+Arvot tallennetaan EEPROMiin (asettelutunniste tarkistetaan käynnistyksessä; ei-täsmäävä asettelu antaa oletukset).
+Testattu vain koneella (tests/casino_open_sign_v2_harness.cpp, valikkomoottorin testit), ei vielä laitteistolla eikä Wokwissa.
+Tunnettu rajoitus: LCD yritetään uudelleen epäonnistuneen lähetyksen jälkeen, mutta sitä ei alusteta kokonaan uudelleen jaksoittain kuten hex_rotary_testissä.
+
+Ohjelmakytkin SW6 (heksa-kiertokytkin, D34-D37, absoluuttinen, luetaan koko ajan)
 -----------------------------------------------------------------
 Asento 0..E = kirjainohjelma 0..14 ja vastaava reunuskuvio 0..14; F = satunnainen: satunnainen ohjelma 0..14 kahden minuutin välein,
 ei koskaan samaa kahdesti peräkkäin.
@@ -110,7 +128,7 @@ Pinnien tai reunuksen koon muuttamisen jälkeen generoi piirrokset ja Wokwi-tied
 Testit
 ------
 tests/casino_open_sign_v2_harness.cpp tarkistaa ohjelman tietokoneella (odotetut arvot on kirjoitettu koodiin, ei lueta sketchistä),
-tests/mutate_v2.py tarkistaa testit noin 85 sketchin mutantilla:
+tests/mutate_v2.py tarkistaa testit noin 170 sketchin mutantilla:
     g++ -std=c++17 -O1 -w -Itests -DSKETCH_PATH='"'$PWD'/casino_open_sign_v2/sketch.ino"' -o /tmp/v2 tests/casino_open_sign_v2_harness.cpp && /tmp/v2
     python3 tests/mutate_v2.py
 (Ei ajettu oikealla laitteistolla eikä Wokwissa.)

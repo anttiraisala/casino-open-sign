@@ -30,7 +30,7 @@ Pixel 1 is in the LOWER-LEFT corner; the strip runs counter-clockwise:
     pixels  7-9    right edge, going up
     pixels 10-15   top edge, right to left (10 = upper-right corner, 15 = upper-left corner)
     pixels 16-18   left edge, going down
-Frame light (a bar of 2 lit pixels, 2 dark, repeating; one step every 200 ms at speed switch position 8):
+Frame light (a bar of 2 lit pixels, 2 dark, repeating; one step every 200 ms at the default speed x1; menu: Speed > Frame):
     arrow points LEFT (the customer's left):  starts at the UPPER-RIGHT corner (pixel 10) and runs both ways round the frame -
                                               clockwise (10, 9, 8, 7, 6, 5 ... 1) and counter-clockwise (10, 11 ... 15, 16, 17, 18, 1) -
                                               to the LOWER-LEFT corner (pixel 1).
@@ -48,8 +48,8 @@ the letters of OPEN, read left to right O P E N, are pixels 10, 9, 8, 7. A pixel
 What stays as in version 1
 --------------------------
 Arrow animation, CLOSED light (faulty fluorescent tube), the switches (D32 arrow direction,
-D30 casino closed, D22-D25 SW3 speed of frame + arrow, D26-D29 SW4 speed of letters), the LCD (I2C, SDA D20, SCL D21), the
-brightness curves (per LED type, max 80, exponent 2.67), the power-on LED test (10 s; window now 2 pixels), the sign of life
+D30 casino closed), the LCD (I2C, SDA D20, SCL D21), the
+brightness curves (per LED type, max 80, exponent 2.67; now menu properties), the power-on LED test (10 s; window now 2 pixels), the sign of life
 (LED on pin 13 blinks; one Serial line per second at 115200 baud).
 
 Wiring (exactly)
@@ -65,9 +65,12 @@ Wiring (exactly)
                   D3 RAIL-DN-L, D4 RAIL-DN-R, A3 R-CAP, A1 R-WING-UP, A2 R-WING-DN, A0 CLOSED light stick (no wire from a supply to a stick)
                   (V2 only: the connectors differ from version 1 and ../arrow_sticks/; the stick positions on the plate are unchanged)
     D32 -> slide switch SW1 common (contact 1 -> GND)      D30 -> slide switch SW5 common (contact 1 -> GND)
-    D33 -> push button -> GND (only skips the power-on LED test)
+    D33 -> push button SW2 -> GND (only skips the power-on LED test)
     D34-D37 -> SW6 program switch pins 1, 2, 4, 8 (common C -> GND)
-    D22-D25 -> SW3 pins 1, 2, 4, 8 (common C -> GND)       D26-D29 -> SW4 pins 1, 2, 4, 8 (common C -> GND)
+    D42-D45 -> SW3 menu switch pins 1, 2, 4, 8 (common C -> GND)
+    D48 -> push button SW7 OK -> GND     D49 -> push button SW8 BACK -> GND     D50 -> push button SW9 SHIFT -> GND
+    (every button: contact 1 to the Arduino pin, contact 2 to GND; all inputs use INPUT_PULLUP, no resistors)
+    The old speed switches SW3/SW4 (D22-D29) are gone: the speeds are menu properties. The menu pins are the same as in ../menu_test/.
     D20 SDA, D21 SCL, 5V, GND -> LCD I2C backpack
                   (at boot the sketch scans the I2C bus and prints every device found to the Serial Monitor, 115200 baud;
                   the sketch talks to the display at 0x27: if the scan shows e.g. 0x3F, set LCD_I2C_ADDRESS in sketch.ino)
@@ -91,7 +94,23 @@ then power up; Serial Monitor 115200 baud. Wokwi: new Arduino Mega project, past
 If the colours are wrong, the strip's colour order may differ: change NEO_GRB + NEO_KHZ800 in the two strip lines of the sketch.
 The power-on LED test (10 s) lights a 2-pixel window running along every strip (pass 1 white, pass 2 red-green-blue); D33 skips it.
 
-Program switch SW6 (hex rotary, D34-D37, read all the time)
+Settings menu (menu switch SW3 D42-D45, buttons OK D48, BACK D49, SHIFT D50)
+--------------------------------------------------------------------------
+Status page (the display after power-up): row 0 shows the program (#0..#E, #F = random), the casino state (Open/Closed); row 1 shows the arrow
+symbol and the customer side ("<- Customer right" = the arrow points to the customer's right) and, in program F, alternates with
+"Change in M:SS" (time to the next random program). OK opens the menu; the display shows the LCD button name OK.
+Menu: Controls (program, arrow, casino: read-only switch positions; Arrow reverse / Casino reverse flags), Speed (Frame, Letters, Arrow:
+x0.25..x4, default x1), Random program (Change delay 0..30 min, 0 = random 1..30, default 2), Brightness (frame strip, letters, sticks:
+min, max, exponent, mix; the curve max is the limit, there is no global brightness), Restore defaults (asks for confirmation).
+The menu switch SW3 is free-running and RELATIVE: the change of its code is a step (1..7 forward, 9..15 back, exactly 8 ignored).
+Holding SHIFT while turning makes the step bigger. OK enters / starts an edit / accepts, BACK goes one level up / cancels an edit.
+Long row text scrolls. At the menu root, with no property open and no edit, 60 s without any input returns the display to the status page.
+The program switch SW6 is ABSOLUTE and is read all the time (also while the menu is open).
+Values are saved in EEPROM (layout tag checked at start-up; a layout that does not match gives the defaults).
+Tested on the host only (tests/casino_open_sign_v2_harness.cpp, the menu engine tests), not yet on hardware or in Wokwi.
+Known limitation: the LCD is retried after a failed transmit, but not fully re-initialised periodically as in hex_rotary_test.
+
+Program switch SW6 (hex rotary, D34-D37, absolute, read all the time)
 -----------------------------------------------------------
 Position 0..E = letter program 0..14 and the matching frame pattern 0..14; F = random: a random program 0..14 every 2 minutes,
 never the same twice in a row.
@@ -111,7 +130,7 @@ After changing pins or the frame size regenerate the drawings and Wokwi file:
 Tests
 -----
 tests/casino_open_sign_v2_harness.cpp checks the program on the computer (expected values are hard-coded, not read from the sketch),
-tests/mutate_v2.py checks the tests with about 85 mutants of the sketch:
+tests/mutate_v2.py checks the tests with about 170 mutants of the sketch:
     g++ -std=c++17 -O1 -w -Itests -DSKETCH_PATH='"'$PWD'/casino_open_sign_v2/sketch.ino"' -o /tmp/v2 tests/casino_open_sign_v2_harness.cpp && /tmp/v2
     python3 tests/mutate_v2.py
 (Not run on real hardware or in Wokwi.)

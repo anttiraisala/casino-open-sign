@@ -9,8 +9,6 @@ muts=[
  ("rail direction","(first ? led : last - led)","(first ? last - led : led)"),
  ("wing led order","return ARROW_WING_START + (last - led);","return ARROW_WING_START + led;"),
  ("ball bit inverted","const uint8_t physical = STICK_BALL_AT_DIN_END ? led :","const uint8_t physical = !STICK_BALL_AT_DIN_END ? led :"),
- ("lcd text swapped","arrowPointsRight ? \"<-Customer right\" : \"->Customer left\"","arrowPointsRight ? \"->Customer left\" : \"<-Customer right\""),
- ("lcd old text","\"<-Customer right\"","\"Customer right<-\""),
  ("tail cap wrong","const bool tailCap = (stick == STICK_L_CAP) == arrowPointsRight;","const bool tailCap = (stick == STICK_L_CAP) != arrowPointsRight;"),
  ("tail dark ends 1","ARROW_TAIL_DARK_ENDS = 2;","ARROW_TAIL_DARK_ENDS = 1;"),
  ("tail dark ends 3","ARROW_TAIL_DARK_ENDS = 2;","ARROW_TAIL_DARK_ENDS = 3;"),
@@ -66,19 +64,20 @@ muts=[
  ("no inversion","(beatOn != inverted) ? HIGH : LOW","(beatOn) ? HIGH : LOW"),
  ("debug interval","DEBUG_MS = 1000","DEBUG_MS = 2000"),
  ("baud","SERIAL_BAUD = 115200","SERIAL_BAUD = 9600"),
- ("no event on arrow","    applyArrowSwitch();\n    noteEvent(now);","    applyArrowSwitch();"),
+ ("no event on arrow","    menuPhysical(P_arrow, arrowPosition(), now);\n    noteEvent(now);","    menuPhysical(P_arrow, arrowPosition(), now);"),
  ("dark sticks not cleared","  if (arrowDarkDirty) {  // only touch the unlit sticks when the direction changed","  if (false) {"),
  ("sticks 9 leds","LEDS_PER_STICK = 10;","LEDS_PER_STICK = 8;"),
  ("loops not reset","    printDebug(now);\n    loopCount = 0;","    printDebug(now);"),
  ("analog seed on stick pin","randomSeed(analogRead(A15))","randomSeed(analogRead(A0))"),
- ("curve default exponent","CURVE_DEFAULT_EXPONENT[LED_TYPE_COUNT] = {2.67f, 2.67f}","CURVE_DEFAULT_EXPONENT[LED_TYPE_COUNT] = {2.2f, 2.67f}"),
- ("curve default exponent stick","CURVE_DEFAULT_EXPONENT[LED_TYPE_COUNT] = {2.67f, 2.67f}","CURVE_DEFAULT_EXPONENT[LED_TYPE_COUNT] = {2.67f, 2.0f}"),
- ("curve default max stick","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 80}","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 90}"),
+ ("curve default exponent","CURVE_DEFAULT_EXPONENT[LED_TYPE_COUNT] = {2.67f, 2.67f, 2.67f}","CURVE_DEFAULT_EXPONENT[LED_TYPE_COUNT] = {2.2f, 2.67f, 2.67f}"),
+ ("curve default exponent stick","CURVE_DEFAULT_EXPONENT[LED_TYPE_COUNT] = {2.67f, 2.67f, 2.67f}","CURVE_DEFAULT_EXPONENT[LED_TYPE_COUNT] = {2.67f, 2.0f, 2.67f}"),
+ ("curve default letters max","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 80, 80}","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 80, 79}"),
+ ("curve default max stick","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 80, 80}","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 90, 80}"),
  ("global brightness back","    allStrips[k]->begin();\n","    allStrips[k]->begin();\n    allStrips[k]->setBrightness(80);\n"),
- ("curve default min","CURVE_DEFAULT_MIN[LED_TYPE_COUNT] = {0, 0}","CURVE_DEFAULT_MIN[LED_TYPE_COUNT] = {0, 2}"),
- ("curve default max","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 80}","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {81, 80}"),
- ("curve default mix","CURVE_DEFAULT_MIX[LED_TYPE_COUNT] = {1.0f, 1.0f}","CURVE_DEFAULT_MIX[LED_TYPE_COUNT] = {1.0f, 0.9f}"),
- ("curve default keep zero","CURVE_DEFAULT_KEEP_ZERO[LED_TYPE_COUNT] = {true, true}","CURVE_DEFAULT_KEEP_ZERO[LED_TYPE_COUNT] = {true, false}"),
+ ("curve default min","CURVE_DEFAULT_MIN[LED_TYPE_COUNT] = {0, 0, 0}","CURVE_DEFAULT_MIN[LED_TYPE_COUNT] = {0, 2, 0}"),
+ ("curve default max","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 80, 80}","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {81, 80, 80}"),
+ ("curve default mix","CURVE_DEFAULT_MIX[LED_TYPE_COUNT] = {1.0f, 1.0f, 1.0f}","CURVE_DEFAULT_MIX[LED_TYPE_COUNT] = {1.0f, 0.9f, 1.0f}"),
+ ("curve default keep zero","CURVE_DEFAULT_KEEP_ZERO[LED_TYPE_COUNT] = {true, true, true}","CURVE_DEFAULT_KEEP_ZERO[LED_TYPE_COUNT] = {true, false, true}"),
  ("curve exponent max","CURVE_EXPONENT_MAX = 20.0f","CURVE_EXPONENT_MAX = 25.0f"),
  ("curve exponent min","CURVE_EXPONENT_MIN = 0.1f","CURVE_EXPONENT_MIN = 0.2f"),
  ("curve mix formula","(1.0f - mix) * t + mix * powf(t, exponent)","(1.0f - mix) * powf(t, exponent) + mix * t"),
@@ -90,17 +89,17 @@ muts=[
  ("shape hue lost","const uint16_t rr = ((uint16_t)r * out + v / 2) / v, gg = ((uint16_t)g * out + v / 2) / v, bb = ((uint16_t)b * out + v / 2) / v;","const uint16_t rr = out, gg = out, bb = out;"),
  ("shape uses min channel","if (b > v) v = b;","if (b < v) v = b;"),
  ("frame not shaped","frame.setPixelColor(i, shapeColor(LED_TYPE_STRIP, frame.Color(level, level, level)));","frame.setPixelColor(i, frame.Color(level, level, level));"),
- ("letters not shaped","shapeColor(LED_TYPE_STRIP, letters.Color(level, level / 12, 0))","letters.Color(level, level / 12, 0)"),
- ("letters wrong type","shapeColor(LED_TYPE_STRIP, letters.Color(level, level / 12, 0))","shapeColor(LED_TYPE_STICK, letters.Color(level, level / 12, 0))"),
+ ("letters not shaped","shapeColor(LED_TYPE_LETTERS, letters.Color(level, level / 12, 0))","letters.Color(level, level / 12, 0)"),
+ ("letters wrong type","shapeColor(LED_TYPE_LETTERS, letters.Color(level, level / 12, 0))","shapeColor(LED_TYPE_STICK, letters.Color(level, level / 12, 0))"),
  ("closed not shaped","shapeColor(LED_TYPE_STICK, closedLight.Color(closedLevel, closedLevel, closedLevel))","closedLight.Color(closedLevel, closedLevel, closedLevel)"),
  ("arrow not shaped","shapeColor(LED_TYPE_STICK, arrowPixel(*sticks[k], s, stickLowerLane(k, led)))","arrowPixel(*sticks[k], s, stickLowerLane(k, led))"),
  ("arrow wrong type","shapeColor(LED_TYPE_STICK, arrowPixel(*sticks[k], s, stickLowerLane(k, led)))","shapeColor(LED_TYPE_STRIP, arrowPixel(*sticks[k], s, stickLowerLane(k, led)))"),
- ("tables not built at start","  buildDefaultBrightnessCurves();\n",""),
+ ("curves not rebuilt after the menu start","  const bool menuFromEeprom = menuBegin();   // saved menu values (speeds, curves, reverse flags) or the defaults\n  rebuildAllCurves();","  const bool menuFromEeprom = menuBegin();   // saved menu values (speeds, curves, reverse flags) or the defaults"),
  ("marquee text","press D33 to skip   \";","press D3 to skip   \";"),
  # --- program switch, new letter programs, frame patterns (added with the 15 programs) ---
  ("program pins","PIN_PROGRAM[4] = {34, 35, 36, 37};","PIN_PROGRAM[4] = {35, 34, 36, 37};"),
- ("program not polled","  if (pollSpeedSwitch(SLOT_PROGRAM, PIN_PROGRAM, now)) {","  if (false) {"),
- ("program not applied at start","setLetterMode(speedStable[SLOT_PROGRAM], now);\n  setCasinoClosed","setLetterMode(0, now);\n  setCasinoClosed"),
+ ("program not polled","  if (pollHexSwitch(SLOT_PROGRAM, PIN_PROGRAM, now)) {","  if (false) {"),
+ ("program not applied at start","  menuSet(P_program, hexStable[SLOT_PROGRAM]);\n  setLetterMode(hexStable[SLOT_PROGRAM], now);","  menuSet(P_program, 0);\n  setLetterMode(0, now);"),
  ("converge step","LETTER_CONVERGE_STEP_MS = 400;","LETTER_CONVERGE_STEP_MS = 300;"),
  ("converge off phase","if (step >= 6) return 0;","if (step >= 7) return 0;"),
  ("converge from one end","const uint8_t fromEnd = inWord < wordLength - 1 - inWord ? inWord : (uint8_t)(wordLength - 1 - inWord);","const uint8_t fromEnd = inWord;"),
@@ -139,7 +138,46 @@ muts=[
  ("frame q arrow right","(uint16_t)((FRAME_UPPER_LEFT + FRAME_PIXELS - i) % FRAME_PIXELS)","(uint16_t)((FRAME_UPPER_RIGHT + FRAME_PIXELS - i) % FRAME_PIXELS)"),
  ("frame q arrow left","(uint16_t)((i + FRAME_PIXELS - FRAME_UPPER_RIGHT) % FRAME_PIXELS)","(uint16_t)((i + FRAME_PIXELS - FRAME_UPPER_LEFT) % FRAME_PIXELS)"),
  ("frame long edge","i <= FRAME_LOWER_RIGHT || (i >= FRAME_UPPER_RIGHT && i <= FRAME_UPPER_LEFT)","i < FRAME_LOWER_RIGHT || (i >= FRAME_UPPER_RIGHT && i <= FRAME_UPPER_LEFT)"),
- ("lcd program hex","\"Prog %X\"","\"Prog %u\""),
+
+ # --- menu integration (OK/BACK/SHIFT, menu switch, EEPROM, speeds and curves as menu properties) ---
+ ("menu switch pins","PIN_MENU_SWITCH[4] = {42, 43, 44, 45};","PIN_MENU_SWITCH[4] = {43, 42, 44, 45};"),
+ ("menu switch not polled","  if (pollHexSwitch(SLOT_MENU, PIN_MENU_SWITCH, now)) {","  if (false) {"),
+ ("menu switch half turn used","if (delta != 8) {","if (true) {"),
+ ("menu switch direction","if (delta > 8) steps = (int)delta - 16;","if (delta > 8) steps = (int)delta;"),
+ ("menu switch ignores shift","menuTurn(steps, inputStable[INPUT_SHIFT] == LOW, now);","menuTurn(steps, false, now);"),
+ ("shift inverted","menuTurn(steps, inputStable[INPUT_SHIFT] == LOW, now);","menuTurn(steps, inputStable[INPUT_SHIFT] != LOW, now);"),
+ ("ok key not sent","menuKey(MENU_KEY_OK, now); }","}"),
+ ("back key not sent","menuKey(MENU_KEY_BACK, now); }","}"),
+ ("ok sends back","menuKey(MENU_KEY_OK, now); }","menuKey(MENU_KEY_BACK, now); }"),
+ ("ok on release","if (pollInput(INPUT_OK, PIN_OK, now) && inputStable[INPUT_OK] == LOW)","if (pollInput(INPUT_OK, PIN_OK, now) && inputStable[INPUT_OK] != LOW)"),
+ ("menu timeout 30 s","MENU_TIMEOUT_MS = 60000UL;","MENU_TIMEOUT_MS = 30000UL;"),
+ ("menu timeout in submenus","menuDepth == 1 && now - menuLastInput >= MENU_TIMEOUT_MS","now - menuLastInput >= MENU_TIMEOUT_MS"),
+ ("menu eeprom base","MENU_EEPROM_BASE = 0;","MENU_EEPROM_BASE = 8;"),
+ ("eeprom tag not checked","if (EEPROM.read(MENU_EEPROM_BASE + k) != (uint8_t)(MENU_LAYOUT_TAG >> (8 * k))) ok = false;","if (false) ok = false;"),
+ ("eeprom range not checked","if (slot != MENU_NO_SLOT && EEPROM.read(MENU_EEPROM_BASE + 4 + slot) >= menuPropCount(p)) ok = false;","if (false) ok = false;"),
+ ("eeprom not read","menuPosArr[p] = (ok && slot != MENU_NO_SLOT) ?","menuPosArr[p] = (false && slot != MENU_NO_SLOT) ?"),
+ ("eeprom write skipped","EEPROM.update(MENU_EEPROM_BASE + 4 + slot, (uint8_t)menuPosArr[prop]);","(void)slot;"),
+ ("arrow reverse ignored","if (menuPos(P_arrowReverse) == 1) pointsLeft = !pointsLeft;",""),
+ ("arrow reverse inverted","if (menuPos(P_arrowReverse) == 1) pointsLeft = !pointsLeft;","if (menuPos(P_arrowReverse) == 0) pointsLeft = !pointsLeft;"),
+ ("casino reverse ignored","if (menuPos(P_casinoReverse) == 1) closed = !closed;",""),
+ ("casino reverse inverted","if (menuPos(P_casinoReverse) == 1) closed = !closed;","if (menuPos(P_casinoReverse) == 0) closed = !closed;"),
+ ("frame speed not applied","frameIntervalMs = intervalFor(FRAME_SPEED_MS, multiplier256(P_speedFrame));","frameIntervalMs = FRAME_SPEED_MS;"),
+ ("arrow speed not applied","arrowIntervalMs = intervalFor(ARROW_SPEED_MS, multiplier256(P_speedArrow));","arrowIntervalMs = ARROW_SPEED_MS;"),
+ ("letters speed not applied","letterMult256 = multiplier256(P_speedLetters);","letterMult256 = 256;"),
+ ("arrow speed uses frame","arrowIntervalMs = intervalFor(ARROW_SPEED_MS, multiplier256(P_speedArrow));","arrowIntervalMs = intervalFor(ARROW_SPEED_MS, multiplier256(P_speedFrame));"),
+ ("speed divides wrongly","uint32_t ms = ((uint32_t)baseMs * 256UL) / mult256;","uint32_t ms = ((uint32_t)baseMs * mult256) / 256UL;"),
+ ("min update ms","MIN_UPDATE_MS = 8;","MIN_UPDATE_MS = 20;"),
+ ("strip curve not rebuilt","rebuildCurve(LED_TYPE_STRIP, P_stripMin, P_stripMax, P_stripExp, P_stripMix);\n  rebuildCurve(LED_TYPE_LETTERS, P_lettersMin, P_lettersMax, P_lettersExp, P_lettersMix);\n  rebuildCurve(LED_TYPE_STICK, P_stickMin, P_stickMax, P_stickExp, P_stickMix);\n}","rebuildCurve(LED_TYPE_LETTERS, P_lettersMin, P_lettersMax, P_lettersExp, P_lettersMix);\n  rebuildCurve(LED_TYPE_STICK, P_stickMin, P_stickMax, P_stickExp, P_stickMix);\n}"),
+ ("letters curve from strip props","rebuildCurve(LED_TYPE_LETTERS, P_lettersMin, P_lettersMax, P_lettersExp, P_lettersMix);\n  rebuildCurve(LED_TYPE_STICK, P_stickMin, P_stickMax, P_stickExp, P_stickMix);\n}","rebuildCurve(LED_TYPE_LETTERS, P_stripMin, P_stripMax, P_stripExp, P_stripMix);\n  rebuildCurve(LED_TYPE_STICK, P_stickMin, P_stickMax, P_stickExp, P_stickMix);\n}"),
+ ("stick curve from letters props","rebuildCurve(LED_TYPE_STICK, P_stickMin, P_stickMax, P_stickExp, P_stickMix);\n}","rebuildCurve(LED_TYPE_STICK, P_lettersMin, P_lettersMax, P_lettersExp, P_lettersMix);\n}"),
+ ("random delay ignored","long minutes = (long)(menuValue(P_randomDelay) + 0.5f);","long minutes = 2;"),
+ ("random delay zero","if (minutes <= 0) minutes = 1 + (long)random(30);","if (minutes <= 0) minutes = 0;"),
+ ("random delay in seconds","autoDelayMs = (unsigned long)minutes * 60000UL;","autoDelayMs = (unsigned long)minutes * 1000UL;"),
+ ("countdown rounds down","(long)((autoDelayMs - elapsed + 999UL) / 1000UL)","(long)((autoDelayMs - elapsed) / 1000UL)"),
+ ("countdown only in F","if (letterMode == MODE_RANDOM_AUTO) {\n    const unsigned long elapsed","if (true) {\n    const unsigned long elapsed"),
+ ("status alternate","(since / MENU_STATUS_ALT_MS) % 2 == 1","(since / MENU_STATUS_ALT_MS) % 2 == 0"),
+ ("hex debounce","HEX_DEBOUNCE_MS = 10;","HEX_DEBOUNCE_MS = 0;"),
+ ("program applies old value","    menuPhysical(P_program, hexStable[SLOT_PROGRAM], now);","    menuPhysical(P_program, 0, now);"),
 ]
 def run(i):
     name,old,new=muts[i]
@@ -151,7 +189,16 @@ def run(i):
     try: r=subprocess.run([d+'/h'],capture_output=True,text=True,timeout=60)   # a hang (the harness waits for a change that never comes) counts as detected
     except subprocess.TimeoutExpired: return name,'RESULT: timeout, harness hangs: 1 failures'
     last=[l for l in r.stdout.splitlines() if l.startswith('RESULT')]
-    return name,(last[-1] if last else 'no result')
+    res=(last[-1] if last else 'no result')
+    if 'failures' not in res and res!='no result':   # the boot-mode run (saved EEPROM image at power-up) is part of the test
+        try:
+            for bm in ('1','tag','range'):
+                r2=subprocess.run([d+'/h'],capture_output=True,text=True,timeout=60,env=dict(os.environ,V2_BOOT=bm))
+                last2=[l for l in r2.stdout.splitlines() if l.startswith('RESULT')]
+                res2=(last2[-1] if last2 else 'no result')
+                if 'failures' in res2 or res2=='no result': return name,res2+' (boot mode %s)'%bm
+        except subprocess.TimeoutExpired: return name,'RESULT: timeout in boot mode: 1 failures'
+    return name,res
 # Variant with the ball bit false: the harness (EXPECT_BALL_AT_DIN=0) must pass on it and fail when the bit is ignored.
 def run_variant(name,old,new,expect,extra=()):
     d='/tmp/mut_v2/v_'+name.replace(' ','_'); os.makedirs(d,exist_ok=True)
@@ -167,7 +214,7 @@ ONLY=os.environ.get('MUT_ONLY')   # MUT_ONLY=new runs only the mutants added wit
 IDX=range(len(muts)) if not ONLY else range([m[0] for m in muts].index('program pins'),len(muts))
 with cf.ThreadPoolExecutor(8) as ex:
     for name,res in ex.map(run,IDX):
-        print(("DETECTED " if 'failures' in res or 'ERROR' in res or res=='no result' else "SURVIVED ")+name+": "+res)
+        print(("DETECTED " if 'failures' in res or 'ERROR' in res or 'no result' in res else "SURVIVED ")+name+": "+res)
 
 if ONLY: sys.exit(0)
 

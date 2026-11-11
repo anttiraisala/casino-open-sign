@@ -106,7 +106,10 @@ const clone = o => JSON.parse(JSON.stringify(o));
   check(/kind missing/.test(errs(mk({ g: { min: 1 } }, [{ propertyRef: 'g' }]))), 'kind missing');
   check(/unknown type/.test(errs(mk({ g: { type: 'nope' } }, [{ propertyRef: 'g' }]))), 'unknown type');
   check(/step must be an integer/.test(errs(mk({ g: { kind: 'int', min: 0, max: 5, step: 0 } }, [{ propertyRef: 'g' }]))), 'int step 0');
-  check(/read-only property ro/.test(errs(mk(base(), [{ preset: 'P', set: { ro: 3 } }]))), 'quick-pick on a read-only property is an error');
+  { const wro = core.build(mk(base(), [{ preset: 'P', set: { ro: 3, a: 2 } }]));
+    check(wro.ok && /read-only property ro/.test(wro.warnings.join()), 'quick-pick on a read-only property is a warning, not an error');
+    const pre = wro.root.items[wro.root.items.length - 1];
+    check(!('ro' in pre.set) && pre.set.a === 2, 'the read-only target is dropped from the preset, the other value stays'); }
   check(/outside 0\.\.10/.test(errs(mk(base(), [{ preset: 'P', set: { a: 11 } }]))), 'quick-pick value out of range');
   check(/unknown property zz/.test(errs(mk(base(), [{ preset: 'P', set: { zz: 1 } }]))), 'quick-pick unknown property');
   check(/neither set nor setAll/.test(errs(mk(base(), [{ preset: 'P' }]))), 'empty preset');

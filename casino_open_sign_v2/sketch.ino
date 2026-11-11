@@ -46,11 +46,13 @@
  *                     letters go dark and the CLOSED light turns on
  *   D34-D37  program switch: 16-position hex rotary switch (0..F, pins 1, 2, 4, 8), read all the time:
  *                 position 0..E = letter program 0..14 (with its own frame pattern), F = random program
- *   D22-D25  SW3  16-position hex rotary switch (0..F, pins 1, 2, 4, 8): speed of the
- *                 frame and arrow patterns
- *   D26-D29  SW4  16-position hex rotary switch (0..F, pins 1, 2, 4, 8): speed of the
- *                 letter patterns
- *   (the common pin of each hex switch goes to GND)
+ *   D42-D45  menu switch: 16-position hex rotary switch (pins 1, 2, 4, 8), free-running (relative): moves the
+ *                 menu selection or changes a value
+ *   D48 OK, D49 BACK, D50 SHIFT  push buttons to GND: OK opens the menu from the status page, enters a submenu,
+ *                 starts and accepts an edit; BACK goes one level up or cancels an edit; SHIFT held while turning
+ *                 makes the step bigger
+ *   (the common pin of each hex switch goes to GND; the speeds and brightness curves are no longer set with switches:
+ *   they are menu properties, saved in EEPROM)
  *
  * Power-on LED test: for 10 s after power-up all strips run a short window of lit LEDs from the first
  * to the last LED at the same time (2 passes: white, then red-green-blue), so every LED and the
@@ -59,13 +61,15 @@
  *
  * SIGN OF LIFE: the LED on pin 13 blinks all the time while the program runs (every HEARTBEAT_MS, twice as
  * fast while many state changes happen; it is shortly inverted on every state change: arrow direction,
- * letter mode, casino open/closed, speed switch). Once per second (DEBUG_MS) the Serial Monitor (115200
- * baud, SERIAL_BAUD) gets a line "DBG up=.. loops=.. mode=.. arrow=R|L (customer view) closed=.. sw3=.. sw4=.. events=..
+ * letter program, casino open/closed, menu key or switch). Once per second (DEBUG_MS) the Serial Monitor (115200
+ * baud, SERIAL_BAUD) gets a line "DBG up=.. loops=.. mode=.. arrow=R|L (customer view) closed=.. menu=S|M|E|C events=..
  * beats=.. tick=..", so the values change from line to line. The baud rate is also printed at start-up.
  *
- * LCD display (I2C, SDA = D20, SCL = D21, 5 V, GND): four rotating pages with the current
- * settings (mode, SW3/SW4 position and speed, casino open/closed, arrow direction). A changed
- * setting shows its page at once and holds it for 6 s; the pages rotate every 3 s.
+ * LCD display (I2C, SDA = D20, SCL = D21, 5 V, GND): the status page (row 0 "#<program> Casino Open|Closed", row 1 the
+ * arrow symbol and "Customer right|left"; in program F row 1 alternates with "Change in M:SS") or the settings menu
+ * (OK opens it; the menu is described in tools/menu-editor/menu-v2.json and generated into the block below).
+ * Turning the program switch or a slide switch closes an open menu. At the menu root the display returns to the
+ * status page after 60 s without input.
  * At boot an I2C scan (addresses 0x08-0x77) prints every device that answers to the Serial Monitor, and
  * a hint if nothing answers on the LCD address (many displays use 0x3F instead of 0x27).
  *
@@ -93,6 +97,10 @@
 
 #include <Adafruit_NeoPixel.h>
 #include <Wire.h>  // built into the Arduino IDE; used for the I2C LCD (no extra library)
+#include <EEPROM.h>  // built into the Arduino IDE; stores the menu values
+#include <math.h>
+#include <string.h>
+#include <stdio.h>
 
 // ============================== CONFIGURATION ==============================
 
@@ -162,13 +170,20 @@ constexpr uint8_t PIN_CASINO_CLOSED_SWITCH = 30;   // slide switch SW5: casino c
 constexpr bool CASINO_CLOSED_WHEN_LOW = true;      // handle on the GND side = closed (false: reverse)
 constexpr uint8_t DEBOUNCE_MS = 30;        // an input must stay stable this long
 
-// Speed switches: two hex rotary switches, 4 pins each (bit values 1, 2, 4, 8) plus a
+// Hex rotary switches (the program switch above and the menu switch): 4 pins each (bit values 1, 2, 4, 8) plus a
 // common pin that goes to GND. The pins use the internal pull-ups.
-constexpr uint8_t PIN_SPEED_FRAME_ARROW[4] = {22, 23, 24, 25};  // SW3: frame and arrow speed
-constexpr uint8_t PIN_SPEED_LETTERS[4] = {26, 27, 28, 29};      // SW4: letters speed
-constexpr bool SPEED_BIT_IS_LOW = true;    // a bit counts as set when its pin reads LOW (the switch
+constexpr bool HEX_BIT_IS_LOW = true;      // a bit counts as set when its pin reads LOW (the switch
                                            // connects it to the common pin = GND). Set to false if
                                            // your switch is complement coded (reads 15 - position).
+constexpr unsigned long HEX_DEBOUNCE_MS = 10;   // a hex switch position must stay unchanged this long
+
+// Settings menu controls (the menu is described in tools/menu-editor/menu-v2.json):
+constexpr uint8_t PIN_MENU_SWITCH[4] = {42, 43, 44, 45};  // menu hex switch (free-running, relative): selection / value
+constexpr bool MENU_SWITCH_REVERSED = false;              // true: turning it clockwise moves the other way
+constexpr uint8_t PIN_OK = 48;             // push button OK: opens the menu, enters a submenu, starts / accepts an edit
+constexpr uint8_t PIN_BACK = 49;           // push button BACK: one level up, cancels an edit
+constexpr uint8_t PIN_SHIFT = 50;          // push button SHIFT: held while turning makes the step bigger
+constexpr int MENU_EEPROM_BASE = 0;        // the saved menu image starts at this EEPROM address
 
 // --- Sign of life (see the top of this file) ---------------------------------
 constexpr uint8_t PIN_STATUS_LED = 13;       // debug LED on the Mega board
@@ -180,8 +195,6 @@ constexpr uint32_t INVERT_MS = 120;          // the LED is inverted this long af
 
 // --- LCD display: 2x16 character LCD with an I2C backpack (PCF8574), SDA = D20, SCL = D21 ---
 constexpr uint8_t LCD_I2C_ADDRESS = 0x27;  // Wokwi uses 0x27; if a real display stays blank try 0x3F
-constexpr uint16_t LCD_PAGE_MS = 3000;     // time one page is shown while the pages rotate
-constexpr uint16_t LCD_HOLD_MS = 6000;     // a page stays on screen this long after its setting changed
 constexpr uint8_t LCD_COLS = 16;
 constexpr uint8_t LCD_ROWS = 2;
 constexpr uint8_t LCD_CHARS_PER_LOOP = 4;  // characters sent per loop() pass, so animations never wait
@@ -206,29 +219,27 @@ constexpr uint16_t LCD_TEST_SCROLL_MS = 250;     // the "press D33 to skip" text
 //   out = min + (max - min) * ((1 - mix) * t + mix * t^exponent),  t = in / 255,  rounded to 0..255
 // If keepZero is true, an input of 0 always stays 0 (unlit LEDs stay dark even when min > 0).
 // The tables are built at start-up and rebuilt by setBrightnessCurve() whenever a value is changed.
-constexpr uint8_t LED_TYPE_STRIP = 0;  // LED strips: the frame and the letters
+constexpr uint8_t LED_TYPE_STRIP = 0;  // the frame strip
 constexpr uint8_t LED_TYPE_STICK = 1;  // Grove RGB LED sticks: the arrow and the CLOSED light
-constexpr uint8_t LED_TYPE_COUNT = 2;
+constexpr uint8_t LED_TYPE_LETTERS = 2;  // the letters strip
+constexpr uint8_t LED_TYPE_COUNT = 3;
 // Defaults (same values for every type for now):
-constexpr uint8_t CURVE_DEFAULT_MIN[LED_TYPE_COUNT] = {0, 0};              // 0..255, output for the dimmest lit LED
-constexpr uint8_t CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 80};              // 0..255, output for input 255 = the brightness limit
-constexpr float CURVE_DEFAULT_EXPONENT[LED_TYPE_COUNT] = {2.67f, 2.67f};   // 0.1..20, 1 = linear
-constexpr float CURVE_DEFAULT_MIX[LED_TYPE_COUNT] = {1.0f, 1.0f};          // 0..1, 0 = linear, 1 = full power curve
-constexpr bool CURVE_DEFAULT_KEEP_ZERO[LED_TYPE_COUNT] = {true, true};
+constexpr uint8_t CURVE_DEFAULT_MIN[LED_TYPE_COUNT] = {0, 0, 0};              // 0..255, output for the dimmest lit LED
+constexpr uint8_t CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 80, 80};              // 0..255, output for input 255 = the brightness limit
+constexpr float CURVE_DEFAULT_EXPONENT[LED_TYPE_COUNT] = {2.67f, 2.67f, 2.67f};   // 0.1..20, 1 = linear
+constexpr float CURVE_DEFAULT_MIX[LED_TYPE_COUNT] = {1.0f, 1.0f, 1.0f};          // 0..1, 0 = linear, 1 = full power curve
+constexpr bool CURVE_DEFAULT_KEEP_ZERO[LED_TYPE_COUNT] = {true, true, true};
 constexpr float CURVE_EXPONENT_MIN = 0.1f;
 constexpr float CURVE_EXPONENT_MAX = 20.0f;
 
-// Speed range of the two speed switches. The multiplier grows geometrically from
-// position 0 to position F; all the times below are the times at multiplier 1.0.
-constexpr float SPEED_MIN_MULTIPLIER = 0.25f;  // position 0: patterns run 4 times slower
-constexpr float SPEED_MAX_MULTIPLIER = 4.0f;   // position F: patterns run 4 times faster
+// Speeds: the multipliers (x0.25 .. x4) are menu properties; all the times below are the times at multiplier 1.0.
 constexpr uint8_t MIN_UPDATE_MS = 8;       // frame and arrow never update more often than this
 
 constexpr uint16_t FRAME_SPEED_MS = 200;   // time between frame animation steps (at multiplier 1)
 constexpr uint8_t FRAME_BAR_LEDS = 2;      // pixels lit, then the same number dark, repeating
 
 constexpr uint16_t LETTERS_SPEED_MS = 30;  // time between letter backlight updates (the letter patterns
-                                           // themselves follow the speed switch SW4)
+                                           // themselves follow the letters speed)
 constexpr uint32_t FLICKER_MIN_GAP_MS = 5000;     // shortest pause between flicker events
 constexpr uint32_t FLICKER_MAX_GAP_MS = 12000;    // longest pause between flicker events
 constexpr uint32_t FLICKER_DURATION_MS = 700;     // how long the faulty letter flickers
@@ -254,13 +265,12 @@ constexpr uint16_t LETTER_SLOT_HOLD_END_MS = 7200;    // slot machine: all lette
 constexpr uint16_t LETTER_SLOT_PERIOD_MS = 8000;      // ... and the cycle restarts at this time
 constexpr uint16_t LETTER_TWIN_STEP_MS = 250;     // twin chase: time the dim spots stay on a letter
 constexpr uint16_t LETTER_MARQUEE_STEP_MS = 250;  // marquee: time per step
-constexpr uint32_t LETTER_RANDOM_AUTO_MS = 120000;  // random auto: pick a new random mode this often (2 min)
 
 constexpr uint16_t ARROW_SPEED_MS = 35;    // time between arrow animation steps (at multiplier 1)
 constexpr uint16_t ARROW_WAVE_LEDS = 24;   // LEDs per full colour cycle
 
 // CLOSED light, like a faulty fluorescent tube. Times are in pattern milliseconds, so they
-// follow the letter speed switch SW4 (at multiplier 2 everything happens twice as fast).
+// follow the letters speed (menu) (at multiplier 2 everything happens twice as fast).
 constexpr uint16_t CLOSED_STARTUP_MS = 1200;       // switching on: the tube tries to start, then stays on
 constexpr uint32_t CLOSED_STEADY_MIN_MS = 5000;    // steady light for at least this long
 constexpr uint32_t CLOSED_STEADY_MAX_MS = 14000;   // ... and at most this long
@@ -312,7 +322,7 @@ constexpr uint8_t MODE_WORDS_SWAP = 11;  // the two words breathe in opposite ph
 constexpr uint8_t MODE_SLOT = 12;        // letters flicker like slot machine reels and lock in one by one
 constexpr uint8_t MODE_TWIN_CHASE = 13;  // two dim spots run through all letters in opposite directions
 constexpr uint8_t MODE_MARQUEE = 14;     // three letters lit, one dark, moving along the letters
-constexpr uint8_t MODE_RANDOM_AUTO = 15; // program switch position F: a random program 0..14 every LETTER_RANDOM_AUTO_MS
+constexpr uint8_t MODE_RANDOM_AUTO = 15; // program switch position F: a random program 0..14 every "Change delay" minutes (menu)
 constexpr uint8_t PATTERN_MODE_COUNT = 15;  // programs 0..14 are real patterns, program 15 chooses among them
 constexpr uint8_t LETTER_MODE_COUNT = 16;
 
@@ -330,8 +340,6 @@ static_assert(FRAME_PIXELS % 2 == 0 && FRAME_UPPER_RIGHT < FRAME_PIXELS && FRAME
 static_assert(LETTER_MODE_COUNT == 16, "the program switch has 16 positions");
 static_assert(STARTUP_TEST_PASSES > 0 && STARTUP_TEST_WINDOW_LEDS > 0, "the start-up test needs a pass and a window");
 static_assert(CLOSED_LIGHT_LEDS > 0, "CLOSED_LIGHT_LEDS must be at least 1");
-static_assert(SPEED_MIN_MULTIPLIER > 0.0f && SPEED_MIN_MULTIPLIER < SPEED_MAX_MULTIPLIER,
-              "SPEED_MIN_MULTIPLIER must be above 0 and below SPEED_MAX_MULTIPLIER");
 
 // ================================ STRIPS ===================================
 
@@ -372,6 +380,590 @@ unsigned long lastFrameUpdate = 0;
 unsigned long lastLettersUpdate = 0;
 unsigned long lastArrowUpdate = 0;
 
+// ============================== SETTINGS MENU ==============================
+// Tables and engine of the settings menu (described in tools/menu-editor/menu-v2.json). The block is generated:
+// edit the JSON with the Menu Editor and run `node tools/generate_v2_menu.js`. The sketch supplies menuCallback().
+//@V2_MENU_BEGIN (generated by tools/generate_v2_menu.js from tools/menu-editor/menu-v2.json and tools/menu_engine/engine.inc; do not edit by hand)
+// BEGIN GENERATED MENU TABLES (do not edit: made by tools/menu_engine/generate_menu_tables.js from menu-v2.json)
+// 21 properties, 29 items, 8 menus, 1 presets; EEPROM layout tag a1802e48, 18 stored properties
+constexpr uint8_t MENU_PROP_COUNT = 21;
+constexpr uint8_t MENU_STORED_COUNT = 18;
+constexpr uint32_t MENU_LAYOUT_TAG = 0xA1802E48UL;
+constexpr uint16_t MENU_NO_STR16 = 0xFFFF;
+constexpr uint8_t P_program = 0;
+constexpr uint8_t P_arrow = 1;
+constexpr uint8_t P_casino = 2;
+constexpr uint8_t P_arrowReverse = 3;
+constexpr uint8_t P_casinoReverse = 4;
+constexpr uint8_t P_speedFrame = 5;
+constexpr uint8_t P_speedArrow = 6;
+constexpr uint8_t P_speedLetters = 7;
+constexpr uint8_t P_randomDelay = 8;
+constexpr uint8_t P_stripMin = 9;
+constexpr uint8_t P_stripMax = 10;
+constexpr uint8_t P_stripExp = 11;
+constexpr uint8_t P_stickMin = 12;
+constexpr uint8_t P_stickMax = 13;
+constexpr uint8_t P_stickExp = 14;
+constexpr uint8_t P_stripMix = 15;
+constexpr uint8_t P_lettersMin = 16;
+constexpr uint8_t P_lettersMax = 17;
+constexpr uint8_t P_lettersExp = 18;
+constexpr uint8_t P_lettersMix = 19;
+constexpr uint8_t P_stickMix = 20;
+constexpr uint8_t CB_applySwitches = 0;
+constexpr uint8_t CB_applySpeeds = 1;
+constexpr uint8_t CB_rebuildStripCurve = 2;
+constexpr uint8_t CB_rebuildStickCurve = 3;
+constexpr uint8_t CB_rebuildLettersCurve = 4;
+constexpr uint8_t MENU_CB_COUNT = 5;
+constexpr uint8_t MENU_STATUS_PROGRAM = P_program;
+constexpr uint8_t MENU_STATUS_CASINO = P_casino;
+constexpr uint8_t MENU_STATUS_ARROW = P_arrow;
+constexpr uint8_t MENU_STATUS_RANDOM_VALUE = 15;
+constexpr bool MENU_STATUS_ARROW_ASCII = false;
+constexpr uint16_t MENU_ROOT_NAME_STR = 26;
+// strings
+const char MENU_STR[] PROGMEM =
+  "Program\0"
+  "Arrow\0"
+  "Left\0"
+  "Right\0"
+  "Casino\0"
+  "Closed\0"
+  "Open\0"
+  "Arrow reverse\0"
+  "No\0"
+  "Yes\0"
+  "Casino reverse\0"
+  "Frame\0"
+  "x\0"
+  "Letters\0"
+  "Change delay\0"
+  " min\0"
+  "random\0"
+  "Min\0"
+  "Max\0"
+  "Exponent\0"
+  "Mix\0"
+  "applySwitches\0"
+  "applySpeeds\0"
+  "rebuildStripCurve\0"
+  "rebuildStickCurve\0"
+  "rebuildLettersCurve\0"
+  "Menu\0"
+  "Controls\0"
+  "Speed\0"
+  "Random program\0"
+  "Brightness\0"
+  "Restore defaults\0"
+  "Strip\0"
+  "Stick\0"
+  "Restore defaults?\0";
+const uint16_t MENU_STR_OFF[] PROGMEM = {0, 8, 14, 19, 25, 32, 39, 44, 58, 61, 65, 80, 86, 88, 96, 109, 114, 121, 125, 129, 138, 142, 156, 168, 186, 204, 224, 229, 238, 244, 259, 270, 287, 293, 299};
+// properties
+const uint8_t PP_KIND[] PROGMEM = {0, 3, 3, 3, 3, 2, 2, 2, 0, 0, 0, 2, 0, 0, 2, 1, 0, 0, 2, 1, 1};
+const uint8_t PP_FLAGS[] PROGMEM = {9, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+const uint8_t PP_SHIFT[] PROGMEM = {10, 1, 1, 1, 1, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
+const uint8_t PP_DEC[] PROGMEM = {0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 2, 2, 2};
+const uint16_t PP_COUNT[] PROGMEM = {16, 2, 2, 2, 2, 25, 25, 25, 31, 256, 256, 51, 256, 256, 51, 51, 256, 256, 51, 51, 51};
+const uint16_t PP_DEFPOS[] PROGMEM = {0, 0, 0, 0, 0, 12, 12, 12, 2, 0, 80, 31, 0, 80, 31, 50, 0, 80, 31, 50, 50};
+const float PP_MIN[] PROGMEM = {0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.250000000f, 0.250000000f, 0.250000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f};
+const float PP_MAX[] PROGMEM = {15.0000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 4.00000000f, 4.00000000f, 4.00000000f, 30.0000000f, 255.000000f, 255.000000f, 20.0000000f, 255.000000f, 255.000000f, 20.0000000f, 1.00000000f, 255.000000f, 255.000000f, 20.0000000f, 1.00000000f, 1.00000000f};
+const uint16_t PP_AUX[] PROGMEM = {1, 0, 0, 0, 0, 24, 24, 24, 1, 1, 1, 50, 1, 1, 50, 50, 1, 1, 50, 50, 50};
+const uint16_t PP_NAME[] PROGMEM = {0, 1, 4, 7, 10, 11, 1, 13, 14, 17, 18, 19, 17, 18, 19, 20, 17, 18, 19, 20, 20};
+const uint16_t PP_UNIT[] PROGMEM = {MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, 12, 12, 12, 15, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16};
+const uint8_t PP_VT_FIRST[] PROGMEM = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+const uint8_t PP_VT_COUNT[] PROGMEM = {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+const uint16_t PP_CH_FIRST[] PROGMEM = {0, 0, 2, 4, 6, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8};
+const uint8_t PP_CB_FIRST[] PROGMEM = {0, 0, 0, 0, 1, 2, 3, 4, 5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+const uint8_t PP_CB_COUNT[] PROGMEM = {0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+const uint8_t PP_SLOT[] PROGMEM = {255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17};
+const float VT_KEY[] PROGMEM = {0.00000000f};
+const uint16_t VT_STR[] PROGMEM = {16};
+const uint16_t CH_STR[] PROGMEM = {2, 3, 5, 6, 8, 9, 8, 9};
+const uint8_t CB_LIST[] PROGMEM = {0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 2, 4, 4, 4, 4, 3};
+const uint16_t CB_NAME_STR[] PROGMEM = {21, 22, 23, 24, 25};
+// menus and items
+const uint8_t MN_FIRST[] PROGMEM = {0, 5, 10, 13, 14, 17, 21, 25};
+const uint8_t MN_COUNT[] PROGMEM = {5, 5, 3, 1, 3, 4, 4, 4};
+const uint8_t IT_TYPE[] PROGMEM = {0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+const uint8_t IT_A[] PROGMEM = {1, 2, 3, 4, 0, 0, 1, 3, 2, 4, 5, 7, 6, 8, 5, 6, 7, 9, 10, 11, 15, 16, 17, 18, 19, 12, 13, 14, 20};
+const uint16_t IT_NAME[] PROGMEM = {27, 28, 29, 30, 31, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, 32, 13, 33, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16};
+const uint16_t IT_TEXT[] PROGMEM = {MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16};
+// presets
+const uint16_t PR_NAME[] PROGMEM = {31};
+const uint16_t PR_TEXT[] PROGMEM = {MENU_NO_STR16};
+const uint16_t PR_CONFIRM[] PROGMEM = {34};
+const uint8_t PR_FLAGS[] PROGMEM = {3};
+const uint8_t PR_FIRST[] PROGMEM = {0};
+const uint8_t PR_COUNT[] PROGMEM = {0};
+const uint8_t PV_PROP[] PROGMEM = {0};
+const uint16_t PV_POS[] PROGMEM = {0};
+// END GENERATED MENU TABLES
+
+// ============================== MENU ENGINE ===============================
+// Same rules as tools/menu-editor/menu-core.js (the reference); tests/menu_diff_test.py checks that both give identical
+// display rows, callbacks and EEPROM writes for the same key events. The tables above are generated from the menu JSON.
+// Time is passed in as `now` (millis()). All text rows are exactly MENU_COLS characters.
+
+constexpr uint8_t MENU_COLS = 16;
+constexpr unsigned long MENU_TIMEOUT_MS = 60000UL;        // at the root level without input: back to the status page
+constexpr unsigned long MENU_MARQUEE_PAUSE_MS = 1000UL;   // a long text stays at its start this long
+constexpr unsigned long MENU_MARQUEE_STEP_MS = 400UL;     // then moves one character per step
+constexpr unsigned long MENU_STATUS_ALT_MS = 3000UL;      // status row 1 alternates with the countdown (program F)
+constexpr uint8_t MENU_MAX_DEPTH = 8;
+constexpr char MENU_LEFT_ARROW = 0x7F;                    // HD44780 ROM arrows
+constexpr char MENU_RIGHT_ARROW = 0x7E;
+constexpr uint8_t MENU_KEY_OK = 0;
+constexpr uint8_t MENU_KEY_BACK = 1;
+constexpr uint8_t MENU_NO_SLOT = 255;                    // property is not stored in EEPROM
+
+constexpr uint8_t MM_STATUS = 0, MM_MENU = 1, MM_EDIT = 2, MM_CONFIRM = 3;
+constexpr uint8_t MK_INT = 0, MK_FLOAT = 1, MK_LOG = 2, MK_CHOICE = 3;
+constexpr uint8_t MF_READONLY = 1, MF_PERSIST = 2, MF_WRAP = 4, MF_HEX = 8;
+
+uint16_t menuPosArr[MENU_PROP_COUNT];            // current position of every property
+uint8_t menuMode = MM_STATUS;
+uint8_t menuDepth = 0;                           // number of menu levels open (1 = root)
+uint8_t menuLevelMenu[MENU_MAX_DEPTH];           // menu table index of each level
+uint8_t menuLevelItem[MENU_MAX_DEPTH];           // selected item (0-based, inside the menu) of each level
+uint8_t menuLevelOpener[MENU_MAX_DEPTH];         // global item index that opened the level (its name is the title)
+uint8_t menuEditProp = 0;
+uint16_t menuEditStart = 0;
+uint8_t menuConfirmPreset = 0;
+unsigned long menuLastInput = 0;
+unsigned long menuSince = 0;
+long menuChangeInSec = -1;                       // seconds until the random program changes (-1 = unknown)
+bool menuEepromValid = false;                    // the stored image matches this layout
+
+#ifdef MENU_TEST_LOG
+struct MenuLogCb { uint8_t cb, prop; uint16_t pos; };
+MenuLogCb menuLogCb[4000];
+uint16_t menuLogCbCount = 0;
+uint8_t menuLogBatch[600];                       // batches: count, then the property indexes
+uint16_t menuLogBatchLen = 0;
+#endif
+
+void menuCallback(uint8_t cb, uint8_t prop);     // supplied by the sketch: apply the new value of `prop`
+
+// ---- table access
+uint8_t menuRd8(const uint8_t *table, uint16_t i) { return pgm_read_byte(&table[i]); }
+uint16_t menuRd16(const uint16_t *table, uint16_t i) { return pgm_read_word(&table[i]); }
+float menuRdF(const float *table, uint16_t i) { return pgm_read_float(&table[i]); }
+
+// Copies string number `index` into out (at most max-1 characters).
+void menuStr(uint16_t index, char *out, uint8_t max) {
+  out[0] = 0;
+  if (index == MENU_NO_STR16) return;
+  const char *p = MENU_STR + menuRd16(MENU_STR_OFF, index);
+  uint8_t n = 0;
+  while (n + 1 < max) {
+    const char c = (char)pgm_read_byte(p + n);
+    if (c == 0) break;
+    out[n++] = c;
+  }
+  out[n] = 0;
+}
+
+// ---- property maths
+uint16_t menuPropCount(uint8_t prop) { return menuRd16(PP_COUNT, prop); }
+
+float menuValueAt(uint8_t prop, uint16_t pos) {
+  const uint8_t kind = menuRd8(PP_KIND, prop);
+  const float minV = menuRdF(PP_MIN, prop), maxV = menuRdF(PP_MAX, prop);
+  const uint16_t aux = menuRd16(PP_AUX, prop);
+  if (kind == MK_INT) return minV + (float)pos * (float)aux;
+  if (kind == MK_FLOAT) return minV + (float)pos * (maxV - minV) / (float)aux;
+  if (kind == MK_LOG) return minV * powf(maxV / minV, (float)pos / (float)aux);
+  return (float)pos;
+}
+
+float menuValue(uint8_t prop) { return menuValueAt(prop, menuPosArr[prop]); }
+uint16_t menuPos(uint8_t prop) { return menuPosArr[prop]; }
+
+uint16_t menuMovePos(uint8_t prop, uint16_t pos, long delta) {
+  const long n = menuPropCount(prop);
+  long q = (long)pos + delta;
+  if (menuRd8(PP_FLAGS, prop) & MF_WRAP) return (uint16_t)(((q % n) + n) % n);
+  if (q < 0) q = 0;
+  if (q > n - 1) q = n - 1;
+  return (uint16_t)q;
+}
+
+// Appends the decimal text of x with `dec` decimals (round half away from zero) to out at position n.
+uint8_t menuFmtNum(char *out, uint8_t n, float x, uint8_t dec) {
+  bool neg;
+  unsigned long v;
+  if (dec == 0) {                                // same as Math.round: a half rounds up
+    const long r = (long)floorf(x + 0.5f);
+    neg = r < 0;
+    v = (unsigned long)(neg ? -r : r);
+  } else {
+    neg = x < 0;
+    const float a = neg ? -x : x;
+    unsigned long scale = 1;
+    for (uint8_t k = 0; k < dec; k++) scale *= 10UL;
+    v = (unsigned long)floorf(a * (float)scale + 0.5f);
+  }
+  char digits[12];
+  uint8_t len = 0;
+  do { digits[len++] = (char)('0' + (v % 10)); v /= 10; } while (v > 0 || len <= dec);
+  if (neg) out[n++] = '-';
+  while (len > 0) {
+    len--;
+    out[n++] = digits[len];
+    if (len == dec && dec > 0) out[n++] = '.';
+  }
+  out[n] = 0;
+  return n;
+}
+
+// The text of a property value, for example "1.12x", "random", "B", "Yes".
+void menuValueText(uint8_t prop, uint16_t pos, char *out) {
+  const uint8_t kind = menuRd8(PP_KIND, prop);
+  out[0] = 0;
+  if (kind == MK_CHOICE) {
+    menuStr(menuRd16(CH_STR, menuRd16(PP_CH_FIRST, prop) + pos), out, 24);
+    return;
+  }
+  const float v = menuValueAt(prop, pos);
+  const uint8_t vtCount = menuRd8(PP_VT_COUNT, prop);
+  for (uint8_t k = 0; k < vtCount; k++) {
+    const uint8_t at = menuRd8(PP_VT_FIRST, prop) + k;
+    if (fabsf(v - menuRdF(VT_KEY, at)) < 0.0000005f) { menuStr(menuRd16(VT_STR, at), out, 24); return; }
+  }
+  uint8_t n = 0;
+  if (menuRd8(PP_FLAGS, prop) & MF_HEX) {
+    long r = (long)floorf(v + 0.5f);
+    const char hexDigits[] = "0123456789ABCDEF";
+    char tmp[9];
+    uint8_t t = 0;
+    do { tmp[t++] = hexDigits[r & 15]; r >>= 4; } while (r > 0 && t < 8);
+    while (t > 0) out[n++] = tmp[--t];
+    out[n] = 0;
+  } else {
+    n = menuFmtNum(out, 0, v, menuRd8(PP_DEC, prop));
+  }
+  const uint16_t unit = menuRd16(PP_UNIT, prop);
+  if (unit != MENU_NO_STR16) {
+    char u[12];
+    menuStr(unit, u, sizeof(u));
+    for (uint8_t k = 0; u[k] != 0 && n + 1 < 24; k++) out[n++] = u[k];
+    out[n] = 0;
+  }
+}
+
+// ---- row building
+// Writes into out (MENU_COLS characters + 0): left text, then a gap and the right text aligned to the right edge.
+// A left text that does not fit scrolls (marquee) inside the free width.
+void menuFit(char *out, const char *left, const char *right, unsigned long now, unsigned long since) {
+  const uint8_t ll = (uint8_t)strlen(left), rl = (uint8_t)strlen(right);
+  int avail = MENU_COLS - rl - (rl ? 1 : 0);
+  if (avail < 0) avail = 0;
+  uint8_t off = 0;
+  if (ll > avail) {
+    const unsigned long maxOff = (unsigned long)(ll - avail);
+    unsigned long t = now >= since ? now - since : 0;
+    const unsigned long total = MENU_MARQUEE_PAUSE_MS + maxOff * MENU_MARQUEE_STEP_MS + MENU_MARQUEE_PAUSE_MS;
+    t = t % total;
+    unsigned long o = t < MENU_MARQUEE_PAUSE_MS ? 0 : (t - MENU_MARQUEE_PAUSE_MS) / MENU_MARQUEE_STEP_MS;
+    if (o > maxOff) o = maxOff;
+    off = (uint8_t)o;
+  }
+  for (uint8_t k = 0; k < MENU_COLS; k++) out[k] = ' ';
+  for (int k = 0; k < avail && k < MENU_COLS; k++) {
+    const int src = off + k;
+    if (src < ll) out[k] = left[src];
+  }
+  uint8_t p = (uint8_t)avail;
+  if (rl) {
+    if (p < MENU_COLS) out[p++] = ' ';
+    for (uint8_t k = 0; k < rl && p < MENU_COLS; k++) out[p++] = right[k];
+  }
+  out[MENU_COLS] = 0;
+}
+
+uint8_t menuItemBase(uint8_t menuIndex) { return menuRd8(MN_FIRST, menuIndex); }
+
+void menuTouch(unsigned long now, bool newView) {
+  menuLastInput = now;
+  if (newView) menuSince = now;
+}
+
+void menuToStatus(unsigned long now) {
+  menuMode = MM_STATUS;
+  menuDepth = 0;
+  menuSince = now;
+}
+
+// Builds the two display rows for time `now`.
+void menuRows(unsigned long now, char *row0, char *row1) {
+  char a[48], b[48];
+  if (menuMode == MM_STATUS) {
+    const char hexDigits[] = "0123456789ABCDEF";
+    char valueTextBuf[24];
+    menuValueText(MENU_STATUS_CASINO, menuPosArr[MENU_STATUS_CASINO], valueTextBuf);
+    snprintf(a, sizeof(a), "#%c Casino %s", hexDigits[(long)floorf(menuValue(MENU_STATUS_PROGRAM) + 0.5f) & 15], valueTextBuf);
+    const bool left = menuPosArr[MENU_STATUS_ARROW] == 0;
+    if (MENU_STATUS_ARROW_ASCII) snprintf(b, sizeof(b), "%s", left ? "<-Customer right" : "->Customer left");
+    else snprintf(b, sizeof(b), "%c Customer %s", left ? MENU_LEFT_ARROW : MENU_RIGHT_ARROW, left ? "right" : "left");
+    if (menuValue(MENU_STATUS_PROGRAM) == (float)MENU_STATUS_RANDOM_VALUE && menuChangeInSec >= 0) {
+      const unsigned long since = now >= menuSince ? now - menuSince : 0;
+      if ((since / MENU_STATUS_ALT_MS) % 2 == 1) snprintf(b, sizeof(b), "Change in %ld:%02ld", menuChangeInSec / 60, menuChangeInSec % 60);
+    }
+    menuFit(row0, a, "", now, menuSince);
+    menuFit(row1, b, "", now, menuSince);
+    return;
+  }
+  if (menuMode == MM_EDIT) {
+    menuStr(menuRd16(PP_NAME, menuEditProp), a, sizeof(a));
+    char v[24];
+    menuValueText(menuEditProp, menuPosArr[menuEditProp], v);
+    snprintf(b, sizeof(b), "> %s", v);
+    menuFit(row0, a, "", now, menuSince);
+    menuFit(row1, b, "", now, menuSince);
+    return;
+  }
+  if (menuMode == MM_CONFIRM) {
+    const uint8_t pr = menuConfirmPreset;
+    const uint16_t confirm = menuRd16(PR_CONFIRM, pr);
+    if (confirm != MENU_NO_STR16) menuStr(confirm, a, sizeof(a));
+    else {
+      const uint16_t text = menuRd16(PR_TEXT, pr);
+      menuStr(text != MENU_NO_STR16 ? text : menuRd16(PR_NAME, pr), a, sizeof(a) - 1);
+      const size_t l = strlen(a);
+      a[l] = '?';
+      a[l + 1] = 0;
+    }
+    menuFit(row0, a, "", now, menuSince);
+    menuFit(row1, "OK=yes BACK=no", "", now, menuSince);
+    return;
+  }
+  const uint8_t level = menuDepth - 1;
+  const uint8_t menuIndex = menuLevelMenu[level];
+  const uint8_t item = menuItemBase(menuIndex) + menuLevelItem[level];
+  if (level == 0) {
+    const long rem = (long)MENU_TIMEOUT_MS - (long)(now - menuLastInput);
+    const long sec = rem <= 0 ? 0 : (rem + 999) / 1000;
+    char s[20];
+    snprintf(s, sizeof(s), "%lds", sec);
+    menuStr(MENU_ROOT_NAME_STR, a, sizeof(a));
+    menuFit(row0, a, s, now, menuSince);
+  } else {
+    menuStr(menuRd16(IT_NAME, menuLevelOpener[level]), a, sizeof(a));
+    menuFit(row0, a, "", now, menuSince);
+  }
+  const uint8_t type = menuRd8(IT_TYPE, item);
+  const uint16_t text = menuRd16(IT_TEXT, item);
+  if (type == 0) {                                  // submenu
+    menuStr(text != MENU_NO_STR16 ? text : menuRd16(IT_NAME, item), a, sizeof(a));
+    menuFit(row1, a, ">", now, menuSince);
+  } else if (type == 1) {                           // property
+    const uint8_t prop = menuRd8(IT_A, item);
+    menuStr(text != MENU_NO_STR16 ? text : menuRd16(PP_NAME, prop), a, sizeof(a));
+    char v[24];
+    menuValueText(prop, menuPosArr[prop], v);
+    menuFit(row1, a, v, now, menuSince);
+  } else {                                          // preset
+    menuStr(text != MENU_NO_STR16 ? text : menuRd16(IT_NAME, item), a, sizeof(a));
+    menuFit(row1, a, "", now, menuSince);
+  }
+}
+
+// ---- values, callbacks, EEPROM
+void menuCallCallbacks(uint8_t prop) {
+  const uint8_t n = menuRd8(PP_CB_COUNT, prop);
+  for (uint8_t k = 0; k < n; k++) {
+    const uint8_t cb = menuRd8(CB_LIST, menuRd8(PP_CB_FIRST, prop) + k);
+#ifdef MENU_TEST_LOG
+    if (menuLogCbCount < 4000) { menuLogCb[menuLogCbCount].cb = cb; menuLogCb[menuLogCbCount].prop = prop; menuLogCb[menuLogCbCount].pos = menuPosArr[prop]; menuLogCbCount++; }
+#endif
+    menuCallback(cb, prop);
+  }
+}
+
+bool menuSetPos(uint8_t prop, uint16_t pos) {       // changes the value and calls the callbacks
+  if (pos == menuPosArr[prop]) return false;
+  menuPosArr[prop] = pos;
+  menuCallCallbacks(prop);
+  return true;
+}
+
+void menuEepromWriteTag() {
+  for (uint8_t k = 0; k < 4; k++) EEPROM.update(MENU_EEPROM_BASE + k, (uint8_t)(MENU_LAYOUT_TAG >> (8 * k)));
+}
+void menuEepromWriteSlot(uint8_t prop) {
+  const uint8_t slot = menuRd8(PP_SLOT, prop);
+  if (slot != MENU_NO_SLOT) EEPROM.update(MENU_EEPROM_BASE + 4 + slot, (uint8_t)menuPosArr[prop]);
+}
+
+// Writes the given properties (only the stored ones) to EEPROM as one batch.
+void menuSave(const uint8_t *props, uint8_t n) {
+  uint8_t list[MENU_PROP_COUNT];
+  uint8_t count = 0;
+  for (uint8_t k = 0; k < n; k++) {
+    const uint8_t f = menuRd8(PP_FLAGS, props[k]);
+    if ((f & MF_PERSIST) && !(f & MF_READONLY)) list[count++] = props[k];
+  }
+  if (count == 0) return;
+#ifdef MENU_TEST_LOG
+  if (menuLogBatchLen + count + 1 < 600) { menuLogBatch[menuLogBatchLen++] = count; for (uint8_t k = 0; k < count; k++) menuLogBatch[menuLogBatchLen++] = list[k]; }
+#endif
+  if (!menuEepromValid) {                           // first save after a layout change: write the whole image
+    menuEepromWriteTag();
+    for (uint8_t p = 0; p < MENU_PROP_COUNT; p++) menuEepromWriteSlot(p);
+    menuEepromValid = true;
+    return;
+  }
+  for (uint8_t k = 0; k < count; k++) menuEepromWriteSlot(list[k]);
+}
+
+// Start-up: values from EEPROM when the stored layout matches and every slot is valid, otherwise all defaults.
+bool menuBegin() {
+  bool ok = true;
+  for (uint8_t k = 0; k < 4; k++) if (EEPROM.read(MENU_EEPROM_BASE + k) != (uint8_t)(MENU_LAYOUT_TAG >> (8 * k))) ok = false;
+  for (uint8_t p = 0; p < MENU_PROP_COUNT && ok; p++) {
+    const uint8_t slot = menuRd8(PP_SLOT, p);
+    if (slot != MENU_NO_SLOT && EEPROM.read(MENU_EEPROM_BASE + 4 + slot) >= menuPropCount(p)) ok = false;
+  }
+  for (uint8_t p = 0; p < MENU_PROP_COUNT; p++) {
+    const uint8_t slot = menuRd8(PP_SLOT, p);
+    menuPosArr[p] = (ok && slot != MENU_NO_SLOT) ? (uint16_t)EEPROM.read(MENU_EEPROM_BASE + 4 + slot) : menuRd16(PP_DEFPOS, p);
+  }
+  menuEepromValid = ok;
+  menuMode = MM_STATUS;
+  menuDepth = 0;
+  return ok;
+}
+
+// ---- events
+void menuSet(uint8_t prop, uint16_t pos) { menuSetPos(prop, pos); }   // a value changed outside the menu (no EEPROM write)
+
+bool menuIsStatusProp(uint8_t prop) {
+  return prop == MENU_STATUS_PROGRAM || prop == MENU_STATUS_CASINO || prop == MENU_STATUS_ARROW;
+}
+
+// A physical control changed: the value follows; an open menu closes for the status properties.
+void menuPhysical(uint8_t prop, uint16_t pos, unsigned long now) {
+  const bool isStatus = menuIsStatusProp(prop);
+  if (isStatus && menuMode == MM_EDIT) menuSetPos(menuEditProp, menuEditStart);
+  menuSetPos(prop, pos);
+  if (isStatus && menuMode != MM_STATUS) menuToStatus(now);
+}
+
+void menuTurn(int steps, bool shift, unsigned long now) {
+  if (steps == 0) return;
+  if (menuMode == MM_MENU) {
+    const uint8_t level = menuDepth - 1;
+    const long n = menuRd8(MN_COUNT, menuLevelMenu[level]);
+    long k = (long)menuLevelItem[level] + steps;
+    if (k < 0) k = 0;
+    if (k > n - 1) k = n - 1;
+    if (k != menuLevelItem[level]) { menuLevelItem[level] = (uint8_t)k; menuTouch(now, true); }
+    else menuTouch(now, false);
+  } else if (menuMode == MM_EDIT) {
+    const long factor = shift ? menuRd8(PP_SHIFT, menuEditProp) : 1;
+    menuSetPos(menuEditProp, menuMovePos(menuEditProp, menuPosArr[menuEditProp], (long)steps * factor));
+    menuTouch(now, false);
+  }
+}
+
+// Applies a preset: all values first, then the callbacks once per changed property, then one EEPROM batch.
+void menuApplyPreset(uint8_t preset) {
+  uint8_t order[MENU_PROP_COUNT];
+  uint16_t want[MENU_PROP_COUNT];
+  uint8_t n = 0;
+  const uint8_t flags = menuRd8(PR_FLAGS, preset);
+  if (flags & 2) {                                  // setAll: every property that is not read-only gets its default
+    for (uint8_t p = 0; p < MENU_PROP_COUNT; p++) {
+      if (menuRd8(PP_FLAGS, p) & MF_READONLY) continue;
+      order[n] = p;
+      want[p] = menuRd16(PP_DEFPOS, p);
+      n++;
+    }
+  }
+  const uint8_t first = menuRd8(PR_FIRST, preset), count = menuRd8(PR_COUNT, preset);
+  for (uint8_t k = 0; k < count; k++) {
+    const uint8_t p = menuRd8(PV_PROP, first + k);
+    bool present = false;
+    for (uint8_t j = 0; j < n; j++) if (order[j] == p) present = true;
+    if (!present) order[n++] = p;
+    want[p] = menuRd16(PV_POS, first + k);
+  }
+  uint8_t changed[MENU_PROP_COUNT];
+  uint8_t changedCount = 0;
+  for (uint8_t j = 0; j < n; j++) {
+    const uint8_t p = order[j];
+    if (menuPosArr[p] != want[p]) { menuPosArr[p] = want[p]; changed[changedCount++] = p; }
+  }
+  for (uint8_t j = 0; j < changedCount; j++) menuCallCallbacks(changed[j]);
+  menuSave(changed, changedCount);
+}
+
+void menuKey(uint8_t key, unsigned long now) {
+  if (menuMode == MM_STATUS) {
+    if (key == MENU_KEY_OK) {
+      menuMode = MM_MENU;
+      menuDepth = 1;
+      menuLevelMenu[0] = 0;
+      menuLevelItem[0] = 0;
+      menuTouch(now, true);
+    }
+    return;
+  }
+  if (menuMode == MM_MENU) {
+    if (key == MENU_KEY_BACK) {
+      if (menuDepth > 1) { menuDepth--; menuTouch(now, true); }
+      else menuToStatus(now);
+      return;
+    }
+    const uint8_t level = menuDepth - 1;
+    const uint8_t item = menuItemBase(menuLevelMenu[level]) + menuLevelItem[level];
+    const uint8_t type = menuRd8(IT_TYPE, item);
+    const uint8_t a = menuRd8(IT_A, item);
+    if (type == 0) {
+      if (menuDepth < MENU_MAX_DEPTH) {
+        menuLevelMenu[menuDepth] = a;
+        menuLevelItem[menuDepth] = 0;
+        menuLevelOpener[menuDepth] = item;
+        menuDepth++;
+        menuTouch(now, true);
+      }
+    } else if (type == 1) {
+      if (!(menuRd8(PP_FLAGS, a) & MF_READONLY)) {
+        menuMode = MM_EDIT;
+        menuEditProp = a;
+        menuEditStart = menuPosArr[a];
+        menuTouch(now, true);
+      }
+    } else if (menuRd8(PR_FLAGS, a) & 1) {          // preset with confirmation
+      menuMode = MM_CONFIRM;
+      menuConfirmPreset = a;
+      menuTouch(now, true);
+    } else {
+      menuApplyPreset(a);
+      menuTouch(now, false);
+    }
+    return;
+  }
+  if (menuMode == MM_EDIT) {
+    if (key == MENU_KEY_OK) menuSave(&menuEditProp, 1);
+    else menuSetPos(menuEditProp, menuEditStart);
+    menuMode = MM_MENU;
+    menuTouch(now, true);
+    return;
+  }
+  if (key == MENU_KEY_OK) menuApplyPreset(menuConfirmPreset);   // confirm page
+  menuMode = MM_MENU;
+  menuTouch(now, true);
+}
+
+void menuTick(unsigned long now) {
+  if (menuMode == MM_MENU && menuDepth == 1 && now - menuLastInput >= MENU_TIMEOUT_MS) menuToStatus(now);
+}
+//@V2_MENU_END
+
 // ================================ HELPERS ==================================
 
 // Linear blend between two channel values, f = 0..255.
@@ -393,29 +985,10 @@ uint8_t letterPixel(uint8_t letter) {
 }
 
 // ============================== LCD STATE ==================================
-// The display shows four pages (see the LCD DISPLAY section further down). The pages rotate;
-// when a setting changes, its page is shown at once and held for LCD_HOLD_MS.
+// The display shows the status pages or the settings menu: menuRows() of the menu engine builds both rows
+// (see the LCD DISPLAY section further down).
 
-constexpr uint8_t LCD_PAGE_MODE = 0;      // letter mode (and the pattern shown in random auto)
-constexpr uint8_t LCD_PAGE_SW3 = 1;       // SW3 position, frame and arrow speed
-constexpr uint8_t LCD_PAGE_SW4 = 2;       // SW4 position, letter speed
-constexpr uint8_t LCD_PAGE_STATUS = 3;    // casino open/closed and arrow direction
-constexpr uint8_t LCD_PAGE_COUNT = 4;
-
-uint8_t lcdPage = LCD_PAGE_MODE;
-unsigned long lcdPageSince = 0;           // when the current page was shown
-bool lcdHolding = false;                  // true while a changed setting's page is held
-unsigned long lcdHoldFrom = 0;
-bool lcdRebuild = true;                   // rebuild the text at once (a page was just selected)
-
-// Shows a page at once. hold = true: keep it for LCD_HOLD_MS (a setting was changed).
-void lcdShowPage(uint8_t page, unsigned long now, bool hold) {
-  lcdPage = page;
-  lcdPageSince = now;
-  lcdHolding = hold;
-  lcdHoldFrom = now;
-  lcdRebuild = true;
-}
+bool lcdRebuild = true;                   // rebuild the text at once
 
 // ================================= INPUTS ==================================
 // Debounced inputs with the internal pull-up: a closed switch reads LOW.
@@ -423,10 +996,13 @@ void lcdShowPage(uint8_t page, unsigned long now, bool hold) {
 constexpr uint8_t INPUT_ARROW = 0;
 constexpr uint8_t INPUT_SKIP = 1;
 constexpr uint8_t INPUT_CLOSED = 2;
+constexpr uint8_t INPUT_OK = 3;
+constexpr uint8_t INPUT_BACK = 4;
+constexpr uint8_t INPUT_SHIFT = 5;
 
-uint8_t inputStable[3];            // debounced level (HIGH or LOW)
-uint8_t inputLastRaw[3];           // last raw reading
-unsigned long inputChangedAt[3];   // when the raw reading last changed
+uint8_t inputStable[6];            // debounced level (HIGH or LOW)
+uint8_t inputLastRaw[6];           // last raw reading
+unsigned long inputChangedAt[6];   // when the raw reading last changed
 
 // Reads the pin and returns true when the debounced level just changed.
 bool pollInput(uint8_t slot, uint8_t pin, unsigned long now) {
@@ -449,37 +1025,62 @@ void initInput(uint8_t slot, uint8_t pin) {
   inputChangedAt[slot] = millis();
 }
 
-// ============================= SPEED SWITCHES ==============================
-// Two 16-position hex rotary switches (positions 0..F, binary coded on four pins) set the
-// speed of the patterns:
-//   SW3  frame and arrow: sets how often the frame and the arrow animation step
-//   SW4  letters:         sets how fast the letter patterns (breathing, wave, ...) run
-// Position 0 is the slowest and F the fastest. The speed multiplier grows geometrically
-// from SPEED_MIN_MULTIPLIER (position 0) to SPEED_MAX_MULTIPLIER (position F).
-// The letter patterns run on their own clock (letterClockMs) that advances by
-// real time x multiplier, so turning the switch changes the speed without a jump.
+// ============================== HEX SWITCHES ===============================
+// Two 16-position hex rotary switches (positions 0..F, binary coded on four pins):
+//   program switch  absolute: position 0..E = letter program 0..14, F = random program
+//   menu switch     free-running: only the steps between two positions count (relative)
+// A turning switch passes through other positions, so a position only counts once it has stayed unchanged
+// for HEX_DEBOUNCE_MS.
 
-constexpr uint8_t SLOT_SPEED_MAIN = 0;
-constexpr uint8_t SLOT_SPEED_LETTERS = 1;
-constexpr uint8_t SLOT_PROGRAM = 2;     // the program switch is read like a speed switch
+constexpr uint8_t SLOT_PROGRAM = 0;
+constexpr uint8_t SLOT_MENU = 1;
 
-uint8_t speedStable[3];            // debounced switch positions
-uint8_t speedLastRaw[3];
-unsigned long speedChangedAt[3];
-uint16_t speedMult256[16];         // speed multiplier x 256 for each position
+uint8_t hexStable[2];              // debounced switch positions
+uint8_t hexLastRaw[2];
+unsigned long hexChangedAt[2];
+
+// Reads the four pins of a hex switch (pins[0] = bit value 1 ... pins[3] = bit value 8).
+uint8_t readHexSwitch(const uint8_t *pins) {
+  uint8_t code = 0;
+  for (uint8_t bit = 0; bit < 4; bit++) {
+    const bool low = digitalRead(pins[bit]) == LOW;
+    if (low == HEX_BIT_IS_LOW) code |= (uint8_t)(1 << bit);
+  }
+  return code;
+}
+
+void initHexSwitch(uint8_t slot, const uint8_t *pins) {
+  for (uint8_t bit = 0; bit < 4; bit++) pinMode(pins[bit], INPUT_PULLUP);
+  hexStable[slot] = readHexSwitch(pins);
+  hexLastRaw[slot] = hexStable[slot];
+  hexChangedAt[slot] = millis();
+}
+
+// Returns true when the debounced position just changed.
+bool pollHexSwitch(uint8_t slot, const uint8_t *pins, unsigned long now) {
+  const uint8_t raw = readHexSwitch(pins);
+  if (raw != hexLastRaw[slot]) {
+    hexLastRaw[slot] = raw;
+    hexChangedAt[slot] = now;
+  }
+  if (raw != hexStable[slot] && now - hexChangedAt[slot] >= HEX_DEBOUNCE_MS) {
+    hexStable[slot] = raw;
+    return true;
+  }
+  return false;
+}
+
+// ================================ SPEEDS ===================================
+// The speeds are menu properties (Speed > Frame, Letters, Arrow; multiplier x0.25 .. x4, default x1). The letter
+// patterns run on their own clock (letterClockMs) that advances by real time x multiplier, so changing the speed
+// does not make a jump.
+
 uint16_t frameIntervalMs = FRAME_SPEED_MS;
 uint16_t arrowIntervalMs = ARROW_SPEED_MS;
 uint16_t letterMult256 = 256;
 unsigned long letterClockMs = 0;   // pattern time of the letters (milliseconds)
 uint32_t letterClockFrac = 0;      // fraction of a millisecond, in 1/256 ms
 unsigned long lastLetterClockTick = 0;
-
-void buildSpeedTable() {
-  for (uint8_t code = 0; code < 16; code++) {
-    const float mult = SPEED_MIN_MULTIPLIER * pow(SPEED_MAX_MULTIPLIER / SPEED_MIN_MULTIPLIER, code / 15.0f);
-    speedMult256[code] = (uint16_t)(mult * 256.0f + 0.5f);
-  }
-}
 
 // Update interval for a pattern whose interval is baseMs at multiplier 1.
 uint16_t intervalFor(uint16_t baseMs, uint16_t mult256) {
@@ -489,57 +1090,26 @@ uint16_t intervalFor(uint16_t baseMs, uint16_t mult256) {
   return (uint16_t)ms;
 }
 
-// Reads the four pins of a hex switch (pins[0] = bit value 1 ... pins[3] = bit value 8).
-uint8_t readSpeedSwitch(const uint8_t *pins) {
-  uint8_t code = 0;
-  for (uint8_t bit = 0; bit < 4; bit++) {
-    const bool low = digitalRead(pins[bit]) == LOW;
-    if (low == SPEED_BIT_IS_LOW) code |= (uint8_t)(1 << bit);
-  }
-  return code;
+// The multiplier of a speed property, times 256.
+uint16_t multiplier256(uint8_t prop) {
+  return (uint16_t)(menuValue(prop) * 256.0f + 0.5f);
 }
 
-void initSpeedSwitch(uint8_t slot, const uint8_t *pins) {
-  for (uint8_t bit = 0; bit < 4; bit++) pinMode(pins[bit], INPUT_PULLUP);
-  speedStable[slot] = readSpeedSwitch(pins);
-  speedLastRaw[slot] = speedStable[slot];
-  speedChangedAt[slot] = millis();
-}
-
-// Returns true when the debounced position just changed. A turning switch passes through
-// other positions, so a position only counts once it has stayed unchanged for DEBOUNCE_MS.
-bool pollSpeedSwitch(uint8_t slot, const uint8_t *pins, unsigned long now) {
-  const uint8_t raw = readSpeedSwitch(pins);
-  if (raw != speedLastRaw[slot]) {
-    speedLastRaw[slot] = raw;
-    speedChangedAt[slot] = now;
-  }
-  if (raw != speedStable[slot] && now - speedChangedAt[slot] >= DEBOUNCE_MS) {
-    speedStable[slot] = raw;
-    return true;
-  }
-  return false;
-}
-
-void printSpeed(const __FlashStringHelper *label, uint8_t code) {
-  Serial.print(label);
-  Serial.print(code, HEX);
-  Serial.print(F(" (x"));
-  Serial.print(speedMult256[code] / 256.0f, 2);
-  Serial.println(F(")"));
-}
-
-void applyMainSpeed() {
-  const uint8_t code = speedStable[SLOT_SPEED_MAIN];
-  frameIntervalMs = intervalFor(FRAME_SPEED_MS, speedMult256[code]);
-  arrowIntervalMs = intervalFor(ARROW_SPEED_MS, speedMult256[code]);
-  printSpeed(F("Frame and arrow speed, position "), code);
-}
-
-void applyLettersSpeed() {
-  const uint8_t code = speedStable[SLOT_SPEED_LETTERS];
-  letterMult256 = speedMult256[code];
-  printSpeed(F("Letters speed, position "), code);
+// Called by the menu when a speed changed (and at start-up).
+void applySpeeds() {
+  frameIntervalMs = intervalFor(FRAME_SPEED_MS, multiplier256(P_speedFrame));
+  arrowIntervalMs = intervalFor(ARROW_SPEED_MS, multiplier256(P_speedArrow));
+  letterMult256 = multiplier256(P_speedLetters);
+  Serial.print(F("Speeds: frame x"));
+  Serial.print(menuValue(P_speedFrame), 2);
+  Serial.print(F(" ("));
+  Serial.print((unsigned int)frameIntervalMs);
+  Serial.print(F(" ms), arrow x"));
+  Serial.print(menuValue(P_speedArrow), 2);
+  Serial.print(F(" ("));
+  Serial.print((unsigned int)arrowIntervalMs);
+  Serial.print(F(" ms), letters x"));
+  Serial.println(menuValue(P_speedLetters), 2);
 }
 
 // Advances the pattern clock of the letters by the real time that has passed times the multiplier.
@@ -601,6 +1171,18 @@ void buildDefaultBrightnessCurves() {
   }
 }
 
+// Rebuilds the curve of one LED type from its four menu properties (Min, Max, Exponent, Mix).
+void rebuildCurve(uint8_t type, uint8_t propMin, uint8_t propMax, uint8_t propExponent, uint8_t propMix) {
+  setBrightnessCurve(type, (uint8_t)(menuValue(propMin) + 0.5f), (uint8_t)(menuValue(propMax) + 0.5f),
+                     menuValue(propExponent), menuValue(propMix), CURVE_DEFAULT_KEEP_ZERO[type]);
+}
+
+void rebuildAllCurves() {
+  rebuildCurve(LED_TYPE_STRIP, P_stripMin, P_stripMax, P_stripExp, P_stripMix);
+  rebuildCurve(LED_TYPE_LETTERS, P_lettersMin, P_lettersMax, P_lettersExp, P_lettersMix);
+  rebuildCurve(LED_TYPE_STICK, P_stickMin, P_stickMax, P_stickExp, P_stickMix);
+}
+
 // Maps the brightness (largest channel) of a packed 0xRRGGBB colour through the table of the LED type;
 // the three channels are scaled by the same factor, so the hue stays the same.
 uint32_t shapeColor(uint8_t type, uint32_t color) {
@@ -624,6 +1206,7 @@ constexpr uint8_t NO_LETTER = 0xFF;
 uint8_t letterMode = 0;
 uint8_t activeMode = 0;                 // the pattern really shown (differs from letterMode only in random auto)
 unsigned long autoPickedAt = 0;         // real time when random auto last picked a pattern
+unsigned long autoDelayMs = 120000;     // how long that pattern lasts (menu "Change delay")
 unsigned long letterModeStart = 0;      // pattern clock (letterClockMs) when the mode started
 
 uint8_t flickerLetter = NO_LETTER;
@@ -693,6 +1276,9 @@ void pickAutoMode(unsigned long now) {
   activeMode = pick;
   frameStep = 0;
   autoPickedAt = now;
+  long minutes = (long)(menuValue(P_randomDelay) + 0.5f);       // 0 = a random delay of 1..30 minutes
+  if (minutes <= 0) minutes = 1 + (long)random(30);
+  autoDelayMs = (unsigned long)minutes * 60000UL;
   letterModeStart = letterClockMs;  // the new pattern starts from its beginning
 }
 
@@ -958,7 +1544,7 @@ uint8_t letterLevel(uint8_t letter) {
 void drawLetters() {
   for (uint8_t letter = 0; letter < LETTER_COUNT; letter++) {
     const uint8_t level = letterLevel(letter);
-    const uint32_t color = shapeColor(LED_TYPE_STRIP, letters.Color(level, level / 12, 0));  // deep red, slightly warm
+    const uint32_t color = shapeColor(LED_TYPE_LETTERS, letters.Color(level, level / 12, 0));  // deep red, slightly warm
     letters.setPixelColor(letterPixel(letter), color);
   }
 }
@@ -969,7 +1555,7 @@ void drawLetters() {
 //   startup  the tube tries to start: quick flashes, more and more of them stay on
 //   steady   full white for a random time
 //   flicker  a burst of irregular flicker (full, dim and dark phases), then steady again
-// The timing runs on the pattern clock of the letters (letterClockMs), so SW4 speeds it up.
+// The timing runs on the pattern clock of the letters (letterClockMs), so the letters speed (menu) speeds it up.
 // While the casino is open the light is off.
 
 constexpr uint8_t CL_OFF = 0;
@@ -1003,7 +1589,9 @@ void setCasinoClosed(bool closed) {
 
 // Level of the "casino closed" switch: true when the casino is closed.
 bool closedFromSwitch() {
-  return (inputStable[INPUT_CLOSED] == LOW) == CASINO_CLOSED_WHEN_LOW;
+  bool closed = (inputStable[INPUT_CLOSED] == LOW) == CASINO_CLOSED_WHEN_LOW;
+  if (menuPos(P_casinoReverse) == 1) closed = !closed;   // the "Casino reverse" menu flag
+  return closed;
 }
 
 void updateClosedLight() {
@@ -1037,10 +1625,9 @@ void updateClosedLight() {
 }
 
 void updateLetters(unsigned long now) {
-  if (letterMode == MODE_RANDOM_AUTO && now - autoPickedAt >= LETTER_RANDOM_AUTO_MS) {
+  if (letterMode == MODE_RANDOM_AUTO && now - autoPickedAt >= autoDelayMs) {
     pickAutoMode(now);
     printLetterMode();
-    lcdShowPage(LCD_PAGE_MODE, now, false);  // show the new pattern, no hold
   }
   updateFlickerState(now);
   advanceLetterClock(now);
@@ -1175,11 +1762,24 @@ void drawArrow() {
   }
 }
 
+// The menu property "Arrow": 0 = Left, 1 = Right as seen from BEHIND the sign (where the LCD is), so an arrow that
+// points to the customer's right is position 0 (the status page then shows "<- Customer right").
+uint16_t arrowPosition() {
+  return arrowPointsRight ? 0 : 1;
+}
+
+// True when the arrow points to the customer's right: the debounced switch level, swapped by the "Arrow reverse" menu flag.
+bool arrowRightFromSwitch() {
+  bool pointsLeft = (inputStable[INPUT_ARROW] == LOW) == ARROW_POINTS_LEFT_WHEN_LOW;
+  if (menuPos(P_arrowReverse) == 1) pointsLeft = !pointsLeft;
+  return !pointsLeft;
+}
+
 // Sets the arrow direction from the debounced switch level.
 void applyArrowSwitch() {
-  const bool pointsLeft = (inputStable[INPUT_ARROW] == LOW) == ARROW_POINTS_LEFT_WHEN_LOW;
-  if (pointsLeft == arrowPointsRight) {  // direction changes
-    arrowPointsRight = !pointsLeft;
+  const bool pointsRight = arrowRightFromSwitch();
+  if (pointsRight != arrowPointsRight) {  // direction changes
+    arrowPointsRight = pointsRight;
     arrowDarkDirty = true;
     frameStep = 0;  // the frame light restarts from its new start corner
     Serial.println(arrowPointsRight ? F("Arrow points to customer right") : F("Arrow points to customer left"));
@@ -1230,20 +1830,26 @@ void finishStartup(unsigned long now, bool skipped) {
   }
   initInput(INPUT_ARROW, PIN_ARROW_SWITCH);
   initInput(INPUT_CLOSED, PIN_CASINO_CLOSED_SWITCH);
-  initSpeedSwitch(SLOT_SPEED_MAIN, PIN_SPEED_FRAME_ARROW);
-  initSpeedSwitch(SLOT_SPEED_LETTERS, PIN_SPEED_LETTERS);
-  initSpeedSwitch(SLOT_PROGRAM, PIN_PROGRAM);
-  applyMainSpeed();
-  applyLettersSpeed();
+  initInput(INPUT_OK, PIN_OK);
+  initInput(INPUT_BACK, PIN_BACK);
+  initInput(INPUT_SHIFT, PIN_SHIFT);
+  initHexSwitch(SLOT_PROGRAM, PIN_PROGRAM);
+  initHexSwitch(SLOT_MENU, PIN_MENU_SWITCH);
+  applySpeeds();
   lastLetterClockTick = now;
 
-  arrowPointsRight = !((inputStable[INPUT_ARROW] == LOW) == ARROW_POINTS_LEFT_WHEN_LOW);
+  arrowPointsRight = arrowRightFromSwitch();
   arrowDarkDirty = true;
+  menuSet(P_arrow, arrowPosition());
 
-  setLetterMode(speedStable[SLOT_PROGRAM], now);
+  menuSet(P_program, hexStable[SLOT_PROGRAM]);
+  setLetterMode(hexStable[SLOT_PROGRAM], now);
   setCasinoClosed(closedFromSwitch());
+  menuSet(P_casino, casinoClosed ? 0 : 1);
   nextFlickerAt = now + FLICKER_MIN_GAP_MS;
-  lcdShowPage(LCD_PAGE_MODE, now, false);
+  menuLastInput = now;
+  menuSince = now;
+  lcdRebuild = true;
 }
 
 void beginStartupTest(unsigned long now) {
@@ -1293,12 +1899,9 @@ void updateStartupTest(unsigned long now) {
 // P4..P7 = D4..D7. The text is built every 20 ms and only the characters that changed are sent,
 // LCD_CHARS_PER_LOOP at a time, so a screen update never blocks the LED animations.
 //
-// Pages (rotating every LCD_PAGE_MS):
-//   0 Mode        "Mode 7" / "sparkle"        (random auto: "Mode 10 (auto)" / "now: chase")
-//   1 SW3         "SW3:8  x1.10" / "Fr 91ms Ar 31ms"   (position, speed, frame and arrow interval)
-//   2 SW4         "SW4:8  x1.10" / "Letter patterns"
-//   3 Status      "Casino: CLOSED" / "Arrow: <- LEFT"
-// Changing a setting shows its page at once and holds it for LCD_HOLD_MS.
+// The display shows the status page (row 0 "#<program> Casino Open|Closed", row 1 arrow symbol and customer direction;
+// in program F row 1 alternates with "Change in M:SS") or the settings menu (OK opens it). The rows are built by the menu
+// engine, see tools/menu_engine/engine.inc.
 // If no display answers at start-up, the display is simply left out and the sign works as usual.
 
 constexpr uint8_t LCD_BIT_RS = 0x01;
@@ -1309,6 +1912,8 @@ bool lcdOk = false;                           // a display answered during start
 char lcdWanted[LCD_ROWS][LCD_COLS + 1];       // the text that should be on screen
 char lcdShown[LCD_ROWS][LCD_COLS];            // what the display shows now
 unsigned long lcdLastBuild = 0;
+unsigned long lcdLastTry = 0;                 // when the display was last (re)initialised
+constexpr unsigned long LCD_RETRY_MS = 1000;  // a lost display is initialised again this often
 
 // Adds one byte (two nibbles, each with an E pulse) to the open Wire transmission.
 void lcdQueue(uint8_t value, uint8_t rs) {
@@ -1396,67 +2001,12 @@ void lcdPut(uint8_t row, const char *text) {
   lcdWanted[row][LCD_COLS] = 0;
 }
 
-const char *letterModeName(uint8_t mode) {
-  switch (mode) {
-    case MODE_BREATHE:    return "breathe";
-    case MODE_WAVE:       return "wave";
-    case MODE_TYPEWRITER: return "typewriter";
-    case MODE_IGNITE:     return "ignite";
-    case MODE_WORD_BLINK: return "word blink";
-    case MODE_ALTERNATE:  return "alternate";
-    case MODE_SCANNER:    return "scanner";
-    case MODE_SPARKLE:    return "sparkle";
-    case MODE_CHASE:      return "chase";
-    case MODE_PULSE:      return "pulse";
-    case MODE_CONVERGE:   return "converge";
-    case MODE_WORDS_SWAP: return "words swap";
-    case MODE_SLOT:       return "slot machine";
-    case MODE_TWIN_CHASE: return "twin chase";
-    case MODE_MARQUEE:    return "marquee";
-    default:              return "random auto";
-  }
-}
-
-// Builds the two text rows of the current page.
-void lcdBuildText() {
-  char line[24];
-  switch (lcdPage) {
-    case LCD_PAGE_MODE:
-      if (letterMode == MODE_RANDOM_AUTO) {
-        snprintf(line, sizeof(line), "Prog %X (random)", (unsigned int)letterMode);
-        lcdPut(0, line);
-        snprintf(line, sizeof(line), "now: %s", letterModeName(activeMode));
-        lcdPut(1, line);
-      } else {
-        snprintf(line, sizeof(line), "Prog %X", (unsigned int)letterMode);
-        lcdPut(0, line);
-        lcdPut(1, letterModeName(letterMode));
-      }
-      break;
-    case LCD_PAGE_SW3: {
-      const unsigned int hundredths = (unsigned int)(((uint32_t)speedMult256[speedStable[SLOT_SPEED_MAIN]] * 100UL + 128UL) / 256UL);
-      snprintf(line, sizeof(line), "SW3:%X  x%u.%02u", (unsigned int)speedStable[SLOT_SPEED_MAIN],
-               hundredths / 100, hundredths % 100);
-      lcdPut(0, line);
-      snprintf(line, sizeof(line), "Fr%ums Ar%ums", (unsigned int)frameIntervalMs, (unsigned int)arrowIntervalMs);
-      lcdPut(1, line);
-      break;
-    }
-    case LCD_PAGE_SW4: {
-      const unsigned int hundredths = (unsigned int)(((uint32_t)letterMult256 * 100UL + 128UL) / 256UL);
-      snprintf(line, sizeof(line), "SW4:%X  x%u.%02u", (unsigned int)speedStable[SLOT_SPEED_LETTERS],
-               hundredths / 100, hundredths % 100);
-      lcdPut(0, line);
-      lcdPut(1, "Letter patterns");
-      break;
-    }
-    default:
-      lcdPut(0, casinoClosed ? "Casino: CLOSED" : "Casino: OPEN");
-      // The text is the customer's view of the sign (from the front). The LCD is behind the sign, so the arrow
-      // symbol shows the direction the light really points as seen from the back: it is the mirror image.
-      lcdPut(1, arrowPointsRight ? "<-Customer right" : "->Customer left");
-      break;
-  }
+// Builds the two text rows (status page or menu) with the menu engine.
+void lcdBuildText(unsigned long now) {
+  char row0[LCD_COLS + 1], row1[LCD_COLS + 1];
+  menuRows(now, row0, row1);
+  lcdPut(0, row0);
+  lcdPut(1, row1);
 }
 
 // The LCD during the power-on test: one row scrolls "press D33 to skip", the other shows the
@@ -1504,36 +2054,29 @@ void lcdSendChanges() {
         col++;
         sent++;
       }
-      Wire.endTransmission();
+      if (Wire.endTransmission() != 0) { lcdOk = false; return; }  // the display stopped answering: retried by updateLcd()
       return;  // the rest follows on the next pass
     }
   }
 }
 
 void updateLcd(unsigned long now) {
-  if (!lcdOk) return;
-  if (startupTestActive) {  // the power-on test has its own screen and no page rotation
+  if (!lcdOk) {  // the display did not answer (or stopped answering): try again every LCD_RETRY_MS
+    if (now - lcdLastTry >= LCD_RETRY_MS) {
+      lcdLastTry = now;
+      lcdInit();
+    }
+    return;
+  }
+  if (startupTestActive) {  // the power-on test has its own screen
     lcdBuildTestText(now);
     lcdSendChanges();
     return;
   }
-  // Page rotation: a held page stays for LCD_HOLD_MS, then the pages rotate again.
-  if (lcdHolding) {
-    if (now - lcdHoldFrom >= LCD_HOLD_MS) {
-      lcdHolding = false;
-      lcdPage = (lcdPage + 1) % LCD_PAGE_COUNT;
-      lcdPageSince = now;
-      lcdRebuild = true;
-    }
-  } else if (now - lcdPageSince >= LCD_PAGE_MS) {
-    lcdPage = (lcdPage + 1) % LCD_PAGE_COUNT;
-    lcdPageSince = now;
-    lcdRebuild = true;
-  }
   if (lcdRebuild || now - lcdLastBuild >= 20) {
     lcdRebuild = false;
     lcdLastBuild = now;
-    lcdBuildText();
+    lcdBuildText(now);
   }
   lcdSendChanges();
 }
@@ -1554,7 +2097,7 @@ unsigned int eventsPrev = 0;      // state changes in the second before
 unsigned long eventWindowStart = 0;
 unsigned long eventsShown = 0;    // total state changes since power-up
 
-// Records a state change (arrow direction, letter mode, casino open/closed, speed switch).
+// Records a state change (arrow direction, letter mode, casino open/closed, menu key or switch).
 void noteEvent(unsigned long now) {
   anyEvent = true;
   lastEventAt = now;
@@ -1574,10 +2117,8 @@ void printDebug(unsigned long now) {
   Serial.print(arrowPointsRight ? F("R") : F("L"));
   Serial.print(F(" closed="));
   Serial.print(casinoClosed ? 1 : 0);
-  Serial.print(F(" sw3="));
-  Serial.print(speedStable[SLOT_SPEED_MAIN], HEX);
-  Serial.print(F(" sw4="));
-  Serial.print(speedStable[SLOT_SPEED_LETTERS], HEX);
+  Serial.print(F(" menu="));
+  Serial.print(menuMode == MM_MENU ? 'M' : menuMode == MM_EDIT ? 'E' : menuMode == MM_CONFIRM ? 'C' : 'S');
   Serial.print(F(" events="));
   Serial.print(eventsShown);
   Serial.print(F(" beats="));
@@ -1610,6 +2151,26 @@ void signOfLife(unsigned long now) {
   digitalWrite(PIN_STATUS_LED, (beatOn != inverted) ? HIGH : LOW);
 }
 
+// ============================ MENU CALLBACKS ===============================
+// The menu engine calls this after a property value changed (in the menu, by a quick-pick or Restore defaults).
+void menuCallback(uint8_t cb, uint8_t prop) {
+  if (cb == CB_applySpeeds) {
+    applySpeeds();
+  } else if (cb == CB_rebuildStripCurve) {
+    rebuildCurve(LED_TYPE_STRIP, P_stripMin, P_stripMax, P_stripExp, P_stripMix);
+  } else if (cb == CB_rebuildLettersCurve) {
+    rebuildCurve(LED_TYPE_LETTERS, P_lettersMin, P_lettersMax, P_lettersExp, P_lettersMix);
+  } else if (cb == CB_rebuildStickCurve) {
+    rebuildCurve(LED_TYPE_STICK, P_stickMin, P_stickMax, P_stickExp, P_stickMix);
+  } else if (cb == CB_applySwitches) {          // a reverse flag changed: the switch values follow at once
+    applyArrowSwitch();
+    menuSet(P_arrow, arrowPosition());
+    const bool closed = closedFromSwitch();
+    if (closed != casinoClosed) setCasinoClosed(closed);
+    menuSet(P_casino, casinoClosed ? 0 : 1);
+  }
+}
+
 // ============================== SETUP / LOOP ===============================
 
 void setup() {
@@ -1622,6 +2183,8 @@ void setup() {
   }
 
   buildDefaultBrightnessCurves();
+  const bool menuFromEeprom = menuBegin();   // saved menu values (speeds, curves, reverse flags) or the defaults
+  rebuildAllCurves();
 
   for (uint8_t k = 0; k < STRIP_COUNT; k++) {
     allStrips[k]->begin();
@@ -1631,7 +2194,6 @@ void setup() {
 
   initInput(INPUT_SKIP, PIN_SKIP_BUTTON);
   for (uint8_t bit = 0; bit < 4; bit++) pinMode(PIN_PROGRAM[bit], INPUT_PULLUP);
-  buildSpeedTable();
 
   Wire.begin();
   Wire.setClock(400000UL);
@@ -1642,6 +2204,7 @@ void setup() {
   Serial.print(F("Serial speed "));
   Serial.print(SERIAL_BAUD);
   Serial.println(F(" baud; a DBG line is printed every second."));
+  Serial.println(menuFromEeprom ? F("EEPROM: saved menu values loaded.") : F("EEPROM: no saved values for this menu layout, defaults used."));
   lastBeat = millis();
   lastDebug = lastBeat;
   eventWindowStart = lastBeat;
@@ -1671,34 +2234,46 @@ void loop() {
     return;
   }
 
-  // Inputs: the slide switches set the arrow direction and casino open/closed, the program switch
-  // chooses the letter program (and with it the frame pattern).
+  // Inputs: the slide switches set the arrow direction and casino open/closed (the menu flags may reverse them), the
+  // program switch chooses the letter program (and with it the frame pattern). A change of one of these three
+  // closes an open menu and shows the status page.
   if (pollInput(INPUT_ARROW, PIN_ARROW_SWITCH, now)) {
     applyArrowSwitch();
+    menuPhysical(P_arrow, arrowPosition(), now);
     noteEvent(now);
-    lcdShowPage(LCD_PAGE_STATUS, now, true);
   }
-  if (pollSpeedSwitch(SLOT_PROGRAM, PIN_PROGRAM, now)) {
-    setLetterMode(speedStable[SLOT_PROGRAM], now);
+  if (pollHexSwitch(SLOT_PROGRAM, PIN_PROGRAM, now)) {
+    menuPhysical(P_program, hexStable[SLOT_PROGRAM], now);
+    setLetterMode(hexStable[SLOT_PROGRAM], now);
     noteEvent(now);
-    lcdShowPage(LCD_PAGE_MODE, now, true);
   }
   if (pollInput(INPUT_CLOSED, PIN_CASINO_CLOSED_SWITCH, now)) {
     setCasinoClosed(closedFromSwitch());
+    menuPhysical(P_casino, casinoClosed ? 0 : 1, now);
     noteEvent(now);
-    lcdShowPage(LCD_PAGE_STATUS, now, true);
   }
 
-  // Speed switches: SW3 sets the frame and arrow speed, SW4 the letter speed.
-  if (pollSpeedSwitch(SLOT_SPEED_MAIN, PIN_SPEED_FRAME_ARROW, now)) {
-    applyMainSpeed();
+  // Menu controls: the menu switch moves the selection or changes the value, OK and BACK are the keys, SHIFT makes
+  // the step bigger while it is held.
+  const uint8_t menuFrom = hexStable[SLOT_MENU];
+  if (pollHexSwitch(SLOT_MENU, PIN_MENU_SWITCH, now)) {
     noteEvent(now);
-    lcdShowPage(LCD_PAGE_SW3, now, true);
+    const uint8_t delta = (uint8_t)((hexStable[SLOT_MENU] - menuFrom) & 15);
+    if (delta != 8) {                           // exactly half a turn: the direction cannot be told, ignored
+      int steps = delta;
+      if (delta > 8) steps = (int)delta - 16;
+      if (MENU_SWITCH_REVERSED) steps = -steps;
+      menuTurn(steps, inputStable[INPUT_SHIFT] == LOW, now);
+    }
   }
-  if (pollSpeedSwitch(SLOT_SPEED_LETTERS, PIN_SPEED_LETTERS, now)) {
-    applyLettersSpeed();
-    noteEvent(now);
-    lcdShowPage(LCD_PAGE_SW4, now, true);
+  if (pollInput(INPUT_SHIFT, PIN_SHIFT, now)) noteEvent(now);
+  if (pollInput(INPUT_OK, PIN_OK, now) && inputStable[INPUT_OK] == LOW) { noteEvent(now); menuKey(MENU_KEY_OK, now); }
+  if (pollInput(INPUT_BACK, PIN_BACK, now) && inputStable[INPUT_BACK] == LOW) { noteEvent(now); menuKey(MENU_KEY_BACK, now); }
+  menuTick(now);
+  menuChangeInSec = -1;                         // status page, program F: seconds until the next random program
+  if (letterMode == MODE_RANDOM_AUTO) {
+    const unsigned long elapsed = now - autoPickedAt;
+    menuChangeInSec = elapsed >= autoDelayMs ? 0 : (long)((autoDelayMs - elapsed + 999UL) / 1000UL);
   }
 
   // Independent, non-blocking timers. show() is synchronous, so the updates

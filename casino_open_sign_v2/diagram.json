@@ -6,7 +6,7 @@
     {
       "type": "wokwi-arduino-mega",
       "id": "mega",
-      "top": 486,
+      "top": 556,
       "left": 2,
       "attrs": {}
     },
@@ -543,7 +543,7 @@
       "top": 240,
       "left": 936,
       "attrs": {
-        "text": "D22-D25: speed of frame + arrow (hex switch SW3)"
+        "text": "D42-D45: menu switch SW3 (free-running hex rotary, relative): selection / value"
       }
     },
     {
@@ -552,7 +552,7 @@
       "top": 262,
       "left": 936,
       "attrs": {
-        "text": "D26-D29: speed of letters (hex switch SW4)"
+        "text": "D48 OK (opens the menu), D49 BACK, D50 SHIFT (bigger steps while held)"
       }
     },
     {
@@ -1009,7 +1009,7 @@
       "top": 38,
       "left": 170,
       "attrs": {
-        "text": "D33: skip LED test"
+        "text": "D33: skips LED test"
       }
     },
     {
@@ -1049,68 +1049,122 @@
       }
     },
     {
+      "type": "wokwi-text",
+      "id": "menu_button_label_1",
+      "top": 108,
+      "left": 20,
+      "attrs": {
+        "text": "D48: OK"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "button_ok",
+      "top": 126,
+      "left": 40,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "menu_button_label_2",
+      "top": 108,
+      "left": 150,
+      "attrs": {
+        "text": "D49: BACK"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "button_back",
+      "top": 126,
+      "left": 170,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "menu_button_label_3",
+      "top": 108,
+      "left": 280,
+      "attrs": {
+        "text": "D50: SHIFT"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "button_shift",
+      "top": 126,
+      "left": 300,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
       "type": "wokwi-dip-switch-8",
-      "id": "speed_switches",
-      "top": 356,
+      "id": "menu_switches",
+      "top": 426,
       "left": 80,
       "attrs": {}
     },
     {
       "type": "wokwi-dip-switch-8",
       "id": "program_switches",
-      "top": 356,
+      "top": 426,
       "left": 290,
       "attrs": {}
     },
     {
       "type": "wokwi-text",
       "id": "speed_label_1",
-      "top": 146,
+      "top": 216,
       "left": 20,
       "attrs": {
-        "text": "Speed DIP bank (stands in for the hex switches):"
+        "text": "Menu DIP bank (left) = menu switch SW3 (D42-D45):"
       }
     },
     {
       "type": "wokwi-text",
       "id": "speed_label_2",
-      "top": 166,
+      "top": 236,
       "left": 20,
       "attrs": {
-        "text": "1-4 = SW3 bits 1,2,4,8: frame + arrow (D22-D25)"
+        "text": "1-4 = bits 1,2,4,8; 5-8 unused. Free-running and RELATIVE:"
       }
     },
     {
       "type": "wokwi-text",
       "id": "speed_label_3",
-      "top": 186,
+      "top": 256,
       "left": 20,
       "attrs": {
-        "text": "5-8 = SW4 bits 1,2,4,8: letters (D26-D29)"
+        "text": "a change of the code is a step (1..7 forward, 9..15 back)."
       }
     },
     {
       "type": "wokwi-text",
       "id": "speed_label_4",
-      "top": 206,
+      "top": 276,
       "left": 20,
       "attrs": {
-        "text": "ON = bit set; click the part, press keys 1-8."
+        "text": "Click the part, press keys 1-4. Buttons OK/BACK/SHIFT above."
       }
     },
     {
       "type": "wokwi-text",
       "id": "speed_label_5",
-      "top": 226,
+      "top": 296,
       "left": 20,
       "attrs": {
-        "text": "All OFF = position 0 (slowest)."
+        "text": ""
       }
     },
     {
       "type": "wokwi-text",
       "id": "speed_label_6",
-      "top": 246,
+      "top": 316,
       "left": 20,
       "attrs": {
         "text": ""
@@ -1119,16 +1173,16 @@
     {
       "type": "wokwi-text",
       "id": "speed_label_7",
-      "top": 266,
+      "top": 336,
       "left": 20,
       "attrs": {
-        "text": "Second DIP bank (right) = program switch SW6 (D34-D37):"
+        "text": "Right DIP bank = program switch SW6 (D34-D37):"
       }
     },
     {
       "type": "wokwi-text",
       "id": "speed_label_8",
-      "top": 286,
+      "top": 356,
       "left": 20,
       "attrs": {
         "text": "1-4 = bits 1,2,4,8; 5-8 unused. Binary 0..15 = program 0..F."
@@ -1137,7 +1191,7 @@
     {
       "type": "wokwi-text",
       "id": "speed_label_9",
-      "top": 306,
+      "top": 376,
       "left": 20,
       "attrs": {
         "text": "Click the part, press keys 1-4."
@@ -1146,7 +1200,7 @@
     {
       "type": "wokwi-text",
       "id": "lcd_label_1",
-      "top": 722,
+      "top": 792,
       "left": 20,
       "attrs": {
         "text": "LCD 2x16 (I2C 0x27): SDA = D20, SCL = D21"
@@ -1155,16 +1209,16 @@
     {
       "type": "wokwi-text",
       "id": "lcd_label_2",
-      "top": 740,
+      "top": 810,
       "left": 20,
       "attrs": {
-        "text": "pages: program, SW3, SW4, casino + arrow"
+        "text": "status page, OK opens the menu"
       }
     },
     {
       "type": "wokwi-lcd1602",
       "id": "lcd",
-      "top": 768,
+      "top": 838,
       "left": 20,
       "attrs": {
         "pins": "i2c"
@@ -1233,97 +1287,85 @@
       []
     ],
     [
-      "mega:22",
-      "speed_switches:1a",
+      "mega:42",
+      "menu_switches:1a",
       "orange",
       []
     ],
     [
-      "speed_switches:1b",
+      "menu_switches:1b",
       "mega:GND.1",
       "black",
       []
     ],
     [
-      "mega:23",
-      "speed_switches:2a",
+      "mega:43",
+      "menu_switches:2a",
       "orange",
       []
     ],
     [
-      "speed_switches:2b",
+      "menu_switches:2b",
       "mega:GND.1",
       "black",
       []
     ],
     [
-      "mega:24",
-      "speed_switches:3a",
+      "mega:44",
+      "menu_switches:3a",
       "orange",
       []
     ],
     [
-      "speed_switches:3b",
+      "menu_switches:3b",
       "mega:GND.1",
       "black",
       []
     ],
     [
-      "mega:25",
-      "speed_switches:4a",
+      "mega:45",
+      "menu_switches:4a",
       "orange",
       []
     ],
     [
-      "speed_switches:4b",
+      "menu_switches:4b",
       "mega:GND.1",
       "black",
       []
     ],
     [
-      "mega:26",
-      "speed_switches:5a",
+      "mega:48",
+      "button_ok:1.r",
       "orange",
       []
     ],
     [
-      "speed_switches:5b",
+      "button_ok:2.r",
       "mega:GND.1",
       "black",
       []
     ],
     [
-      "mega:27",
-      "speed_switches:6a",
+      "mega:49",
+      "button_back:1.r",
       "orange",
       []
     ],
     [
-      "speed_switches:6b",
+      "button_back:2.r",
       "mega:GND.1",
       "black",
       []
     ],
     [
-      "mega:28",
-      "speed_switches:7a",
+      "mega:50",
+      "button_shift:1.r",
       "orange",
       []
     ],
     [
-      "speed_switches:7b",
-      "mega:GND.1",
-      "black",
-      []
-    ],
-    [
-      "mega:29",
-      "speed_switches:8a",
-      "orange",
-      []
-    ],
-    [
-      "speed_switches:8b",
+      "button_shift:2.r",
       "mega:GND.1",
       "black",
       []
