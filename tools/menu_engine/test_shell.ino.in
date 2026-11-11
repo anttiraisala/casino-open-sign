@@ -1,0 +1,449 @@
+/*
+ * Menu test - the settings menu of Casino Open Sign V2 on its real controls and the I2C LCD (no LEDs)
+ *
+ * Purpose: try the planned settings menu (see ../RDD-REQUIREMENTS.md REQ-001..017) on the real hardware before it goes
+ * into the sign: hex rotary switches, the OK / BACK / SHIFT buttons, the two slide switches and the LCD. The menu itself
+ * is described in ../tools/menu-editor/menu-v2.json (edit it with the Menu Editor); the tables below are generated from
+ * it by tools/generate_menu_test.js, and the engine is tools/menu_engine/engine.inc. Nothing here touches LED strips or sticks.
+ *
+ * CONTROLS (all wired to GND, internal pull-ups):
+ *   program hex switch   legs 1,2,4,8 on D34-D37, C to GND   absolute position 0..F = the program number shown on the
+ *                        status page (read all the time; turning it while the menu is open closes the menu)
+ *   menu hex switch      legs 1,2,4,8 on D42-D45, C to GND   free-running: turning it moves the selection or changes the value
+ *   OK    D48   BACK D49   SHIFT D50      push buttons to GND; SHIFT held while turning makes the step ten times larger
+ *   arrow slide switch   D32   handle on the GND side = arrow points left (the "Arrow reverse" menu property swaps it)
+ *   casino slide switch  D30   handle on the GND side = casino closed (the "Casino reverse" menu property swaps it)
+ *
+ * WHAT YOU SEE: the status page (row 0 "#<program> Casino Open|Closed", row 1 arrow + "Customer right|left"; in program F
+ * row 1 alternates with "Change in M:SS"). OK opens the menu, the menu switch moves, OK enters or edits, BACK goes back or
+ * cancels an edit. A value changes while you turn (the callbacks are printed on the Serial Monitor); OK also saves it to EEPROM.
+ * "Restore defaults" asks OK / BACK. The menu closes after 60 s without input at the top level (the seconds are shown).
+ * The arrows on row 1 are the LCD's ROM characters 0x7E / 0x7F: if your display shows other symbols, tell the AI
+ * (the menu JSON then gets "arrowAscii": true).
+ *
+ * SIGN OF LIFE: the LED on pin 13 blinks while the program runs (shortly inverted at every key or switch event, faster
+ * while many happen). Once per second the Serial Monitor (115200 baud, SERIAL_BAUD) gets a line
+ *     DBG up=<s> mode=<S|M|E|C> prog=<hex> arrow=<L|R> casino=<C|O> menu=<n steps> keys=<n> cb=<n> eeprom=<saved|defaults> lcd=<0|1>
+ *
+ * Only built-in types are used in function signatures (Arduino's automatic prototypes).
+ */
+
+#include <Wire.h>
+#include <EEPROM.h>
+#include <math.h>
+#include <string.h>
+#include <stdio.h>
+
+// ============================== CONFIGURATION ==============================
+constexpr uint32_t SERIAL_BAUD = 115200;
+constexpr uint8_t PIN_STATUS_LED = 13;
+
+constexpr uint8_t PROGRAM_PINS[4] = {34, 35, 36, 37};    // program hex switch: leg 1, 2, 4, 8
+constexpr uint8_t MENU_PINS[4] = {42, 43, 44, 45};       // menu hex switch: leg 1, 2, 4, 8
+constexpr bool HEX_BIT_IS_LOW = true;                    // a leg connected to C reads LOW and counts as a set bit
+constexpr unsigned long HEX_DEBOUNCE_MS = 10;
+constexpr bool MENU_SWITCH_REVERSED = false;             // true: turning the menu switch clockwise moves the other way
+
+constexpr uint8_t PIN_OK = 48;
+constexpr uint8_t PIN_BACK = 49;
+constexpr uint8_t PIN_SHIFT = 50;
+constexpr uint8_t PIN_ARROW_SWITCH = 32;
+constexpr uint8_t PIN_CASINO_SWITCH = 30;
+constexpr bool ARROW_POINTS_LEFT_WHEN_LOW = true;
+constexpr bool CASINO_CLOSED_WHEN_LOW = true;
+constexpr unsigned long BUTTON_DEBOUNCE_MS = 30;
+
+constexpr int MENU_EEPROM_BASE = 0;                      // the menu image starts at this EEPROM address
+
+constexpr uint8_t LCD_I2C_ADDRESS = 0x27;
+constexpr uint8_t LCD_COLS = 16;
+constexpr uint8_t LCD_ROWS = 2;
+constexpr uint8_t LCD_CHARS_PER_LOOP = 6;
+constexpr unsigned long LCD_BUILD_MS = 50;
+constexpr unsigned long LCD_RETRY_MS = 1000;
+constexpr unsigned long LCD_REINIT_MS = 5000;
+
+constexpr unsigned long HEARTBEAT_MS = 500;
+constexpr unsigned long HEARTBEAT_FAST_MS = 125;
+constexpr unsigned long INVERT_MS = 80;
+constexpr unsigned long DEBUG_MS = 1000;
+constexpr uint8_t BUSY_EVENTS = 4;
+
+constexpr uint8_t LCD_BIT_RS = 0x01;
+constexpr uint8_t LCD_BIT_E = 0x04;
+constexpr uint8_t LCD_BIT_BACKLIGHT = 0x08;
+
+//@TABLES@
+
+//@ENGINE@
+
+// ============================== INPUTS =====================================
+struct HexSwitch {
+  const uint8_t *pins;
+  uint8_t stable;
+  uint8_t candidate;
+  unsigned long since;
+};
+HexSwitch programSwitch = {PROGRAM_PINS, 0, 0, 0};
+HexSwitch menuSwitch = {MENU_PINS, 0, 0, 0};
+
+struct Button {
+  uint8_t pin;
+  bool stable;              // true = pressed
+  bool candidate;
+  unsigned long since;
+};
+Button buttonOk = {PIN_OK, false, false, 0};
+Button buttonBack = {PIN_BACK, false, false, 0};
+Button buttonShift = {PIN_SHIFT, false, false, 0};
+Button switchArrow = {PIN_ARROW_SWITCH, false, false, 0};     // true = pin LOW
+Button switchCasino = {PIN_CASINO_SWITCH, false, false, 0};
+
+unsigned long eventCount = 0;          // key and switch events (sign of life)
+unsigned long keyCount = 0;
+unsigned long menuStepCount = 0;
+unsigned long callbackCount = 0;
+unsigned long lastEventAt = 0;
+bool anyEvent = false;
+uint8_t eventsNow = 0, eventsPrev = 0;
+unsigned long eventWindowStart = 0;
+bool beatOn = false;
+unsigned long lastBeat = 0, lastDebug = 0;
+bool eepromWasValid = false;
+long randomDelaySec = 0;               // test only: seconds the random program (F) would last
+unsigned long randomStartedAt = 0;
+
+bool lcdOk = false;
+char lcdWanted[LCD_ROWS][LCD_COLS + 1];
+char lcdShown[LCD_ROWS][LCD_COLS];
+unsigned long lcdLastBuild = 0, lcdLastTry = 0, lcdLastInit = 0;
+
+uint8_t readHexRaw(const HexSwitch &s) {
+  uint8_t value = 0;
+  for (uint8_t k = 0; k < 4; k++) {
+    const bool low = (digitalRead(s.pins[k]) == LOW);
+    if (low == HEX_BIT_IS_LOW) value |= (uint8_t)(1 << k);
+  }
+  return value;
+}
+
+// Debounces a hex switch; returns true and sets `from` when a new stable position was reached.
+bool pollHex(HexSwitch &s, unsigned long now, uint8_t &from) {
+  const uint8_t raw = readHexRaw(s);
+  if (raw != s.candidate) { s.candidate = raw; s.since = now; return false; }
+  if (s.candidate == s.stable) return false;
+  if (now - s.since < HEX_DEBOUNCE_MS) return false;
+  from = s.stable;
+  s.stable = s.candidate;
+  return true;
+}
+
+// Debounces a push button or slide switch; returns true when its state just changed.
+bool pollButton(Button &b, unsigned long now) {
+  const bool raw = (digitalRead(b.pin) == LOW);
+  if (raw != b.candidate) { b.candidate = raw; b.since = now; return false; }
+  if (b.candidate == b.stable) return false;
+  if (now - b.since < BUTTON_DEBOUNCE_MS) return false;
+  b.stable = b.candidate;
+  return true;
+}
+
+void noteEvent(unsigned long now) {
+  eventCount++;
+  eventsNow++;
+  anyEvent = true;
+  lastEventAt = now;
+}
+
+// The slide switches and their reverse flags decide the Arrow and Casino values.
+uint16_t arrowPosition() {                      // 0 = Left, 1 = Right
+  bool left = switchArrow.stable == ARROW_POINTS_LEFT_WHEN_LOW;
+  if (menuPos(P_arrowReverse) == 1) left = !left;
+  return left ? 0 : 1;
+}
+uint16_t casinoPosition() {                     // 0 = Closed, 1 = Open
+  bool closed = switchCasino.stable == CASINO_CLOSED_WHEN_LOW;
+  if (menuPos(P_casinoReverse) == 1) closed = !closed;
+  return closed ? 0 : 1;
+}
+
+bool shellApplySwitches = true;        // (the host difference test switches this off: it plays menu events without switches)
+
+// Called by the menu engine after a property value changed.
+void menuCallback(uint8_t cb, uint8_t prop) {
+  callbackCount++;
+  char name[24];
+  menuStr(menuRd16(CB_NAME_STR, cb), name, sizeof(name));
+  Serial.print(F("CB "));
+  Serial.print(name);
+  Serial.print(F(" prop="));
+  char pname[24];
+  menuStr(menuRd16(PP_NAME, prop), pname, sizeof(pname));
+  Serial.print(pname);
+  Serial.print(F(" pos="));
+  Serial.println((int)menuPos(prop));
+  if (shellApplySwitches && cb == CB_applySwitches) {   // the reverse flags changed: the switch values follow at once
+    menuSet(P_arrow, arrowPosition());
+    menuSet(P_casino, casinoPosition());
+  }
+}
+
+void pollInputs(unsigned long now) {
+  uint8_t from = 0;
+  if (pollHex(programSwitch, now, from)) {
+    noteEvent(now);
+    menuPhysical(P_program, programSwitch.stable, now);
+  }
+  if (pollHex(menuSwitch, now, from)) {
+    noteEvent(now);
+    uint8_t delta = (uint8_t)((menuSwitch.stable - from) & 15);
+    if (delta != 8) {                           // exactly half a turn: the direction cannot be told, ignored
+      int steps = delta;
+      if (delta > 8) steps = (int)delta - 16;
+      if (MENU_SWITCH_REVERSED) steps = -steps;
+      menuStepCount += (unsigned long)(steps < 0 ? -steps : steps);
+      menuTurn(steps, buttonShift.stable, now);
+    }
+  }
+  if (pollButton(buttonShift, now)) noteEvent(now);
+  if (pollButton(buttonOk, now) && buttonOk.stable) { keyCount++; noteEvent(now); menuKey(MENU_KEY_OK, now); }
+  if (pollButton(buttonBack, now) && buttonBack.stable) { keyCount++; noteEvent(now); menuKey(MENU_KEY_BACK, now); }
+  if (pollButton(switchArrow, now)) { noteEvent(now); menuPhysical(P_arrow, arrowPosition(), now); }
+  if (pollButton(switchCasino, now)) { noteEvent(now); menuPhysical(P_casino, casinoPosition(), now); }
+}
+
+// Test only: the real sign changes the program after the delay property; here only the countdown is shown.
+void updateRandomCountdown(unsigned long now) {
+  if (menuPos(P_program) != MENU_STATUS_RANDOM_VALUE) { menuChangeInSec = -1; randomDelaySec = 0; return; }
+  if (randomDelaySec == 0) {
+    long minutes = (long)floorf(menuValue(P_randomDelay) + 0.5f);
+    if (minutes == 0) minutes = 1 + (long)(millis() % 30UL);
+    randomDelaySec = minutes * 60L;
+    randomStartedAt = now;
+  }
+  const long elapsed = (long)((now - randomStartedAt) / 1000UL);
+  if (elapsed >= randomDelaySec) { randomDelaySec = 0; menuChangeInSec = 0; return; }
+  menuChangeInSec = randomDelaySec - elapsed;
+}
+
+// ============================== LCD DISPLAY ================================
+void lcdQueue(uint8_t value, uint8_t rs) {
+  const uint8_t hi = (uint8_t)((value & 0xF0) | LCD_BIT_BACKLIGHT | rs);
+  const uint8_t lo = (uint8_t)(((value << 4) & 0xF0) | LCD_BIT_BACKLIGHT | rs);
+  Wire.write((uint8_t)(hi | LCD_BIT_E));
+  Wire.write(hi);
+  Wire.write((uint8_t)(lo | LCD_BIT_E));
+  Wire.write(lo);
+}
+
+bool lcdNibble(uint8_t nibble) {
+  const uint8_t b = (uint8_t)((nibble << 4) | LCD_BIT_BACKLIGHT);
+  Wire.beginTransmission(LCD_I2C_ADDRESS);
+  Wire.write((uint8_t)(b | LCD_BIT_E));
+  Wire.write(b);
+  return Wire.endTransmission() == 0;
+}
+
+bool lcdCommand(uint8_t command) {
+  Wire.beginTransmission(LCD_I2C_ADDRESS);
+  lcdQueue(command, 0);
+  return Wire.endTransmission() == 0;
+}
+
+bool lcdInit() {
+  lcdOk = false;
+  delay(50);
+  if (!lcdNibble(0x3)) return false;
+  delay(5);
+  lcdNibble(0x3);
+  delay(1);
+  lcdNibble(0x3);
+  delay(1);
+  lcdNibble(0x2);
+  delay(1);
+  lcdCommand(0x28);
+  lcdCommand(0x0C);
+  lcdCommand(0x06);
+  lcdCommand(0x01);
+  delay(3);
+  for (uint8_t row = 0; row < LCD_ROWS; row++) {
+    for (uint8_t col = 0; col < LCD_COLS; col++) lcdShown[row][col] = ' ';
+  }
+  lcdOk = true;
+  return true;
+}
+
+uint8_t scanI2cBus() {
+  Serial.println(F("I2C scan (0x08-0x77):"));
+  uint8_t found = 0;
+  bool lcdFound = false;
+  for (uint8_t address = 0x08; address <= 0x77; address++) {
+    Wire.beginTransmission(address);
+    if (Wire.endTransmission() != 0) continue;
+    found++;
+    if (address == LCD_I2C_ADDRESS) lcdFound = true;
+    Serial.print(F("  found 0x"));
+    if (address < 16) Serial.print(F("0"));
+    Serial.print((int)address, HEX);
+    Serial.println(address == LCD_I2C_ADDRESS ? F("  (LCD address in this sketch)") : F(""));
+  }
+  Serial.print(F("I2C scan done: "));
+  Serial.print((int)found);
+  Serial.println(F(" device(s)"));
+  if (!lcdFound) {
+    Serial.print(F("No device on the LCD address 0x"));
+    Serial.print((int)LCD_I2C_ADDRESS, HEX);
+    Serial.println(F(": check SDA D20 / SCL D21 and the 5 V supply; set LCD_I2C_ADDRESS to the address the scan lists."));
+  }
+  return found;
+}
+
+void buildLcdText(unsigned long now) {
+  char r0[LCD_COLS + 1], r1[LCD_COLS + 1];
+  menuRows(now, r0, r1);
+  memcpy(lcdWanted[0], r0, LCD_COLS + 1);
+  memcpy(lcdWanted[1], r1, LCD_COLS + 1);
+}
+
+void lcdSendChanges() {
+  for (uint8_t row = 0; row < LCD_ROWS; row++) {
+    for (uint8_t col = 0; col < LCD_COLS; col++) {
+      if (lcdWanted[row][col] == lcdShown[row][col]) continue;
+      Wire.beginTransmission(LCD_I2C_ADDRESS);
+      lcdQueue((uint8_t)(0x80 | (row ? 0x40 : 0x00) | col), 0);
+      uint8_t sent = 0;
+      const uint8_t startCol = col;
+      while (col < LCD_COLS && sent < LCD_CHARS_PER_LOOP) {
+        lcdQueue((uint8_t)lcdWanted[row][col], LCD_BIT_RS);
+        col++;
+        sent++;
+      }
+      if (Wire.endTransmission() != 0) { lcdOk = false; return; }
+      for (uint8_t c = startCol; c < col; c++) lcdShown[row][c] = lcdWanted[row][c];
+      return;
+    }
+  }
+}
+
+void updateLcd(unsigned long now) {
+  if (!lcdOk) {
+    if (now - lcdLastTry >= LCD_RETRY_MS) {
+      lcdLastTry = now;
+      if (lcdInit()) lcdLastInit = now;
+    }
+    return;
+  }
+  if (LCD_REINIT_MS > 0 && now - lcdLastInit >= LCD_REINIT_MS) {
+    lcdLastTry = now;
+    lcdLastInit = now;
+    lcdInit();
+    return;
+  }
+  if (now - lcdLastBuild >= LCD_BUILD_MS) {
+    lcdLastBuild = now;
+    buildLcdText(now);
+  }
+  lcdSendChanges();
+}
+
+// ============================== SIGN OF LIFE ===============================
+char modeLetter() {
+  if (menuMode == MM_MENU) return 'M';
+  if (menuMode == MM_EDIT) return 'E';
+  if (menuMode == MM_CONFIRM) return 'C';
+  return 'S';
+}
+
+void printDebug(unsigned long now) {
+  Serial.print(F("DBG up="));
+  Serial.print(now / 1000UL);
+  Serial.print(F(" mode="));
+  Serial.print(modeLetter());
+  Serial.print(F(" prog="));
+  Serial.print((int)menuPos(P_program), HEX);
+  Serial.print(F(" arrow="));
+  Serial.print(menuPos(P_arrow) == 0 ? 'L' : 'R');
+  Serial.print(F(" casino="));
+  Serial.print(menuPos(P_casino) == 0 ? 'C' : 'O');
+  Serial.print(F(" menu="));
+  Serial.print(menuStepCount);
+  Serial.print(F(" keys="));
+  Serial.print(keyCount);
+  Serial.print(F(" cb="));
+  Serial.print(callbackCount);
+  Serial.print(F(" eeprom="));
+  Serial.print(menuEepromValid ? F("saved") : F("defaults"));
+  Serial.print(F(" lcd="));
+  Serial.println(lcdOk ? 1 : 0);
+}
+
+void signOfLife(unsigned long now) {
+  if (now - eventWindowStart >= 1000) {
+    eventsPrev = eventsNow;
+    eventsNow = 0;
+    eventWindowStart = now;
+  }
+  if (now - lastDebug >= DEBUG_MS) {
+    lastDebug = now;
+    printDebug(now);
+  }
+  const bool busy = (eventsNow + eventsPrev >= BUSY_EVENTS);
+  const unsigned long beatMs = busy ? HEARTBEAT_FAST_MS : HEARTBEAT_MS;
+  if (now - lastBeat >= beatMs) {
+    lastBeat = now;
+    beatOn = !beatOn;
+  }
+  const bool inverted = anyEvent && (now - lastEventAt < INVERT_MS);
+  digitalWrite(PIN_STATUS_LED, (beatOn != inverted) ? HIGH : LOW);
+}
+
+// ============================== SETUP / LOOP ===============================
+void setup() {
+  Serial.begin(SERIAL_BAUD);
+  pinMode(PIN_STATUS_LED, OUTPUT);
+  for (uint8_t k = 0; k < 4; k++) {
+    pinMode(PROGRAM_PINS[k], INPUT_PULLUP);
+    pinMode(MENU_PINS[k], INPUT_PULLUP);
+  }
+  pinMode(PIN_OK, INPUT_PULLUP);
+  pinMode(PIN_BACK, INPUT_PULLUP);
+  pinMode(PIN_SHIFT, INPUT_PULLUP);
+  pinMode(PIN_ARROW_SWITCH, INPUT_PULLUP);
+  pinMode(PIN_CASINO_SWITCH, INPUT_PULLUP);
+
+  Serial.println(F("Menu test: see the top of sketch.ino."));
+  Serial.print(F("Serial speed "));
+  Serial.print(SERIAL_BAUD);
+  Serial.println(F(" baud; a DBG line is printed every second, a CB line whenever a menu property calls its callback."));
+
+  eepromWasValid = menuBegin();
+  Serial.println(eepromWasValid ? F("EEPROM: saved menu values loaded.") : F("EEPROM: no saved values for this menu layout, defaults used."));
+
+  programSwitch.stable = programSwitch.candidate = readHexRaw(programSwitch);
+  menuSwitch.stable = menuSwitch.candidate = readHexRaw(menuSwitch);
+  switchArrow.stable = switchArrow.candidate = (digitalRead(PIN_ARROW_SWITCH) == LOW);
+  switchCasino.stable = switchCasino.candidate = (digitalRead(PIN_CASINO_SWITCH) == LOW);
+  menuSet(P_program, programSwitch.stable);
+  menuSet(P_arrow, arrowPosition());
+  menuSet(P_casino, casinoPosition());
+
+  Wire.begin();
+  Wire.setClock(100000UL);
+  scanI2cBus();
+  if (lcdInit()) lcdLastInit = millis();
+  else Serial.println(F("LCD did not answer at start-up; trying again every second."));
+
+  const unsigned long now = millis();
+  lastBeat = lastDebug = eventWindowStart = lcdLastTry = now;
+  menuLastInput = menuSince = now;
+  buildLcdText(now);
+}
+
+void loop() {
+  const unsigned long now = millis();
+  pollInputs(now);
+  menuTick(now);
+  updateRandomCountdown(now);
+  signOfLife(now);
+  updateLcd(now);
+}

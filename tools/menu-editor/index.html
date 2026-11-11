@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Menu Editor - Casino Open Sign</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.35 system-ui, sans-serif; background: #1b1d21; color: #e6e6e6; }
+  header { padding: 8px 12px; background: #111; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  header h1 { font-size: 16px; margin: 0 12px 0 0; }
+  button, select, input, textarea { font: inherit; color: inherit; background: #2b2f36; border: 1px solid #444; border-radius: 4px; padding: 3px 7px; }
+  button { cursor: pointer; } button:hover { background: #3a404a; }
+  button.on { background: #7a5c00; }
+  main { display: grid; grid-template-columns: minmax(230px, 1fr) minmax(300px, 1.3fr) minmax(300px, 1fr); gap: 10px; padding: 10px; align-items: start; }
+  @media (max-width: 950px) { main { grid-template-columns: 1fr; } }
+  section { background: #23262b; border: 1px solid #353a42; border-radius: 6px; padding: 8px 10px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #9aa4b2; margin: 0 0 6px; }
+  .tabs button { margin-right: 3px; } .tabs button.sel { background: #355a8a; }
+  .tree div { padding: 2px 4px; border-radius: 3px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tree div:hover { background: #2f3540; } .tree div.sel { background: #355a8a; }
+  .tree .k { color: #8fb4ff; font-size: 12px; margin-right: 4px; }
+  .row { display: grid; grid-template-columns: 110px 1fr; gap: 6px; margin: 3px 0; align-items: center; }
+  .row label { color: #aab; } .row input[type=checkbox] { justify-self: start; }
+  .row input:not([type=checkbox]), .row select, .row textarea { width: 100%; }
+  .msgs { margin-top: 6px; font-size: 13px; } .err { color: #ff8a80; } .warn { color: #ffd180; } .good { color: #8be28b; }
+  .lcd { background: #3d5f2a; border: 4px solid #222; border-radius: 6px; padding: 10px 12px; width: max-content; margin: 4px 0 8px; }
+  .lcd div { font: 22px/1.25 "Courier New", monospace; color: #14230d; background: #a9d18c; white-space: pre; letter-spacing: 2px; padding: 0 2px; }
+  .ctl { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin: 4px 0; }
+  .ctl .grp { margin-right: 10px; }
+  pre.log { max-height: 130px; overflow: auto; background: #181a1e; padding: 5px; margin: 4px 0; font-size: 12px; }
+  textarea#json { width: 100%; height: 260px; font: 12px/1.3 monospace; }
+  .small { font-size: 12px; color: #9aa4b2; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Menu Editor</h1>
+  <button id="btn-new">New</button>
+  <button id="btn-sample">Load V2 sample</button>
+  <button id="btn-open">Open JSON file</button><input type="file" id="file" accept=".json,application/json" hidden>
+  <button id="btn-save">Download JSON</button>
+  <button id="btn-copy">Copy JSON</button>
+  <span id="status-msg" class="small"></span>
+</header>
+<main>
+  <section>
+    <div class="tabs"><button data-tab="tree" class="sel">Menu</button><button data-tab="properties">Properties</button><button data-tab="types">Types</button><button data-tab="menus">Menus</button><button data-tab="json">JSON</button></div>
+    <div id="list" class="tree" style="margin-top:6px"></div>
+    <div class="ctl" id="list-actions"></div>
+    <textarea id="json" hidden spellcheck="false"></textarea>
+    <div class="ctl" id="json-actions" hidden><button id="btn-json-apply">Apply JSON text</button></div>
+  </section>
+  <section>
+    <h2>Selected</h2>
+    <div id="form"><div class="small">Select an item on the left.</div></div>
+    <div class="msgs" id="msgs"></div>
+  </section>
+  <section>
+    <h2>Display preview (2 x 16)</h2>
+    <div class="lcd"><div id="lcd0"></div><div id="lcd1"></div></div>
+    <div class="ctl">
+      <span class="grp"><button id="k-left" title="menu switch one step back">&#9664; turn</button><button id="k-right" title="menu switch one step forward">turn &#9654;</button></span>
+      <button id="k-shift" title="hold SHIFT while turning">SHIFT</button>
+      <button id="k-ok">OK</button><button id="k-back">BACK</button>
+    </div>
+    <div class="ctl" id="phys"></div>
+    <div class="ctl"><label>Seconds to next random program <input id="rt" type="number" min="0" value="125" style="width:70px"></label></div>
+    <div class="small">Callbacks called:</div><pre class="log" id="log-cb"></pre>
+    <div class="small">EEPROM writes (one line = one batch) and image:</div><pre class="log" id="log-ee"></pre>
+    <div class="ctl"><button id="btn-restart">Restart (load image)</button><button id="btn-wipe">Restart with empty EEPROM</button></div>
+  </section>
+</main>
+<script src="menu-core.js"></script>
+<script src="menu-v2-data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

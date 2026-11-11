@@ -17,6 +17,10 @@
 #define INPUT_PULLUP 2
 #define OUTPUT 1
 #define HEX 16
+#define PROGMEM
+#define pgm_read_byte(a) (*(const uint8_t *)(a))
+#define pgm_read_word(a) (*(const uint16_t *)(a))
+#define pgm_read_float(a) (*(const float *)(a))
 struct __FlashStringHelper {};
 #define F(x) (reinterpret_cast<const __FlashStringHelper*>(x))
 typedef uint8_t byte;
@@ -42,6 +46,7 @@ struct MockSerial {
   void out(const std::string &t) { if (!quiet) printf("%s", t.c_str()); if (capture) captured += t; }
   void print(const char *s) { out(s); }
   void print(const __FlashStringHelper *s) { out(reinterpret_cast<const char *>(s)); }
+  void print(char c) { out(std::string(1, c)); }
   void print(int v) { out(std::to_string(v)); }
   void print(unsigned int v) { out(std::to_string(v)); }
   void print(unsigned long v) { out(std::to_string(v)); }

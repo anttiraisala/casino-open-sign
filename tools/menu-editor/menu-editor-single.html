@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Menu Editor - Casino Open Sign</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.35 system-ui, sans-serif; background: #1b1d21; color: #e6e6e6; }
+  header { padding: 8px 12px; background: #111; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  header h1 { font-size: 16px; margin: 0 12px 0 0; }
+  button, select, input, textarea { font: inherit; color: inherit; background: #2b2f36; border: 1px solid #444; border-radius: 4px; padding: 3px 7px; }
+  button { cursor: pointer; } button:hover { background: #3a404a; }
+  button.on { background: #7a5c00; }
+  main { display: grid; grid-template-columns: minmax(230px, 1fr) minmax(300px, 1.3fr) minmax(300px, 1fr); gap: 10px; padding: 10px; align-items: start; }
+  @media (max-width: 950px) { main { grid-template-columns: 1fr; } }
+  section { background: #23262b; border: 1px solid #353a42; border-radius: 6px; padding: 8px 10px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #9aa4b2; margin: 0 0 6px; }
+  .tabs button { margin-right: 3px; } .tabs button.sel { background: #355a8a; }
+  .tree div { padding: 2px 4px; border-radius: 3px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tree div:hover { background: #2f3540; } .tree div.sel { background: #355a8a; }
+  .tree .k { color: #8fb4ff; font-size: 12px; margin-right: 4px; }
+  .row { display: grid; grid-template-columns: 110px 1fr; gap: 6px; margin: 3px 0; align-items: center; }
+  .row label { color: #aab; } .row input[type=checkbox] { justify-self: start; }
+  .row input:not([type=checkbox]), .row select, .row textarea { width: 100%; }
+  .msgs { margin-top: 6px; font-size: 13px; } .err { color: #ff8a80; } .warn { color: #ffd180; } .good { color: #8be28b; }
+  .lcd { background: #3d5f2a; border: 4px solid #222; border-radius: 6px; padding: 10px 12px; width: max-content; margin: 4px 0 8px; }
+  .lcd div { font: 22px/1.25 "Courier New", monospace; color: #14230d; background: #a9d18c; white-space: pre; letter-spacing: 2px; padding: 0 2px; }
+  .ctl { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin: 4px 0; }
+  .ctl .grp { margin-right: 10px; }
+  pre.log { max-height: 130px; overflow: auto; background: #181a1e; padding: 5px; margin: 4px 0; font-size: 12px; }
+  textarea#json { width: 100%; height: 260px; font: 12px/1.3 monospace; }
+  .small { font-size: 12px; color: #9aa4b2; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Menu Editor</h1>
+  <button id="btn-new">New</button>
+  <button id="btn-sample">Load V2 sample</button>
+  <button id="btn-open">Open JSON file</button><input type="file" id="file" accept=".json,application/json" hidden>
+  <button id="btn-save">Download JSON</button>
+  <button id="btn-copy">Copy JSON</button>
+  <span id="status-msg" class="small"></span>
+</header>
+<main>
+  <section>
+    <div class="tabs"><button data-tab="tree" class="sel">Menu</button><button data-tab="properties">Properties</button><button data-tab="types">Types</button><button data-tab="menus">Menus</button><button data-tab="json">JSON</button></div>
+    <div id="list" class="tree" style="margin-top:6px"></div>
+    <div class="ctl" id="list-actions"></div>
+    <textarea id="json" hidden spellcheck="false"></textarea>
+    <div class="ctl" id="json-actions" hidden><button id="btn-json-apply">Apply JSON text</button></div>
+  </section>
+  <section>
+    <h2>Selected</h2>
+    <div id="form"><div class="small">Select an item on the left.</div></div>
+    <div class="msgs" id="msgs"></div>
+  </section>
+  <section>
+    <h2>Display preview (2 x 16)</h2>
+    <div class="lcd"><div id="lcd0"></div><div id="lcd1"></div></div>
+    <div class="ctl">
+      <span class="grp"><button id="k-left" title="menu switch one step back">&#9664; turn</button><button id="k-right" title="menu switch one step forward">turn &#9654;</button></span>
+      <button id="k-shift" title="hold SHIFT while turning">SHIFT</button>
+      <button id="k-ok">OK</button><button id="k-back">BACK</button>
+    </div>
+    <div class="ctl" id="phys"></div>
+    <div class="ctl"><label>Seconds to next random program <input id="rt" type="number" min="0" value="125" style="width:70px"></label></div>
+    <div class="small">Callbacks called:</div><pre class="log" id="log-cb"></pre>
+    <div class="small">EEPROM writes (one line = one batch) and image:</div><pre class="log" id="log-ee"></pre>
+    <div class="ctl"><button id="btn-restart">Restart (load image)</button><button id="btn-wipe">Restart with empty EEPROM</button></div>
+  </section>
+</main>
+<script>
+/*
+ * Menu core: validation of the menu JSON (format 1) and the menu engine (keys, editing, EEPROM image, 2 x 16 rows).
+ * Pure logic, no DOM: works in the browser (window.MenuCore) and in Node (require). Time is always passed in as `now` (ms).
+ * The same rules are implemented on the Arduino by the generated tables; this file is the reference and the preview.
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.MenuCore = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  var COLS = 16;
+  var LEFT_ARROW = '\x7f', RIGHT_ARROW = '\x7e';          // HD44780 ROM characters
+  var TIMEOUT_MS = 60000, MARQUEE_PAUSE_MS = 1000, MARQUEE_STEP_MS = 400, STATUS_ALT_MS = 3000;
+  var MAX_PRESET_VALUES = 16;
+  var KINDS = { int: 1, float: 1, choice: 1, bool: 1 };
+  var BUILTIN = {
+    int: { min: 0, max: 100, step: 1, wrap: false, shift: 10, readOnly: false, persist: true, decimals: 0 },
+    float: { min: 0, max: 1, scale: 'linear', steps: 50, wrap: false, shift: 10, readOnly: false, persist: true, decimals: 2 },
+    choice: { wrap: false, shift: 1, readOnly: false, persist: true },
+    bool: { wrap: false, shift: 1, readOnly: false, persist: true, trueText: 'On', falseText: 'Off' }
+  };
+  var FIELDS = ['kind', 'name', 'type', 'min', 'max', 'default', 'step', 'steps', 'scale', 'wrap', 'shift', 'readOnly', 'persist', 'bind',
+    'unit', 'decimals', 'format', 'valueTexts', 'choices', 'trueText', 'falseText', 'callbacks', 'text'];
+
+  function isNum(v) { return typeof v === 'number' && isFinite(v); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  // ------------------------------------------------------------------ property maths (positions)
+  // A property has N positions 0..N-1; stepping moves the position; wrap or stop at the ends.
+  function count(p) {
+    if (p.kind === 'int') return Math.floor((p.max - p.min) / p.step + 1e-9) + 1;
+    if (p.kind === 'float') return p.steps + 1;
+    if (p.kind === 'choice') return p.choices.length;
+    return 2;
+  }
+  function valueAt(p, i) {
+    if (p.kind === 'int') return p.min + i * p.step;
+    if (p.kind === 'float') {
+      if (p.scale === 'log') return p.min * Math.pow(p.max / p.min, i / p.steps);
+      return p.min + i * (p.max - p.min) / p.steps;
+    }
+    return i;
+  }
+  function posOf(p, v) {
+    var n = count(p), best = 0, bd = Infinity;
+    if (p.kind === 'choice' || p.kind === 'bool') { v = +v; return Math.max(0, Math.min(n - 1, Math.round(v))); }
+    for (var i = 0; i < n; i++) {
+      var d = p.scale === 'log' ? Math.abs(Math.log(valueAt(p, i)) - Math.log(Math.max(v, 1e-300))) : Math.abs(valueAt(p, i) - v);
+      if (d < bd - 1e-12) { bd = d; best = i; }
+    }
+    return best;
+  }
+  function movePos(p, pos, delta) {
+    var n = count(p), q = pos + delta;
+    if (p.wrap) return ((q % n) + n) % n;
+    return Math.max(0, Math.min(n - 1, q));
+  }
+  function fmtNum(x, dec) { return dec > 0 ? x.toFixed(dec) : String(Math.round(x)); }
+  function valueText(p, pos) {
+    var v = valueAt(p, pos), t;
+    if (p.kind === 'bool') return v ? p.trueText : p.falseText;
+    if (p.kind === 'choice') return String(p.choices[pos]);
+    if (p.valueTexts && p.valueTexts[String(Math.round(v * 1e6) / 1e6)] !== undefined) return String(p.valueTexts[String(Math.round(v * 1e6) / 1e6)]);
+    if (p.format === 'hex') t = Math.round(v).toString(16).toUpperCase();
+    else t = fmtNum(v, p.decimals);
+    return t + (p.unit || '');
+  }
+
+  // ------------------------------------------------------------------ build (resolve + validate)
+  function resolveProp(id, def, types, errors) {
+    var chain = [], seen = {}, cur = def, kind = def.kind;
+    while (cur) {
+      chain.unshift(cur);
+      if (!cur.type) break;
+      if (seen[cur.type]) { errors.push('property ' + id + ': type loop at ' + cur.type); return null; }
+      seen[cur.type] = 1;
+      cur = types[cur.type];
+      if (!cur) { errors.push('property ' + id + ': unknown type ' + chain[0].type); return null; }
+    }
+    chain.forEach(function (c) { if (c.kind) kind = c.kind; });
+    if (!KINDS[kind]) { errors.push('property ' + id + ': kind missing or unknown (' + kind + ')'); return null; }
+    var p = clone(BUILTIN[kind]);
+    chain.forEach(function (c) { FIELDS.forEach(function (f) { if (c[f] !== undefined && f !== 'type') p[f] = clone(c[f]); }); });
+    p.id = id; p.kind = kind;
+    if (!p.name) p.name = id;
+    if (!Array.isArray(p.callbacks)) p.callbacks = p.callbacks ? [p.callbacks] : [];
+    return p;
+  }
+  function checkProp(p, errors, warnings) {
+    var e = function (m) { errors.push('property ' + p.id + ': ' + m); };
+    if (p.kind === 'int') {
+      if (!isNum(p.min) || !isNum(p.max) || p.min > p.max) { e('min/max invalid'); return false; }
+      if (!isNum(p.step) || p.step < 1 || Math.floor(p.step) !== p.step) { e('step must be an integer >= 1'); return false; }
+    } else if (p.kind === 'float') {
+      if (!isNum(p.min) || !isNum(p.max) || p.min >= p.max) { e('min/max invalid'); return false; }
+      if (p.scale !== 'linear' && p.scale !== 'log') { e('scale must be linear or log'); return false; }
+      if (p.scale === 'log' && p.min <= 0) { e('log scale needs min > 0'); return false; }
+      if (!isNum(p.steps) || p.steps < 1 || Math.floor(p.steps) !== p.steps) { e('steps must be an integer >= 1'); return false; }
+    } else if (p.kind === 'choice') {
+      if (!Array.isArray(p.choices) || p.choices.length < 2) { e('choice needs at least 2 choices'); return false; }
+    }
+    if (!isNum(p.shift) || p.shift < 1) { e('shift must be >= 1'); return false; }
+    if (p.default === undefined) p.default = p.kind === 'int' || p.kind === 'float' ? p.min : (p.kind === 'bool' ? false : 0);
+    if (p.kind === 'choice' && typeof p.default === 'string') {
+      var ci = p.choices.indexOf(p.default);
+      if (ci < 0) { e('default is not one of the choices'); return false; }
+      p.default = ci;
+    }
+    if (p.kind === 'bool') p.default = p.default ? 1 : 0;
+    var d = +p.default;
+    if (p.kind === 'int' || p.kind === 'float') {
+      if (d < p.min - 1e-9 || d > p.max + 1e-9) { e('default outside min..max'); return false; }
+    } else if (d < 0 || d >= count(p) || Math.floor(d) !== d) { e('default invalid'); return false; }
+    p.defaultPos = posOf(p, d);
+    if (p.kind === 'int' || p.kind === 'float') {
+      var n = count(p), g = valueAt(p, p.defaultPos), sp = n > 1 ? Math.abs(valueAt(p, Math.min(n - 1, p.defaultPos + 1)) - valueAt(p, Math.max(0, p.defaultPos - 1))) / 2 : 1;
+      if (Math.abs(g - d) > 0.25 * sp + 1e-9) warnings.push('property ' + p.id + ': default ' + d + ' snapped to ' + g);
+    }
+    p.count = count(p);
+    return true;
+  }
+
+  function build(src) {
+    var errors = [], warnings = [], m = { errors: errors, warnings: warnings, ok: false, props: {}, order: [], source: src, root: null, status: null };
+    if (!src || typeof src !== 'object') { errors.push('menu file is not an object'); return m; }
+    if (src.format !== 1) { errors.push('format must be 1'); return m; }
+    var common = src.common || {}, types = common.types || {}, defs = {}, menus = common.menus || {}, i;
+    var idRe = /^[A-Za-z][A-Za-z0-9_]*$/;
+    Object.keys(common.properties || {}).forEach(function (id) {
+      if (!idRe.test(id)) errors.push('bad property id ' + id);
+      defs[id] = common.properties[id];
+    });
+    var seenMenus = {};
+    function walkItems(items, path, stack, collect) {
+      var out = [];
+      if (!Array.isArray(items) || !items.length) { errors.push('menu ' + path + ' has no items'); return out; }
+      items.forEach(function (it, k) {
+        var where = path + '[' + k + ']';
+        if (it.menu !== undefined) {
+          out.push({ type: 'menu', name: String(it.menu), items: walkItems(it.items, where + '/' + it.menu, stack, collect), text: it.text });
+        } else if (it.menuRef !== undefined) {
+          var mr = menus[it.menuRef];
+          if (!mr) { errors.push(where + ': unknown menuRef ' + it.menuRef); return; }
+          if (stack.indexOf(it.menuRef) >= 0) { errors.push(where + ': menu loop via ' + it.menuRef); return; }
+          out.push({ type: 'menu', name: String(it.name || mr.name || it.menuRef), ref: it.menuRef,
+            items: walkItems(mr.items, where + '/' + it.menuRef, stack.concat([it.menuRef]), collect), text: it.text });
+        } else if (it.property !== undefined) {
+          if (!idRe.test(it.property)) errors.push(where + ': bad property id ' + it.property);
+          if (defs[it.property]) errors.push(where + ': property id ' + it.property + ' defined twice');
+          var d = clone(it); delete d.property; defs[it.property] = d; collect.push(it.property);
+          out.push({ type: 'prop', id: it.property, text: it.text });
+        } else if (it.propertyRef !== undefined) {
+          out.push({ type: 'prop', id: it.propertyRef, text: it.text, line: where });
+        } else if (it.preset !== undefined) {
+          out.push({ type: 'preset', name: String(it.preset), text: it.text, set: it.set, setAll: it.setAll, confirm: !!it.confirm, confirmText: it.confirmText, where: where });
+        } else errors.push(where + ': item is not menu, menuRef, property, propertyRef or preset');
+      });
+      return out;
+    }
+    var inline = [];
+    var rootSrc = src.root;
+    if (!rootSrc || !Array.isArray(rootSrc.items)) { errors.push('root.items missing'); return m; }
+    m.root = { type: 'menu', name: String(rootSrc.name || 'Menu'), items: walkItems(rootSrc.items, 'root', [], inline) };
+    Object.keys(menus).forEach(function (id) {
+      if (!idRe.test(id)) errors.push('bad menu id ' + id);
+      if (menus[id] && Array.isArray(menus[id].items)) walkItems(menus[id].items, 'menus.' + id, [id], inline);   // detects loops inside unused menus too
+      else errors.push('menu ' + id + ' has no items');
+    });
+    // resolve properties in declaration order: common first, then inline in tree order
+    Object.keys(defs).forEach(function (id) {
+      var p = resolveProp(id, defs[id], types, errors);
+      if (p && checkProp(p, errors, warnings)) { m.props[id] = p; m.order.push(id); }
+    });
+    (function check(menu) {
+      menu.items.forEach(function (it) {
+        if (it.type === 'prop' && !defs[it.id]) errors.push((it.line || 'menu') + ': unknown property ' + it.id);
+        if (it.type === 'menu') check(it);
+        if (it.type === 'preset') {
+          var n = 0, w = it.where;
+          if (it.set === undefined && it.setAll === undefined) errors.push(w + ': preset has neither set nor setAll');
+          if (it.setAll !== undefined && it.setAll !== 'default') errors.push(w + ': setAll must be "default"');
+          Object.keys(it.set || {}).forEach(function (id) {
+            n++;
+            var p = m.props[id], v = it.set[id];
+            if (!p) { errors.push(w + ': preset sets unknown property ' + id); return; }
+            if (p.readOnly) { errors.push(w + ': preset sets read-only property ' + id); return; }
+            if (v === 'default') return;
+            if (p.kind === 'int' || p.kind === 'float') {
+              if (!isNum(v) || v < p.min - 1e-9 || v > p.max + 1e-9) errors.push(w + ': value ' + v + ' for ' + id + ' outside ' + p.min + '..' + p.max);
+              else if (Math.abs(valueAt(p, posOf(p, v)) - v) > 0.25 * Math.abs(valueAt(p, Math.min(p.count - 1, posOf(p, v) + 1)) - valueAt(p, Math.max(0, posOf(p, v) - 1))) / 2 + 1e-9) warnings.push(w + ': value ' + v + ' for ' + id + ' snapped to ' + valueAt(p, posOf(p, v)));
+            } else if (p.kind === 'bool') { if (typeof v !== 'boolean') errors.push(w + ': value for ' + id + ' must be true or false'); }
+            else if (p.choices.indexOf(v) < 0 && !(isNum(v) && v >= 0 && v < p.count && Math.floor(v) === v)) errors.push(w + ': value ' + v + ' is not a choice of ' + id);
+          });
+          if (n > MAX_PRESET_VALUES) errors.push(w + ': preset sets ' + n + ' values (max ' + MAX_PRESET_VALUES + ')');
+        }
+      });
+    })(m.root);
+    var st = src.status;
+    if (st) {
+      ['program', 'casino', 'arrow'].forEach(function (k) { if (!m.props[st[k]]) errors.push('status.' + k + ' must name a property'); });
+      m.status = { program: st.program, casino: st.casino, arrow: st.arrow, randomValue: st.randomValue === undefined ? 15 : st.randomValue, arrowAscii: !!st.arrowAscii };
+    }
+    m.ok = errors.length === 0;
+    return m;
+  }
+
+  // ------------------------------------------------------------------ EEPROM image
+  function fnv(s) {
+    var h = 0x811c9dc5;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 0x01000193) >>> 0; }
+    return ('00000000' + h.toString(16)).slice(-8);
+  }
+  function persistIds(m) { return m.order.filter(function (id) { return m.props[id].persist && !m.props[id].readOnly; }); }
+  function layoutTag(m) {
+    return fnv(persistIds(m).map(function (id) { var p = m.props[id]; return [id, p.kind, p.count].join(':'); }).join('|'));
+  }
+
+  // ------------------------------------------------------------------ engine
+  function fit(left, right, now, since) {
+    right = right || '';
+    var avail = COLS - right.length - (right ? 1 : 0), out;
+    if (avail < 0) avail = 0;
+    if (left.length <= avail) out = left;
+    else {
+      var maxOff = left.length - avail, t = Math.max(0, now - since), total = MARQUEE_PAUSE_MS + maxOff * MARQUEE_STEP_MS + MARQUEE_PAUSE_MS, off;
+      t = t % total;
+      off = t < MARQUEE_PAUSE_MS ? 0 : Math.min(maxOff, Math.floor((t - MARQUEE_PAUSE_MS) / MARQUEE_STEP_MS));
+      out = left.substr(off, avail);
+    }
+    while (out.length < avail) out += ' ';
+    var s = right ? out + ' ' + right : out;
+    return (s + '                ').substr(0, COLS);
+  }
+
+  function Engine(model, opts) {
+    if (!model.ok) throw new Error('menu model has errors');
+    opts = opts || {};
+    this.m = model; this.pos = {}; this.opts = opts;
+    this.mode = 'status'; this.stack = []; this.edit = null; this.confirmItem = null;
+    this.lastInput = 0; this.since = 0; this.runtime = { changeInSec: null };
+    this.callLog = []; this.batches = [];
+    var self = this;
+    model.order.forEach(function (id) { self.pos[id] = model.props[id].defaultPos; });
+    this.tag = layoutTag(model);
+  }
+  Engine.prototype._setPos = function (id, pos, silent) {
+    var p = this.m.props[id];
+    if (pos === this.pos[id]) return false;
+    this.pos[id] = pos;
+    if (!silent) this._call(id);
+    return true;
+  };
+  Engine.prototype._call = function (id) {
+    var p = this.m.props[id], v = valueAt(p, this.pos[id]);
+    for (var i = 0; i < p.callbacks.length; i++) {
+      this.callLog.push({ id: id, value: v, pos: this.pos[id], callback: p.callbacks[i] });
+      if (this.opts.onCallback) this.opts.onCallback(p.callbacks[i], id, v);
+    }
+  };
+  Engine.prototype._save = function (ids) {
+    var m = this.m, list = ids.filter(function (id) { return m.props[id].persist && !m.props[id].readOnly; });
+    if (list.length) this.batches.push(list.slice());
+  };
+  Engine.prototype.get = function (id) { return valueAt(this.m.props[id], this.pos[id]); };
+  Engine.prototype.getPos = function (id) { return this.pos[id]; };
+  Engine.prototype.text = function (id) { return valueText(this.m.props[id], this.pos[id]); };
+  Engine.prototype.set = function (id, value) {   // outside change (bound control, code): same path as the menu, no EEPROM write
+    this._setPos(id, posOf(this.m.props[id], value));
+  };
+  Engine.prototype.setRuntime = function (r) { for (var k in r) this.runtime[k] = r[k]; };
+
+  Engine.prototype.eeprom = function () {
+    var self = this;
+    return { tag: this.tag, slots: persistIds(this.m).map(function (id) { return self.pos[id]; }) };
+  };
+  Engine.prototype.load = function (img) {            // start-up: stored image or defaults
+    var ids = persistIds(this.m), m = this.m, ok = !!img && img.tag === this.tag && Array.isArray(img.slots) && img.slots.length === ids.length;
+    if (ok) ids.forEach(function (id, i) { var s = img.slots[i]; if (!(Number.isInteger(s) && s >= 0 && s < m.props[id].count)) ok = false; });
+    for (var i = 0; i < ids.length; i++) this.pos[ids[i]] = ok ? img.slots[i] : m.props[ids[i]].defaultPos;
+    return ok;
+  };
+
+  Engine.prototype._level = function () { return this.stack[this.stack.length - 1]; };
+  Engine.prototype._item = function () { var l = this._level(); return l.menu.items[l.idx]; };
+  Engine.prototype._touch = function (now, newView) { this.lastInput = now; if (newView) this.since = now; };
+  Engine.prototype._toStatus = function (now) { this.mode = 'status'; this.stack = []; this.edit = null; this.confirmItem = null; this.since = now; };
+
+  // physical control changed (arrow switch, casino switch, program switch): value follows; an open menu is closed
+  Engine.prototype.physical = function (id, value, now) {
+    var st = this.m.status, isStatus = !!st && (id === st.program || id === st.casino || id === st.arrow);
+    if (isStatus && this.mode === 'edit' && this.edit) this._setPos(this.edit.id, this.edit.start);
+    this._setPos(id, posOf(this.m.props[id], value));
+    if (isStatus && this.mode !== 'status') this._toStatus(now);
+  };
+  Engine.prototype.turn = function (steps, shift, now) {
+    if (!steps) return;
+    if (this.mode === 'menu') {
+      var l = this._level(), n = l.menu.items.length, k = Math.max(0, Math.min(n - 1, l.idx + steps));
+      if (k !== l.idx) { l.idx = k; this._touch(now, true); } else this._touch(now, false);
+    } else if (this.mode === 'edit') {
+      var p = this.m.props[this.edit.id];
+      this._setPos(this.edit.id, movePos(p, this.pos[this.edit.id], steps * (shift ? p.shift : 1)));
+      this._touch(now, false);
+    }
+  };
+  Engine.prototype._apply = function (it) {
+    var m = this.m, self = this, targets = [], want = {};
+    if (it.setAll === 'default') m.order.forEach(function (id) { var p = m.props[id]; if (!p.readOnly) want[id] = p.defaultPos; });
+    Object.keys(it.set || {}).forEach(function (id) {
+      var p = m.props[id], v = it.set[id];
+      want[id] = v === 'default' ? p.defaultPos : (p.kind === 'choice' && typeof v === 'string' ? p.choices.indexOf(v) : (p.kind === 'bool' ? (v ? 1 : 0) : posOf(p, v)));
+    });
+    var changed = [];
+    Object.keys(want).forEach(function (id) { if (self.pos[id] !== want[id]) { self.pos[id] = want[id]; changed.push(id); } });
+    changed.forEach(function (id) { self._call(id); });
+    this._save(changed);
+  };
+  Engine.prototype.key = function (name, now) {
+    if (this.mode === 'status') { if (name === 'OK') { this.mode = 'menu'; this.stack = [{ menu: this.m.root, idx: 0 }]; this._touch(now, true); } return; }
+    if (this.mode === 'menu') {
+      if (name === 'BACK') { if (this.stack.length > 1) { this.stack.pop(); this._touch(now, true); } else this._toStatus(now); return; }
+      var it = this._item();
+      if (it.type === 'menu') { this.stack.push({ menu: it, idx: 0 }); this._touch(now, true); }
+      else if (it.type === 'prop') { var p = this.m.props[it.id]; if (!p.readOnly) { this.mode = 'edit'; this.edit = { id: it.id, start: this.pos[it.id] }; this._touch(now, true); } }
+      else if (it.type === 'preset') {
+        if (it.confirm) { this.mode = 'confirm'; this.confirmItem = it; this._touch(now, true); }
+        else { this._apply(it); this._touch(now, false); }
+      }
+    } else if (this.mode === 'edit') {
+      if (name === 'OK') this._save([this.edit.id]); else this._setPos(this.edit.id, this.edit.start);
+      this.mode = 'menu'; this.edit = null; this._touch(now, true);
+    } else if (this.mode === 'confirm') {
+      if (name === 'OK') this._apply(this.confirmItem);
+      this.mode = 'menu'; this.confirmItem = null; this._touch(now, true);
+    }
+  };
+  Engine.prototype.tick = function (now) {
+    if (this.mode === 'menu' && this.stack.length === 1 && now - this.lastInput >= TIMEOUT_MS) this._toStatus(now);
+  };
+  Engine.prototype.rows = function (now) {
+    var m = this.m, since = this.since, st = m.status, r0, r1;
+    if (this.mode === 'status') {
+      if (!st) return ['', ''].map(function () { return fit('', '', now, since); });
+      var prog = this.get(st.program), isRandom = prog === st.randomValue;
+      r0 = '#' + Math.round(prog).toString(16).toUpperCase() + ' Casino ' + this.text(st.casino);
+      var left = this.getPos(st.arrow) === 0;
+      var dir = st.arrowAscii ? (left ? '<-Customer right' : '->Customer left') : (left ? LEFT_ARROW + ' Customer right' : RIGHT_ARROW + ' Customer left');
+      if (isRandom && this.runtime.changeInSec !== null && Math.floor(Math.max(0, now - since) / STATUS_ALT_MS) % 2 === 1) {
+        var s = Math.max(0, Math.floor(this.runtime.changeInSec));
+        dir = 'Change in ' + Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+      }
+      return [fit(r0, '', now, since), fit(dir, '', now, since)];
+    }
+    if (this.mode === 'edit') {
+      var p = m.props[this.edit.id];
+      return [fit(p.name, '', now, since), fit('> ' + this.text(p.id), '', now, since)];
+    }
+    if (this.mode === 'confirm') {
+      var c = this.confirmItem;
+      return [fit(c.confirmText || (c.text || c.name) + '?', '', now, since), fit('OK=yes BACK=no', '', now, since)];
+    }
+    var l = this._level(), it = l.menu.items[l.idx];
+    if (this.stack.length === 1) {
+      var sec = Math.max(0, Math.ceil((TIMEOUT_MS - (now - this.lastInput)) / 1000));
+      r0 = fit(l.menu.name, sec + 's', now, since);
+    } else r0 = fit(l.menu.name, '', now, since);
+    if (it.type === 'menu') r1 = fit(it.text || it.name, '>', now, since);
+    else if (it.type === 'prop') r1 = fit(it.text || m.props[it.id].name, this.text(it.id), now, since);
+    else r1 = fit(it.text || it.name, '', now, since);
+    return [r0, r1];
+  };
+
+  return {
+    COLS: COLS, TIMEOUT_MS: TIMEOUT_MS, MAX_PRESET_VALUES: MAX_PRESET_VALUES, LEFT_ARROW: LEFT_ARROW, RIGHT_ARROW: RIGHT_ARROW,
+    build: build, Engine: Engine, count: count, valueAt: valueAt, posOf: posOf, movePos: movePos, valueText: valueText,
+    fit: fit, layoutTag: layoutTag, persistIds: persistIds
+  };
+});
+
+</script>
+<script>
+// generated by tools/build_menu_editor_single.py from menu-v2.json - do not edit
+window.MENU_V2 = {
+ "format": 1,
+ "name": "Casino Open Sign V2 settings menu",
+ "common": {
+  "types": {
+   "level255": {
+    "kind": "int",
+    "min": 0,
+    "max": 255
+   },
+   "speed": {
+    "kind": "float",
+    "scale": "log",
+    "min": 0.25,
+    "max": 4,
+    "steps": 24,
+    "default": 1,
+    "decimals": 2,
+    "unit": "x"
+   },
+   "exponent": {
+    "kind": "float",
+    "scale": "log",
+    "min": 0.1,
+    "max": 20,
+    "steps": 50,
+    "default": 2.67,
+    "decimals": 2
+   },
+   "yesno": {
+    "kind": "bool",
+    "trueText": "Yes",
+    "falseText": "No"
+   },
+   "readOnlySwitch": {
+    "readOnly": true,
+    "persist": false
+   },
+   "mix": {
+    "kind": "float",
+    "scale": "linear",
+    "min": 0,
+    "max": 1,
+    "steps": 50,
+    "default": 1,
+    "decimals": 2
+   }
+  },
+  "properties": {
+   "program": {
+    "name": "Program",
+    "kind": "int",
+    "type": "readOnlySwitch",
+    "min": 0,
+    "max": 15,
+    "default": 0,
+    "format": "hex",
+    "bind": "D34-D37 program switch"
+   },
+   "arrow": {
+    "name": "Arrow",
+    "kind": "choice",
+    "type": "readOnlySwitch",
+    "choices": [
+     "Left",
+     "Right"
+    ],
+    "bind": "D32 arrow switch"
+   },
+   "casino": {
+    "name": "Casino",
+    "kind": "choice",
+    "type": "readOnlySwitch",
+    "choices": [
+     "Closed",
+     "Open"
+    ],
+    "bind": "D30 casino switch"
+   },
+   "arrowReverse": {
+    "name": "Arrow reverse",
+    "type": "yesno",
+    "callbacks": [
+     "applySwitches"
+    ]
+   },
+   "casinoReverse": {
+    "name": "Casino reverse",
+    "type": "yesno",
+    "callbacks": [
+     "applySwitches"
+    ]
+   },
+   "speedFrame": {
+    "name": "Frame",
+    "type": "speed",
+    "callbacks": [
+     "applySpeeds"
+    ]
+   },
+   "speedArrow": {
+    "name": "Arrow",
+    "type": "speed",
+    "callbacks": [
+     "applySpeeds"
+    ]
+   },
+   "speedLetters": {
+    "name": "Letters",
+    "type": "speed",
+    "callbacks": [
+     "applySpeeds"
+    ]
+   },
+   "randomDelay": {
+    "name": "Change delay",
+    "kind": "int",
+    "min": 0,
+    "max": 30,
+    "default": 2,
+    "unit": " min",
+    "valueTexts": {
+     "0": "random"
+    }
+   },
+   "stripMin": {
+    "name": "Min",
+    "type": "level255",
+    "default": 0,
+    "callbacks": [
+     "rebuildStripCurve"
+    ]
+   },
+   "stripMax": {
+    "name": "Max",
+    "type": "level255",
+    "default": 80,
+    "callbacks": [
+     "rebuildStripCurve"
+    ]
+   },
+   "stripExp": {
+    "name": "Exponent",
+    "type": "exponent",
+    "callbacks": [
+     "rebuildStripCurve"
+    ]
+   },
+   "stickMin": {
+    "name": "Min",
+    "type": "level255",
+    "default": 0,
+    "callbacks": [
+     "rebuildStickCurve"
+    ]
+   },
+   "stickMax": {
+    "name": "Max",
+    "type": "level255",
+    "default": 80,
+    "callbacks": [
+     "rebuildStickCurve"
+    ]
+   },
+   "stickExp": {
+    "name": "Exponent",
+    "type": "exponent",
+    "callbacks": [
+     "rebuildStickCurve"
+    ]
+   },
+   "stripMix": {
+    "name": "Mix",
+    "type": "mix",
+    "callbacks": [
+     "rebuildStripCurve"
+    ]
+   },
+   "lettersMin": {
+    "name": "Min",
+    "type": "level255",
+    "default": 0,
+    "callbacks": [
+     "rebuildLettersCurve"
+    ]
+   },
+   "lettersMax": {
+    "name": "Max",
+    "type": "level255",
+    "default": 80,
+    "callbacks": [
+     "rebuildLettersCurve"
+    ]
+   },
+   "lettersExp": {
+    "name": "Exponent",
+    "type": "exponent",
+    "callbacks": [
+     "rebuildLettersCurve"
+    ]
+   },
+   "lettersMix": {
+    "name": "Mix",
+    "type": "mix",
+    "callbacks": [
+     "rebuildLettersCurve"
+    ]
+   },
+   "stickMix": {
+    "name": "Mix",
+    "type": "mix",
+    "callbacks": [
+     "rebuildStickCurve"
+    ]
+   }
+  },
+  "menus": {
+   "stripBrightness": {
+    "name": "Strip",
+    "items": [
+     {
+      "propertyRef": "stripMin"
+     },
+     {
+      "propertyRef": "stripMax"
+     },
+     {
+      "propertyRef": "stripExp"
+     },
+     {
+      "propertyRef": "stripMix"
+     }
+    ]
+   },
+   "lettersBrightness": {
+    "name": "Letters",
+    "items": [
+     {
+      "propertyRef": "lettersMin"
+     },
+     {
+      "propertyRef": "lettersMax"
+     },
+     {
+      "propertyRef": "lettersExp"
+     },
+     {
+      "propertyRef": "lettersMix"
+     }
+    ]
+   },
+   "stickBrightness": {
+    "name": "Stick",
+    "items": [
+     {
+      "propertyRef": "stickMin"
+     },
+     {
+      "propertyRef": "stickMax"
+     },
+     {
+      "propertyRef": "stickExp"
+     },
+     {
+      "propertyRef": "stickMix"
+     }
+    ]
+   }
+  }
+ },
+ "status": {
+  "program": "program",
+  "casino": "casino",
+  "arrow": "arrow",
+  "randomValue": 15,
+  "arrowAscii": false
+ },
+ "root": {
+  "name": "Menu",
+  "items": [
+   {
+    "menu": "Controls",
+    "items": [
+     {
+      "propertyRef": "program"
+     },
+     {
+      "propertyRef": "arrow"
+     },
+     {
+      "propertyRef": "arrowReverse"
+     },
+     {
+      "propertyRef": "casino"
+     },
+     {
+      "propertyRef": "casinoReverse"
+     }
+    ]
+   },
+   {
+    "menu": "Speed",
+    "items": [
+     {
+      "propertyRef": "speedFrame"
+     },
+     {
+      "propertyRef": "speedLetters"
+     },
+     {
+      "propertyRef": "speedArrow"
+     }
+    ]
+   },
+   {
+    "menu": "Random program",
+    "items": [
+     {
+      "propertyRef": "randomDelay"
+     }
+    ]
+   },
+   {
+    "menu": "Brightness",
+    "items": [
+     {
+      "menuRef": "stripBrightness"
+     },
+     {
+      "menuRef": "lettersBrightness"
+     },
+     {
+      "menuRef": "stickBrightness"
+     }
+    ]
+   },
+   {
+    "preset": "Restore defaults",
+    "setAll": "default",
+    "confirm": true,
+    "confirmText": "Restore defaults?",
+    "set": {}
+   }
+  ]
+ }
+};
+
+</script>
+<script>
+/* Menu Editor UI: edits the menu JSON (format 1), validates it with MenuCore and previews the 2 x 16 display. */
+(function () {
+  'use strict';
+  var C = window.MenuCore;
+  var $ = function (id) { return document.getElementById(id); };
+  var S = JSON.parse(JSON.stringify(window.MENU_V2));      // the menu file being edited
+  var tab = 'tree', sel = null;                              // sel: {tab, path|id}
+  var model = null, engine = null, eeprom = null, shiftOn = false, phys = { program: 0, casino: 0, arrow: 0 };
+  var startMs = Date.now(), cbLog = [], eeCount = 0;
+  var PROP_FIELDS = [['kind', 'sel', ['', 'int', 'float', 'choice', 'bool']], ['type', 'typesel'], ['name', 'text'], ['min', 'num'], ['max', 'num'], ['default', 'val'], ['step', 'num'], ['steps', 'num'],
+    ['scale', 'sel', ['', 'linear', 'log']], ['wrap', 'bool'], ['shift', 'num'], ['readOnly', 'bool'], ['persist', 'bool'], ['bind', 'text'], ['unit', 'text'], ['decimals', 'num'],
+    ['format', 'sel', ['', 'hex']], ['valueTexts', 'json'], ['choices', 'list'], ['trueText', 'text'], ['falseText', 'text'], ['callbacks', 'list']];
+  function now() { return Date.now() - startMs; }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function ensureCommon() { S.common = S.common || {}; ['types', 'properties', 'menus'].forEach(function (k) { S.common[k] = S.common[k] || {}; }); }
+
+  // ---------------------------------------------------------------- rebuild + preview
+  function rebuild(keepEngine) {
+    model = C.build(S);
+    var msgs = $('msgs'); msgs.innerHTML = '';
+    model.errors.forEach(function (e) { var d = document.createElement('div'); d.className = 'err'; d.textContent = 'Error: ' + e; msgs.appendChild(d); });
+    model.warnings.forEach(function (e) { var d = document.createElement('div'); d.className = 'warn'; d.textContent = 'Warning: ' + e; msgs.appendChild(d); });
+    if (model.ok && !model.errors.length && !model.warnings.length) { var g = document.createElement('div'); g.className = 'good'; g.textContent = 'Menu is valid.'; msgs.appendChild(g); }
+    $('status-msg').textContent = model.ok ? 'valid' : model.errors.length + ' error(s)';
+    $('status-msg').className = model.ok ? 'small good' : 'small err';
+    if (model.ok) {
+      var old = engine;
+      engine = new C.Engine(model, { onCallback: function (cb, id, v) { cbLog.push(cb + '(' + id + ' = ' + v + ')'); if (cbLog.length > 40) cbLog.shift(); } });
+      if (keepEngine && old && eeprom) engine.load(eeprom);
+      Object.keys(phys).forEach(function (k) { if (model.props[k]) engine.physical(k, phys[k], now()); });
+      engine.mode = 'status';
+      buildPhys();
+    } else engine = null;
+    $('json').value = JSON.stringify(S, null, 2);
+    renderList(); render();
+  }
+  function buildPhys() {
+    var box = $('phys'); box.innerHTML = '';
+    if (!model.status) { box.textContent = 'No status section: switches not shown.'; return; }
+    ['program', 'casino', 'arrow'].forEach(function (k) {
+      var p = model.props[model.status[k]], s = document.createElement('select'), lab = document.createElement('label');
+      for (var i = 0; i < p.count; i++) { var o = document.createElement('option'); o.value = i; o.textContent = C.valueText(p, i); s.appendChild(o); }
+      s.value = Math.min(phys[k] || 0, p.count - 1);
+      s.onchange = function () { phys[k] = +s.value; engine.physical(model.status[k], +s.value, now()); render(); };
+      s.id = 'phys-' + k; lab.className = 'grp'; lab.textContent = p.name + ' '; lab.appendChild(s); box.appendChild(lab);
+    });
+  }
+  var lastSecs = null;
+  function render() {
+    if (!engine) { $('lcd0').textContent = '(menu has errors)'; $('lcd1').textContent = ''; return; }
+    engine.setRuntime({ changeInSec: Math.max(0, +$('rt').value || 0) });
+    var r = engine.rows(now());
+    var map = function (s) { return s.replace(/\x7e/g, '→').replace(/\x7f/g, '←'); };
+    $('lcd0').textContent = map(r[0]); $('lcd1').textContent = map(r[1]);
+    $('log-cb').textContent = cbLog.join('\n');
+    $('log-ee').textContent = engine.batches.map(function (b, i) { return (i + 1) + ': ' + b.join(', '); }).join('\n') + '\nimage: ' + JSON.stringify(engine.eeprom());
+  }
+  setInterval(function () { if (engine) { engine.tick(now()); render(); } }, 100);
+
+  // ---------------------------------------------------------------- list (left)
+  function itemLabel(it) {
+    if (it.menu !== undefined) return ['menu', it.menu];
+    if (it.menuRef !== undefined) return ['menu ref', it.menuRef];
+    if (it.property !== undefined) return ['property', it.property];
+    if (it.propertyRef !== undefined) return ['prop ref', it.propertyRef];
+    if (it.preset !== undefined) return ['preset', it.preset];
+    return ['?', JSON.stringify(it)];
+  }
+  function isSel(t, k) { return sel && sel.tab === t && String(sel.key) === String(k); }
+  function renderList() {
+    var box = $('list'), act = $('list-actions'); box.innerHTML = ''; act.innerHTML = '';
+    $('json').hidden = tab !== 'json'; $('json-actions').hidden = tab !== 'json'; box.hidden = tab === 'json'; act.hidden = tab === 'json';
+    document.querySelectorAll('.tabs button').forEach(function (b) { b.className = b.dataset.tab === tab ? 'sel' : ''; });
+    if (tab === 'json') return;
+    function line(text, kind, depth, t, key) {
+      var d = document.createElement('div'); d.style.paddingLeft = (4 + depth * 14) + 'px';
+      d.className = isSel(t, key) ? 'sel' : '';
+      d.innerHTML = '<span class="k"></span>'; d.firstChild.textContent = kind; d.appendChild(document.createTextNode(text));
+      d.onclick = function () { sel = { tab: t, key: key }; renderList(); renderForm(); };
+      box.appendChild(d);
+    }
+    if (tab === 'tree') {
+      (function walk(items, path, depth) {
+        (items || []).forEach(function (it, i) {
+          var p = path.concat([i]), l = itemLabel(it); line(l[1], l[0], depth, 'tree', p.join('.'));
+          if (it.menu !== undefined) walk(it.items, p, depth + 1);
+        });
+      })(S.root.items, [], 0);
+    } else {
+      var reg = S.common[tab] || {};
+      Object.keys(reg).forEach(function (id) { line(id, tab === 'menus' ? 'menu' : tab === 'types' ? 'type' : (reg[id].kind || reg[id].type || 'prop'), 0, tab, id); });
+    }
+    addActions(act);
+  }
+  // path of a tree item: indices joined by '.', each level is items[index]; submenu children are in .items
+  function getItem(key) {
+    var idx = String(key).split('.').map(Number), list = S.root.items, it = null, parent = S.root.items;
+    for (var i = 0; i < idx.length; i++) { parent = list; it = list[idx[i]]; if (!it) return null; list = it.items; }
+    return { item: it, list: parent, index: idx[idx.length - 1] };
+  }
+  function btn(text, fn) { var b = document.createElement('button'); b.textContent = text; b.onclick = fn; return b; }
+  function uniqueId(base, reg) { var n = 1, id = base; while (reg[id]) id = base + (++n); return id; }
+  function allPropIds() { var ids = Object.keys(S.common.properties || {}); (function w(items) { (items || []).forEach(function (it) { if (it.property) ids.push(it.property); if (it.items) w(it.items); }); })(S.root.items); return ids; }
+  function addActions(act) {
+    ensureCommon();
+    if (tab === 'tree') {
+      var cur = sel && sel.tab === 'tree' ? getItem(sel.key) : null;
+      var target = function () { return cur && cur.item.menu !== undefined ? cur.item.items : (cur ? cur.list : S.root.items); };
+      var addTo = function (it) { var t = target(); t.push(it); sel = null; rebuild(true); };
+      act.appendChild(btn('+ submenu', function () { addTo({ menu: 'New menu', items: [] }); }));
+      act.appendChild(btn('+ property ref', function () { var ids = Object.keys(S.common.properties); if (!ids.length) { alert('Define a property under Properties first.'); return; } addTo({ propertyRef: ids[0] }); }));
+      act.appendChild(btn('+ inline property', function () { addTo({ property: uniqueId('newProp', S.common.properties), kind: 'int', min: 0, max: 10, name: 'New' }); }));
+      act.appendChild(btn('+ menu ref', function () { var ids = Object.keys(S.common.menus); if (!ids.length) { alert('Define a menu under Menus first.'); return; } addTo({ menuRef: ids[0] }); }));
+      act.appendChild(btn('+ preset', function () { addTo({ preset: 'New preset', set: {} }); }));
+      if (cur) {
+        act.appendChild(btn('up', function () { if (cur.index > 0) { var l = cur.list, i = cur.index; l.splice(i - 1, 0, l.splice(i, 1)[0]); sel.key = String(sel.key).split('.').slice(0, -1).concat([i - 1]).join('.'); rebuild(true); } }));
+        act.appendChild(btn('down', function () { var l = cur.list, i = cur.index; if (i < l.length - 1) { l.splice(i + 1, 0, l.splice(i, 1)[0]); sel.key = String(sel.key).split('.').slice(0, -1).concat([i + 1]).join('.'); rebuild(true); } }));
+        act.appendChild(btn('delete', function () { cur.list.splice(cur.index, 1); sel = null; rebuild(true); renderForm(); }));
+      }
+    } else {
+      var reg = S.common[tab];
+      act.appendChild(btn('+ new', function () {
+        var id = uniqueId(tab === 'menus' ? 'newMenu' : tab === 'types' ? 'newType' : 'newProp', reg);
+        reg[id] = tab === 'menus' ? { name: 'New menu', items: [{ propertyRef: Object.keys(S.common.properties)[0] || 'x' }] } : { kind: 'int', min: 0, max: 10, name: 'New' };
+        sel = { tab: tab, key: id }; rebuild(true); renderForm();
+      }));
+      if (sel && sel.tab === tab && reg[sel.key]) {
+        act.appendChild(btn('rename id', function () {
+          var n = prompt('New id (letters, digits, _):', sel.key); if (!n || n === sel.key || reg[n] || !/^[A-Za-z][A-Za-z0-9_]*$/.test(n)) return;
+          var out = {}; Object.keys(reg).forEach(function (k) { out[k === sel.key ? n : k] = reg[k]; }); S.common[tab] = out;
+          renameRefs(tab, sel.key, n); sel.key = n; rebuild(true); renderForm();
+        }));
+        act.appendChild(btn('delete', function () { delete reg[sel.key]; sel = null; rebuild(true); renderForm(); }));
+      }
+    }
+  }
+  function renameRefs(t, a, b) {
+    (function w(items) { (items || []).forEach(function (it) {
+      if (t === 'properties' && it.propertyRef === a) it.propertyRef = b;
+      if (t === 'menus' && it.menuRef === a) it.menuRef = b;
+      if (t === 'properties' && it.set && it.set[a] !== undefined) { it.set[b] = it.set[a]; delete it.set[a]; }
+      if (it.items) w(it.items); }); })(S.root.items);
+    Object.keys(S.common.menus).forEach(function (k) { (function w(items) { (items || []).forEach(function (it) {
+      if (t === 'properties' && it.propertyRef === a) it.propertyRef = b; if (t === 'menus' && it.menuRef === a) it.menuRef = b;
+      if (t === 'properties' && it.set && it.set[a] !== undefined) { it.set[b] = it.set[a]; delete it.set[a]; } if (it.items) w(it.items); }); })(S.common.menus[k].items); });
+    if (t === 'types') Object.keys(S.common.properties).concat(Object.keys(S.common.types)).forEach(function (k) { var d = S.common.properties[k] || S.common.types[k]; if (d.type === a) d.type = b; });
+    if (t === 'properties' && S.status) ['program', 'casino', 'arrow'].forEach(function (k) { if (S.status[k] === a) S.status[k] = b; });
+  }
+
+  // ---------------------------------------------------------------- form (middle)
+  function row(label, el) { var r = document.createElement('div'); r.className = 'row'; var l = document.createElement('label'); l.textContent = label; r.appendChild(l); r.appendChild(el); return r; }
+  function textInput(val, fn, id) { var i = document.createElement('input'); i.type = 'text'; i.value = val === undefined ? '' : val; if (id) i.id = id; i.onchange = function () { fn(i.value); }; return i; }
+  function selectInput(val, opts, fn, id) {
+    var s = document.createElement('select'); if (id) s.id = id;
+    opts.forEach(function (o) { var e = document.createElement('option'); e.value = Array.isArray(o) ? o[0] : o; e.textContent = Array.isArray(o) ? o[1] : (o === '' ? '(not set)' : o); s.appendChild(e); });
+    s.value = val === undefined ? '' : val; s.onchange = function () { fn(s.value); }; return s;
+  }
+  function checkInput(val, fn) { var c = document.createElement('input'); c.type = 'checkbox'; c.checked = !!val; c.onchange = function () { fn(c.checked); }; return c; }
+  function parseVal(t) { if (t === '') return undefined; if (t === 'true') return true; if (t === 'false') return false; var n = Number(t); return isNaN(n) ? t : n; }
+  function setField(def, f, v) { if (v === undefined || v === '' || (Array.isArray(v) && !v.length)) delete def[f]; else def[f] = v; rebuild(true); }
+  function propForm(box, def, withId) {
+    PROP_FIELDS.forEach(function (pf) {
+      var f = pf[0], kind = pf[1], v = def[f], el;
+      if (kind === 'text') el = textInput(v, function (x) { setField(def, f, x); }, 'f-' + f);
+      else if (kind === 'num') el = textInput(v, function (x) { setField(def, f, x === '' ? undefined : Number(x)); }, 'f-' + f);
+      else if (kind === 'val') el = textInput(v, function (x) { setField(def, f, parseVal(x)); }, 'f-' + f);
+      else if (kind === 'sel') el = selectInput(v, pf[2], function (x) { setField(def, f, x); }, 'f-' + f);
+      else if (kind === 'typesel') el = selectInput(v, [''].concat(Object.keys(S.common.types)), function (x) { setField(def, f, x); }, 'f-' + f);
+      else if (kind === 'bool') { el = checkInput(v, function (x) { if (x) def[f] = true; else def[f] = false; rebuild(true); }); el.id = 'f-' + f; }
+      else if (kind === 'list') el = textInput(v ? v.join(', ') : '', function (x) { setField(def, f, x.split(',').map(function (s) { return s.trim(); }).filter(Boolean)); }, 'f-' + f);
+      else if (kind === 'json') el = textInput(v ? JSON.stringify(v) : '', function (x) { try { setField(def, f, x.trim() ? JSON.parse(x) : undefined); } catch (e) { alert('Not valid JSON: ' + e.message); } }, 'f-' + f);
+      box.appendChild(row(f, el));
+    });
+  }
+  function renderForm() {
+    var box = $('form'); box.innerHTML = ''; ensureCommon();
+    if (!sel) { box.innerHTML = '<div class="small">Select an item on the left.</div>'; return; }
+    if (sel.tab === 'tree') {
+      var cur = getItem(sel.key); if (!cur) { box.textContent = ''; return; }
+      var it = cur.item;
+      if (it.menu !== undefined) { box.appendChild(row('name', textInput(it.menu, function (x) { it.menu = x; rebuild(true); }, 'f-name'))); }
+      else if (it.menuRef !== undefined) { box.appendChild(row('menu', selectInput(it.menuRef, Object.keys(S.common.menus), function (x) { it.menuRef = x; rebuild(true); }, 'f-ref'))); }
+      else if (it.propertyRef !== undefined) { box.appendChild(row('property', selectInput(it.propertyRef, Object.keys(S.common.properties), function (x) { it.propertyRef = x; rebuild(true); }, 'f-ref'))); }
+      else if (it.property !== undefined) {
+        box.appendChild(row('id', textInput(it.property, function (x) { if (/^[A-Za-z][A-Za-z0-9_]*$/.test(x) && allPropIds().indexOf(x) < 0) { renameRefs('properties', it.property, x); it.property = x; rebuild(true); renderList(); } }, 'f-id')));
+        propForm(box, it, false);
+      } else if (it.preset !== undefined) {
+        box.appendChild(row('name', textInput(it.preset, function (x) { it.preset = x; rebuild(true); }, 'f-name')));
+        box.appendChild(row('confirm', checkInput(it.confirm, function (x) { if (x) it.confirm = true; else delete it.confirm; rebuild(true); })));
+        box.appendChild(row('confirm text', textInput(it.confirmText, function (x) { if (x) it.confirmText = x; else delete it.confirmText; rebuild(true); })));
+        box.appendChild(row('setAll default', checkInput(it.setAll === 'default', function (x) { if (x) it.setAll = 'default'; else delete it.setAll; rebuild(true); })));
+        it.set = it.set || {};
+        Object.keys(it.set).forEach(function (id) {
+          var r = document.createElement('div'); r.className = 'row';
+          r.appendChild(selectInput(id, Object.keys(S.common.properties).concat(allPropIds().filter(function (x) { return !S.common.properties[x]; })), function (x) { if (x !== id && it.set[x] === undefined) { var o = {}; Object.keys(it.set).forEach(function (k) { o[k === id ? x : k] = it.set[k]; }); it.set = o; rebuild(true); renderForm(); } }));
+          var w = document.createElement('div'); w.style.display = 'flex'; w.style.gap = '4px';
+          var vi = textInput(String(it.set[id]), function (x) { it.set[id] = parseVal(x); rebuild(true); }); w.appendChild(vi);
+          w.appendChild(btn('x', function () { delete it.set[id]; rebuild(true); renderForm(); })); r.appendChild(w); box.appendChild(r);
+        });
+        box.appendChild(btn('+ value', function () { var ids = Object.keys(S.common.properties).concat(allPropIds()); var free = ids.filter(function (x) { return it.set[x] === undefined; })[0]; if (free) { it.set[free] = 'default'; rebuild(true); renderForm(); } }));
+        box.appendChild(row('', document.createElement('span')));
+      }
+      if (it.text !== undefined || it.menu !== undefined || it.propertyRef !== undefined || it.preset !== undefined || it.menuRef !== undefined) {
+        box.appendChild(row('row text', textInput(it.text, function (x) { if (x) it.text = x; else delete it.text; rebuild(true); }, 'f-text')));
+      }
+      return;
+    }
+    var reg = S.common[sel.tab], def = reg[sel.key]; if (!def) return;
+    var h = document.createElement('div'); h.className = 'small'; h.textContent = sel.tab.slice(0, -1) + ' id: ' + sel.key; box.appendChild(h);
+    if (sel.tab === 'menus') {
+      box.appendChild(row('name', textInput(def.name, function (x) { def.name = x; rebuild(true); }, 'f-name')));
+      var n = document.createElement('div'); n.className = 'small'; n.textContent = 'Items of this menu are edited in the JSON tab.'; box.appendChild(n);
+    } else propForm(box, def, true);
+  }
+
+  // ---------------------------------------------------------------- events
+  document.querySelectorAll('.tabs button').forEach(function (b) { b.onclick = function () { tab = b.dataset.tab; sel = null; renderList(); renderForm(); }; });
+  $('btn-json-apply').onclick = function () {
+    try { var j = JSON.parse($('json').value); S = j; ensureCommon(); S.root = S.root || { items: [] }; sel = null; rebuild(false); renderForm(); }
+    catch (e) { alert('Not valid JSON: ' + e.message); }
+  };
+  $('btn-new').onclick = function () { S = { format: 1, name: 'New menu', common: { types: {}, properties: { demo: { name: 'Demo', kind: 'int', min: 0, max: 10, default: 5 } }, menus: {} }, root: { name: 'Menu', items: [{ propertyRef: 'demo' }] } }; sel = null; rebuild(false); renderForm(); };
+  $('btn-sample').onclick = function () { S = clone(window.MENU_V2); sel = null; rebuild(false); renderForm(); };
+  $('btn-open').onclick = function () { $('file').click(); };
+  $('file').onchange = function () {
+    var f = $('file').files[0]; if (!f) return; var r = new FileReader();
+    r.onload = function () { try { S = JSON.parse(r.result); ensureCommon(); sel = null; rebuild(false); renderForm(); } catch (e) { alert('Not valid JSON: ' + e.message); } };
+    r.readAsText(f);
+  };
+  $('btn-save').onclick = function () {
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 2) + '\n'], { type: 'application/json' }));
+    a.download = 'menu.json'; document.body.appendChild(a); a.click(); a.remove();
+  };
+  $('btn-copy').onclick = function () {
+    var t = JSON.stringify(S, null, 2), done = function () { $('status-msg').textContent = 'copied'; },
+      fallback = function () { tab = 'json'; sel = null; renderList(); renderForm(); $('json').value = t; $('json').select(); $('status-msg').textContent = 'select all and copy from the JSON tab'; };
+    try { navigator.clipboard.writeText(t).then(done, fallback); } catch (e) { fallback(); }
+  };
+  $('k-left').onclick = function () { if (engine) { engine.turn(-1, shiftOn, now()); render(); } };
+  $('k-right').onclick = function () { if (engine) { engine.turn(1, shiftOn, now()); render(); } };
+  $('k-ok').onclick = function () { if (engine) { engine.key('OK', now()); render(); } };
+  $('k-back').onclick = function () { if (engine) { engine.key('BACK', now()); render(); } };
+  $('k-shift').onclick = function () { shiftOn = !shiftOn; $('k-shift').className = shiftOn ? 'on' : ''; };
+  $('btn-restart').onclick = function () { if (engine) { eeprom = engine.eeprom(); rebuild(true); } };
+  $('btn-wipe').onclick = function () { eeprom = null; rebuild(false); };
+  document.addEventListener('keydown', function (e) {
+    if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || !engine) return;
+    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') engine.turn(-1, e.shiftKey, now());
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') engine.turn(1, e.shiftKey, now());
+    else if (e.key === 'Enter') engine.key('OK', now());
+    else if (e.key === 'Escape' || e.key === 'Backspace') engine.key('BACK', now());
+    else return;
+    e.preventDefault(); render();
+  });
+  window.MenuEditor = { get S() { return S; }, rebuild: rebuild };
+  rebuild(false);
+})();
+
+</script>
+</body>
+</html>

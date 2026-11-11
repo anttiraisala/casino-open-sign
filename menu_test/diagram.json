@@ -1,0 +1,279 @@
+{
+  "version": 1,
+  "author": "Casino sign project - settings menu test",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-arduino-mega",
+      "id": "mega",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-text",
+      "id": "t1",
+      "top": -170,
+      "left": 20,
+      "attrs": {
+        "text": "Settings menu test: program switch + menu switch + OK/BACK/SHIFT + 2 slide switches + LCD"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "t2",
+      "top": -152,
+      "left": 20,
+      "attrs": {
+        "text": "Wokwi has no hex rotary switch: a DIP bank stands in (ON = leg connected to C = bit set)"
+      }
+    },
+    {
+      "type": "wokwi-dip-switch-8",
+      "id": "prog",
+      "top": -120,
+      "left": 20,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dip-switch-8",
+      "id": "menu",
+      "top": -120,
+      "left": 200,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "ok",
+      "top": -120,
+      "left": 400,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "back",
+      "top": -120,
+      "left": 470,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "shift",
+      "top": -120,
+      "left": 540,
+      "attrs": {
+        "color": "blue"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "arrow",
+      "top": -60,
+      "left": 400,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "casino",
+      "top": -60,
+      "left": 480,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd",
+      "top": 480,
+      "left": 20,
+      "attrs": {
+        "pins": "i2c"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "mega:34",
+      "prog:1b",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "prog:1a",
+      "black",
+      []
+    ],
+    [
+      "mega:35",
+      "prog:2b",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "prog:2a",
+      "black",
+      []
+    ],
+    [
+      "mega:36",
+      "prog:3b",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "prog:3a",
+      "black",
+      []
+    ],
+    [
+      "mega:37",
+      "prog:4b",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "prog:4a",
+      "black",
+      []
+    ],
+    [
+      "mega:42",
+      "menu:1b",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "menu:1a",
+      "black",
+      []
+    ],
+    [
+      "mega:43",
+      "menu:2b",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "menu:2a",
+      "black",
+      []
+    ],
+    [
+      "mega:44",
+      "menu:3b",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "menu:3a",
+      "black",
+      []
+    ],
+    [
+      "mega:45",
+      "menu:4b",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "menu:4a",
+      "black",
+      []
+    ],
+    [
+      "mega:48",
+      "ok:1.l",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "ok:2.l",
+      "black",
+      []
+    ],
+    [
+      "mega:49",
+      "back:1.l",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "back:2.l",
+      "black",
+      []
+    ],
+    [
+      "mega:50",
+      "shift:1.l",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "shift:2.l",
+      "black",
+      []
+    ],
+    [
+      "mega:32",
+      "arrow:2",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "arrow:3",
+      "black",
+      []
+    ],
+    [
+      "mega:30",
+      "casino:2",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "casino:3",
+      "black",
+      []
+    ],
+    [
+      "mega:5V",
+      "lcd:VCC",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "lcd:GND",
+      "black",
+      []
+    ],
+    [
+      "mega:20",
+      "lcd:SDA",
+      "green",
+      []
+    ],
+    [
+      "mega:21",
+      "lcd:SCL",
+      "green",
+      []
+    ]
+  ],
+  "dependencies": {}
+}

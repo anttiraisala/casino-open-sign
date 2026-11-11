@@ -278,6 +278,12 @@ V2 boot: `scanI2cBus()` (0x08-0x77, empty write) prints the found I2C devices to
 ## Plate Designer (2026-11-09)
 `tools/plate-designer/` (README.md there): `plate-core.js` = tested pure logic (SDF/marching-squares letter geometry, hole checks, snapping, frame counts, EPS/PDF writers, JSON v1), `app.js` + `index.html` = UI, `arrow-data.js` generated from `tools/arrow_geometry.py`. Tests: `tests/plate_designer_core_test.js`, `tests/mutate_plate_designer.py`, `tests/plate_designer_ui_test.py`. Fonts stored by name only; Google Fonts load needs network (untested from the sandbox).
 
+## Menu Editor (2026-11-11)
+`tools/menu-editor/` (README there): `menu-core.js` (JSON format 1 validation + engine: keys, live editing, presets, EEPROM image with layout tag, 16-character rows, 60 s root timeout, marquee), browser editor (`index.html`, `app.js`), V2 menu `menu-v2.json`. Tests: `tests/menu_core_test.js` (hard-coded expectations), `tests/mutate_menu_core.py` (127 mutants), `tests/menu_editor_ui_test.py` (Playwright; `MENU_EDITOR_PAGE=menu-editor-single.html` for the single file). Single-file build `tools/build_menu_editor_single.py`, artifact slug 840aef6c-fb14-4ea5-9587-4e52d8c076dd. The V2 sketch does not use it yet; next steps are the generator (JSON -> PROGMEM) and the V2 sketch changes (REQ-012..016, RDD-PROGRESS AP-003..005).
+
+### Menu engine and menu test (2026-11-11)
+`tools/menu_engine/engine.inc` is the C++ menu engine (same rules as the JS `Engine`), `generate_menu_tables.js` turns the menu JSON into PROGMEM tables (properties, items, menus, presets, value texts, callbacks, string blob, EEPROM slots, layout tag), `test_shell.ino.in` is the hardware shell (hex switches D34-D37 program / D42-D45 menu, OK D48, BACK D49, SHIFT D50, arrow D32, casino D30, I2C LCD, sign of life). `node tools/generate_menu_test.js` assembles `menu_test/sketch.ino` (never edit it by hand). Tests: `tests/menu_diff_test.py` (random events through both engines, compares rows, callbacks, EEPROM batches, positions, mode), `tests/menu_engine_harness.cpp` + `tests/menu_engine_checks.inc` (EEPROM image, texts, shell pins/debounce/polarity, sign of life, set-up), `tests/mutate_menu_engine.py` (99 mutants; equivalent ones are listed in its header). Drawings and Wokwi circuit: `tools/generate_menu_test_drawings.py`. The V2 sign sketch does not contain the menu yet (AP-004).
+
 ## 10. Open items and ideas
 
 - Planned features are listed in `DESCRIPTION.md` (section "Planned and possible features");
