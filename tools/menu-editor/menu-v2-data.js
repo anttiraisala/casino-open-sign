@@ -48,15 +48,57 @@ window.MENU_V2 = {
    }
   },
   "properties": {
-   "program": {
-    "name": "Program",
-    "kind": "int",
-    "type": "readOnlySwitch",
-    "min": 0,
-    "max": 15,
-    "default": 0,
-    "format": "hex",
-    "bind": "D34-D37 program switch"
+   "frameEffect": {
+    "name": "Frame effect",
+    "kind": "choice",
+    "choices": [
+     "Random",
+     "1 Bar",
+     "2 Comet",
+     "3 Fill",
+     "4 Ignite",
+     "5 Sides blink",
+     "6 Odd even",
+     "7 Ping-pong",
+     "8 Twinkle",
+     "9 Runner",
+     "10 Heartbeat",
+     "11 Corners",
+     "12 Edges swap",
+     "13 Slot machine",
+     "14 Twin comets",
+     "15 Dashes"
+    ],
+    "default": "1 Bar",
+    "callbacks": [
+     "effectFrameChanged"
+    ]
+   },
+   "lettersEffect": {
+    "name": "Letters effect",
+    "kind": "choice",
+    "choices": [
+     "Random",
+     "1 Breathe",
+     "2 Wave",
+     "3 Typewriter",
+     "4 Ignite",
+     "5 Word blink",
+     "6 Alternate",
+     "7 Scanner",
+     "8 Sparkle",
+     "9 Chase",
+     "10 Pulse",
+     "11 Converge",
+     "12 Words swap",
+     "13 Slot machine",
+     "14 Twin chase",
+     "15 Marquee"
+    ],
+    "default": "1 Breathe",
+    "callbacks": [
+     "effectLettersChanged"
+    ]
    },
    "arrow": {
     "name": "Arrow",
@@ -114,7 +156,7 @@ window.MENU_V2 = {
     ]
    },
    "randomDelay": {
-    "name": "Change delay",
+    "name": "Random delay",
     "kind": "int",
     "min": 0,
     "max": 30,
@@ -270,10 +312,10 @@ window.MENU_V2 = {
   }
  },
  "status": {
-  "program": "program",
   "casino": "casino",
   "arrow": "arrow",
-  "randomValue": 15,
+  "effectFrame": "frameEffect",
+  "effectLetters": "lettersEffect",
   "arrowAscii": false
  },
  "root": {
@@ -282,9 +324,6 @@ window.MENU_V2 = {
    {
     "menu": "Controls",
     "items": [
-     {
-      "propertyRef": "program"
-     },
      {
       "propertyRef": "arrow"
      },
@@ -296,6 +335,20 @@ window.MENU_V2 = {
      },
      {
       "propertyRef": "casinoReverse"
+     }
+    ]
+   },
+   {
+    "menu": "Effects",
+    "items": [
+     {
+      "propertyRef": "frameEffect"
+     },
+     {
+      "propertyRef": "lettersEffect"
+     },
+     {
+      "propertyRef": "randomDelay"
      }
     ]
    },
@@ -317,6 +370,9 @@ window.MENU_V2 = {
     "menu": "Frame",
     "items": [
      {
+      "propertyRef": "frameEffect"
+     },
+     {
       "propertyRef": "speedFrame"
      },
      {
@@ -336,6 +392,9 @@ window.MENU_V2 = {
    {
     "menu": "Letters",
     "items": [
+     {
+      "propertyRef": "lettersEffect"
+     },
      {
       "propertyRef": "speedLetters"
      },
@@ -384,14 +443,6 @@ window.MENU_V2 = {
      },
      {
       "menuRef": "stickBrightness"
-     }
-    ]
-   },
-   {
-    "menu": "Random program",
-    "items": [
-     {
-      "propertyRef": "randomDelay"
      }
     ]
    },

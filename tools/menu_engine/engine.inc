@@ -7,7 +7,7 @@ constexpr uint8_t MENU_COLS = 16;
 constexpr unsigned long MENU_TIMEOUT_MS = 60000UL;        // at the root level without input: back to the status page
 constexpr unsigned long MENU_MARQUEE_PAUSE_MS = 1000UL;   // a long text stays at its start this long
 constexpr unsigned long MENU_MARQUEE_STEP_MS = 400UL;     // then moves one character per step
-constexpr unsigned long MENU_STATUS_ALT_MS = 3000UL;      // status row 1 alternates with the countdown (program F)
+constexpr unsigned long MENU_STATUS_ALT_MS = 3000UL;      // status row 1 alternates with the countdown (an effect is random)
 constexpr uint8_t MENU_MAX_DEPTH = 8;
 constexpr char MENU_LEFT_ARROW = 0x7F;                    // HD44780 ROM arrows
 constexpr char MENU_RIGHT_ARROW = 0x7E;
@@ -35,7 +35,8 @@ constexpr unsigned long MENU_UNDO_MS = 300UL;   // a move straight back to the i
 bool menuUndoValid = false;
 uint8_t menuUndoItem = 0;
 unsigned long menuUndoSince = 0, menuUndoAt = 0;
-long menuChangeInSec = -1;                       // seconds until the random program changes (-1 = unknown)
+uint8_t menuActiveFrame = 0, menuActiveLetters = 0;   // effect numbers (1..15) really showing; 0 = unknown (shown as --)
+long menuChangeInSec = -1;                       // seconds until the random effects change (-1 = unknown)
 bool menuEepromValid = false;                    // the stored image matches this layout
 
 #ifdef MENU_TEST_LOG
@@ -137,9 +138,9 @@ void menuValueText(uint8_t prop, uint16_t pos, char *out) {
   uint8_t n = 0;
   if (menuRd8(PP_FLAGS, prop) & MF_HEX) {
     long r = (long)floorf(v + 0.5f);
-    const char hexDigits[] = "0123456789ABCDEF";
     char tmp[9];
     uint8_t t = 0;
+    const char hexDigits[] = "0123456789ABCDEF";
     do { tmp[t++] = hexDigits[r & 15]; r >>= 4; } while (r > 0 && t < 8);
     while (t > 0) out[n++] = tmp[--t];
     out[n] = 0;
@@ -199,18 +200,29 @@ void menuToStatus(unsigned long now) {
   menuSince = now;
 }
 
+// Status page text of one effect: two digits, with a star before them when the effect is random (then the number
+// of the effect really showing, or -- when it is not known).
+void menuEffectText(uint8_t prop, uint8_t active, char *out) {
+  const bool random = menuPosArr[prop] == 0;
+  const unsigned n = random ? active : menuPosArr[prop];
+  if (n > 0 && n < 100) snprintf(out, 8, "%s%02u", random ? "*" : "", n);
+  else snprintf(out, 8, "%s--", random ? "*" : "");
+}
+
 // Builds the two display rows for time `now`.
 void menuRows(unsigned long now, char *row0, char *row1) {
   char a[48], b[48];
   if (menuMode == MM_STATUS) {
-    const char hexDigits[] = "0123456789ABCDEF";
     char valueTextBuf[24];
     menuValueText(MENU_STATUS_CASINO, menuPosArr[MENU_STATUS_CASINO], valueTextBuf);
-    snprintf(a, sizeof(a), "#%c Casino %s", hexDigits[(long)floorf(menuValue(MENU_STATUS_PROGRAM) + 0.5f) & 15], valueTextBuf);
+    char ef[8], el[8];
+    menuEffectText(MENU_STATUS_EFFECT_FRAME, menuActiveFrame, ef);
+    menuEffectText(MENU_STATUS_EFFECT_LETTERS, menuActiveLetters, el);
+    snprintf(a, sizeof(a), "F%s L%s %s", ef, el, valueTextBuf);
     const bool left = menuPosArr[MENU_STATUS_ARROW] == 0;
     if (MENU_STATUS_ARROW_ASCII) snprintf(b, sizeof(b), "%s", left ? "<-Customer right" : "->Customer left");
     else snprintf(b, sizeof(b), "%c Customer %s", left ? MENU_LEFT_ARROW : MENU_RIGHT_ARROW, left ? "right" : "left");
-    if (menuValue(MENU_STATUS_PROGRAM) == (float)MENU_STATUS_RANDOM_VALUE && menuChangeInSec >= 0) {
+    if ((menuPosArr[MENU_STATUS_EFFECT_FRAME] == 0 || menuPosArr[MENU_STATUS_EFFECT_LETTERS] == 0) && menuChangeInSec >= 0) {
       const unsigned long since = now >= menuSince ? now - menuSince : 0;
       if ((since / MENU_STATUS_ALT_MS) % 2 == 1) snprintf(b, sizeof(b), "Change in %ld:%02ld", menuChangeInSec / 60, menuChangeInSec % 60);
     }
@@ -347,7 +359,7 @@ bool menuBegin() {
 void menuSet(uint8_t prop, uint16_t pos) { menuSetPos(prop, pos); }   // a value changed outside the menu (no EEPROM write)
 
 bool menuIsStatusProp(uint8_t prop) {
-  return prop == MENU_STATUS_PROGRAM || prop == MENU_STATUS_CASINO || prop == MENU_STATUS_ARROW;
+  return prop == MENU_STATUS_CASINO || prop == MENU_STATUS_ARROW;
 }
 
 // A physical control changed: the value follows; an open menu closes for the status properties.

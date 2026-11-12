@@ -238,12 +238,10 @@ def main():
     push_button(960, cfg["PIN_BACK"], "SW8  push button BACK, D%d" % cfg["PIN_BACK"], "one level up, cancels an edit")
     push_button(1290, cfg["PIN_SHIFT"], "SW9  push button SHIFT, D%d" % cfg["PIN_SHIFT"], "held while turning the menu switch: bigger steps")
 
-    hex_switch(1440, "SW6  hex rotary switch 0-F, PROGRAM", "letter program + frame pattern (F = random)", cfg["PIN_PROGRAM"])
-
-    # ---- I2C LCD (below SW6) --------------------------------------------------------------------
-    ly0 = 1650
+    # ---- I2C LCD (below SHIFT) ------------------------------------------------------------------
+    ly0 = 1480
     svg.text(40, ly0 - 40, "LCD1  2x16 character LCD, I2C backpack", size=12, weight="bold")
-    svg.text(40, ly0 - 26, "status page (program, casino, arrow), menu", size=10, color=GREY)
+    svg.text(40, ly0 - 26, "status page (effects, casino, arrow), menu", size=10, color=GREY)
     svg.text(40, ly0 - 14, "(I2C address 0x27, try 0x3F if blank)", size=10, color=GREY)
     svg.rect(60, ly0, 140, 96, fill="#f3f3f3")
     svg.text(100, ly0 + 54, "LCD", size=12, anchor="middle", weight="bold")
@@ -292,10 +290,10 @@ def main():
         "4. D12 = letters strip, 10 pixels (one per letter): 1-6 C A S I N O, then 7-10 N E P O. OPEN is wired in reverse order on the strip; the program maps the letters. D13 stays the status LED.",
         "5. Put each 330 ohm resistor close to the first pixel of its strip. Keep data wires short. The sticks plug straight into the Grove shield (no resistors, no wire from a supply).",
         "6. The Mega's 5 V data signal into a 12 V WS2811 strip normally works (as in the strip tests) but is not verified for the final sign; the 74HCT125 buffer is listed as insurance.",
-        "7. SW6 (program, absolute): pins 1, 2, 4, 8 go to D34-D37, C to GND; position 0..E = program 0..14, F = random. SW3 (menu, relative): pins 1, 2, 4, 8 go to D42-D45, C to GND; "
+        "7. SW3 (menu, relative; the only hex switch, there is no program switch any more): pins 1, 2, 4, 8 go to D42-D45, C to GND; "
         "a change of the code is a step (1..7 forward, 9..15 back). A position counts in binary (0..F). "
         "If your switch gives the complement (15 - position), set HEX_BIT_IS_LOW to false in sketch.ino.",
-        "8. All inputs (SW1, SW2, SW3, SW5 to SW9) use the internal pull-ups (INPUT_PULLUP), so no resistors are needed for them. "
+        "8. All inputs (SW1, SW2, SW3, SW5, SW7 to SW9) use the internal pull-ups (INPUT_PULLUP), so no resistors are needed for them. "
         "Speeds and brightness curves are menu properties (saved in EEPROM); the old speed switches SW3/SW4 on D22-D29 are gone.",
         "9. CLOSED (the 11th Grove stick, 10 white LEDs, shield connector A0) sits BEHIND the plate under the CLOSED hole text and is lit only while SW5 says closed.",
         "10. LCD1 (I2C backpack) uses the Mega's I2C pins D20 (SDA) and D21 (SCL) plus the Mega 5V and GND pins (about 30 mA with the backlight).",

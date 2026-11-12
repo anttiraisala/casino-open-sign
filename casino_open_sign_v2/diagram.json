@@ -561,22 +561,13 @@
       "top": 284,
       "left": 936,
       "attrs": {
-        "text": "D34-D37: program switch SW6 (hex rotary 0-F): letter program + frame pattern"
+        "text": "D13 (LED L on the board): sign of life; Serial Monitor 115200 baud"
       }
     },
     {
       "type": "wokwi-text",
       "id": "legend_13",
       "top": 306,
-      "left": 936,
-      "attrs": {
-        "text": "D13 (LED L on the board): sign of life; Serial Monitor 115200 baud"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "legend_14",
-      "top": 328,
       "left": 936,
       "attrs": {
         "text": "One Wokwi LED = one real pixel (one chip = 3 LEDs, 10 cm)."
@@ -588,7 +579,7 @@
       "top": 322,
       "left": 480,
       "attrs": {
-        "text": "Program switch SW6 (D34-D37) picks the letter program AND the frame pattern:"
+        "text": "Effects (menu: Effects > Frame effect, Letters effect; each 0 = random, 1-15 = a fixed effect):"
       }
     },
     {
@@ -597,7 +588,7 @@
       "top": 342,
       "left": 480,
       "attrs": {
-        "text": "0 breathe   1 wave   2 typewriter   3 ignite   4 word blink"
+        "text": "1 breathe   2 wave   3 typewriter   4 ignite   5 word blink"
       }
     },
     {
@@ -606,7 +597,7 @@
       "top": 362,
       "left": 480,
       "attrs": {
-        "text": "5 alternate   6 scanner   7 sparkle   8 chase   9 pulse"
+        "text": "6 alternate   7 scanner   8 sparkle   9 chase   10 pulse"
       }
     },
     {
@@ -615,7 +606,7 @@
       "top": 382,
       "left": 480,
       "attrs": {
-        "text": "A converge   B words swap   C slot machine   D twin chase   E marquee"
+        "text": "11 converge   12 words swap   13 slot machine   14 twin chase   15 marquee"
       }
     },
     {
@@ -624,7 +615,7 @@
       "top": 402,
       "left": 480,
       "attrs": {
-        "text": "F random auto: a random program from 0-E, new one every 2 min"
+        "text": "0 random: every group set to 0 picks a new effect after the Random delay (default 2 min)."
       }
     },
     {
@@ -633,7 +624,7 @@
       "top": 422,
       "left": 480,
       "attrs": {
-        "text": "Frame patterns 0-E follow the same number. The sign starts in the switch position."
+        "text": "The frame effect N and the letters effect N are separate choices; both start at 1."
       }
     },
     {
@@ -1110,13 +1101,6 @@
       "attrs": {}
     },
     {
-      "type": "wokwi-dip-switch-8",
-      "id": "program_switches",
-      "top": 426,
-      "left": 290,
-      "attrs": {}
-    },
-    {
       "type": "wokwi-text",
       "id": "speed_label_1",
       "top": 216,
@@ -1150,51 +1134,6 @@
       "left": 20,
       "attrs": {
         "text": "Click the part, press keys 1-4. Buttons OK/BACK/SHIFT above."
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "speed_label_5",
-      "top": 296,
-      "left": 20,
-      "attrs": {
-        "text": ""
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "speed_label_6",
-      "top": 316,
-      "left": 20,
-      "attrs": {
-        "text": ""
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "speed_label_7",
-      "top": 336,
-      "left": 20,
-      "attrs": {
-        "text": "Right DIP bank = program switch SW6 (D34-D37):"
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "speed_label_8",
-      "top": 356,
-      "left": 20,
-      "attrs": {
-        "text": "1-4 = bits 1,2,4,8; 5-8 unused. Binary 0..15 = program 0..F."
-      }
-    },
-    {
-      "type": "wokwi-text",
-      "id": "speed_label_9",
-      "top": 376,
-      "left": 20,
-      "attrs": {
-        "text": "Click the part, press keys 1-4."
       }
     },
     {
@@ -1366,54 +1305,6 @@
     ],
     [
       "button_shift:2.r",
-      "mega:GND.1",
-      "black",
-      []
-    ],
-    [
-      "mega:34",
-      "program_switches:1a",
-      "orange",
-      []
-    ],
-    [
-      "program_switches:1b",
-      "mega:GND.1",
-      "black",
-      []
-    ],
-    [
-      "mega:35",
-      "program_switches:2a",
-      "orange",
-      []
-    ],
-    [
-      "program_switches:2b",
-      "mega:GND.1",
-      "black",
-      []
-    ],
-    [
-      "mega:36",
-      "program_switches:3a",
-      "orange",
-      []
-    ],
-    [
-      "program_switches:3b",
-      "mega:GND.1",
-      "black",
-      []
-    ],
-    [
-      "mega:37",
-      "program_switches:4a",
-      "orange",
-      []
-    ],
-    [
-      "program_switches:4b",
       "mega:GND.1",
       "black",
       []

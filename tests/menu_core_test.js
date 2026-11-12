@@ -18,8 +18,8 @@ const clone = o => JSON.parse(JSON.stringify(o));
 {
   const m = core.build(V2);
   eq(m.errors, [], 'V2 menu has no errors'); eq(m.warnings, [], 'V2 menu has no warnings');
-  eq(m.order.length, 21, 'V2 has 21 properties');
-  eq(core.persistIds(m).length, 18, 'V2 stores 18 properties (program, arrow, casino are not stored)');
+  eq(m.order.length, 22, 'V2 has 22 properties');
+  eq(core.persistIds(m).length, 20, 'V2 stores 20 properties (arrow and casino are not stored)');
   eq(['strip', 'letters', 'stick'].map(g => ['Min', 'Max', 'Exp', 'Mix'].map(x => m.props[g + x].name).join()).join('|'), 'Min,Max,Exponent,Mix|Min,Max,Exponent,Mix|Min,Max,Exponent,Mix', 'strip, letters and stick each have min, max, exponent and mix');
   eq(m.props.lettersMix.count, 51, 'mix 0..1 linear has 51 positions'); eq(core.valueAt(m.props.stickMix, m.props.stickMix.defaultPos), 1, 'mix default 1.0'); eq(m.props.letersMix === undefined, true, 'no typo property');
   eq(m.props.lettersExp.callbacks, ['rebuildLettersCurve'], 'letters curve callback'); eq(m.props.stripMix.scale, 'linear', 'mix is linear');
@@ -30,7 +30,11 @@ const clone = o => JSON.parse(JSON.stringify(o));
   eq(m.props.speedFrame.defaultPos, 18, 'speed default 1.0 is position 18');
   near(core.valueAt(m.props.speedFrame, 0), 0.125, 1e-9, 'speed min'); near(core.valueAt(m.props.speedFrame, 30), 4, 1e-9, 'speed max');
   eq(m.props.stripMax.default, 80, 'brightness max default 80'); eq(m.props.randomDelay.count, 31, 'delay positions 0..30');
-  eq(m.props.program.readOnly, true, 'program is read-only via the type template');
+  eq(m.props.arrow.readOnly, true, 'arrow is read-only via the type template');
+  eq(m.props.frameEffect.count, 16, 'frame effect has positions 0..15'); eq(m.props.lettersEffect.count, 16, 'letters effect has positions 0..15');
+  eq(m.props.frameEffect.defaultPos, 1, 'frame effect default is 1'); eq(m.props.lettersEffect.defaultPos, 1, 'letters effect default is 1');
+  eq(core.valueText(m.props.lettersEffect, 0), 'Random', 'effect 0 is random'); eq(core.valueText(m.props.lettersEffect, 13), '13 Slot machine', 'letters effect 13'); eq(core.valueText(m.props.frameEffect, 15), '15 Dashes', 'frame effect 15'); eq(core.valueText(m.props.frameEffect, 2), '2 Comet', 'frame effect 2');
+  eq(m.props.frameEffect.callbacks, ['effectFrameChanged'], 'frame effect callback'); eq(m.props.lettersEffect.callbacks, ['effectLettersChanged'], 'letters effect callback');
   eq(m.props.arrowReverse.trueText, 'Yes', 'bool texts from the type template');
 }
 
@@ -121,7 +125,7 @@ const clone = o => JSON.parse(JSON.stringify(o));
   eq(errs(mk(base(), [{ preset: 'P', set: { a: 'default' } }])), '', 'default keyword accepted');
   check(/format must be 1/.test(errs({ format: 2 })), 'format check');
   check(/root\.items missing/.test(errs({ format: 1 })), 'root needed');
-  check(/status\.arrow/.test(errs(mk(base(), [{ propertyRef: 'a' }], { status: { program: 'a', casino: 'a', arrow: 'zz' } }))), 'status property must exist');
+  check(/status\.arrow/.test(errs(mk(base(), [{ propertyRef: 'a' }], { status: { casino: 'a', arrow: 'zz', effectFrame: 'a', effectLetters: 'a' } }))), 'status property must exist');
   check(/no items/.test(errs(mk({}, [{ menu: 'Empty', items: [] }]))), 'empty menu rejected');
   const w = core.build(mk({ g: { kind: 'int', min: 0, max: 100, step: 10, default: 14 } }, [{ propertyRef: 'g' }]));
   check(w.ok && /snapped to 10/.test(w.warnings.join()), 'off-grid default snaps with a warning');
@@ -148,20 +152,26 @@ const clone = o => JSON.parse(JSON.stringify(o));
 function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
 {
   const e = eng();
-  eq(e.rows(0), ['#0 Casino Closed', '\x7f Customer right'], 'status page default (arrow Left seen from behind)');
-  e.physical('program', 10, 5); e.physical('casino', 1, 5); e.physical('arrow', 1, 5);
-  eq(e.rows(10), ['#A Casino Open  ', '\x7e Customer left '], 'status page after the switches moved');
-  e.physical('program', 15, 20); e.setRuntime({ changeInSec: 125 });
-  eq(e.rows(20)[1], '\x7e Customer left ', 'program F shows the direction first');
-  eq(e.rows(20 + 3000)[1], 'Change in 2:05  ', 'program F alternates to the countdown after 3 s');
+  eq(e.rows(0), ['F01 L01 Closed  ', '\x7f Customer right'], 'status page default (effects 1 and 1, arrow Left seen from behind)');
+  e.physical('casino', 1, 5); e.physical('arrow', 1, 5);
+  eq(e.rows(10), ['F01 L01 Open    ', '\x7e Customer left '], 'status page after the switches moved');
+  e.set('frameEffect', 12); e.set('lettersEffect', 3);
+  eq(e.rows(10)[0], 'F12 L03 Open    ', 'effect numbers use two digits');
+  e.set('lettersEffect', 0); e.setRuntime({ activeLetters: 7, changeInSec: 125 });
+  eq(e.rows(20)[0], 'F12 L*07 Open   ', 'a random letters effect shows a star and the pattern really showing');
+  eq(e.rows(20)[1], '\x7e Customer left ', 'a random effect shows the direction first');
+  eq(e.rows(20 + 3000)[1], 'Change in 2:05  ', 'a random effect alternates to the countdown after 3 s');
   eq(e.rows(20 + 6000)[1], '\x7e Customer left ', 'and back after 6 s');
   e.setRuntime({ changeInSec: 61 }); eq(e.rows(20 + 3000)[1], 'Change in 1:01  ', 'countdown seconds padded');
-  e.physical('program', 4, 40); eq(e.rows(40 + 3000)[1], '\x7e Customer left ', 'no countdown outside program F');
-  const a = new core.Engine(core.build(Object.assign(clone(V2), { status: { program: 'program', casino: 'casino', arrow: 'arrow', arrowAscii: true } })));
+  e.set('lettersEffect', 4); eq(e.rows(40 + 3000)[1], '\x7e Customer left ', 'no countdown while no effect is random');
+  e.set('frameEffect', 0); e.setRuntime({ activeFrame: 0 }); eq(e.rows(0)[0], 'F*-- L04 Open   ', 'a random effect with an unknown pattern shows --');
+  eq(e.rows(40 + 3000)[1], 'Change in 1:01  ', 'a random frame effect also gives the countdown');
+  e.set('lettersEffect', 0); e.setRuntime({ activeFrame: 15, activeLetters: 9 });
+  eq(e.rows(0)[0], 'F*15 L*09 Open  ', 'both random: 16 characters with Open'); e.physical('casino', 0, 50);
+  eq(e.rows(0)[0], 'F*15 L*09 Closed', 'both random: Closed also fits in 16 characters');
+  const a = new core.Engine(core.build(Object.assign(clone(V2), { status: { casino: 'casino', arrow: 'arrow', effectFrame: 'frameEffect', effectLetters: 'lettersEffect', arrowAscii: true } })));
   eq(a.rows(0)[1], '<-Customer right', 'ascii fallback left is 16 chars'); a.physical('arrow', 1, 1); eq(a.rows(1)[1], '->Customer left ', 'ascii fallback right');
   eq(e.rows(0)[0].length, 16, 'row 0 is 16 chars');
-  // hex digits of the status header
-  const f = eng(); f.physical('program', 15, 0); eq(f.rows(0)[0], '#F Casino Closed', 'F fits in 16 characters');
 }
 
 // ---- engine: navigation, editing, EEPROM batches
@@ -174,7 +184,7 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   eq(e.mode, 'menu', 'OK opens the menu'); eq(e.rows(1000), ['Menu         60s', 'Controls       >'], 'menu opens at the root, first item');
   e.turn(-1, false, 1100); eq(e.rows(1100)[1], 'Controls       >', 'list stops at the first item');
   e.turn(10, false, 1200); eq(e.rows(1200)[1], 'Restore defaults', 'list stops at the last item (no wrap)');
-  e.turn(-1, false, 1300); eq(e.rows(1300)[1], 'Random program >', 'previous item'); for (let k = 0; k < 5; k++) e.turn(-1, false, 1400 + k);
+  e.turn(-1, false, 1300); eq(e.rows(1300)[1], 'Brightness     >', 'previous item'); for (let k = 0; k < 4; k++) e.turn(-1, false, 1400 + k);
   eq(e.rows(1500)[1], 'Speed          >', 'back to Speed');
   e.key('OK', 2000); eq(e.rows(2000), ['Speed           ', 'Frame speed: 1.0'], 'submenu shows its first property (name and value scroll as one text)');
   eq(e.rows(3399)[1], 'Frame speed: 1.0', 'still at the start during the first pause'); eq(e.rows(3400)[1], 'rame speed: 1.00', 'then one character per 400 ms'); eq(e.rows(5199)[1], 'me speed: 1.000x', 'the last character stays at the right edge during the end pause');
@@ -194,23 +204,23 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
 }
 {
   const e = eng();
-  e.key('OK', 0); e.key('OK', 10); e.key('OK', 20);        // Controls, Program (read-only)
-  eq(e.mode, 'view', 'OK on a read-only property opens the view page'); eq(e.rows(20), ['Program         ', '\u0001 0             '], 'view page: name, lock and value');
-  e.turn(3, true, 25); eq(e.text('program'), '0', 'turning does not change a read-only value'); e.key('OK', 30);
-  eq(e.mode, 'menu', 'OK on the view page goes back'); eq(e.rows(30)[1], 'Program        0', 'read-only row shows its value');
+  e.key('OK', 0); e.key('OK', 10); e.key('OK', 20);        // Controls, Arrow (read-only)
+  eq(e.mode, 'view', 'OK on a read-only property opens the view page'); eq(e.rows(20), ['Arrow           ', '\u0001 Left          '], 'view page: name, lock and value');
+  e.turn(3, true, 25); eq(e.text('arrow'), 'Left', 'turning does not change a read-only value'); e.key('OK', 30);
+  eq(e.mode, 'menu', 'OK on the view page goes back'); eq(e.rows(30)[1], 'Arrow       Left', 'read-only row shows its value');
   e.key('OK', 32); eq(e.mode, 'view', 'opened again'); e.key('BACK', 34); eq(e.mode, 'menu', 'BACK on the view page goes back');
-  e.key('OK', 36); e.physical('program', 3, 38); eq(e.mode, 'status', 'a physical change closes the view page'); e.physical('program', 0, 39);
+  e.key('OK', 36); e.physical('arrow', 1, 38); eq(e.mode, 'status', 'a physical change closes the view page'); e.physical('arrow', 0, 39);
   e.key('OK', 39); e.key('OK', 39.5); e.key('OK', 39.6);
-  e.physical('program', 9, 40); eq(e.mode, 'status', 'program switch while browsing goes to the status page');
+  e.physical('casino', 1, 40); eq(e.mode, 'status', 'a slide switch while browsing goes to the status page');
   e.key('OK', 50); eq(e.stack.length, 1, 'menu always opens at the root'); eq(e.rows(50)[1], 'Controls       >', 'at the first item again');
-  e.key('OK', 60); e.turn(1, false, 80);
+  e.key('OK', 60);
   // edit a reverse flag, then turn the arrow switch: edit cancelled
   e.turn(1, false, 90); eq(e.rows(90)[1], 'Arrow reverse No', 'bool row'); e.key('OK', 100); e.turn(1, false, 110);
   eq(e.text('arrowReverse'), 'Yes', 'edited live'); e.physical('arrow', 1, 120);
   eq(e.text('arrowReverse'), 'No', 'physical switch cancels the edit and restores the value'); eq(e.mode, 'status', 'and shows the status page');
   eq(e.batches, [], 'nothing saved');
   // casino switch also cancels, other physical events do not close the menu
-  e.key('OK', 130); e.key('OK', 140); e.physical('casino', 1, 150); eq(e.mode, 'status', 'casino switch goes to the status page');
+  e.key('OK', 130); e.key('OK', 140); e.physical('casino', 0, 150); eq(e.mode, 'status', 'casino switch goes to the status page');
 }
 
 // ---- timeout
@@ -223,7 +233,7 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   e.turn(1, false, 1000 + 40000); eq(e.rows(1000 + 40000)[0], 'Menu         60s', 'input restarts the countdown');
   e.tick(1000 + 40000 + 60000); eq(e.mode, 'status', 'timeout after 60 s without input');
   const s = eng(); s.key('OK', 0); s.key('OK', 10); s.tick(1e6); eq(s.mode, 'menu', 'no timeout inside a submenu');
-  const t = eng(); t.key('OK', 0); t.key('OK', 10); t.key('OK', 20); t.key('OK', 30); t.physical('program', 0, 1e6);
+  const t = eng(); t.key('OK', 0); t.key('OK', 10); t.key('OK', 20); t.key('OK', 30); t.physical('arrow', 0, 1e6);
   const u = eng(); u.key('OK', 0); u.turn(2, false, 5); u.key('OK', 10); u.key('OK', 20); u.tick(1e6); eq(u.mode, 'edit', 'no timeout while editing');
   const v = eng(); v.key('OK', 0); v.turn(7, false, 5); v.key('OK', 10); eq(v.mode, 'confirm', 'confirm page open'); v.tick(1e6); eq(v.mode, 'confirm', 'no timeout on the confirm page');
 }
@@ -262,7 +272,7 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
 // ---- EEPROM load
 {
   const e = eng(), img0 = e.eeprom();
-  eq(img0.slots.length, 18, 'image has one slot per stored property'); eq(typeof img0.tag, 'string', 'layout tag');
+  eq(img0.slots.length, 20, 'image has one slot per stored property'); eq(typeof img0.tag, 'string', 'layout tag');
   eq(img0.tag.length, 8, 'tag is 8 hex digits');
   e.set('stripMax', 100); e.set('speedArrow', 2); const img = e.eeprom();
   const f = eng(); eq(f.load(img), true, 'valid image loads'); eq(f.get('stripMax'), 100, 'value back after restart'); near(f.get('speedArrow'), 2, 1e-9, 'float value back');
@@ -270,9 +280,9 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   const bad2 = clone(img); bad2.slots[0] = 9999; const h = eng(); eq(h.load(bad2), false, 'out of range slot rejected'); eq(h.get('stripMax'), 80, 'defaults after invalid data');
   eq(eng().load(null), false, 'empty EEPROM gives defaults');
   const bad3 = clone(img); bad3.slots.pop(); eq(eng().load(bad3), false, 'wrong slot count rejected');
-  const k = eng(); k.load(img); eq(k.get('program'), 0, 'program is not part of the image');
+  const k = eng(); k.load(img); eq(k.getPos('arrow'), 0, 'arrow is not part of the image');
   // tag depends on the layout
-  const other = clone(V2); delete other.common.properties.speedLetters; other.root.items[1].items.pop();
+  const other = clone(V2); delete other.common.properties.speedLetters; other.root.items[2].items.pop();
   check(core.layoutTag(core.build(other)) !== img.tag, 'removing a property changes the layout tag');
   const same = clone(V2); same.common.properties.stripMax.default = 90;
   eq(core.layoutTag(core.build(same)), img.tag, 'changing a default keeps the layout tag');
@@ -284,7 +294,7 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
 {
   const e = eng(), log = [];
   e.opts.onCallback = (cb, id, v) => log.push(cb);
-  e.key('OK', 0); e.key('OK', 1); e.turn(2, false, 2);
+  e.key('OK', 0); e.key('OK', 1); e.turn(1, false, 2);
   e.set('arrowReverse', 1); eq(e.rows(3)[1], 'Arrow reverse: Y', 'a value changed elsewhere shows in the next rows() call');
   eq(log, ['applySwitches'], 'external set calls the callbacks'); eq(e.batches, [], 'external set does not write EEPROM');
 }
@@ -322,9 +332,7 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   f.opts.onCallback = (cb) => log.push(cb);
   f.key('OK', 0); f.key('OK', 1); f.turn(5, false, 2); f.turn(1, false, 3); f.key('OK', 4);   // Controls > Arrow reverse? idx 5 clamps to the last: Casino reverse
   f.turn(1, false, 5); eq(log.length, 1, 'first step changes the value and calls back'); f.turn(1, false, 6); eq(log.length, 1, 'a step against the limit changes nothing and calls nothing');
-  const g = eng(); g.physical('program', 15, 0); g.setRuntime({ changeInSec: null }); eq(g.rows(3000)[1], '\x7f Customer right', 'no countdown data: the direction stays');
-  const noRand = clone(V2); delete noRand.status.randomValue;
-  const h = new core.Engine(core.build(noRand)); h.physical('program', 15, 0); h.setRuntime({ changeInSec: 5 }); eq(h.rows(3000)[1], 'Change in 0:05  ', 'random program value defaults to 15');
+  const g = eng(); g.set('frameEffect', 0); g.setRuntime({ changeInSec: null }); eq(g.rows(3000)[1], '\x7f Customer right', 'no countdown data: the direction stays');
   const long = mk({ a: { kind: 'int', min: 0, max: 5 } }, [{ menu: 'A rather long submenu name', items: [{ propertyRef: 'a' }] }]);
   const i = new core.Engine(core.build(long)); i.key('OK', 0); i.key('OK', 5000);
   eq(i.rows(5000)[0], 'A rather long su', 'long title starts at its beginning when the submenu is entered'); eq(i.rows(5000 + 1400)[0], ' rather long sub', 'and scrolls from that moment');
@@ -344,8 +352,8 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
 {
   const e = eng();
   e.key('OK', 0); e.key('OK', 1); e.turn(3, false, 2); e.key('OK', 3); e.turn(1, false, 4);
-  e.physical('program', 5, 5);
-  eq(e.mode, 'status', 'a program change closes the menu');
+  e.physical('casino', 1, 5);
+  eq(e.mode, 'status', 'a casino switch change closes the menu');
 }
 {
   const src = mk({ a: { kind: 'int', min: 0, max: 9, default: 1 }, ext: { kind: 'int', min: 0, max: 9, readOnly: true } }, [{ propertyRef: 'a' }, { propertyRef: 'ext' }]);
@@ -356,7 +364,7 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
 // ---- scroll keeps going at the list ends and after contact bounce
 {
   const e = new core.Engine(core.build(V2));
-  e.key('OK', 0); e.turn(1, false, 10); e.key('OK', 20); e.turn(5, false, 30);
+  e.key('OK', 0); e.turn(2, false, 10); e.key('OK', 20); e.turn(5, false, 30);
   eq(e.rows(30)[1], 'Arrow speed: 1.0', 'last row of Speed starts scrolling');
   e.turn(1, false, 1500); eq(e.rows(1500)[1], 'rrow speed: 1.00', 'turning down at the last item does not restart the scroll');
   e.turn(-1, false, 1600); e.turn(1, false, 1650); eq(e.rows(1700)[1], 'rrow speed: 1.00', 'a move away and straight back within 300 ms keeps the scroll of the item');
@@ -364,5 +372,29 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   e.turn(-1, false, 7000); e.turn(-1, false, 7100); eq(e.rows(7100)[1], 'Frame speed: 1.0', 'two moves in a row are not a bounce: the new item starts from the beginning');
   e.turn(1, false, 7200); e.turn(-1, false, 9000); e.key('OK', 9001); e.key('BACK', 9002); e.turn(1, false, 9100); eq(e.rows(9100)[1], 'Letters speed: 1', 'a key press forgets the bounce memory');
 }
+// ---- effects: one value in several places, live preview, cancel restores
+{
+  const e = new core.Engine(core.build(V2)), log = [];
+  e.opts.onCallback = (cb, id, v) => log.push(cb + ':' + id);
+  e.key('OK', 0); e.turn(1, false, 10); eq(e.rows(10)[1], 'Effects        >', 'Effects is the second root item'); e.key('OK', 20);
+  eq(e.rows(20), ['Effects         ', 'Frame effect: 1 '], 'first row of Effects');
+  e.turn(1, false, 30); eq(e.rows(30)[1], 'Letters effect: ', 'second row of Effects'); e.turn(1, false, 40); eq(e.rows(40)[1], 'Random delay: 2 ', 'third row of Effects');
+  e.turn(-1, false, 50); e.key('OK', 60);
+  eq(e.rows(60), ['Letters effect  ', '> 1 Breathe     '], 'edit page of an effect: number first, then the name');
+  e.turn(2, false, 70); eq(e.rows(70)[1], '> 3 Typewriter  ', 'live value text while turning'); eq(log, ['effectLettersChanged:lettersEffect'], 'a turn calls the callback at once');
+  e.key('BACK', 80); eq(e.text('lettersEffect'), '1 Breathe', 'BACK restores the value from the start of editing'); eq(log.length, 2, 'and calls the callback again, so the effect goes back too'); eq(e.batches, [], 'nothing saved after cancel');
+  e.key('OK', 90); e.turn(3, false, 100); e.key('OK', 110); eq(e.text('lettersEffect'), '4 Ignite', 'OK keeps the value'); eq(e.batches.length, 1, 'and saves it once');
+  e.key('OK', 130); e.turn(-10, false, 140); eq(e.text('lettersEffect'), 'Random', 'effects stop at 0 = random (no wrap)'); e.turn(40, false, 150); eq(e.text('lettersEffect'), '15 Marquee', 'and at 15 (no wrap)'); e.key('BACK', 160);
+  // the same property under the Letters menu
+  e.key('BACK', 170); e.turn(1, false, 180); eq(e.rows(180)[1], 'Speed          >', 'back at the root'); e.turn(2, false, 190); e.key('OK', 200);
+  eq(e.rows(200)[0], 'Letters         ', 'Letters menu'); eq(e.rows(200)[1], 'Letters effect: ', 'its first row is the letters effect'); e.key('OK', 210); eq(e.rows(210)[1], '> 4 Ignite      ', 'same value as under Effects');
+  e.key('BACK', 220);
+  // Frame menu: effect first, then speed
+  e.key('BACK', 230); e.turn(-1, false, 240); e.key('OK', 250); eq(e.rows(250)[1], 'Frame effect: 1 ', 'Frame menu starts with the frame effect'); e.turn(1, false, 260); eq(e.rows(260)[1], 'Frame speed: 1.0', 'then the frame speed');
+  // Restore defaults sets both effects back to 1
+  const f = new core.Engine(core.build(V2)); f.set('frameEffect', 9); f.set('lettersEffect', 0);
+  f.key('OK', 0); f.turn(7, false, 5); f.key('OK', 10); f.key('OK', 20); eq([f.getPos('frameEffect'), f.getPos('lettersEffect')], [1, 1], 'Restore defaults puts both effects back to 1');
+}
+
 if (fails) { console.log(fails + ' check(s) failed'); process.exit(1); }
 console.log('menu core tests passed');

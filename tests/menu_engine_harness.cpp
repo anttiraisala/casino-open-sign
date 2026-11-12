@@ -35,15 +35,15 @@ static int diffMode(const char *scenario, const char *traceOut) {
   char line[256];
   uint16_t cbSeen = 0, batchSeen = 0;
   while (fgets(line, sizeof line, in)) {
-    unsigned long t; char op[16]; long a = 0, b = 0;
-    int n = sscanf(line, "%lu %15s %ld %ld", &t, op, &a, &b);
+    unsigned long t; char op[16]; long a = 0, b = 0, c = 0;
+    int n = sscanf(line, "%lu %15s %ld %ld %ld", &t, op, &a, &b, &c);
     if (n < 2) continue;
     menuTick(t);
     if (!strcmp(op, "turn")) menuTurn((int)a, b != 0, t);
     else if (!strcmp(op, "key")) menuKey((uint8_t)a, t);
     else if (!strcmp(op, "phys")) menuPhysical((uint8_t)a, (uint16_t)b, t);
     else if (!strcmp(op, "set")) menuSet((uint8_t)a, (uint16_t)b);
-    else if (!strcmp(op, "rt")) menuChangeInSec = a;
+    else if (!strcmp(op, "rt")) { menuChangeInSec = a; menuActiveFrame = (uint8_t)b; menuActiveLetters = (uint8_t)c; }
     char r0[17], r1[17], q0[17], q1[17];
     menuRows(t, r0, r1);
     menuRows(t + 1700, q0, q1);

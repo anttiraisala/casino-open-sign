@@ -42,7 +42,7 @@ Letters strip (D12): 10 pixels, one per letter
 ----------------------------------------------
     pixels 1-6    C A S I N O    (CASINO, left to right)
     pixels 7-10   N E P O        (OPEN is wired REVERSED: pixel 7 = N ... pixel 10 = O)
-The program maps the letters, so every letter pattern (modes 0-10) runs in natural reading order for the viewer:
+The program maps the letters, so every letter effect runs in natural reading order for the viewer:
 the letters of OPEN, read left to right O P E N, are pixels 10, 9, 8, 7. A pixel is 3 LEDs in one colour (deep red).
 
 What stays as in version 1
@@ -66,7 +66,6 @@ Wiring (exactly)
                   (V2 only: the connectors differ from version 1 and ../arrow_sticks/; the stick positions on the plate are unchanged)
     D32 -> slide switch SW1 common (contact 1 -> GND)      D30 -> slide switch SW5 common (contact 1 -> GND)
     D33 -> push button SW2 -> GND (only skips the power-on LED test)
-    D34-D37 -> SW6 program switch pins 1, 2, 4, 8 (common C -> GND)
     D42-D45 -> SW3 menu switch pins 1, 2, 4, 8 (common C -> GND)
     D48 -> push button SW7 OK -> GND     D49 -> push button SW8 BACK -> GND     D50 -> push button SW9 SHIFT -> GND
     (every button: contact 1 to the Arduino pin, contact 2 to GND; all inputs use INPUT_PULLUP, no resistors)
@@ -96,14 +95,15 @@ The power-on LED test (10 s) lights a 2-pixel window running along every strip (
 
 Settings menu (menu switch SW3 D42-D45, buttons OK D48, BACK D49, SHIFT D50)
 --------------------------------------------------------------------------
-Status page (the display after power-up): row 0 shows the program (#0..#E, #F = random), the casino state (Open/Closed); row 1 shows the arrow
-symbol and the customer side ("<- Customer right" = the arrow points to the customer's right) and, in program F, alternates with
-"Change in M:SS" (time to the next random program). OK opens the menu; the display shows the LCD button name OK.
-Menu: Controls (program, arrow, casino: read-only switch positions; Arrow reverse / Casino reverse flags), Speed (Frame speed, Letters speed,
+Status page (the display after power-up): row 0 shows the two effects and the casino state, e.g. "F12 L03 Open" (F = frame effect, L = letters
+effect, two digits; a star before the number marks a random group and the number is the effect really showing, e.g. "F*07"; "--" = unknown);
+row 1 shows the arrow symbol and the customer side ("<- Customer right" = the arrow points to the customer's right) and, while the frame
+or the letters are random, alternates with "Change in M:SS" (time to the next random change). OK opens the menu; the display shows the LCD button name OK.
+Menu: Controls (arrow, casino: read-only switch positions; Arrow reverse / Casino reverse flags), Effects (Frame effect, Letters effect, Random delay), Speed (Frame speed, Letters speed,
 Arrow speed: x0.125..x4, logarithmic, 30 steps, shown with 3 decimals, default x1), then one group per LED type: Frame (the frame LED strip),
-Letters (the letter LED strip) and Arrow (the arrow sticks), each with its speed and the brightness Min, Max, Exponent and Mix (the curve max is the
+Letters (the letter LED strip) and Arrow (the arrow sticks), each with its speed (Frame and Letters also start with their effect: one value, two places) and the brightness Min, Max, Exponent and Mix (the curve max is the
 limit, there is no global brightness); Brightness (the same brightness values again, grouped Frame / Letters / Arrow: one property, two places),
-Random program (Change delay), Restore defaults (asks for confirmation).
+Restore defaults (asks for confirmation).
 A property row shows "Name  value" (value at the right edge); if the two do not fit in 16 characters the row scrolls as one text "Name: value"
 (pause at the start, one character per step, pause with the last character at the right edge). OK on a read-only value opens the same page as
 an edit (name, then a padlock and the value) but nothing can be changed; BACK or OK returns.
@@ -114,18 +114,22 @@ A move of the menu switch at the first or last item does nothing (the scroll of 
 within 300 ms (contact bounce) also keeps the scroll of that row.
 Holding SHIFT while turning makes the step bigger. OK enters / starts an edit / accepts, BACK goes one level up / cancels an edit.
 Long row text scrolls. At the menu root, with no property open and no edit, 60 s without any input returns the display to the status page.
-The program switch SW6 is ABSOLUTE and is read all the time (also while the menu is open).
+There is no program switch: the effects are chosen in the menu (Effects).
 Values are saved in EEPROM (layout tag checked at start-up; a layout that does not match gives the defaults).
 Tested on the host only (tests/casino_open_sign_v2_harness.cpp, the menu engine tests), not yet on hardware or in Wokwi.
 Known limitation: the LCD is retried after a failed transmit, but not fully re-initialised periodically as in hex_rotary_test.
 
-Program switch SW6 (hex rotary, D34-D37, absolute, read all the time)
------------------------------------------------------------
-Position 0..E = letter program 0..14 and the matching frame pattern 0..14; F = random: a random program 0..14 every 2 minutes,
-never the same twice in a row.
-  0 breathe  1 wave  2 typewriter  3 ignite  4 word blink  5 alternate  6 scanner  7 sparkle  8 chase  9 pulse
-  10 (A) converge  11 (B) words swap  12 (C) slot machine  13 (D) twin chase  14 (E) marquee
-The frame patterns are white and follow the arrow's start corner in programs 0, 1, 2, 6, 8, 13 and 14. Both are first versions to be
+Effects (menu: Effects > Frame effect, Letters effect, Random delay)
+----------------------------------------------------------------------
+The frame and the letters each have their own effect, 0..15: 0 = Random, 1..15 = a fixed effect (default 1; no wrap-around; the value row
+shows the number first, e.g. "12 Slot machine"). While you turn the value the effect is shown live; OK accepts and saves it, BACK restores the
+old value and the old effect.
+  1 breathe  2 wave  3 typewriter  4 ignite  5 word blink  6 alternate  7 scanner  8 sparkle  9 chase  10 pulse
+  11 converge  12 words swap  13 slot machine  14 twin chase  15 marquee
+Random: one shared timer, its length is the Random delay (minutes; 0 = a random 1..30 minutes; default 2). When it runs out, only the groups set
+to 0 pick a new effect (each its own, never the same twice in a row); a fixed effect never changes by itself. Setting a group to 0 picks an
+effect at once and restarts the shared timer, so random groups always change at the same moment.
+The frame patterns are white and follow the arrow's start corner in effects 1, 2, 3, 7, 9, 14 and 15. Both are first versions to be
 judged live on the sign (RDD-IDEAS.md IDEA-015, IDEA-016). Tested on the host only, not yet on hardware.
 
 Changing the settings
@@ -139,7 +143,7 @@ After changing pins or the frame size regenerate the drawings and Wokwi file:
 Tests
 -----
 tests/casino_open_sign_v2_harness.cpp checks the program on the computer (expected values are hard-coded, not read from the sketch),
-tests/mutate_v2.py checks the tests with about 170 mutants of the sketch:
+tests/mutate_v2.py checks the tests with about 190 mutants of the sketch:
     g++ -std=c++17 -O1 -w -Itests -DSKETCH_PATH='"'$PWD'/casino_open_sign_v2/sketch.ino"' -o /tmp/v2 tests/casino_open_sign_v2_harness.cpp && /tmp/v2
     python3 tests/mutate_v2.py
 (Not run on real hardware or in Wokwi.)

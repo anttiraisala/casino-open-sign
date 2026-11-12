@@ -10,7 +10,7 @@ const NONE16 = 0xFFFF;
 function tables(src, sourceName) {
   const m = core.build(src);
   if (!m.ok) throw new Error('menu has errors:\n  ' + m.errors.join('\n  '));
-  if (!m.status) throw new Error('the menu needs a status section (program, casino, arrow)');
+  if (!m.status) throw new Error('the menu needs a status section (casino, arrow, effectFrame, effectLetters)');
   const strings = [], strIndex = {};
   const S = (t) => {
     t = String(t);
@@ -119,10 +119,10 @@ function tables(src, sourceName) {
   ids.forEach((id, i) => { t += 'constexpr uint8_t P_' + id + ' = ' + i + ';\n'; });
   cbNames.forEach((c, i) => { t += 'constexpr uint8_t CB_' + c + ' = ' + i + ';\n'; });
   t += 'constexpr uint8_t MENU_CB_COUNT = ' + cbNames.length + ';\n';
-  t += 'constexpr uint8_t MENU_STATUS_PROGRAM = P_' + m.status.program + ';\n';
   t += 'constexpr uint8_t MENU_STATUS_CASINO = P_' + m.status.casino + ';\n';
   t += 'constexpr uint8_t MENU_STATUS_ARROW = P_' + m.status.arrow + ';\n';
-  t += 'constexpr uint8_t MENU_STATUS_RANDOM_VALUE = ' + m.status.randomValue + ';\n';
+  t += 'constexpr uint8_t MENU_STATUS_EFFECT_FRAME = P_' + m.status.effectFrame + ';\n';
+  t += 'constexpr uint8_t MENU_STATUS_EFFECT_LETTERS = P_' + m.status.effectLetters + ';\n';
   t += 'constexpr bool MENU_STATUS_ARROW_ASCII = ' + (m.status.arrowAscii ? 'true' : 'false') + ';\n';
   t += 'constexpr uint16_t MENU_ROOT_NAME_STR = ' + rootName + ';\n';
   t += '// strings\nconst char MENU_STR[] PROGMEM =\n' + strings.map((s) => '  "' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '\\0"').join('\n') + ';\n';

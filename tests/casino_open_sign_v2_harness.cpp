@@ -33,6 +33,17 @@ static const char* nameOf(Adafruit_NeoPixel *st) {
   for (size_t k = 0; k < g_strips.size(); k++) if (g_strips[k] == st) return kStripNames[k];
   return "?";
 }
+// V2 has no program switch: the effects are menu properties. In this harness an old "program" m (0..14) means that BOTH the
+// frame effect and the letters effect are m + 1 (each program has its own frame pattern, as before), and program 15 means
+// that both are random (effect 0). curMode() gives the program of the letters.
+static const int MODE_RANDOM_AUTO = 15, LETTER_MODE_COUNT = 16;
+static int curMode() { return lettersIsRandom() ? MODE_RANDOM_AUTO : (int)activeLetters; }
+#define letterMode (curMode())
+static void setProgram(int m) {
+  const int e = m == MODE_RANDOM_AUTO ? 0 : m + 1;
+  menuSetPos(P_frameEffect, (uint16_t)e); menuSetPos(P_lettersEffect, (uint16_t)e);
+}
+
 static void dump(FILE *f) {
   fprintf(f, "{\"t\":%lu,\"mode\":%d", g_millis, (int)letterMode);
   for (auto *s : g_strips) {
@@ -51,10 +62,6 @@ static uint8_t shownLevel(Adafruit_NeoPixel *let, uint8_t l) {
   // are wired REVERSED on the strip (strip order C A S I N O N E P O).
   static const int PIXEL_OF_LETTER[10] = {0, 1, 2, 3, 4, 5, 9, 8, 7, 6};
   return (let->shown_[PIXEL_OF_LETTER[l]] >> 16) & 0xFF;
-}
-
-static void setProgramPins(int v) {
-  for (int b = 0; b < 4; b++) g_pinLevel[PIN_PROGRAM[b]] = ((v >> b) & 1) ? LOW : HIGH;   // a set bit reads LOW
 }
 
 int main(int argc, char **argv) {
@@ -87,8 +94,8 @@ int main(int argc, char **argv) {
     CHECK(letterMult256 == (uint16_t)(0.125 * pow(32.0, 16 / 30.0) * 256.0 + 0.5), "boot: the saved letters speed is applied");
     CHECK(!arrowPointsRight && menuPos(P_arrow) == 1, "boot: the saved Arrow reverse flag turns the arrow (switch right -> arrow left)");
     CHECK(brightnessLut[LED_TYPE_STRIP][255] == 40 && brightnessLut[LED_TYPE_LETTERS][255] == 60 && brightnessLut[LED_TYPE_STICK][255] == 100, "boot: the saved curves are built for the three LED types");
-    setProgramPins(15); for (int k = 0; k < 300; k++) { g_millis++; loop(); }
-    CHECK(autoDelayMs == 300000UL, "boot: the saved Change delay (5 min) is used by random auto");
+    setProgram(MODE_RANDOM_AUTO); for (int k = 0; k < 300; k++) { g_millis++; loop(); }
+    CHECK(autoDelayMs == 300000UL, "boot: the saved Random delay (5 min) is used by the random effects");
     CHECK(menuMode == MM_STATUS && menuLastInput >= 0, "boot: the status page is shown");
     printf(fails ? "RESULT: %d failures\n" : "RESULT: all checks passed (boot mode)\n", fails);
     return fails ? 1 : 0;
@@ -185,9 +192,9 @@ int main(int argc, char **argv) {
     // the step counter wraps at 3600 and restarts when the program changes
     { frameStep = 3599; updateFrame(); CHECK(frameStep == 0, "frame step wraps at 3600");
       frameStep = 7; updateFrame(); CHECK(frameStep == 8, "frame step counts the frame updates");
-      frameStep = 7; setLetterMode(5, g_millis); CHECK(frameStep == 0, "the frame step restarts when the program changes");
-      frameStep = 7; pickAutoMode(g_millis); CHECK(frameStep == 0, "the frame step restarts when random auto picks a program");
-      setLetterMode(0, g_millis); }
+      frameStep = 7; setProgram(5); CHECK(frameStep == 0, "the frame step restarts when the frame effect changes");
+      setProgram(MODE_RANDOM_AUTO); frameStep = 7; autoPickedAt = g_millis - autoDelayMs; updateRandomEffects(g_millis); CHECK(frameStep == 0, "the frame step restarts when a random frame effect picks a pattern");
+      setProgram(0); }
     // random-looking programs: check what is certain
     for (int right = 0; right < 2; right++) {
       for (uint16_t i = 0; i < 18; i++) {
@@ -209,8 +216,8 @@ int main(int argc, char **argv) {
 
   // ---- The five new letter programs (10-14): expected levels hard-coded from the descriptions ----
   {
-    const uint8_t saved = activeMode;
-    auto lv = [&](int mode, unsigned long t, int letter) { activeMode = (uint8_t)mode; return (int)baseLetterLevel((uint8_t)letter, t); };
+    const uint8_t saved = activeLetters;
+    auto lv = [&](int mode, unsigned long t, int letter) { activeLetters = (uint8_t)mode; return (int)baseLetterLevel((uint8_t)letter, t); };
     // 10 converge: step = t / 400 mod 8; each word lights from its ends: lit (230) when the distance from the nearer end <= step
     { const int e0[10] = {230, 25, 25, 25, 25, 230, 230, 25, 25, 230};            // step 0: CASINO ends C and O, OPEN ends O and N
       const int e1[10] = {230, 230, 25, 25, 230, 230, 230, 230, 230, 230};        // step 1
@@ -240,10 +247,10 @@ int main(int argc, char **argv) {
     { for (int step = 0; step < 4; step++) for (int l = 0; l < 10; l++)
         CHECK(lv(14, (unsigned long)step * 250 + 5, l) == (((l + step) % 4 == 0) ? 40 : 230), "marquee: one letter in four is dark and the dark ones move");
       CHECK(lv(14, 1000, 0) == 40 && lv(14, 1000, 1) == 230, "marquee: repeats every 4 steps"); }
-    activeMode = saved;
+    activeLetters = saved;
   }
 
-  // Timeline: program k is active from MODE_MS*k. The program switch is turned to k (with contact bounce) just before.
+  // Timeline: program k (both effects k + 1) is active from MODE_MS*k; it is chosen in the menu properties just before.
   const unsigned long MODE_MS = 14000, END = MODE_MS * LETTER_MODE_COUNT + 2000;
   // Arrow switch: LOW (left) at 5 s, HIGH (right) at 25 s, short glitch at 45 s, bouncing change at 60 s.
   long lastFrameShows = fr->shows, lastArrowShows = 0; long arrowFlowChecks = 0;
@@ -256,10 +263,7 @@ int main(int argc, char **argv) {
   bool glitchIgnored = true, bounceHandled = false;
   for (g_millis = 0; g_millis <= END; g_millis++) {
     // ---- stimulus ----
-    for (int k = 1; k < LETTER_MODE_COUNT; k++) {
-      unsigned long t0 = MODE_MS * k - 200;                // press at t0, with bounce, held 120 ms
-      if (g_millis >= t0 && g_millis < t0 + 120) setProgramPins((g_millis < t0 + 8 && (g_millis & 1)) ? (k ^ 8) : k);   // bounce, then settle
-    }
+    for (int k = 1; k < LETTER_MODE_COUNT; k++) if (g_millis == MODE_MS * k - 200) setProgram(k);   // the next program is chosen
     if (g_millis == 5000) g_pinLevel[PIN_ARROW_SWITCH] = SW_LEFT;
     if (g_millis == 25000) g_pinLevel[PIN_ARROW_SWITCH] = SW_RIGHT;
     if (g_millis == 45000) g_pinLevel[PIN_ARROW_SWITCH] = SW_LEFT;    // 10 ms glitch: must be ignored
@@ -278,7 +282,7 @@ int main(int argc, char **argv) {
       // 9-14 top going left, 14 = upper-left, 15-17 left edge going down. All indices are hard-coded here.
       const bool mir = !arrowPointsRight;
       std::vector<int> A, B;
-      if (activeMode == MODE_BREATHE) {   // the bar checks below are for program 0 only (the others are tested above)
+      if (activeLetters == MODE_BREATHE) {   // the bar checks below are for program 0 only (the others are tested above)
       auto lit = [&](size_t i) { return (int)(fr->shown_[i] != 0); };
       for (auto c : fr->shown_) CHECK(c == 0 || c == 0xffffff, "frame colours black/white only");
       static const int RIGHT_CW[10] = {14, 13, 12, 11, 10, 9, 8, 7, 6, 5};     // upper-left, along the top, down the right edge
@@ -423,24 +427,16 @@ int main(int argc, char **argv) {
     printf("  speeds at positions %d/%d/%d: frame %.0f ms, arrow %.1f ms, letters x%.2f\n", pr[0], pr[1], pr[2], gotFrame, gotArrow, clockRate);
   }
   menuSetPos(P_speedFrame, 18); menuSetPos(P_speedLetters, 18); menuSetPos(P_speedArrow, 18);
-  // The program switch is a hex switch with a debounce: a position that is only passed through while turning is ignored.
-  setProgramPins(0); run(200);
-  setProgramPins(12); run(5);
-  CHECK(hexStable[SLOT_PROGRAM] == 0, "a position held for 5 ms is not accepted");
-  setProgramPins(3); run(5);
-  setProgramPins(4); run(150);
-  CHECK(hexStable[SLOT_PROGRAM] == 4 && letterMode == 4, "the final position is accepted after it settles and starts that program");
-  setProgramPins(0); run(150);
-  // Reading is consistent with the configured polarity.
-  g_pinLevel[PIN_PROGRAM[0]] = HIGH; g_pinLevel[PIN_PROGRAM[1]] = LOW;
-  g_pinLevel[PIN_PROGRAM[2]] = LOW; g_pinLevel[PIN_PROGRAM[3]] = HIGH;
-  CHECK(readHexSwitch(PIN_PROGRAM) == (HEX_BIT_IS_LOW ? 6 : 9), "pin polarity: pins 2 and 4 LOW read as 6 (active low)");
-  setProgramPins(0); run(150);
+  // The menu switch is a hex switch with a debounce (tested with the menu below); here the program is chosen in the menu properties.
+  setProgram(0); run(200);
+  setProgram(4); run(150);
+  CHECK(letterMode == 4 && activeFrame == 4 && menuActiveLetters == 5 && menuActiveFrame == 5, "choosing effect 5 for both groups shows pattern 4 and publishes the numbers for the status page");
+  setProgram(0); run(150);
 
   // ---- Casino closed tests ----
   run(300);
   auto openLevel = [&](int k) { return shownLevel(let, FIRST_WORD_LETTERS + k); };
-  auto pressMode = [&]() { const int to = (letterMode + 1) % 16; if (hexStable[SLOT_PROGRAM] == to) { setProgramPins(to ^ 8); run(60); } setProgramPins(to); run(180); };   // next program with the program switch
+  auto pressMode = [&]() { const int to = (letterMode + 1) % 16; setProgram(to); run(180); };   // next program (both effects)
   while (letterMode != MODE_BREATHE) pressMode();
   // V2: the typewriter lights the letters in reading order C A S I N O, O P E N; on the strip that is the pixel order
   // 0 1 2 3 4 5, then 9 8 7 6 (OPEN is wired reversed). Pixel numbers are hard-coded here.
@@ -568,37 +564,68 @@ int main(int argc, char **argv) {
     CHECK(lo <= 60 && hi >= 200, "pulse: strong beats and a dim pause");
   }
   {
-    // random auto: picks only real patterns, never the same twice in a row, uses all of them,
-    // and changes after the Change delay (default 2 minutes)
+    // random effects (effect 0): a random group picks only real patterns, never the same twice in a row, uses all of them,
+    // and one shared timer changes every random group after the Random delay (default 2 minutes)
     gotoMode(MODE_RANDOM_AUTO);
-    CHECK(letterMode == MODE_RANDOM_AUTO && activeMode < PATTERN_MODE_COUNT, "random auto: shows a real pattern");
-    bool used[PATTERN_MODE_COUNT] = {}; bool noRepeat = true, inRange = true;
-    uint8_t prev = activeMode;
-    for (int k = 0; k < 3000; k++) { pickAutoMode(g_millis); if (activeMode == prev) noRepeat = false; if (activeMode >= PATTERN_MODE_COUNT) inRange = false; else used[activeMode] = true; prev = activeMode; }
-    bool all = true; for (bool u : used) if (!u) all = false;
-    CHECK(noRepeat, "random auto: never picks the same pattern twice in a row");
-    CHECK(inRange && all, "random auto: picks every pattern 0..9 and nothing else");
-    setLetterMode(MODE_RANDOM_AUTO, g_millis);
-    int changes = 0; uint8_t last = activeMode; unsigned long firstChange = 0, start = g_millis;
+    CHECK(letterMode == MODE_RANDOM_AUTO && activeLetters < PATTERN_MODE_COUNT && activeFrame < PATTERN_MODE_COUNT, "random effects: both groups show a real pattern");
+    CHECK(menuActiveFrame == activeFrame + 1 && menuActiveLetters == activeLetters + 1, "random effects: the status page gets the numbers of the patterns really showing");
+    bool usedF[PATTERN_MODE_COUNT] = {}, usedL[PATTERN_MODE_COUNT] = {}; bool noRepeat = true, inRange = true;
+    uint8_t prevF = activeFrame, prevL = activeLetters;
+    for (int k = 0; k < 3000; k++) {
+      autoPickedAt = g_millis - autoDelayMs; updateRandomEffects(g_millis);
+      if (activeFrame == prevF || activeLetters == prevL) noRepeat = false;
+      if (activeFrame >= PATTERN_MODE_COUNT || activeLetters >= PATTERN_MODE_COUNT) inRange = false; else { usedF[activeFrame] = true; usedL[activeLetters] = true; }
+      prevF = activeFrame; prevL = activeLetters;
+    }
+    bool all = true; for (int i = 0; i < PATTERN_MODE_COUNT; i++) if (!usedF[i] || !usedL[i]) all = false;
+    CHECK(noRepeat, "random effects: neither group picks the same pattern twice in a row");
+    CHECK(inRange && all, "random effects: both groups pick every pattern 0..14 and nothing else");
+    { int differ = 0; for (int k = 0; k < 2000; k++) { const uint8_t f = activeFrame; autoPickedAt = g_millis - autoDelayMs; updateRandomEffects(g_millis); if (activeFrame - f != activeLetters - activeLetters + (int)activeFrame - f) {} if (activeFrame != activeLetters) differ++; }
+      CHECK(differ > 500, "random effects: the two groups draw independently (they are often different patterns)"); }
+    menuSetPos(P_frameEffect, 1); menuSetPos(P_lettersEffect, 1); menuSetPos(P_frameEffect, 0); menuSetPos(P_lettersEffect, 0);   // both random, timer restarted by the last change
+    int changesF = 0, changesL = 0; uint8_t lastF = activeFrame, lastL = activeLetters; unsigned long firstChange = 0, start = g_millis; bool together = true;
     for (unsigned long k = 0; k < 3 * 120000UL + 5000UL; k++) { run(1);
-      if (activeMode != last) { changes++; last = activeMode; if (!firstChange) firstChange = g_millis - start; } }
-    CHECK(changes == 3, "random auto: a new pattern after each 2 minutes (default Change delay)");
-    CHECK(firstChange >= 120000UL - 50 && firstChange <= 120000UL + 100, "random auto: first change after about two minutes");
-    CHECK(letterMode == MODE_RANDOM_AUTO, "random auto: the selected mode stays random auto");
-    // the Change delay property (Random program > Change delay): 1 minute, and 0 = a random delay of 1..30 minutes
-    menuSetPos(P_randomDelay, 1); setLetterMode(MODE_RANDOM_AUTO, g_millis);
-    CHECK(autoDelayMs == 60000UL, "random auto: Change delay 1 gives a 60 s delay");
-    { unsigned long t0 = g_millis; uint8_t a0 = activeMode; int n = 0;
-      while (g_millis - t0 < 70000UL) { run(1); if (activeMode != a0) { n++; a0 = activeMode; } }
-      CHECK(n == 1, "random auto: with Change delay 1 the pattern changes after one minute"); }
+      const bool cf = activeFrame != lastF, cl = activeLetters != lastL;
+      if (cf != cl) together = false;
+      if (cf) { changesF++; lastF = activeFrame; if (!firstChange) firstChange = g_millis - start; }
+      if (cl) { changesL++; lastL = activeLetters; } }
+    CHECK(changesF == 3 && changesL == 3, "random effects: a new pattern after each 2 minutes (default Random delay)");
+    CHECK(together, "random effects: both random groups change at the same moment");
+    CHECK(firstChange >= 120000UL - 50 && firstChange <= 120000UL + 100, "random effects: first change after about two minutes");
+    CHECK(letterMode == MODE_RANDOM_AUTO && frameIsRandom() && lettersIsRandom(), "random effects: the selected effects stay random");
+    // only the random group changes; a fixed effect never changes by itself
+    menuSetPos(P_frameEffect, 5);
+    CHECK(activeFrame == 4 && !frameIsRandom() && lettersIsRandom(), "a fixed frame effect shows its own pattern, letters stay random");
+    { const uint8_t l0 = activeLetters; int nl = 0; uint8_t la = l0; bool frameSteady = true;
+      autoPickedAt = g_millis; menuSetPos(P_randomDelay, 1); restartRandomTimer(g_millis);
+      for (unsigned long k = 0; k < 130000UL; k++) { run(1); if (activeFrame != 4) frameSteady = false; if (activeLetters != la) { nl++; la = activeLetters; } }
+      CHECK(frameSteady, "a fixed frame effect does not change when the shared timer runs out");
+      CHECK(nl == 2, "the random letters change by themselves (after 1 minute: twice in 130 s)"); }
+    menuSetPos(P_randomDelay, 2);
+    menuSetPos(P_lettersEffect, 8); menuSetPos(P_frameEffect, 0);
+    { const uint8_t l8 = activeLetters; CHECK(l8 == 7 && !lettersIsRandom() && frameIsRandom(), "a fixed letters effect shows its own pattern, the frame is random");
+      const uint8_t f0 = activeFrame; autoPickedAt = g_millis - autoDelayMs; updateRandomEffects(g_millis);
+      CHECK(activeFrame != f0 && activeLetters == 7, "only the random frame changed when the timer ran out"); }
+    // choosing random for a group picks a pattern at once and restarts the shared timer
+    menuSetPos(P_frameEffect, 2); menuSetPos(P_lettersEffect, 2);
+    { const unsigned long before = autoPickedAt; run(1000); menuSetPos(P_frameEffect, 0);
+      CHECK(autoPickedAt > before && frameIsRandom() && activeFrame < PATTERN_MODE_COUNT, "choosing random for the frame picks a pattern and restarts the shared timer");
+      const unsigned long mid = autoPickedAt; run(500); menuSetPos(P_lettersEffect, 0);
+      CHECK(autoPickedAt > mid, "choosing random for the letters restarts the shared timer, so both groups still change together"); }
+    // the Random delay property: 1 minute, and 0 = a random delay of 1..30 minutes
+    setProgram(MODE_RANDOM_AUTO); menuSetPos(P_randomDelay, 1); restartRandomTimer(g_millis);
+    CHECK(autoDelayMs == 60000UL, "random effects: Random delay 1 gives a 60 s delay");
+    { unsigned long t0 = g_millis; uint8_t a0 = activeLetters; int n = 0;
+      while (g_millis - t0 < 70000UL) { run(1); if (activeLetters != a0) { n++; a0 = activeLetters; } }
+      CHECK(n == 1, "random effects: with Random delay 1 the pattern changes after one minute"); }
     menuSetPos(P_randomDelay, 0);
     { bool multiple = true, inRange = true; int smallest = 99, largest = 0;
-      for (int k = 0; k < 400; k++) { pickAutoMode(g_millis); if (autoDelayMs % 60000UL != 0) multiple = false;
+      for (int k = 0; k < 400; k++) { restartRandomTimer(g_millis); if (autoDelayMs % 60000UL != 0) multiple = false;
         const int m = (int)(autoDelayMs / 60000UL); if (m < 1 || m > 30) inRange = false; if (m < smallest) smallest = m; if (m > largest) largest = m; }
-      CHECK(multiple && inRange, "random auto: Change delay 0 draws whole minutes from 1 to 30");
-      CHECK(smallest <= 3 && largest >= 28, "random auto: Change delay 0 uses the whole range 1..30 minutes"); }
+      CHECK(multiple && inRange, "random effects: Random delay 0 draws whole minutes from 1 to 30");
+      CHECK(smallest <= 3 && largest >= 28, "random effects: Random delay 0 uses the whole range 1..30 minutes"); }
     menuSetPos(P_randomDelay, 2);
-    pressMode(); CHECK(letterMode == MODE_BREATHE, "the program switch wraps from F (random auto) back to 0");
+    pressMode(); CHECK(letterMode == MODE_BREATHE, "choosing program 0 after random shows breathe again");
   }
   // ---- LCD display (fake HD44780 + PCF8574 backpack on the mock Wire) and the settings menu on the real controls ----
   {
@@ -613,7 +640,6 @@ int main(int argc, char **argv) {
     // Hard-coded pins of the menu controls and a model of the menu switch (starts at position 0 = all pins HIGH).
     CHECK(PIN_MENU_SWITCH[0] == 42 && PIN_MENU_SWITCH[1] == 43 && PIN_MENU_SWITCH[2] == 44 && PIN_MENU_SWITCH[3] == 45, "menu switch pins D42-D45");
     CHECK(PIN_OK == 48 && PIN_BACK == 49 && PIN_SHIFT == 50, "OK D48, BACK D49, SHIFT D50");
-    CHECK(PIN_PROGRAM[0] == 34 && PIN_PROGRAM[3] == 37, "program switch pins D34-D37");
     static int menuPinPos = 0;
     auto setMenuPins = [&](int v) { for (int b = 0; b < 4; b++) g_pinLevel[PIN_MENU_SWITCH[b]] = ((v >> b) & 1) ? LOW : HIGH; };
     auto turn = [&](int steps) { const int d = steps < 0 ? -1 : 1; for (int k = 0; k < (steps < 0 ? -steps : steps); k++) { menuPinPos = (menuPinPos + d) & 15; setMenuPins(menuPinPos); run(25); } };
@@ -626,22 +652,31 @@ int main(int argc, char **argv) {
     run(300);
     CHECK(menuMode == MM_STATUS, "status page after start-up");
     const std::string ARR_L = std::string(1, (char)0x7F) + " Customer right", ARR_R = std::string(1, (char)0x7E) + " Customer left";   // HD44780 ROM arrows
-    CHECK(line0() == "#0 Casino Open" && line1() == ARR_L, "status page: program 0, casino open, arrow points to the customer's right (left arrow symbol: seen from behind)");
+    CHECK(line0() == "F01 L01 Open" && line1() == ARR_L, "status page: effects 1 and 1, casino open, arrow points to the customer's right (left arrow symbol: seen from behind)");
     printf("  status page: '%s' / '%s'\n", line0().c_str(), line1().c_str());
     g_pinLevel[PIN_ARROW_SWITCH] = SW_LEFT; run(200);
     CHECK(line1() == ARR_R && !arrowPointsRight, "status page follows the arrow switch (customer left, right arrow symbol)");
     g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = LOW; run(200);
-    CHECK(line0() == "#0 Casino Closed" && casinoClosed, "status page shows Closed (and the sign follows)");
+    CHECK(line0() == "F01 L01 Closed" && casinoClosed, "status page shows Closed (and the sign follows)");
     g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; run(200);
-    CHECK(line0() == "#0 Casino Open" && !casinoClosed, "status page shows Open again");
+    CHECK(line0() == "F01 L01 Open" && !casinoClosed, "status page shows Open again");
     g_pinLevel[PIN_ARROW_SWITCH] = SW_RIGHT; run(200);
-    setProgramPins(10); run(200);
-    CHECK(letterMode == 10 && line0() == "#A Casino Open", "the program number is shown in hex (A = converge)");
-    setProgramPins(0); run(200);
-    for (int m = 0; m < 16; m++) { setProgramPins(m); run(200); char want[24]; snprintf(want, sizeof want, "#%X Casino Open", m);
-      CHECK(printable() && line0() == want && letterMode == m, "status page: every program position 0..F is shown"); }
+    setProgram(10); run(200);
+    CHECK(letterMode == 10 && line0() == "F11 L11 Open", "the effect numbers are shown with two digits (F11 L11)");
+    setProgram(0); run(200);
+    for (int m = 0; m < 15; m++) { setProgram(m); run(200); char want[24]; snprintf(want, sizeof want, "F%02d L%02d Open", m + 1, m + 1);
+      CHECK(printable() && line0() == want && letterMode == m, "status page: every effect pair 1..15 is shown"); }
+    setProgram(MODE_RANDOM_AUTO); run(200);
+    { char want[24]; snprintf(want, sizeof want, "F*%02d L*%02d Open", (int)activeFrame + 1, (int)activeLetters + 1);
+      CHECK(printable() && line0() == want, "status page: random groups show * before the number of the pattern really showing"); }
+    menuSetPos(P_lettersEffect, 4); run(200);
+    { char want[24]; snprintf(want, sizeof want, "F*%02d L04 Open", (int)activeFrame + 1);
+      CHECK(line0() == want, "status page: only the random group has the star (F*.. L04)"); }
+    menuSetPos(P_frameEffect, 9); run(200);
+    CHECK(line0() == "F09 L04 Open", "status page: the frame and the letters effects are independent (F09 L04)");
+    setProgram(0); run(200);
     // OK acts on the press (not on the release); a half turn (exactly 8) of the menu switch is ignored
-    { setProgramPins(0); run(200); CHECK(menuMode == MM_STATUS, "OK test starts at the status page");
+    { setProgram(0); run(200); CHECK(menuMode == MM_STATUS, "OK test starts at the status page");
       g_pinLevel[PIN_OK] = LOW; run(60);
       CHECK(menuMode == MM_MENU, "OK opens the menu while the button is still held (acts on the press)");
       g_pinLevel[PIN_OK] = HIGH; run(60);
@@ -651,32 +686,37 @@ int main(int argc, char **argv) {
       CHECK(line0() == h0 && line1() == h1, "a half turn (code change of exactly 8) of the menu switch is ignored");
       key(PIN_BACK); run(200);
       CHECK(menuMode == MM_STATUS, "BACK from the menu root returns to the status page"); }
-    // program F: row 1 alternates between the arrow text and "Change in M:SS"
-    { setProgramPins(0); run(200); bool noCountdown = true;   // other programs never show the countdown
+    // random: row 1 alternates between the arrow text and "Change in M:SS"
+    { setProgram(0); run(200); bool noCountdown = true;   // other programs never show the countdown
       for (int k = 0; k < 7000; k++) { run(1); if (line1().rfind("Change in ", 0) == 0) noCountdown = false; }
-      CHECK(noCountdown && menuChangeInSec == -1, "program 0: row 1 never shows the countdown");
-      setProgramPins(15); run(200); CHECK(line1() == ARR_L, "program F: row 1 starts with the arrow text, the countdown follows");
+      CHECK(noCountdown && menuChangeInSec == -1, "fixed effects: row 1 never shows the countdown");
+      setProgram(MODE_RANDOM_AUTO); run(200); CHECK(line1() == ARR_L, "random: row 1 starts with the arrow text, the countdown follows");
       bool sawArrow = false, sawCountdown = false;
       for (int k = 0; k < 7000; k++) { run(1); const std::string l1 = line1(); if (l1 == ARR_L) sawArrow = true; if (l1.rfind("Change in ", 0) == 0) sawCountdown = true; }
-      CHECK(sawArrow && sawCountdown, "program F: row 1 alternates between the arrow text and the change countdown");
-      CHECK(line0() == "#F Casino Open", "program F: row 0 shows #F");
+      CHECK(sawArrow && sawCountdown, "random: row 1 alternates between the arrow text and the change countdown");
+      CHECK(line0().rfind("F*", 0) == 0 && line0().find(" L*") == 4, "random: row 0 shows F*.. L*..");
+      menuSetPos(P_frameEffect, 3); run(200); { bool cd = false; for (int k = 0; k < 7000; k++) { run(1); if (line1().rfind("Change in ", 0) == 0) cd = true; } CHECK(cd, "the countdown shows while only the letters are random"); }
+      menuSetPos(P_frameEffect, 0); menuSetPos(P_lettersEffect, 3); run(200); { bool cd = false; for (int k = 0; k < 7000; k++) { run(1); if (line1().rfind("Change in ", 0) == 0) cd = true; } CHECK(cd, "the countdown shows while only the frame is random"); }
+      menuSetPos(P_frameEffect, 3); run(200); { bool cd = false; for (int k = 0; k < 7000; k++) { run(1); if (line1().rfind("Change in ", 0) == 0) cd = true; } CHECK(!cd && menuChangeInSec == -1, "no countdown when both effects are fixed"); }
+      setProgram(MODE_RANDOM_AUTO); run(200);
       // the countdown shows the time left until the next random program: 2 minutes (default) minus the time passed
       bool okCount = false; int samples = 0;
       for (int k = 0; k < 7000 && samples < 3; k++) { run(1); const std::string l1 = line1();
         if (l1.rfind("Change in ", 0) == 0) { int m = 0, sec = 0; if (sscanf(l1.c_str() + 10, "%d:%d", &m, &sec) == 2) { samples++;
           const long left = 120L - (long)((g_millis - autoPickedAt) / 1000UL); if (labs((long)(m * 60 + sec) - left) <= 1 && menuChangeInSec == (long)((120000UL - (g_millis - autoPickedAt) + 999UL) / 1000UL)) okCount = true; else { okCount = false; break; } k += 400; } } }
-      CHECK(okCount && samples >= 1, "program F: the countdown shows the time left of the 2 minutes (M:SS)"); }
-    setProgramPins(0); run(200);
+      CHECK(okCount && samples >= 1, "random: the countdown shows the time left of the 2 minutes (M:SS)"); }
+    setProgram(0); run(200);
 
     // ---- the menu on the real controls ----
     key(PIN_OK);
     CHECK(menuMode == MM_MENU && menuDepth == 1, "OK opens the menu at the root");
     CHECK(line0().rfind("Menu", 0) == 0 && line1().rfind("Controls", 0) == 0, "root: title Menu, first item Controls");
     printf("  menu root: '%s' / '%s'\n", Wire.row(0).c_str(), Wire.row(1).c_str());
-    turn(1); settle(); CHECK(line1().rfind("Speed", 0) == 0, "one step on the menu switch moves to Speed");
+    turn(1); settle(); CHECK(line1().rfind("Effects", 0) == 0, "one step on the menu switch moves to Effects");
+    turn(1); settle(); CHECK(line1().rfind("Speed", 0) == 0, "after Effects comes Speed");
     turn(1); settle(); CHECK(line1().rfind("Frame", 0) == 0, "after Speed comes the Frame menu");
-    turn(-1); turn(-1); turn(-5); settle(); CHECK(line1().rfind("Controls", 0) == 0, "the selection stops at the top (no wrap)");
-    turn(1); settle(); key(PIN_OK);                    // Speed
+    turn(-1); turn(-1); turn(-1); turn(-5); settle(); CHECK(line1().rfind("Controls", 0) == 0, "the selection stops at the top (no wrap)");
+    turn(2); settle(); key(PIN_OK);                    // Speed
     CHECK(menuDepth == 2 && line1().rfind("Frame", 0) == 0, "OK enters Speed (first row Frame)");
     key(PIN_OK);                                        // edit Frame speed
     CHECK(menuMode == MM_EDIT, "OK on a property starts editing");
@@ -693,10 +733,8 @@ int main(int argc, char **argv) {
     CHECK(menuMode == MM_MENU && menuPos(P_speedFrame) == 14, "OK accepts the edited value");
     CHECK(EEPROM.mem[0] != 0xFF && EEPROM.mem[3] != 0xFF, "the layout tag was written to EEPROM at address 0");
     { unsigned char savedSlot = EEPROM.mem[4 + menuRd8(PP_SLOT, P_speedFrame)]; CHECK(savedSlot == 14, "EEPROM holds position 14 for the frame speed"); }
-    // closing the menu with the program switch
-    setProgramPins(5); run(200);
-    CHECK(menuMode == MM_STATUS && letterMode == 5 && line0() == "#5 Casino Open", "turning the program switch closes the menu and starts the program");
-    setProgramPins(0); run(200);
+    key(PIN_BACK); key(PIN_BACK); key(PIN_BACK); settle();
+    CHECK(menuMode == MM_STATUS, "BACK from a submenu leads back to the status page");
     // the 60 s timer runs only at the root while browsing
     key(PIN_OK); run(59000); CHECK(menuMode == MM_MENU, "root: still open after 59 s");
     run(1500); CHECK(menuMode == MM_STATUS, "root: back to the status page after 60 s without input");
@@ -710,28 +748,73 @@ int main(int argc, char **argv) {
       bool lockLoaded = true; for (int k = 0; k < 8; k++) if (Wire.cgram[8 + k] != lock[k]) lockLoaded = false;
       CHECK(lockLoaded, "the padlock is loaded into custom character 1 of the display");
       menuSetPos(P_speedFrame, 18); run(50);
-      key(PIN_OK); turn(2); settle();
-      CHECK(line1().rfind("Frame", 0) == 0, "root item 2 is the Frame group");
+      key(PIN_OK); turn(3); settle();
+      CHECK(line1().rfind("Frame", 0) == 0, "root item 3 is the Frame group");
       key(PIN_OK); settle();
       printf("  Frame group rows: '%s' / '%s'\n", line0().c_str(), line1().c_str());
-      CHECK(line0() == "Frame" && line1() == "Frame speed: 1.0", "Frame group: first row is the Frame speed (name and value scroll together)");
-      turn(1); settle(); CHECK(line1() == "Min:           0" || line1().rfind("Min", 0) == 0, "Frame group: then the brightness Min");
-      key(PIN_BACK); turn(1); settle(); CHECK(line1().rfind("Letters", 0) == 0, "root item 3 is the Letters group");
-      turn(1); settle(); CHECK(line1().rfind("Arrow", 0) == 0, "root item 4 is the Arrow group");
+      CHECK(line0() == "Frame" && line1().rfind("Frame effect:", 0) == 0, "Frame group: first row is the Frame effect");
+      turn(1); settle(); CHECK(line1().rfind("Frame speed:", 0) == 0, "Frame group: then the Frame speed");
+      turn(1); settle(); CHECK(line1().rfind("Min", 0) == 0, "Frame group: then the brightness Min");
+      key(PIN_BACK); turn(1); settle(); CHECK(line1().rfind("Letters", 0) == 0, "root item 4 is the Letters group");
+      key(PIN_OK); settle(); CHECK(line0() == "Letters" && line1().rfind("Letters effect:", 0) == 0, "Letters group: first row is the Letters effect");
+      key(PIN_BACK); turn(1); settle(); CHECK(line1().rfind("Arrow", 0) == 0, "root item 5 is the Arrow group");
       turn(1); settle(); key(PIN_OK); settle();
       CHECK(line0() == "Brightness" && line1().rfind("Frame", 0) == 0, "Brightness has Frame, Letters and Arrow groups");
       key(PIN_OK); settle(); CHECK(line0() == "Frame" && line1().rfind("Min", 0) == 0, "Brightness > Frame starts with Min");
       key(PIN_BACK); key(PIN_BACK); key(PIN_BACK); settle();
       CHECK(menuMode == MM_STATUS, "back at the status page");
-      key(PIN_OK); key(PIN_OK); key(PIN_OK); settle();                      // Controls > Program (read-only)
-      CHECK(menuMode == MM_VIEW && line0() == "Program" && line1().size() >= 3 && line1()[0] == (char)1 && line1()[1] == ' ', "a read-only property opens the view page: name, padlock, value");
+      key(PIN_OK); key(PIN_OK); key(PIN_OK); settle();                      // Controls > Arrow (read-only)
+      CHECK(menuMode == MM_VIEW && line0() == "Arrow" && line1().size() >= 3 && line1()[0] == (char)1 && line1()[1] == ' ', "a read-only property opens the view page: name, padlock, value");
       turn(3); settle(); CHECK(menuMode == MM_VIEW, "turning does nothing on the view page");
       key(PIN_OK); settle(); CHECK(menuMode == MM_MENU, "OK leaves the view page");
       key(PIN_OK); settle(); key(PIN_BACK); settle(); CHECK(menuMode == MM_MENU, "BACK leaves the view page");
-      key(PIN_OK); settle(); setProgramPins(2); run(200); setProgramPins(0); run(200);
-      CHECK(menuMode == MM_STATUS, "the program switch closes the view page");
       key(PIN_OK); key(PIN_OK); key(PIN_OK); run(65000); CHECK(menuMode == MM_VIEW, "no timeout on the view page");
       key(PIN_BACK); key(PIN_BACK); key(PIN_BACK); settle(); }
+
+    // a glitch of the menu switch shorter than the 10 ms debounce is not a step (contact bounce)
+    { key(PIN_OK); settle(); const std::string g1 = line1(); const int p0 = menuPinPos;
+      setMenuPins((p0 + 1) & 15); run(4); setMenuPins(p0); run(100);
+      CHECK(line1() == g1, "a 4 ms glitch on the menu switch is ignored (debounce)");
+      setMenuPins((p0 + 13) & 15); run(4); setMenuPins((p0 + 1) & 15); menuPinPos = (p0 + 1) & 15; run(100);
+      CHECK(line1().rfind("Effects", 0) == 0, "a code that stays is one step: the 4 ms glitch before it did not count (debounce)");
+      key(PIN_BACK); settle(); CHECK(menuMode == MM_STATUS, "back at the status page after the debounce test"); }
+    // choosing random for a group never gives the pattern that is showing now
+    { bool repeat = false;
+      for (int e = 1; e <= 15 && !repeat; e++) for (int k = 0; k < 20; k++) {
+        menuSetPos(P_frameEffect, (uint16_t)e); menuSetPos(P_lettersEffect, (uint16_t)e);
+        const uint8_t f = activeFrame, l = activeLetters;
+        menuSetPos(P_frameEffect, 0); if (activeFrame == f) repeat = true;
+        menuSetPos(P_lettersEffect, 0); if (activeLetters == l) repeat = true; }
+      CHECK(!repeat, "choosing random never picks the pattern that was showing");
+      setProgram(0); run(100); }
+    // with both effects fixed the shared timer does nothing (no restart, no output)
+    { setProgram(5); run(100); const size_t mark = Serial.captured.size(); const unsigned long t0 = autoPickedAt; run(135000UL);
+      CHECK(autoPickedAt == t0 && Serial.captured.find("Effects:", mark) == std::string::npos, "both effects fixed: the timer neither restarts nor prints");
+      setProgram(0); run(100); }
+
+    // ---- Effects menu: live preview while editing (REQ-018), OK accepts, BACK restores value and effect ----
+    { setProgram(0); run(200);
+      key(PIN_OK); turn(1); settle(); CHECK(line1().rfind("Effects", 0) == 0, "Effects is root item 1");
+      key(PIN_OK); settle();
+      CHECK(line0() == "Effects" && line1().rfind("Frame effect:", 0) == 0, "Effects: first row is the Frame effect");
+      key(PIN_OK); turn(3); settle();
+      CHECK(menuMode == MM_EDIT && menuPos(P_frameEffect) == 4 && activeFrame == 3 && activeLetters == 0, "turning the frame effect shows it at once (only the frame changes)");
+      turn(-4); settle();
+      CHECK(menuPos(P_frameEffect) == 0 && frameIsRandom() && activeFrame < PATTERN_MODE_COUNT, "turning to 0 makes the frame random while editing");
+      key(PIN_BACK); settle();
+      CHECK(menuMode == MM_MENU && menuPos(P_frameEffect) == 1 && activeFrame == 0 && !frameIsRandom(), "BACK restores the old value and the old effect");
+      key(PIN_OK); turn(6); key(PIN_OK); settle();
+      CHECK(menuPos(P_frameEffect) == 7 && activeFrame == 6, "OK accepts the new frame effect");
+      { unsigned char saved = EEPROM.mem[4 + menuRd8(PP_SLOT, P_frameEffect)]; CHECK(saved == 7, "the accepted frame effect is saved in EEPROM"); }
+      turn(1); settle(); CHECK(line1().rfind("Letters effect:", 0) == 0, "Effects: second row is the Letters effect");
+      key(PIN_OK); turn(11); settle();
+      CHECK(menuPos(P_lettersEffect) == 12 && activeLetters == 11 && activeFrame == 6, "turning the letters effect shows it at once (12 Slot machine)");
+      CHECK(line1().find("12") != std::string::npos, "the value row shows the number first");
+      key(PIN_BACK); settle();
+      CHECK(menuPos(P_lettersEffect) == 1 && activeLetters == 0, "BACK restores the letters effect");
+      turn(1); settle(); CHECK(line1().rfind("Random delay:", 0) == 0, "Effects: third row is the Random delay");
+      key(PIN_BACK); key(PIN_BACK); settle(); CHECK(menuMode == MM_STATUS, "back at the status page");
+      menuSetPos(P_frameEffect, 1); menuSave(&P_frameEffect, 1); setProgram(0); run(200); }
 
     // ---- reverse flags: the slide switches follow the flags at once ----
     g_pinLevel[PIN_ARROW_SWITCH] = SW_RIGHT; g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; run(200);
@@ -782,7 +865,7 @@ int main(int argc, char **argv) {
     menuSetPos(P_speedLetters, 20); menuSave(&P_speedLetters, 1);
     menuSetPos(P_speedLetters, 3);                       // a change that is not saved
     { const bool saved = menuBegin(); applySpeeds(); rebuildAllCurves();
-      menuSet(P_program, hexStable[SLOT_PROGRAM]); menuSet(P_arrow, arrowPosition()); menuSet(P_casino, casinoClosed ? 0 : 1);   // the status values are set again by finishStartup() in the real start
+      menuSet(P_arrow, arrowPosition()); menuSet(P_casino, casinoClosed ? 0 : 1);   // the status values are set again by finishStartup() in the real start
       CHECK(saved && menuPos(P_speedLetters) == 20 && letterMult256 == (uint16_t)(0.125 * pow(32.0, 20 / 30.0) * 256.0 + 0.5), "after a restart the saved value is used, the unsaved one is gone"); }
     menuSetPos(P_speedLetters, 18); menuSave(&P_speedLetters, 1); run(10);
 
@@ -805,7 +888,7 @@ int main(int argc, char **argv) {
     Wire.address = 0x27; run(1500);
     CHECK(lcdOk, "LCD: found again by the periodic retry when the display answers");
     run(400);
-    CHECK(line0() == "#0 Casino Open" && printable(), "LCD: shows the status page again after re-initialisation");
+    CHECK(line0() == "F01 L01 Open" && printable(), "LCD: shows the status page again after re-initialisation");
     CHECK(Wire.present, "LCD: present");
     Wire.present = false; g_pinLevel[PIN_ARROW_SWITCH] = SW_LEFT; run(300);          // the text changes: sending it fails
     CHECK(!lcdOk, "LCD: a display that stops answering is noticed when the sketch writes to it");
@@ -908,22 +991,17 @@ int main(int argc, char **argv) {
     CHECK(!startupTestActive && letterMode == MODE_BREATHE, "after the test the sign starts in mode 0");
     CHECK(casinoClosed, "a switch changed during the test takes effect when the test ends");
     run(400);
-    CHECK(line0() == "#0 Casino Closed", "after the test the LCD shows the status page (the casino switch was set to closed during the test)");
+    CHECK(line0() == "F01 L01 Closed", "after the test the LCD shows the status page (the casino switch was set to closed during the test)");
     g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; run(100);
     CHECK(!casinoClosed, "casino open again");
 
-    // the program switch position at power-up decides the first program
-    setProgramPins(6); run(100); beginStartupTest(g_millis); run(500);
-    g_pinLevel[PIN_SKIP_BUTTON] = LOW; run(100); g_pinLevel[PIN_SKIP_BUTTON] = HIGH; run(100);
-    CHECK(!startupTestActive && letterMode == 6 && activeMode == 6, "after the LED test the sign starts in the program the switch shows");
-    setProgramPins(0); run(200);
     // D33 skips the test and the same press does not change the mode
     run(300); beginStartupTest(g_millis); run(500);
     CHECK(startupTestActive, "LED test: still running after 0.5 s");
     g_pinLevel[PIN_SKIP_BUTTON] = LOW; run(100); g_pinLevel[PIN_SKIP_BUTTON] = HIGH; run(100);
     CHECK(!startupTestActive, "LED test: D33 skips the test");
     CHECK(letterMode == MODE_BREATHE, "LED test: the skipping press does not change the letter mode");
-    run(400); CHECK(line0() == "#0 Casino Open", "LED test: after a skip the LCD shows the status page");
+    run(400); CHECK(line0() == "F01 L01 Open", "LED test: after a skip the LCD shows the status page");
 
     // a button held down during power-up does not skip the test until it was released and pressed again
     g_pinLevel[PIN_SKIP_BUTTON] = LOW; run(100);          // normal operation: this changes the mode
@@ -942,7 +1020,6 @@ int main(int argc, char **argv) {
     CHECK(shows, "after the test the normal animations are running");
     CHECK(rtrimS(Wire.row(0)).size() > 0, "LCD has text");
   }
-  CHECK(PIN_PROGRAM[0] == 34 && PIN_PROGRAM[1] == 35 && PIN_PROGRAM[2] == 36 && PIN_PROGRAM[3] == 37, "program switch pins D34-D37");
 
   CHECK(sawFlicker, "a letter flickers at least once");
   CHECK(modeChanges == LETTER_MODE_COUNT - 1, "bouncing button presses change the mode exactly once each");
@@ -983,13 +1060,13 @@ int main(int argc, char **argv) {
     int dbg = 0; size_t pos = 0;
     while ((pos = log.find("DBG up=", pos)) != std::string::npos) { dbg++; pos++; }
     CHECK(dbg == (int)(g_millis / 1000), "one DBG line per second since power-up");
-    CHECK(log.find("DBG up=1s loops=1001 mode=0 arrow=R closed=0 menu=S events=0 beats=3 tick=") != std::string::npos,
+    CHECK(log.find("DBG up=1s loops=1001 fx=1/1 arrow=R closed=0 menu=S events=0 beats=3 tick=") != std::string::npos,
           "DBG line at 1 s with all fields");
     CHECK(log.find("DBG up=2s loops=1000 ") != std::string::npos && log.find("DBG up=3s loops=1000 ") != std::string::npos,
           "the uptime counts up and the loop runs 1000 times a second here");
     CHECK(log.find(" arrow=L ") != std::string::npos && log.find(" arrow=R ") != std::string::npos, "the DBG line shows the arrow direction");
     CHECK(log.find(" closed=1 ") != std::string::npos, "the DBG line shows casino closed during the test");
-    CHECK(log.find(" mode=10 ") != std::string::npos && log.find(" mode=5 ") != std::string::npos, "the DBG line shows the letter mode");
+    CHECK(log.find(" fx=11/11 ") != std::string::npos && log.find(" fx=1/1 ") != std::string::npos && log.find(" fx=9/4 ") != std::string::npos, "the DBG line shows the frame and letters effect numbers");
     CHECK(log.find(" menu=S ") != std::string::npos && log.find(" sw3=") == std::string::npos, "the DBG line shows the menu state (S = status page) and no speed switch positions any more");
     // the beat counter and the tick change from line to line
     { size_t a = log.find("DBG up=30s"), b = log.find("DBG up=31s");
@@ -999,8 +1076,8 @@ int main(int argc, char **argv) {
         auto field = [](const std::string &l, const char *key) { size_t k = l.find(key); return k == std::string::npos ? -1L : std::stol(l.substr(k + strlen(key))); };
         CHECK(field(l31, " beats=") > field(l30, " beats=") && field(l31, " tick=") != field(l30, " tick="), "beats and tick change every second");
       } }
-    CHECK(log.find("DBG up=4s loops=1000 mode=0 arrow=R closed=0 menu=S events=0 ") != std::string::npos, "events=0 before the first change");
-    CHECK(log.find("DBG up=6s loops=1000 mode=0 arrow=L closed=0 menu=S events=1 ") != std::string::npos,
+    CHECK(log.find("DBG up=4s loops=1000 fx=1/1 arrow=R closed=0 menu=S events=0 ") != std::string::npos, "events=0 before the first change");
+    CHECK(log.find("DBG up=6s loops=1000 fx=1/1 arrow=L closed=0 menu=S events=1 ") != std::string::npos,
           "after the arrow switch moved at 5 s: arrow=L, events=1");
   }
   // ---- Brightness curves (expected values hard-coded; see the formula in the sketch) ----

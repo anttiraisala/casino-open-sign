@@ -5,7 +5,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var S = JSON.parse(JSON.stringify(window.MENU_V2));      // the menu file being edited
   var tab = 'tree', sel = null;                              // sel: {tab, path|id}
-  var model = null, engine = null, eeprom = null, shiftOn = false, phys = { program: 0, casino: 0, arrow: 0 };
+  var model = null, engine = null, eeprom = null, shiftOn = false, phys = { casino: 0, arrow: 0 };
   var startMs = Date.now(), cbLog = [], eeCount = 0;
   var PROP_FIELDS = [['kind', 'sel', ['', 'int', 'float', 'choice', 'bool']], ['type', 'typesel'], ['name', 'text'], ['min', 'num'], ['max', 'num'], ['default', 'val'], ['step', 'num'], ['steps', 'num'],
     ['scale', 'sel', ['', 'linear', 'log']], ['wrap', 'bool'], ['shift', 'num'], ['readOnly', 'bool'], ['persist', 'bool'], ['bind', 'text'], ['unit', 'text'], ['decimals', 'num'],
@@ -37,7 +37,7 @@
   function buildPhys() {
     var box = $('phys'); box.innerHTML = '';
     if (!model.status) { box.textContent = 'No status section: switches not shown.'; return; }
-    ['program', 'casino', 'arrow'].forEach(function (k) {
+    ['casino', 'arrow'].forEach(function (k) {
       var p = model.props[model.status[k]], s = document.createElement('select'), lab = document.createElement('label');
       for (var i = 0; i < p.count; i++) { var o = document.createElement('option'); o.value = i; o.textContent = C.valueText(p, i); s.appendChild(o); }
       s.value = Math.min(phys[k] || 0, p.count - 1);
@@ -48,7 +48,8 @@
   var lastSecs = null;
   function render() {
     if (!engine) { $('lcd0').textContent = '(menu has errors)'; $('lcd1').textContent = ''; return; }
-    engine.setRuntime({ changeInSec: Math.max(0, +$('rt').value || 0) });
+    var st = model.status;   // preview only: a random effect is shown as number 7
+    engine.setRuntime({ changeInSec: Math.max(0, +$('rt').value || 0), activeFrame: st ? (engine.getPos(st.effectFrame) || 7) : 0, activeLetters: st ? (engine.getPos(st.effectLetters) || 7) : 0 });
     var r = engine.rows(now());
     var map = function (s) { return s.replace(/\x7e/g, '→').replace(/\x7f/g, '←').replace(/\x01/g, '🔒'); };
     $('lcd0').textContent = map(r[0]); $('lcd1').textContent = map(r[1]);
@@ -144,7 +145,7 @@
       if (t === 'properties' && it.propertyRef === a) it.propertyRef = b; if (t === 'menus' && it.menuRef === a) it.menuRef = b;
       if (t === 'properties' && it.set && it.set[a] !== undefined) { it.set[b] = it.set[a]; delete it.set[a]; } if (it.items) w(it.items); }); })(S.common.menus[k].items); });
     if (t === 'types') Object.keys(S.common.properties).concat(Object.keys(S.common.types)).forEach(function (k) { var d = S.common.properties[k] || S.common.types[k]; if (d.type === a) d.type = b; });
-    if (t === 'properties' && S.status) ['program', 'casino', 'arrow'].forEach(function (k) { if (S.status[k] === a) S.status[k] = b; });
+    if (t === 'properties' && S.status) ['casino', 'arrow', 'effectFrame', 'effectLetters'].forEach(function (k) { if (S.status[k] === a) S.status[k] = b; });
   }
 
   // ---------------------------------------------------------------- form (middle)

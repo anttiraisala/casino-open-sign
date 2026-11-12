@@ -44,8 +44,6 @@
  *   D33 push button   skips the power-on LED test (it has no other function)
  *   D30 slide switch  SW5 "casino closed" (handle on the GND side = LOW = closed): the OPEN
  *                     letters go dark and the CLOSED light turns on
- *   D34-D37  program switch: 16-position hex rotary switch (0..F, pins 1, 2, 4, 8), read all the time:
- *                 position 0..E = letter program 0..14 (with its own frame pattern), F = random program
  *   D42-D45  menu switch: 16-position hex rotary switch (pins 1, 2, 4, 8), free-running (relative): moves the
  *                 menu selection or changes a value
  *   D48 OK, D49 BACK, D50 SHIFT  push buttons to GND: OK opens the menu from the status page, enters a submenu,
@@ -61,28 +59,31 @@
  *
  * SIGN OF LIFE: the LED on pin 13 blinks all the time while the program runs (every HEARTBEAT_MS, twice as
  * fast while many state changes happen; it is shortly inverted on every state change: arrow direction,
- * letter program, casino open/closed, menu key or switch). Once per second (DEBUG_MS) the Serial Monitor (115200
- * baud, SERIAL_BAUD) gets a line "DBG up=.. loops=.. mode=.. arrow=R|L (customer view) closed=.. menu=S|M|E|C|V events=..
+ * effect change, casino open/closed, menu key or switch). Once per second (DEBUG_MS) the Serial Monitor (115200
+ * baud, SERIAL_BAUD) gets a line "DBG up=.. loops=.. fx=<frame>/<letters> arrow=R|L (customer view) closed=.. menu=S|M|E|C|V events=..
  * beats=.. tick=..", so the values change from line to line. The baud rate is also printed at start-up.
  *
- * LCD display (I2C, SDA = D20, SCL = D21, 5 V, GND): the status page (row 0 "#<program> Casino Open|Closed", row 1 the
- * arrow symbol and "Customer right|left"; in program F row 1 alternates with "Change in M:SS") or the settings menu
+ * LCD display (I2C, SDA = D20, SCL = D21, 5 V, GND): the status page (row 0 "F12 L03 Open|Closed" = frame and letters
+ * effect, a star before the number for a random effect, e.g. "F*07"; row 1 the arrow symbol and "Customer right|left", it
+ * alternates with "Change in M:SS" while an effect is random) or the settings menu
  * (OK opens it; the menu is described in tools/menu-editor/menu-v2.json and generated into the block below).
- * Turning the program switch or a slide switch closes an open menu. At the menu root the display returns to the
+ * Turning a slide switch (arrow, casino) closes an open menu. At the menu root the display returns to the
  * status page after 60 s without input.
  * At boot an I2C scan (addresses 0x08-0x77) prints every device that answers to the Serial Monitor, and
  * a hint if nothing answers on the LCD address (many displays use 0x3F instead of 0x27).
  *
- * Letter programs (chosen with the program switch D34-D37; the position at power-up decides the first one):
- *   0 breathe  1 wave  2 typewriter  3 ignite  4 word blink  5 alternate
- *   6 scanner (a bright spot with a tail sweeps back and forth)  7 sparkle (random twinkle)
- *   8 chase (one dim letter runs through each word)  9 pulse (heartbeat)
- *   10 converge (each word lights from both ends towards the middle)  11 words swap (the words breathe in opposite phase)
- *   12 slot machine (letters flicker like reels and lock in one by one)  13 twin chase (two dim spots run in opposite directions)
- *   14 marquee (three letters lit, one dark, moving)
- *   15 (switch position F) random auto: a random program from 0..14, never the same twice in a row, changed every
- *      LETTER_RANDOM_AUTO_MS (2 minutes)
- * Every program has its own frame pattern (see frameLevel()); programs 0, 1, 2, 6, 8, 13 and 14 follow the arrow direction.
+ * Effects (menu Effects > Frame effect / Letters effect, 0..15, saved in EEPROM; effect 0 = random, default 1):
+ * letters: 1 breathe  2 wave  3 typewriter  4 ignite  5 word blink  6 alternate
+ *   7 scanner (a bright spot with a tail sweeps back and forth)  8 sparkle (random twinkle)
+ *   9 chase (one dim letter runs through each word)  10 pulse (heartbeat)
+ *   11 converge (each word lights from both ends towards the middle)  12 words swap (the words breathe in opposite phase)
+ *   13 slot machine (letters flicker like reels and lock in one by one)  14 twin chase (two dim spots run in opposite directions)
+ *   15 marquee (three letters lit, one dark, moving)
+ * frame (white): 1 bar  2 comet  3 fill  4 ignite  5 sides blink  6 odd even  7 ping-pong  8 twinkle  9 runner
+ *   10 heartbeat  11 corners  12 edges swap  13 slot machine  14 twin comets  15 dashes (see frameLevel())
+ * Frame and letters are chosen independently. Random (0): the group picks a pattern, never the same twice in a row;
+ * one shared timer (menu Effects > Random delay, default 2 minutes, 0 = 1..30 minutes at random) changes every group that
+ * is set to random at the same moment. Patterns 1, 2, 3, 7, 9, 14 and 15 of the frame follow the arrow direction.
  *
  * To change the sign edit ONLY the CONFIGURATION section below and, for
  * Wokwi, regenerate diagram.json with: python3 tools/generate_v2_diagram.py
@@ -159,7 +160,6 @@ constexpr uint8_t STICK_R_WING_DN = 9;   // right arrowhead, lower wing   (A2)
 // --- Input pins ------------------------------------------------------------
 constexpr uint8_t PIN_ARROW_SWITCH = 32;   // slide switch: arrow direction
 constexpr uint8_t PIN_SKIP_BUTTON = 33;    // push button: skips the power-on LED test only
-constexpr uint8_t PIN_PROGRAM[4] = {34, 35, 36, 37};  // program switch (hex rotary, bit values 1, 2, 4, 8)
 // Direction of the arrow switch (D32, slide switch, internal pull-up). It depends on how the mechanical switch
 // is wired and mounted, so it is a source-code setting:
 //   true  = pin LOW (handle on the GND side) -> the arrow points to the customer's LEFT, pin HIGH -> RIGHT
@@ -170,7 +170,7 @@ constexpr uint8_t PIN_CASINO_CLOSED_SWITCH = 30;   // slide switch SW5: casino c
 constexpr bool CASINO_CLOSED_WHEN_LOW = true;      // handle on the GND side = closed (false: reverse)
 constexpr uint8_t DEBOUNCE_MS = 30;        // an input must stay stable this long
 
-// Hex rotary switches (the program switch above and the menu switch): 4 pins each (bit values 1, 2, 4, 8) plus a
+// Hex rotary switch (the menu switch): 4 pins (bit values 1, 2, 4, 8) plus a
 // common pin that goes to GND. The pins use the internal pull-ups.
 constexpr bool HEX_BIT_IS_LOW = true;      // a bit counts as set when its pin reads LOW (the switch
                                            // connects it to the common pin = GND). Set to false if
@@ -322,9 +322,7 @@ constexpr uint8_t MODE_WORDS_SWAP = 11;  // the two words breathe in opposite ph
 constexpr uint8_t MODE_SLOT = 12;        // letters flicker like slot machine reels and lock in one by one
 constexpr uint8_t MODE_TWIN_CHASE = 13;  // two dim spots run through all letters in opposite directions
 constexpr uint8_t MODE_MARQUEE = 14;     // three letters lit, one dark, moving along the letters
-constexpr uint8_t MODE_RANDOM_AUTO = 15; // program switch position F: a random program 0..14 every "Change delay" minutes (menu)
-constexpr uint8_t PATTERN_MODE_COUNT = 15;  // programs 0..14 are real patterns, program 15 chooses among them
-constexpr uint8_t LETTER_MODE_COUNT = 16;
+constexpr uint8_t PATTERN_MODE_COUNT = 15;  // patterns 0..14 = effects 1..15 of the menu; effect 0 = random (menu "Random delay")
 
 // The ignite cycle: off, letters start one by one, hold, off again.
 constexpr uint32_t IGNITE_FIRST_MS = 500;
@@ -337,7 +335,7 @@ static_assert(LEDS_PER_STICK % 2 == 0, "LEDS_PER_STICK must be even");
 static_assert(LETTER_COUNT > 1, "At least two letters are required");
 static_assert(FRAME_PIXELS % 2 == 0 && FRAME_UPPER_RIGHT < FRAME_PIXELS && FRAME_UPPER_LEFT < FRAME_PIXELS,
               "the frame needs an even number of pixels (both light paths must be equally long)");
-static_assert(LETTER_MODE_COUNT == 16, "the program switch has 16 positions");
+static_assert(PATTERN_MODE_COUNT == 15, "the menu has 15 effects per group (plus 0 = random)");
 static_assert(STARTUP_TEST_PASSES > 0 && STARTUP_TEST_WINDOW_LEDS > 0, "the start-up test needs a pass and a window");
 static_assert(CLOSED_LIGHT_LEDS > 0, "CLOSED_LIGHT_LEDS must be at least 1");
 
@@ -385,47 +383,80 @@ unsigned long lastArrowUpdate = 0;
 // edit the JSON with the Menu Editor and run `node tools/generate_v2_menu.js`. The sketch supplies menuCallback().
 //@V2_MENU_BEGIN (generated by tools/generate_v2_menu.js from tools/menu-editor/menu-v2.json and tools/menu_engine/engine.inc; do not edit by hand)
 // BEGIN GENERATED MENU TABLES (do not edit: made by tools/menu_engine/generate_menu_tables.js from menu-v2.json)
-// 21 properties, 47 items, 11 menus, 1 presets; EEPROM layout tag 36874f93, 18 stored properties
-constexpr uint8_t MENU_PROP_COUNT = 21;
-constexpr uint8_t MENU_STORED_COUNT = 18;
-constexpr uint32_t MENU_LAYOUT_TAG = 0x36874F93UL;
+// 22 properties, 50 items, 11 menus, 1 presets; EEPROM layout tag adc94b94, 20 stored properties
+constexpr uint8_t MENU_PROP_COUNT = 22;
+constexpr uint8_t MENU_STORED_COUNT = 20;
+constexpr uint32_t MENU_LAYOUT_TAG = 0xADC94B94UL;
 constexpr uint16_t MENU_NO_STR16 = 0xFFFF;
-constexpr uint8_t P_program = 0;
-constexpr uint8_t P_arrow = 1;
-constexpr uint8_t P_casino = 2;
-constexpr uint8_t P_arrowReverse = 3;
-constexpr uint8_t P_casinoReverse = 4;
-constexpr uint8_t P_speedFrame = 5;
-constexpr uint8_t P_speedArrow = 6;
-constexpr uint8_t P_speedLetters = 7;
-constexpr uint8_t P_randomDelay = 8;
-constexpr uint8_t P_stripMin = 9;
-constexpr uint8_t P_stripMax = 10;
-constexpr uint8_t P_stripExp = 11;
-constexpr uint8_t P_stickMin = 12;
-constexpr uint8_t P_stickMax = 13;
-constexpr uint8_t P_stickExp = 14;
-constexpr uint8_t P_stripMix = 15;
-constexpr uint8_t P_lettersMin = 16;
-constexpr uint8_t P_lettersMax = 17;
-constexpr uint8_t P_lettersExp = 18;
-constexpr uint8_t P_lettersMix = 19;
-constexpr uint8_t P_stickMix = 20;
-constexpr uint8_t CB_applySwitches = 0;
-constexpr uint8_t CB_applySpeeds = 1;
-constexpr uint8_t CB_rebuildStripCurve = 2;
-constexpr uint8_t CB_rebuildStickCurve = 3;
-constexpr uint8_t CB_rebuildLettersCurve = 4;
-constexpr uint8_t MENU_CB_COUNT = 5;
-constexpr uint8_t MENU_STATUS_PROGRAM = P_program;
+constexpr uint8_t P_frameEffect = 0;
+constexpr uint8_t P_lettersEffect = 1;
+constexpr uint8_t P_arrow = 2;
+constexpr uint8_t P_casino = 3;
+constexpr uint8_t P_arrowReverse = 4;
+constexpr uint8_t P_casinoReverse = 5;
+constexpr uint8_t P_speedFrame = 6;
+constexpr uint8_t P_speedArrow = 7;
+constexpr uint8_t P_speedLetters = 8;
+constexpr uint8_t P_randomDelay = 9;
+constexpr uint8_t P_stripMin = 10;
+constexpr uint8_t P_stripMax = 11;
+constexpr uint8_t P_stripExp = 12;
+constexpr uint8_t P_stickMin = 13;
+constexpr uint8_t P_stickMax = 14;
+constexpr uint8_t P_stickExp = 15;
+constexpr uint8_t P_stripMix = 16;
+constexpr uint8_t P_lettersMin = 17;
+constexpr uint8_t P_lettersMax = 18;
+constexpr uint8_t P_lettersExp = 19;
+constexpr uint8_t P_lettersMix = 20;
+constexpr uint8_t P_stickMix = 21;
+constexpr uint8_t CB_effectFrameChanged = 0;
+constexpr uint8_t CB_effectLettersChanged = 1;
+constexpr uint8_t CB_applySwitches = 2;
+constexpr uint8_t CB_applySpeeds = 3;
+constexpr uint8_t CB_rebuildStripCurve = 4;
+constexpr uint8_t CB_rebuildStickCurve = 5;
+constexpr uint8_t CB_rebuildLettersCurve = 6;
+constexpr uint8_t MENU_CB_COUNT = 7;
 constexpr uint8_t MENU_STATUS_CASINO = P_casino;
 constexpr uint8_t MENU_STATUS_ARROW = P_arrow;
-constexpr uint8_t MENU_STATUS_RANDOM_VALUE = 15;
+constexpr uint8_t MENU_STATUS_EFFECT_FRAME = P_frameEffect;
+constexpr uint8_t MENU_STATUS_EFFECT_LETTERS = P_lettersEffect;
 constexpr bool MENU_STATUS_ARROW_ASCII = false;
-constexpr uint16_t MENU_ROOT_NAME_STR = 27;
+constexpr uint16_t MENU_ROOT_NAME_STR = 59;
 // strings
 const char MENU_STR[] PROGMEM =
-  "Program\0"
+  "Frame effect\0"
+  "Random\0"
+  "1 Bar\0"
+  "2 Comet\0"
+  "3 Fill\0"
+  "4 Ignite\0"
+  "5 Sides blink\0"
+  "6 Odd even\0"
+  "7 Ping-pong\0"
+  "8 Twinkle\0"
+  "9 Runner\0"
+  "10 Heartbeat\0"
+  "11 Corners\0"
+  "12 Edges swap\0"
+  "13 Slot machine\0"
+  "14 Twin comets\0"
+  "15 Dashes\0"
+  "Letters effect\0"
+  "1 Breathe\0"
+  "2 Wave\0"
+  "3 Typewriter\0"
+  "5 Word blink\0"
+  "6 Alternate\0"
+  "7 Scanner\0"
+  "8 Sparkle\0"
+  "9 Chase\0"
+  "10 Pulse\0"
+  "11 Converge\0"
+  "12 Words swap\0"
+  "14 Twin chase\0"
+  "15 Marquee\0"
   "Arrow\0"
   "Left\0"
   "Right\0"
@@ -440,13 +471,15 @@ const char MENU_STR[] PROGMEM =
   "x\0"
   "Arrow speed\0"
   "Letters speed\0"
-  "Change delay\0"
+  "Random delay\0"
   " min\0"
   "random\0"
   "Min\0"
   "Max\0"
   "Exponent\0"
   "Mix\0"
+  "effectFrameChanged\0"
+  "effectLettersChanged\0"
   "applySwitches\0"
   "applySpeeds\0"
   "rebuildStripCurve\0"
@@ -454,48 +487,48 @@ const char MENU_STR[] PROGMEM =
   "rebuildLettersCurve\0"
   "Menu\0"
   "Controls\0"
+  "Effects\0"
   "Speed\0"
   "Frame\0"
   "Letters\0"
   "Brightness\0"
-  "Random program\0"
   "Restore defaults\0"
   "Restore defaults?\0";
-const uint16_t MENU_STR_OFF[] PROGMEM = {0, 8, 14, 19, 25, 32, 39, 44, 58, 61, 65, 80, 92, 94, 106, 120, 133, 138, 145, 149, 153, 162, 166, 180, 192, 210, 228, 248, 253, 262, 268, 274, 282, 293, 308, 325};
+const uint16_t MENU_STR_OFF[] PROGMEM = {0, 13, 20, 26, 34, 41, 50, 64, 75, 87, 97, 106, 119, 130, 144, 160, 175, 185, 200, 210, 217, 230, 243, 255, 265, 275, 283, 292, 304, 318, 332, 343, 349, 354, 360, 367, 374, 379, 393, 396, 400, 415, 427, 429, 441, 455, 468, 473, 480, 484, 488, 497, 501, 520, 541, 555, 567, 585, 603, 623, 628, 637, 645, 651, 657, 665, 676, 693};
 // properties
-const uint8_t PP_KIND[] PROGMEM = {0, 3, 3, 3, 3, 2, 2, 2, 0, 0, 0, 2, 0, 0, 2, 1, 0, 0, 2, 1, 1};
-const uint8_t PP_FLAGS[] PROGMEM = {9, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
-const uint8_t PP_SHIFT[] PROGMEM = {10, 1, 1, 1, 1, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
-const uint8_t PP_DEC[] PROGMEM = {0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 2, 2, 2};
-const uint16_t PP_COUNT[] PROGMEM = {16, 2, 2, 2, 2, 31, 31, 31, 31, 256, 256, 51, 256, 256, 51, 51, 256, 256, 51, 51, 51};
-const uint16_t PP_DEFPOS[] PROGMEM = {0, 0, 0, 0, 0, 18, 18, 18, 2, 0, 80, 31, 0, 80, 31, 50, 0, 80, 31, 50, 50};
-const float PP_MIN[] PROGMEM = {0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.125000000f, 0.125000000f, 0.125000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f};
-const float PP_MAX[] PROGMEM = {15.0000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 4.00000000f, 4.00000000f, 4.00000000f, 30.0000000f, 255.000000f, 255.000000f, 20.0000000f, 255.000000f, 255.000000f, 20.0000000f, 1.00000000f, 255.000000f, 255.000000f, 20.0000000f, 1.00000000f, 1.00000000f};
-const uint16_t PP_AUX[] PROGMEM = {1, 0, 0, 0, 0, 30, 30, 30, 1, 1, 1, 50, 1, 1, 50, 50, 1, 1, 50, 50, 50};
-const uint16_t PP_NAME[] PROGMEM = {0, 1, 4, 7, 10, 11, 13, 14, 15, 18, 19, 20, 18, 19, 20, 21, 18, 19, 20, 21, 21};
-const uint16_t PP_UNIT[] PROGMEM = {MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, 12, 12, 12, 16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16};
-const uint8_t PP_VT_FIRST[] PROGMEM = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-const uint8_t PP_VT_COUNT[] PROGMEM = {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-const uint16_t PP_CH_FIRST[] PROGMEM = {0, 0, 2, 4, 6, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8};
-const uint8_t PP_CB_FIRST[] PROGMEM = {0, 0, 0, 0, 1, 2, 3, 4, 5, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-const uint8_t PP_CB_COUNT[] PROGMEM = {0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-const uint8_t PP_SLOT[] PROGMEM = {255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17};
+const uint8_t PP_KIND[] PROGMEM = {3, 3, 3, 3, 3, 3, 2, 2, 2, 0, 0, 0, 2, 0, 0, 2, 1, 0, 0, 2, 1, 1};
+const uint8_t PP_FLAGS[] PROGMEM = {2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+const uint8_t PP_SHIFT[] PROGMEM = {1, 1, 1, 1, 1, 1, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
+const uint8_t PP_DEC[] PROGMEM = {0, 0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 2, 2, 2};
+const uint16_t PP_COUNT[] PROGMEM = {16, 16, 2, 2, 2, 2, 31, 31, 31, 31, 256, 256, 51, 256, 256, 51, 51, 256, 256, 51, 51, 51};
+const uint16_t PP_DEFPOS[] PROGMEM = {1, 1, 0, 0, 0, 0, 18, 18, 18, 2, 0, 80, 31, 0, 80, 31, 50, 0, 80, 31, 50, 50};
+const float PP_MIN[] PROGMEM = {0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.125000000f, 0.125000000f, 0.125000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f};
+const float PP_MAX[] PROGMEM = {0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 4.00000000f, 4.00000000f, 4.00000000f, 30.0000000f, 255.000000f, 255.000000f, 20.0000000f, 255.000000f, 255.000000f, 20.0000000f, 1.00000000f, 255.000000f, 255.000000f, 20.0000000f, 1.00000000f, 1.00000000f};
+const uint16_t PP_AUX[] PROGMEM = {0, 0, 0, 0, 0, 0, 30, 30, 30, 1, 1, 1, 50, 1, 1, 50, 50, 1, 1, 50, 50, 50};
+const uint16_t PP_NAME[] PROGMEM = {0, 17, 31, 34, 37, 40, 41, 43, 44, 45, 48, 49, 50, 48, 49, 50, 51, 48, 49, 50, 51, 51};
+const uint16_t PP_UNIT[] PROGMEM = {MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, 42, 42, 42, 46, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16};
+const uint8_t PP_VT_FIRST[] PROGMEM = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+const uint8_t PP_VT_COUNT[] PROGMEM = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+const uint16_t PP_CH_FIRST[] PROGMEM = {0, 16, 32, 34, 36, 38, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40};
+const uint8_t PP_CB_FIRST[] PROGMEM = {0, 1, 2, 2, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
+const uint8_t PP_CB_COUNT[] PROGMEM = {1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+const uint8_t PP_SLOT[] PROGMEM = {0, 1, 255, 255, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 const float VT_KEY[] PROGMEM = {0.00000000f};
-const uint16_t VT_STR[] PROGMEM = {17};
-const uint16_t CH_STR[] PROGMEM = {2, 3, 5, 6, 8, 9, 8, 9};
-const uint8_t CB_LIST[] PROGMEM = {0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 2, 4, 4, 4, 4, 3};
-const uint16_t CB_NAME_STR[] PROGMEM = {22, 23, 24, 25, 26};
+const uint16_t VT_STR[] PROGMEM = {47};
+const uint16_t CH_STR[] PROGMEM = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 1, 18, 19, 20, 5, 21, 22, 23, 24, 25, 26, 27, 28, 14, 29, 30, 32, 33, 35, 36, 38, 39, 38, 39};
+const uint8_t CB_LIST[] PROGMEM = {0, 1, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 4, 6, 6, 6, 6, 5};
+const uint16_t CB_NAME_STR[] PROGMEM = {52, 53, 54, 55, 56, 57, 58};
 // menus and items
-const uint8_t MN_FIRST[] PROGMEM = {0, 8, 13, 16, 21, 26, 31, 34, 38, 42, 46};
-const uint8_t MN_COUNT[] PROGMEM = {8, 5, 3, 5, 5, 5, 3, 4, 4, 4, 1};
-const uint8_t IT_TYPE[] PROGMEM = {0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-const uint8_t IT_A[] PROGMEM = {1, 2, 3, 4, 5, 6, 10, 0, 0, 1, 3, 2, 4, 5, 7, 6, 5, 9, 10, 11, 15, 7, 16, 17, 18, 19, 6, 12, 13, 14, 20, 7, 8, 9, 9, 10, 11, 15, 16, 17, 18, 19, 12, 13, 14, 20, 8};
-const uint16_t IT_NAME[] PROGMEM = {28, 29, 30, 31, 1, 32, 33, 34, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, 30, 31, 1, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16};
-const uint16_t IT_TEXT[] PROGMEM = {MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16};
+const uint8_t MN_FIRST[] PROGMEM = {0, 8, 12, 15, 18, 24, 30, 35, 38, 42, 46};
+const uint8_t MN_COUNT[] PROGMEM = {8, 4, 3, 3, 6, 6, 5, 3, 4, 4, 4};
+const uint8_t IT_TYPE[] PROGMEM = {0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+const uint8_t IT_A[] PROGMEM = {1, 2, 3, 4, 5, 6, 7, 0, 2, 4, 3, 5, 0, 1, 9, 6, 8, 7, 0, 6, 10, 11, 12, 16, 1, 8, 17, 18, 19, 20, 7, 13, 14, 15, 21, 8, 9, 10, 10, 11, 12, 16, 17, 18, 19, 20, 13, 14, 15, 21};
+const uint16_t IT_NAME[] PROGMEM = {60, 61, 62, 63, 64, 31, 65, 66, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, 63, 64, 31, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16};
+const uint16_t IT_TEXT[] PROGMEM = {MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16};
 // presets
-const uint16_t PR_NAME[] PROGMEM = {34};
+const uint16_t PR_NAME[] PROGMEM = {66};
 const uint16_t PR_TEXT[] PROGMEM = {MENU_NO_STR16};
-const uint16_t PR_CONFIRM[] PROGMEM = {35};
+const uint16_t PR_CONFIRM[] PROGMEM = {67};
 const uint8_t PR_FLAGS[] PROGMEM = {3};
 const uint8_t PR_FIRST[] PROGMEM = {0};
 const uint8_t PR_COUNT[] PROGMEM = {0};
@@ -512,7 +545,7 @@ constexpr uint8_t MENU_COLS = 16;
 constexpr unsigned long MENU_TIMEOUT_MS = 60000UL;        // at the root level without input: back to the status page
 constexpr unsigned long MENU_MARQUEE_PAUSE_MS = 1000UL;   // a long text stays at its start this long
 constexpr unsigned long MENU_MARQUEE_STEP_MS = 400UL;     // then moves one character per step
-constexpr unsigned long MENU_STATUS_ALT_MS = 3000UL;      // status row 1 alternates with the countdown (program F)
+constexpr unsigned long MENU_STATUS_ALT_MS = 3000UL;      // status row 1 alternates with the countdown (an effect is random)
 constexpr uint8_t MENU_MAX_DEPTH = 8;
 constexpr char MENU_LEFT_ARROW = 0x7F;                    // HD44780 ROM arrows
 constexpr char MENU_RIGHT_ARROW = 0x7E;
@@ -540,7 +573,8 @@ constexpr unsigned long MENU_UNDO_MS = 300UL;   // a move straight back to the i
 bool menuUndoValid = false;
 uint8_t menuUndoItem = 0;
 unsigned long menuUndoSince = 0, menuUndoAt = 0;
-long menuChangeInSec = -1;                       // seconds until the random program changes (-1 = unknown)
+uint8_t menuActiveFrame = 0, menuActiveLetters = 0;   // effect numbers (1..15) really showing; 0 = unknown (shown as --)
+long menuChangeInSec = -1;                       // seconds until the random effects change (-1 = unknown)
 bool menuEepromValid = false;                    // the stored image matches this layout
 
 #ifdef MENU_TEST_LOG
@@ -642,9 +676,9 @@ void menuValueText(uint8_t prop, uint16_t pos, char *out) {
   uint8_t n = 0;
   if (menuRd8(PP_FLAGS, prop) & MF_HEX) {
     long r = (long)floorf(v + 0.5f);
-    const char hexDigits[] = "0123456789ABCDEF";
     char tmp[9];
     uint8_t t = 0;
+    const char hexDigits[] = "0123456789ABCDEF";
     do { tmp[t++] = hexDigits[r & 15]; r >>= 4; } while (r > 0 && t < 8);
     while (t > 0) out[n++] = tmp[--t];
     out[n] = 0;
@@ -704,18 +738,29 @@ void menuToStatus(unsigned long now) {
   menuSince = now;
 }
 
+// Status page text of one effect: two digits, with a star before them when the effect is random (then the number
+// of the effect really showing, or -- when it is not known).
+void menuEffectText(uint8_t prop, uint8_t active, char *out) {
+  const bool random = menuPosArr[prop] == 0;
+  const unsigned n = random ? active : menuPosArr[prop];
+  if (n > 0 && n < 100) snprintf(out, 8, "%s%02u", random ? "*" : "", n);
+  else snprintf(out, 8, "%s--", random ? "*" : "");
+}
+
 // Builds the two display rows for time `now`.
 void menuRows(unsigned long now, char *row0, char *row1) {
   char a[48], b[48];
   if (menuMode == MM_STATUS) {
-    const char hexDigits[] = "0123456789ABCDEF";
     char valueTextBuf[24];
     menuValueText(MENU_STATUS_CASINO, menuPosArr[MENU_STATUS_CASINO], valueTextBuf);
-    snprintf(a, sizeof(a), "#%c Casino %s", hexDigits[(long)floorf(menuValue(MENU_STATUS_PROGRAM) + 0.5f) & 15], valueTextBuf);
+    char ef[8], el[8];
+    menuEffectText(MENU_STATUS_EFFECT_FRAME, menuActiveFrame, ef);
+    menuEffectText(MENU_STATUS_EFFECT_LETTERS, menuActiveLetters, el);
+    snprintf(a, sizeof(a), "F%s L%s %s", ef, el, valueTextBuf);
     const bool left = menuPosArr[MENU_STATUS_ARROW] == 0;
     if (MENU_STATUS_ARROW_ASCII) snprintf(b, sizeof(b), "%s", left ? "<-Customer right" : "->Customer left");
     else snprintf(b, sizeof(b), "%c Customer %s", left ? MENU_LEFT_ARROW : MENU_RIGHT_ARROW, left ? "right" : "left");
-    if (menuValue(MENU_STATUS_PROGRAM) == (float)MENU_STATUS_RANDOM_VALUE && menuChangeInSec >= 0) {
+    if ((menuPosArr[MENU_STATUS_EFFECT_FRAME] == 0 || menuPosArr[MENU_STATUS_EFFECT_LETTERS] == 0) && menuChangeInSec >= 0) {
       const unsigned long since = now >= menuSince ? now - menuSince : 0;
       if ((since / MENU_STATUS_ALT_MS) % 2 == 1) snprintf(b, sizeof(b), "Change in %ld:%02ld", menuChangeInSec / 60, menuChangeInSec % 60);
     }
@@ -852,7 +897,7 @@ bool menuBegin() {
 void menuSet(uint8_t prop, uint16_t pos) { menuSetPos(prop, pos); }   // a value changed outside the menu (no EEPROM write)
 
 bool menuIsStatusProp(uint8_t prop) {
-  return prop == MENU_STATUS_PROGRAM || prop == MENU_STATUS_CASINO || prop == MENU_STATUS_ARROW;
+  return prop == MENU_STATUS_CASINO || prop == MENU_STATUS_ARROW;
 }
 
 // A physical control changed: the value follows; an open menu closes for the status properties.
@@ -1046,18 +1091,16 @@ void initInput(uint8_t slot, uint8_t pin) {
 }
 
 // ============================== HEX SWITCHES ===============================
-// Two 16-position hex rotary switches (positions 0..F, binary coded on four pins):
-//   program switch  absolute: position 0..E = letter program 0..14, F = random program
+// One 16-position hex rotary switch (positions 0..F, binary coded on four pins):
 //   menu switch     free-running: only the steps between two positions count (relative)
 // A turning switch passes through other positions, so a position only counts once it has stayed unchanged
 // for HEX_DEBOUNCE_MS.
 
-constexpr uint8_t SLOT_PROGRAM = 0;
-constexpr uint8_t SLOT_MENU = 1;
+constexpr uint8_t SLOT_MENU = 0;
 
-uint8_t hexStable[2];              // debounced switch positions
-uint8_t hexLastRaw[2];
-unsigned long hexChangedAt[2];
+uint8_t hexStable[1];              // debounced switch positions
+uint8_t hexLastRaw[1];
+unsigned long hexChangedAt[1];
 
 // Reads the four pins of a hex switch (pins[0] = bit value 1 ... pins[3] = bit value 8).
 uint8_t readHexSwitch(const uint8_t *pins) {
@@ -1223,11 +1266,11 @@ uint32_t shapeColor(uint8_t type, uint32_t color) {
 
 constexpr uint8_t NO_LETTER = 0xFF;
 
-uint8_t letterMode = 0;
-uint8_t activeMode = 0;                 // the pattern really shown (differs from letterMode only in random auto)
-unsigned long autoPickedAt = 0;         // real time when random auto last picked a pattern
-unsigned long autoDelayMs = 120000;     // how long that pattern lasts (menu "Change delay")
-unsigned long letterModeStart = 0;      // pattern clock (letterClockMs) when the mode started
+uint8_t activeFrame = 0;                // the frame pattern really shown (0..14 = effect 1..15)
+uint8_t activeLetters = 0;              // the letter pattern really shown (0..14 = effect 1..15)
+unsigned long autoPickedAt = 0;         // real time when the random effects last picked patterns
+unsigned long autoDelayMs = 120000;     // how long they last (menu "Random delay")
+unsigned long letterModeStart = 0;      // pattern clock (letterClockMs) when the letter pattern started
 
 uint8_t flickerLetter = NO_LETTER;
 bool flickerLit = true;
@@ -1266,53 +1309,83 @@ void printModeName(uint8_t mode) {
     case MODE_SLOT:        Serial.print(F("slot machine")); break;
     case MODE_TWIN_CHASE:  Serial.print(F("twin chase")); break;
     case MODE_MARQUEE:     Serial.print(F("marquee")); break;
-    default:               Serial.print(F("random auto")); break;
+    default:               Serial.print(F("?")); break;
   }
 }
 
-void printLetterMode() {
-  Serial.print(F("Letter mode "));
-  Serial.print(letterMode);
+void printEffects() {
+  Serial.print(F("Effects: frame "));
+  Serial.print((unsigned int)activeFrame + 1);
+  Serial.print(F(", letters "));
+  Serial.print((unsigned int)activeLetters + 1);
   Serial.print(F(": "));
-  printModeName(letterMode);
-  if (letterMode == MODE_RANDOM_AUTO) {
-    Serial.print(F(" (now showing "));
-    printModeName(activeMode);
-    Serial.print(F(")"));
-  }
+  printModeName(activeLetters);
   Serial.println();
 }
 
-// Random auto: choose a pattern from 0..PATTERN_MODE_COUNT-1, never the one that is showing now.
-void pickAutoMode(unsigned long now) {
-  const uint8_t previous = activeMode;
-  uint8_t pick;
-  if (previous < PATTERN_MODE_COUNT) {
-    pick = (uint8_t)random(PATTERN_MODE_COUNT - 1);
-    if (pick >= previous) pick++;  // skip the previous pattern
-  } else {
-    pick = (uint8_t)random(PATTERN_MODE_COUNT);
-  }
-  activeMode = pick;
-  frameStep = 0;
-  autoPickedAt = now;
-  long minutes = (long)(menuValue(P_randomDelay) + 0.5f);       // 0 = a random delay of 1..30 minutes
-  if (minutes <= 0) minutes = 1 + (long)random(30);
-  autoDelayMs = (unsigned long)minutes * 60000UL;
-  letterModeStart = letterClockMs;  // the new pattern starts from its beginning
+bool frameIsRandom() { return menuPos(P_frameEffect) == 0; }
+bool lettersIsRandom() { return menuPos(P_lettersEffect) == 0; }
+
+// A random pick from 0..PATTERN_MODE_COUNT-1, never the pattern that is showing now (previous >= PATTERN_MODE_COUNT = none).
+uint8_t pickDifferent(uint8_t previous) {
+  if (previous >= PATTERN_MODE_COUNT) return (uint8_t)random(PATTERN_MODE_COUNT);
+  uint8_t pick = (uint8_t)random(PATTERN_MODE_COUNT - 1);
+  if (pick >= previous) pick++;  // skip the previous pattern
+  return pick;
 }
 
-void setLetterMode(uint8_t mode, unsigned long now) {
-  letterMode = mode % LETTER_MODE_COUNT;
-  letterModeStart = letterClockMs;
+// Both random groups change together: one shared timer, its length is the menu property "Random delay" (0 = 1..30 minutes at random).
+void restartRandomTimer(unsigned long now) {
+  autoPickedAt = now;
+  long minutes = (long)(menuValue(P_randomDelay) + 0.5f);
+  if (minutes <= 0) minutes = 1 + (long)random(30);
+  autoDelayMs = (unsigned long)minutes * 60000UL;
+}
+
+void showFramePattern(uint8_t pattern) {
+  activeFrame = pattern;
   frameStep = 0;
-  if (letterMode == MODE_RANDOM_AUTO) {
-    activeMode = PATTERN_MODE_COUNT;  // no previous pattern to avoid
-    pickAutoMode(now);
+  menuActiveFrame = (uint8_t)(pattern + 1);
+}
+
+void showLettersPattern(uint8_t pattern) {
+  activeLetters = pattern;
+  letterModeStart = letterClockMs;  // the new pattern starts from its beginning
+  menuActiveLetters = (uint8_t)(pattern + 1);
+}
+
+// The Frame effect property changed (or start-up): effect N shows pattern N-1, 0 picks a random pattern and
+// restarts the shared timer so that both random groups keep changing at the same moment.
+void applyFrameEffect(unsigned long now, bool atStart) {
+  const uint16_t effect = menuPos(P_frameEffect);
+  if (effect == 0) {
+    showFramePattern(pickDifferent(atStart ? PATTERN_MODE_COUNT : activeFrame));
+    restartRandomTimer(now);
   } else {
-    activeMode = letterMode;
+    showFramePattern((uint8_t)(effect - 1));
   }
-  printLetterMode();
+  printEffects();
+}
+
+void applyLettersEffect(unsigned long now, bool atStart) {
+  const uint16_t effect = menuPos(P_lettersEffect);
+  if (effect == 0) {
+    showLettersPattern(pickDifferent(atStart ? PATTERN_MODE_COUNT : activeLetters));
+    restartRandomTimer(now);
+  } else {
+    showLettersPattern((uint8_t)(effect - 1));
+  }
+  printEffects();
+}
+
+// The shared timer ran out: every group that is set to random picks a new pattern.
+void updateRandomEffects(unsigned long now) {
+  if (!frameIsRandom() && !lettersIsRandom()) return;
+  if (now - autoPickedAt < autoDelayMs) return;
+  if (frameIsRandom()) showFramePattern(pickDifferent(activeFrame));
+  if (lettersIsRandom()) showLettersPattern(pickDifferent(activeLetters));
+  restartRandomTimer(now);
+  printEffects();
 }
 
 // A small deterministic hash for the stateless sparkle pattern.
@@ -1330,11 +1403,11 @@ uint8_t pulseBump(uint16_t u, uint16_t start, uint16_t length) {
   return (uint8_t)(255UL * (length - (u - start)) / length);
 }
 
-// ---- Frame patterns: one per program (the frame follows activeMode) ----
+// ---- Frame patterns: effects 1..15 of the Frame effect property (the frame follows activeFrame) ----
 // frameLevel() gives the brightness (0..255, white) of pixel i at step t. "q" is the position of a pixel along the
 // direction of travel, counted from the start corner of the arrow (arrow right: upper-left corner, pixel 15, going
 // clockwise; arrow left: upper-right corner, pixel 10, going counter-clockwise), so q = 0..17. The patterns of the
-// programs that follow the arrow (0, 1, 2, 6, 8, 13, 14) use q or frameDistance(); the others ignore the direction.
+// patterns that follow the arrow (0, 1, 2, 6, 8, 13, 14; effects 1, 2, 3, 7, 9, 14, 15) use q or frameDistance(); the others ignore the direction.
 //   0 bar (2 lit, 2 dark) runs from the start corner both ways to the opposite bottom corner (period 4)
 //   1 comet with a 5-pixel tail runs once round the frame (18)      2 fills from the start corner both ways, holds, off (16)
 //   3 pixels start up one by one, flickering, like cold tubes (36)  4 top and bottom edges steady, side edges blink (8)
@@ -1431,14 +1504,14 @@ void drawFrame(bool arrowRight, uint8_t mode, uint16_t t) {
 }
 
 void updateFrame() {
-  drawFrame(arrowPointsRight, activeMode, frameStep);
+  drawFrame(arrowPointsRight, activeFrame, frameStep);
   frame.show();
   frameStep = (frameStep + 1) % FRAME_STEP_WRAP;
 }
 
 // Brightness of one letter in the current mode. t = milliseconds since the mode started.
 uint8_t baseLetterLevel(uint8_t letter, unsigned long t) {
-  switch (activeMode) {
+  switch (activeLetters) {
     case MODE_SCANNER: {
       // The head moves over the letters (position in 1/255 letter steps); letters behind it
       // glow on as a long tail, letters ahead of it only a little.
@@ -1512,7 +1585,7 @@ uint8_t baseLetterLevel(uint8_t letter, unsigned long t) {
     }
     default: break;
   }
-  switch (activeMode) {
+  switch (activeLetters) {
     case MODE_WAVE: {
       // A bright crest travels from the first to the last letter.
       const uint8_t cycle = cycleOf(t, LETTER_WAVE_MS);
@@ -1645,10 +1718,6 @@ void updateClosedLight() {
 }
 
 void updateLetters(unsigned long now) {
-  if (letterMode == MODE_RANDOM_AUTO && now - autoPickedAt >= autoDelayMs) {
-    pickAutoMode(now);
-    printLetterMode();
-  }
   updateFlickerState(now);
   advanceLetterClock(now);
   drawLetters();
@@ -1853,7 +1922,6 @@ void finishStartup(unsigned long now, bool skipped) {
   initInput(INPUT_OK, PIN_OK);
   initInput(INPUT_BACK, PIN_BACK);
   initInput(INPUT_SHIFT, PIN_SHIFT);
-  initHexSwitch(SLOT_PROGRAM, PIN_PROGRAM);
   initHexSwitch(SLOT_MENU, PIN_MENU_SWITCH);
   applySpeeds();
   lastLetterClockTick = now;
@@ -1862,8 +1930,8 @@ void finishStartup(unsigned long now, bool skipped) {
   arrowDarkDirty = true;
   menuSet(P_arrow, arrowPosition());
 
-  menuSet(P_program, hexStable[SLOT_PROGRAM]);
-  setLetterMode(hexStable[SLOT_PROGRAM], now);
+  applyFrameEffect(now, true);
+  applyLettersEffect(now, true);
   setCasinoClosed(closedFromSwitch());
   menuSet(P_casino, casinoClosed ? 0 : 1);
   nextFlickerAt = now + FLICKER_MIN_GAP_MS;
@@ -2145,8 +2213,10 @@ void printDebug(unsigned long now) {
   Serial.print(now / 1000UL);
   Serial.print(F("s loops="));
   Serial.print(loopCount);
-  Serial.print(F(" mode="));
-  Serial.print((unsigned int)letterMode);
+  Serial.print(F(" fx="));
+  Serial.print((unsigned int)activeFrame + 1);
+  Serial.print('/');
+  Serial.print((unsigned int)activeLetters + 1);
   Serial.print(F(" arrow="));
   Serial.print(arrowPointsRight ? F("R") : F("L"));
   Serial.print(F(" closed="));
@@ -2196,6 +2266,10 @@ void menuCallback(uint8_t cb, uint8_t prop) {
     rebuildCurve(LED_TYPE_LETTERS, P_lettersMin, P_lettersMax, P_lettersExp, P_lettersMix);
   } else if (cb == CB_rebuildStickCurve) {
     rebuildCurve(LED_TYPE_STICK, P_stickMin, P_stickMax, P_stickExp, P_stickMix);
+  } else if (cb == CB_effectFrameChanged) {
+    applyFrameEffect(millis(), false);
+  } else if (cb == CB_effectLettersChanged) {
+    applyLettersEffect(millis(), false);
   } else if (cb == CB_applySwitches) {          // a reverse flag changed: the switch values follow at once
     applyArrowSwitch();
     menuSet(P_arrow, arrowPosition());
@@ -2227,7 +2301,6 @@ void setup() {
   }
 
   initInput(INPUT_SKIP, PIN_SKIP_BUTTON);
-  for (uint8_t bit = 0; bit < 4; bit++) pinMode(PIN_PROGRAM[bit], INPUT_PULLUP);
 
   Wire.begin();
   Wire.setClock(400000UL);
@@ -2268,17 +2341,11 @@ void loop() {
     return;
   }
 
-  // Inputs: the slide switches set the arrow direction and casino open/closed (the menu flags may reverse them), the
-  // program switch chooses the letter program (and with it the frame pattern). A change of one of these three
-  // closes an open menu and shows the status page.
+  // Inputs: the slide switches set the arrow direction and casino open/closed (the menu flags may reverse them).
+  // A change of one of these two closes an open menu and shows the status page.
   if (pollInput(INPUT_ARROW, PIN_ARROW_SWITCH, now)) {
     applyArrowSwitch();
     menuPhysical(P_arrow, arrowPosition(), now);
-    noteEvent(now);
-  }
-  if (pollHexSwitch(SLOT_PROGRAM, PIN_PROGRAM, now)) {
-    menuPhysical(P_program, hexStable[SLOT_PROGRAM], now);
-    setLetterMode(hexStable[SLOT_PROGRAM], now);
     noteEvent(now);
   }
   if (pollInput(INPUT_CLOSED, PIN_CASINO_CLOSED_SWITCH, now)) {
@@ -2304,8 +2371,9 @@ void loop() {
   if (pollInput(INPUT_OK, PIN_OK, now) && inputStable[INPUT_OK] == LOW) { noteEvent(now); menuKey(MENU_KEY_OK, now); }
   if (pollInput(INPUT_BACK, PIN_BACK, now) && inputStable[INPUT_BACK] == LOW) { noteEvent(now); menuKey(MENU_KEY_BACK, now); }
   menuTick(now);
-  menuChangeInSec = -1;                         // status page, program F: seconds until the next random program
-  if (letterMode == MODE_RANDOM_AUTO) {
+  menuChangeInSec = -1;                         // status page, a random effect: seconds until the next change
+  updateRandomEffects(now);
+  if (frameIsRandom() || lettersIsRandom()) {
     const unsigned long elapsed = now - autoPickedAt;
     menuChangeInSec = elapsed >= autoDelayMs ? 0 : (long)((autoDelayMs - elapsed + 999UL) / 1000UL);
   }

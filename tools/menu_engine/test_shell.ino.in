@@ -7,15 +7,14 @@
  * it by tools/generate_menu_test.js, and the engine is tools/menu_engine/engine.inc. Nothing here touches LED strips or sticks.
  *
  * CONTROLS (all wired to GND, internal pull-ups):
- *   program hex switch   legs 1,2,4,8 on D34-D37, C to GND   absolute position 0..F = the program number shown on the
- *                        status page (read all the time; turning it while the menu is open closes the menu)
  *   menu hex switch      legs 1,2,4,8 on D42-D45, C to GND   free-running: turning it moves the selection or changes the value
  *   OK    D48   BACK D49   SHIFT D50      push buttons to GND; SHIFT held while turning makes the step ten times larger
  *   arrow slide switch   D32   handle on the GND side = arrow points left (the "Arrow reverse" menu property swaps it)
  *   casino slide switch  D30   handle on the GND side = casino closed (the "Casino reverse" menu property swaps it)
  *
- * WHAT YOU SEE: the status page (row 0 "#<program> Casino Open|Closed", row 1 arrow + "Customer right|left"; in program F
- * row 1 alternates with "Change in M:SS"). OK opens the menu, the menu switch moves, OK enters or edits, BACK goes back or
+ * WHAT YOU SEE: the status page (row 0 "F12 L03 Open|Closed" = frame and letters effect, a star before a random one,
+ * e.g. "F*07"; row 1 arrow + "Customer right|left"; while an effect is random row 1 alternates with "Change in M:SS").
+ * There are no LEDs here: a random effect only shows a made-up number that changes when the countdown ends. OK opens the menu, the menu switch moves, OK enters or edits, BACK goes back or
  * cancels an edit. A value changes while you turn (the callbacks are printed on the Serial Monitor); OK also saves it to EEPROM.
  * "Restore defaults" asks OK / BACK. The menu closes after 60 s without input at the top level (the seconds are shown).
  * The arrows on row 1 are the LCD's ROM characters 0x7E / 0x7F: if your display shows other symbols, tell the AI
@@ -23,7 +22,7 @@
  *
  * SIGN OF LIFE: the LED on pin 13 blinks while the program runs (shortly inverted at every key or switch event, faster
  * while many happen). Once per second the Serial Monitor (115200 baud, SERIAL_BAUD) gets a line
- *     DBG up=<s> mode=<S|M|E|C> prog=<hex> arrow=<L|R> casino=<C|O> menu=<n steps> keys=<n> cb=<n> eeprom=<saved|defaults> lcd=<0|1>
+ *     DBG up=<s> mode=<S|M|E|C|V> fx=<frame>/<letters> arrow=<L|R> casino=<C|O> menu=<n steps> keys=<n> cb=<n> eeprom=<saved|defaults> lcd=<0|1>
  *
  * Only built-in types are used in function signatures (Arduino's automatic prototypes).
  */
@@ -38,7 +37,6 @@
 constexpr uint32_t SERIAL_BAUD = 115200;
 constexpr uint8_t PIN_STATUS_LED = 13;
 
-constexpr uint8_t PROGRAM_PINS[4] = {34, 35, 36, 37};    // program hex switch: leg 1, 2, 4, 8
 constexpr uint8_t MENU_PINS[4] = {42, 43, 44, 45};       // menu hex switch: leg 1, 2, 4, 8
 constexpr bool HEX_BIT_IS_LOW = true;                    // a leg connected to C reads LOW and counts as a set bit
 constexpr unsigned long HEX_DEBOUNCE_MS = 10;
@@ -84,7 +82,6 @@ struct HexSwitch {
   uint8_t candidate;
   unsigned long since;
 };
-HexSwitch programSwitch = {PROGRAM_PINS, 0, 0, 0};
 HexSwitch menuSwitch = {MENU_PINS, 0, 0, 0};
 
 struct Button {
@@ -101,8 +98,8 @@ Button switchCasino = {PIN_CASINO_SWITCH, false, false, 0};
 
 // Functions below take an index, not a struct: the Arduino IDE builds the function prototypes before the struct
 // definitions, so a user-defined type in a signature does not compile.
-constexpr uint8_t HEX_PROGRAM = 0, HEX_MENU = 1;
-HexSwitch *const hexSwitches[2] = {&programSwitch, &menuSwitch};
+constexpr uint8_t HEX_MENU = 0;
+HexSwitch *const hexSwitches[1] = {&menuSwitch};
 constexpr uint8_t BTN_OK = 0, BTN_BACK = 1, BTN_SHIFT = 2, BTN_ARROW = 3, BTN_CASINO = 4;
 Button *const buttons[5] = {&buttonOk, &buttonBack, &buttonShift, &switchArrow, &switchCasino};
 
@@ -117,7 +114,7 @@ unsigned long eventWindowStart = 0;
 bool beatOn = false;
 unsigned long lastBeat = 0, lastDebug = 0;
 bool eepromWasValid = false;
-long randomDelaySec = 0;               // test only: seconds the random program (F) would last
+long randomDelaySec = 0;               // test only: seconds the random effects would last
 unsigned long randomStartedAt = 0;
 
 bool lcdOk = false;
@@ -200,10 +197,6 @@ void menuCallback(uint8_t cb, uint8_t prop) {
 
 void pollInputs(unsigned long now) {
   uint8_t from = 0;
-  if (pollHex(HEX_PROGRAM, now, from)) {
-    noteEvent(now);
-    menuPhysical(P_program, programSwitch.stable, now);
-  }
   if (pollHex(HEX_MENU, now, from)) {
     noteEvent(now);
     uint8_t delta = (uint8_t)((menuSwitch.stable - from) & 15);
@@ -222,9 +215,15 @@ void pollInputs(unsigned long now) {
   if (pollButton(BTN_CASINO, now)) { noteEvent(now); menuPhysical(P_casino, casinoPosition(), now); }
 }
 
-// Test only: the real sign changes the program after the delay property; here only the countdown is shown.
+// Test only: the real sign picks new patterns after the "Random delay" property; here only the countdown is shown and a
+// random effect gets a made-up pattern number that changes when the countdown ends.
 void updateRandomCountdown(unsigned long now) {
-  if (menuPos(P_program) != MENU_STATUS_RANDOM_VALUE) { menuChangeInSec = -1; randomDelaySec = 0; return; }
+  const uint16_t frameEffect = menuPos(P_frameEffect), lettersEffect = menuPos(P_lettersEffect);
+  if (frameEffect != 0) menuActiveFrame = (uint8_t)frameEffect;
+  else if (menuActiveFrame == 0) menuActiveFrame = (uint8_t)(1 + (now / 1000UL) % 15UL);
+  if (lettersEffect != 0) menuActiveLetters = (uint8_t)lettersEffect;
+  else if (menuActiveLetters == 0) menuActiveLetters = (uint8_t)(1 + (now / 700UL) % 15UL);
+  if (frameEffect != 0 && lettersEffect != 0) { menuChangeInSec = -1; randomDelaySec = 0; return; }
   if (randomDelaySec == 0) {
     long minutes = (long)floorf(menuValue(P_randomDelay) + 0.5f);
     if (minutes == 0) minutes = 1 + (long)(millis() % 30UL);
@@ -232,7 +231,13 @@ void updateRandomCountdown(unsigned long now) {
     randomStartedAt = now;
   }
   const long elapsed = (long)((now - randomStartedAt) / 1000UL);
-  if (elapsed >= randomDelaySec) { randomDelaySec = 0; menuChangeInSec = 0; return; }
+  if (elapsed >= randomDelaySec) {
+    randomDelaySec = 0;
+    menuChangeInSec = 0;
+    if (frameEffect == 0) menuActiveFrame = (uint8_t)(1 + (menuActiveFrame + 3) % 15);
+    if (lettersEffect == 0) menuActiveLetters = (uint8_t)(1 + (menuActiveLetters + 5) % 15);
+    return;
+  }
   menuChangeInSec = randomDelaySec - elapsed;
 }
 
@@ -384,8 +389,10 @@ void printDebug(unsigned long now) {
   Serial.print(now / 1000UL);
   Serial.print(F(" mode="));
   Serial.print(modeLetter());
-  Serial.print(F(" prog="));
-  Serial.print((int)menuPos(P_program), HEX);
+  Serial.print(F(" fx="));
+  Serial.print((int)menuPos(P_frameEffect));
+  Serial.print('/');
+  Serial.print((int)menuPos(P_lettersEffect));
   Serial.print(F(" arrow="));
   Serial.print(menuPos(P_arrow) == 0 ? 'L' : 'R');
   Serial.print(F(" casino="));
@@ -427,7 +434,6 @@ void setup() {
   Serial.begin(SERIAL_BAUD);
   pinMode(PIN_STATUS_LED, OUTPUT);
   for (uint8_t k = 0; k < 4; k++) {
-    pinMode(PROGRAM_PINS[k], INPUT_PULLUP);
     pinMode(MENU_PINS[k], INPUT_PULLUP);
   }
   pinMode(PIN_OK, INPUT_PULLUP);
@@ -444,11 +450,9 @@ void setup() {
   eepromWasValid = menuBegin();
   Serial.println(eepromWasValid ? F("EEPROM: saved menu values loaded.") : F("EEPROM: no saved values for this menu layout, defaults used."));
 
-  programSwitch.stable = programSwitch.candidate = readHexRaw(HEX_PROGRAM);
   menuSwitch.stable = menuSwitch.candidate = readHexRaw(HEX_MENU);
   switchArrow.stable = switchArrow.candidate = (digitalRead(PIN_ARROW_SWITCH) == LOW);
   switchCasino.stable = switchCasino.candidate = (digitalRead(PIN_CASINO_SWITCH) == LOW);
-  menuSet(P_program, programSwitch.stable);
   menuSet(P_arrow, arrowPosition());
   menuSet(P_casino, casinoPosition());
 

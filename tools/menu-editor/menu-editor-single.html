@@ -65,7 +65,7 @@
       <button id="k-ok">OK</button><button id="k-back">BACK</button>
     </div>
     <div class="ctl" id="phys"></div>
-    <div class="ctl"><label>Seconds to next random program <input id="rt" type="number" min="0" value="125" style="width:70px"></label></div>
+    <div class="ctl"><label>Seconds to next random effect change <input id="rt" type="number" min="0" value="125" style="width:70px"></label></div>
     <div class="small">Callbacks called:</div><pre class="log" id="log-cb"></pre>
     <div class="small">EEPROM writes (one line = one batch) and image:</div><pre class="log" id="log-ee"></pre>
     <div class="ctl"><button id="btn-restart">Restart (load image)</button><button id="btn-wipe">Restart with empty EEPROM</button></div>
@@ -274,8 +274,9 @@
     })(m.root);
     var st = src.status;
     if (st) {
-      ['program', 'casino', 'arrow'].forEach(function (k) { if (!m.props[st[k]]) errors.push('status.' + k + ' must name a property'); });
-      m.status = { program: st.program, casino: st.casino, arrow: st.arrow, randomValue: st.randomValue === undefined ? 15 : st.randomValue, arrowAscii: !!st.arrowAscii };
+      ['casino', 'arrow', 'effectFrame', 'effectLetters'].forEach(function (k) { if (!m.props[st[k]]) errors.push('status.' + k + ' must name a property'); });
+      ['effectFrame', 'effectLetters'].forEach(function (k) { if (m.props[st[k]] && m.props[st[k]].kind !== 'choice') errors.push('status.' + k + ' must be a choice property (position 0 = random)'); });
+      m.status = { casino: st.casino, arrow: st.arrow, effectFrame: st.effectFrame, effectLetters: st.effectLetters, arrowAscii: !!st.arrowAscii };
     }
     m.ok = errors.length === 0;
     return m;
@@ -314,7 +315,7 @@
     opts = opts || {};
     this.m = model; this.pos = {}; this.opts = opts;
     this.mode = 'status'; this.stack = []; this.edit = null; this.confirmItem = null;
-    this.lastInput = 0; this.since = 0; this.undo = null; this.runtime = { changeInSec: null };
+    this.lastInput = 0; this.since = 0; this.undo = null; this.runtime = { changeInSec: null, activeFrame: 0, activeLetters: 0 };
     this.callLog = []; this.batches = [];
     var self = this;
     model.order.forEach(function (id) { self.pos[id] = model.props[id].defaultPos; });
@@ -364,7 +365,7 @@
 
   // physical control changed (arrow switch, casino switch, program switch): value follows; an open menu is closed
   Engine.prototype.physical = function (id, value, now) {
-    var st = this.m.status, isStatus = !!st && (id === st.program || id === st.casino || id === st.arrow);
+    var st = this.m.status, isStatus = !!st && (id === st.casino || id === st.arrow);
     if (isStatus && this.mode === 'edit' && this.edit) this._setPos(this.edit.id, this.edit.start);
     this._setPos(id, posOf(this.m.props[id], value));
     if (isStatus && this.mode !== 'status') this._toStatus(now);
@@ -424,8 +425,10 @@
     var m = this.m, since = this.since, st = m.status, r0, r1;
     if (this.mode === 'status') {
       if (!st) return ['', ''].map(function () { return fit('', '', now, since); });
-      var prog = this.get(st.program), isRandom = prog === st.randomValue;
-      r0 = '#' + Math.round(prog).toString(16).toUpperCase() + ' Casino ' + this.text(st.casino);
+      var self = this, rt = this.runtime;
+      var eff = function (id, active) { var pos = self.getPos(id), n = pos === 0 ? active : pos; return (pos === 0 ? '*' : '') + (n > 0 ? ('0' + n).slice(-2) : '--'); };
+      var isRandom = this.getPos(st.effectFrame) === 0 || this.getPos(st.effectLetters) === 0;
+      r0 = 'F' + eff(st.effectFrame, rt.activeFrame) + ' L' + eff(st.effectLetters, rt.activeLetters) + ' ' + this.text(st.casino);
       var left = this.getPos(st.arrow) === 0;
       var dir = st.arrowAscii ? (left ? '<-Customer right' : '->Customer left') : (left ? LEFT_ARROW + ' Customer right' : RIGHT_ARROW + ' Customer left');
       if (isRandom && this.runtime.changeInSec !== null && Math.floor(Math.max(0, now - since) / STATUS_ALT_MS) % 2 === 1) {
@@ -516,15 +519,57 @@ window.MENU_V2 = {
    }
   },
   "properties": {
-   "program": {
-    "name": "Program",
-    "kind": "int",
-    "type": "readOnlySwitch",
-    "min": 0,
-    "max": 15,
-    "default": 0,
-    "format": "hex",
-    "bind": "D34-D37 program switch"
+   "frameEffect": {
+    "name": "Frame effect",
+    "kind": "choice",
+    "choices": [
+     "Random",
+     "1 Bar",
+     "2 Comet",
+     "3 Fill",
+     "4 Ignite",
+     "5 Sides blink",
+     "6 Odd even",
+     "7 Ping-pong",
+     "8 Twinkle",
+     "9 Runner",
+     "10 Heartbeat",
+     "11 Corners",
+     "12 Edges swap",
+     "13 Slot machine",
+     "14 Twin comets",
+     "15 Dashes"
+    ],
+    "default": "1 Bar",
+    "callbacks": [
+     "effectFrameChanged"
+    ]
+   },
+   "lettersEffect": {
+    "name": "Letters effect",
+    "kind": "choice",
+    "choices": [
+     "Random",
+     "1 Breathe",
+     "2 Wave",
+     "3 Typewriter",
+     "4 Ignite",
+     "5 Word blink",
+     "6 Alternate",
+     "7 Scanner",
+     "8 Sparkle",
+     "9 Chase",
+     "10 Pulse",
+     "11 Converge",
+     "12 Words swap",
+     "13 Slot machine",
+     "14 Twin chase",
+     "15 Marquee"
+    ],
+    "default": "1 Breathe",
+    "callbacks": [
+     "effectLettersChanged"
+    ]
    },
    "arrow": {
     "name": "Arrow",
@@ -582,7 +627,7 @@ window.MENU_V2 = {
     ]
    },
    "randomDelay": {
-    "name": "Change delay",
+    "name": "Random delay",
     "kind": "int",
     "min": 0,
     "max": 30,
@@ -738,10 +783,10 @@ window.MENU_V2 = {
   }
  },
  "status": {
-  "program": "program",
   "casino": "casino",
   "arrow": "arrow",
-  "randomValue": 15,
+  "effectFrame": "frameEffect",
+  "effectLetters": "lettersEffect",
   "arrowAscii": false
  },
  "root": {
@@ -750,9 +795,6 @@ window.MENU_V2 = {
    {
     "menu": "Controls",
     "items": [
-     {
-      "propertyRef": "program"
-     },
      {
       "propertyRef": "arrow"
      },
@@ -764,6 +806,20 @@ window.MENU_V2 = {
      },
      {
       "propertyRef": "casinoReverse"
+     }
+    ]
+   },
+   {
+    "menu": "Effects",
+    "items": [
+     {
+      "propertyRef": "frameEffect"
+     },
+     {
+      "propertyRef": "lettersEffect"
+     },
+     {
+      "propertyRef": "randomDelay"
      }
     ]
    },
@@ -785,6 +841,9 @@ window.MENU_V2 = {
     "menu": "Frame",
     "items": [
      {
+      "propertyRef": "frameEffect"
+     },
+     {
       "propertyRef": "speedFrame"
      },
      {
@@ -804,6 +863,9 @@ window.MENU_V2 = {
    {
     "menu": "Letters",
     "items": [
+     {
+      "propertyRef": "lettersEffect"
+     },
      {
       "propertyRef": "speedLetters"
      },
@@ -856,14 +918,6 @@ window.MENU_V2 = {
     ]
    },
    {
-    "menu": "Random program",
-    "items": [
-     {
-      "propertyRef": "randomDelay"
-     }
-    ]
-   },
-   {
     "preset": "Restore defaults",
     "setAll": "default",
     "confirm": true,
@@ -883,7 +937,7 @@ window.MENU_V2 = {
   var $ = function (id) { return document.getElementById(id); };
   var S = JSON.parse(JSON.stringify(window.MENU_V2));      // the menu file being edited
   var tab = 'tree', sel = null;                              // sel: {tab, path|id}
-  var model = null, engine = null, eeprom = null, shiftOn = false, phys = { program: 0, casino: 0, arrow: 0 };
+  var model = null, engine = null, eeprom = null, shiftOn = false, phys = { casino: 0, arrow: 0 };
   var startMs = Date.now(), cbLog = [], eeCount = 0;
   var PROP_FIELDS = [['kind', 'sel', ['', 'int', 'float', 'choice', 'bool']], ['type', 'typesel'], ['name', 'text'], ['min', 'num'], ['max', 'num'], ['default', 'val'], ['step', 'num'], ['steps', 'num'],
     ['scale', 'sel', ['', 'linear', 'log']], ['wrap', 'bool'], ['shift', 'num'], ['readOnly', 'bool'], ['persist', 'bool'], ['bind', 'text'], ['unit', 'text'], ['decimals', 'num'],
@@ -915,7 +969,7 @@ window.MENU_V2 = {
   function buildPhys() {
     var box = $('phys'); box.innerHTML = '';
     if (!model.status) { box.textContent = 'No status section: switches not shown.'; return; }
-    ['program', 'casino', 'arrow'].forEach(function (k) {
+    ['casino', 'arrow'].forEach(function (k) {
       var p = model.props[model.status[k]], s = document.createElement('select'), lab = document.createElement('label');
       for (var i = 0; i < p.count; i++) { var o = document.createElement('option'); o.value = i; o.textContent = C.valueText(p, i); s.appendChild(o); }
       s.value = Math.min(phys[k] || 0, p.count - 1);
@@ -926,7 +980,8 @@ window.MENU_V2 = {
   var lastSecs = null;
   function render() {
     if (!engine) { $('lcd0').textContent = '(menu has errors)'; $('lcd1').textContent = ''; return; }
-    engine.setRuntime({ changeInSec: Math.max(0, +$('rt').value || 0) });
+    var st = model.status;   // preview only: a random effect is shown as number 7
+    engine.setRuntime({ changeInSec: Math.max(0, +$('rt').value || 0), activeFrame: st ? (engine.getPos(st.effectFrame) || 7) : 0, activeLetters: st ? (engine.getPos(st.effectLetters) || 7) : 0 });
     var r = engine.rows(now());
     var map = function (s) { return s.replace(/\x7e/g, '→').replace(/\x7f/g, '←').replace(/\x01/g, '🔒'); };
     $('lcd0').textContent = map(r[0]); $('lcd1').textContent = map(r[1]);
@@ -1022,7 +1077,7 @@ window.MENU_V2 = {
       if (t === 'properties' && it.propertyRef === a) it.propertyRef = b; if (t === 'menus' && it.menuRef === a) it.menuRef = b;
       if (t === 'properties' && it.set && it.set[a] !== undefined) { it.set[b] = it.set[a]; delete it.set[a]; } if (it.items) w(it.items); }); })(S.common.menus[k].items); });
     if (t === 'types') Object.keys(S.common.properties).concat(Object.keys(S.common.types)).forEach(function (k) { var d = S.common.properties[k] || S.common.types[k]; if (d.type === a) d.type = b; });
-    if (t === 'properties' && S.status) ['program', 'casino', 'arrow'].forEach(function (k) { if (S.status[k] === a) S.status[k] = b; });
+    if (t === 'properties' && S.status) ['casino', 'arrow', 'effectFrame', 'effectLetters'].forEach(function (k) { if (S.status[k] === a) S.status[k] = b; });
   }
 
   // ---------------------------------------------------------------- form (middle)

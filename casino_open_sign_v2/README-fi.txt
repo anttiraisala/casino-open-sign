@@ -64,7 +64,6 @@ Johdotus (tarkasti)
                   (vain V2: liittimet eroavat versiosta 1 ja kansiosta ../arrow_sticks/; tikkujen paikat levyllä eivät muutu)
     D32 -> liukukytkin SW1 yhteinen (kontakti 1 -> GND)    D30 -> liukukytkin SW5 yhteinen (kontakti 1 -> GND)
     D33 -> painike SW2 -> GND (ohittaa vain käynnistyksen LED-testin)
-    D34-D37 -> SW6 ohjelmakytkimen pinnit 1, 2, 4, 8 (yhteinen C -> GND)
     D42-D45 -> SW3 valikkokytkimen pinnit 1, 2, 4, 8 (yhteinen C -> GND)
     D48 -> painike SW7 OK -> GND     D49 -> painike SW8 BACK -> GND     D50 -> painike SW9 SHIFT -> GND
     (jokainen painike: kontakti 1 Arduinon pinniin, kontakti 2 GND:hen; kaikki tulot käyttävät INPUT_PULLUP:ia, ei vastuksia)
@@ -94,14 +93,15 @@ Käynnistyksen LED-testi (10 s) ajaa 2 pikselin ikkunan jokaisen nauhan läpi (k
 
 Asetusvalikko (valikkokytkin SW3 D42-D45, painikkeet OK D48, BACK D49, SHIFT D50)
 --------------------------------------------------------------------------------
-Tilasivu (näyttö käynnistyksen jälkeen): rivi 0 näyttää ohjelman (#0..#E, #F = satunnainen) ja kasinon tilan (Open/Closed); rivi 1 näyttää
-nuolisymbolin ja asiakkaan puolen ("<- Customer right" = nuoli osoittaa asiakkaan oikealle) ja ohjelmassa F vuorottelee tekstin
-"Change in M:SS" (aika seuraavaan satunnaisohjelmaan) kanssa. OK avaa valikon; käyttöliittymässä painikkeen nimi on aina OK.
-Valikko: Controls (program, arrow, casino: vain luettavia kytkinasentoja; Arrow reverse / Casino reverse -liput), Speed (Frame speed, Letters speed,
+Tilasivu (näyttö käynnistyksen jälkeen): rivi 0 näyttää kaksi efektiä ja kasinon tilan, esim. "F12 L03 Open" (F = reunuksen efekti, L = kirjainten
+efekti, kaksi numeroa; tähti numeron edessä merkitsee satunnaista ryhmää ja numero on efekti, joka oikeasti näkyy, esim. "F*07"; "--" = ei tiedossa);
+rivi 1 näyttää nuolisymbolin ja asiakkaan puolen ("<- Customer right" = nuoli osoittaa asiakkaan oikealle) ja vuorottelee tekstin
+"Change in M:SS" (aika seuraavaan satunnaiseen vaihtoon) kanssa, kun reunus tai kirjaimet ovat satunnaisia. OK avaa valikon; käyttöliittymässä painikkeen nimi on aina OK.
+Valikko: Controls (arrow, casino: vain luettavia kytkinasentoja; Arrow reverse / Casino reverse -liput), Effects (Frame effect, Letters effect, Random delay), Speed (Frame speed, Letters speed,
 Arrow speed: x0.125..x4, logaritminen, 30 askelta, kolme desimaalia, oletus x1), sitten yksi ryhmä per LED-tyyppi: Frame (reunuksen LED-nauha),
-Letters (kirjainten LED-nauha) ja Arrow (nuolen tikut), kussakin oma nopeus sekä kirkkauden Min, Max, Exponent ja Mix (käyrän max on raja,
+Letters (kirjainten LED-nauha) ja Arrow (nuolen tikut), kussakin oma nopeus (Frame ja Letters alkavat lisäksi omalla efektillään: yksi arvo, kaksi paikkaa) sekä kirkkauden Min, Max, Exponent ja Mix (käyrän max on raja,
 yleistä kirkkautta ei ole); Brightness (samat kirkkausarvot uudelleen ryhmiteltynä Frame / Letters / Arrow: yksi ominaisuus, kaksi paikkaa),
-Random program (Change delay), Restore defaults (kysyy vahvistuksen).
+Restore defaults (kysyy vahvistuksen).
 Ominaisuusrivi näyttää "Nimi  arvo" (arvo oikeassa reunassa); jos ne eivät mahdu 16 merkkiin, rivi vierii yhtenä tekstinä "Nimi: arvo"
 (tauko alussa, yksi merkki askeleessa, tauko viimeisen merkin ollessa oikeassa reunassa). OK vain luettavan arvon kohdalla avaa saman sivun kuin
 muokkaus (nimi, sitten lukko ja arvo), mutta mitään ei voi muuttaa; BACK tai OK palaa.
@@ -112,18 +112,22 @@ Valikkokytkimen käännös ensimmäisellä tai viimeisellä kohdalla ei tee mit�
 alle 300 ms sisällä (koskettimen pomppu) säilyttää myös sen rivin vierityksen.
 SHIFT pohjassa kierrettäessä askel on isompi. OK menee alivalikkoon / aloittaa muokkauksen / hyväksyy, BACK menee tason ylös / peruu muokkauksen.
 Pitkä rivinteksti vierii. Valikon juuressa, kun mitään ominaisuutta ei ole auki eikä muokata, 60 s ilman syötettä palauttaa näytön tilasivulle.
-Ohjelmakytkin SW6 on ABSOLUUTTINEN ja sitä luetaan koko ajan (myös valikon ollessa auki).
+Ohjelmakytkintä ei ole: efektit valitaan valikosta (Effects).
 Arvot tallennetaan EEPROMiin (asettelutunniste tarkistetaan käynnistyksessä; ei-täsmäävä asettelu antaa oletukset).
 Testattu vain koneella (tests/casino_open_sign_v2_harness.cpp, valikkomoottorin testit), ei vielä laitteistolla eikä Wokwissa.
 Tunnettu rajoitus: LCD yritetään uudelleen epäonnistuneen lähetyksen jälkeen, mutta sitä ei alusteta kokonaan uudelleen jaksoittain kuten hex_rotary_testissä.
 
-Ohjelmakytkin SW6 (heksa-kiertokytkin, D34-D37, absoluuttinen, luetaan koko ajan)
------------------------------------------------------------------
-Asento 0..E = kirjainohjelma 0..14 ja vastaava reunuskuvio 0..14; F = satunnainen: satunnainen ohjelma 0..14 kahden minuutin välein,
-ei koskaan samaa kahdesti peräkkäin.
-  0 hengitys  1 aalto  2 kirjoituskone  3 syttyminen  4 sanojen vilkku  5 vuorottelu  6 skanneri  7 kipinä  8 jahti  9 pulssi
-  10 (A) yhtyminen  11 (B) sanojen vaihto  12 (C) hedelmäpeli  13 (D) kaksoisjahti  14 (E) markiisi
-Reunuskuviot ovat valkoisia ja seuraavat nuolen aloituskulmaa ohjelmissa 0, 1, 2, 6, 8, 13 ja 14. Molemmat ovat ensimmäisiä versioita,
+Efektit (valikko: Effects > Frame effect, Letters effect, Random delay)
+----------------------------------------------------------------------
+Reunuksella ja kirjaimilla on kummallakin oma efekti 0..15: 0 = Random (satunnainen), 1..15 = kiinteä efekti (oletus 1; ei kierrä ympäri; arvorivi
+näyttää numeron ensin, esim. "12 Slot machine"). Arvoa käännettäessä efekti näkyy heti; OK hyväksyy ja tallentaa, BACK palauttaa vanhan arvon ja
+vanhan efektin.
+  1 hengitys  2 aalto  3 kirjoituskone  4 syttyminen  5 sanojen vilkku  6 vuorottelu  7 skanneri  8 kipinä  9 jahti  10 pulssi
+  11 yhtyminen  12 sanojen vaihto  13 hedelmäpeli  14 kaksoisjahti  15 markiisi
+Satunnainen: yksi yhteinen ajastin, jonka pituus on Random delay (minuuttia; 0 = satunnaisesti 1..30 min; oletus 2). Kun ajastin päättyy, vain
+arvoon 0 asetetut ryhmät arpovat uuden efektin (kukin omansa, ei koskaan samaa kahdesti peräkkäin); kiinteä efekti ei vaihdu itsestään. Kun ryhmä
+asetetaan arvoon 0, se arpoo efektin heti ja yhteinen ajastin käynnistyy alusta, joten satunnaiset ryhmät vaihtuvat aina yhtä aikaa.
+Reunuskuviot ovat valkoisia ja seuraavat nuolen aloituskulmaa efekteissä 1, 2, 3, 7, 9, 14 ja 15. Molemmat ovat ensimmäisiä versioita,
 joita arvioidaan livenä kyltissä (RDD-IDEAS.md IDEA-015, IDEA-016). Testattu vain koneella, ei vielä laitteistolla.
 
 Asetusten muuttaminen
@@ -137,7 +141,7 @@ Pinnien tai reunuksen koon muuttamisen jälkeen generoi piirrokset ja Wokwi-tied
 Testit
 ------
 tests/casino_open_sign_v2_harness.cpp tarkistaa ohjelman tietokoneella (odotetut arvot on kirjoitettu koodiin, ei lueta sketchistä),
-tests/mutate_v2.py tarkistaa testit noin 170 sketchin mutantilla:
+tests/mutate_v2.py tarkistaa testit noin 190 sketchin mutantilla:
     g++ -std=c++17 -O1 -w -Itests -DSKETCH_PATH='"'$PWD'/casino_open_sign_v2/sketch.ino"' -o /tmp/v2 tests/casino_open_sign_v2_harness.cpp && /tmp/v2
     python3 tests/mutate_v2.py
 (Ei ajettu oikealla laitteistolla eikä Wokwissa.)

@@ -16,7 +16,7 @@
       "top": -170,
       "left": 20,
       "attrs": {
-        "text": "Settings menu test: program switch + menu switch + OK/BACK/SHIFT + 2 slide switches + LCD"
+        "text": "Settings menu test: menu switch + OK/BACK/SHIFT + 2 slide switches + LCD"
       }
     },
     {
@@ -27,13 +27,6 @@
       "attrs": {
         "text": "Wokwi has no hex rotary switch: a DIP bank stands in (ON = leg connected to C = bit set)"
       }
-    },
-    {
-      "type": "wokwi-dip-switch-8",
-      "id": "prog",
-      "top": -120,
-      "left": 20,
-      "attrs": {}
     },
     {
       "type": "wokwi-dip-switch-8",
@@ -94,54 +87,6 @@
     }
   ],
   "connections": [
-    [
-      "mega:34",
-      "prog:1b",
-      "orange",
-      []
-    ],
-    [
-      "mega:GND.1",
-      "prog:1a",
-      "black",
-      []
-    ],
-    [
-      "mega:35",
-      "prog:2b",
-      "orange",
-      []
-    ],
-    [
-      "mega:GND.1",
-      "prog:2a",
-      "black",
-      []
-    ],
-    [
-      "mega:36",
-      "prog:3b",
-      "orange",
-      []
-    ],
-    [
-      "mega:GND.1",
-      "prog:3a",
-      "black",
-      []
-    ],
-    [
-      "mega:37",
-      "prog:4b",
-      "orange",
-      []
-    ],
-    [
-      "mega:GND.1",
-      "prog:4a",
-      "black",
-      []
-    ],
     [
       "mega:42",
       "menu:1b",

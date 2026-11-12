@@ -28,7 +28,6 @@ def pin_const(name):
     return int(re.search(name + r"\s*=\s*(\d+)", TEXT).group(1))
 
 
-PROGRAM = pin_array("PROGRAM_PINS")
 MENU = pin_array("MENU_PINS")
 OK, BACK, SHIFT = pin_const("PIN_OK"), pin_const("PIN_BACK"), pin_const("PIN_SHIFT")
 ARROW, CASINO = pin_const("PIN_ARROW_SWITCH"), pin_const("PIN_CASINO_SWITCH")
@@ -38,10 +37,9 @@ def wokwi():
     parts = [
         {"type": "wokwi-arduino-mega", "id": "mega", "top": 0, "left": 0, "attrs": {}},
         {"type": "wokwi-text", "id": "t1", "top": -170, "left": 20,
-         "attrs": {"text": "Settings menu test: program switch + menu switch + OK/BACK/SHIFT + 2 slide switches + LCD"}},
+         "attrs": {"text": "Settings menu test: menu switch + OK/BACK/SHIFT + 2 slide switches + LCD"}},
         {"type": "wokwi-text", "id": "t2", "top": -152, "left": 20,
          "attrs": {"text": "Wokwi has no hex rotary switch: a DIP bank stands in (ON = leg connected to C = bit set)"}},
-        {"type": "wokwi-dip-switch-8", "id": "prog", "top": -120, "left": 20, "attrs": {}},
         {"type": "wokwi-dip-switch-8", "id": "menu", "top": -120, "left": 200, "attrs": {}},
         {"type": "wokwi-pushbutton", "id": "ok", "top": -120, "left": 400, "attrs": {"color": "green"}},
         {"type": "wokwi-pushbutton", "id": "back", "top": -120, "left": 470, "attrs": {"color": "red"}},
@@ -51,8 +49,6 @@ def wokwi():
         {"type": "wokwi-lcd1602", "id": "lcd", "top": 480, "left": 20, "attrs": {"pins": "i2c"}},
     ]
     c = []
-    for k, pin in enumerate(PROGRAM):
-        c += [["mega:%d" % pin, "prog:%db" % (k + 1), "orange", []], ["mega:GND.1", "prog:%da" % (k + 1), "black", []]]
     for k, pin in enumerate(MENU):
         c += [["mega:%d" % pin, "menu:%db" % (k + 1), "orange", []], ["mega:GND.1", "menu:%da" % (k + 1), "black", []]]
     for name, pin in (("ok", OK), ("back", BACK), ("shift", SHIFT)):
@@ -102,25 +98,24 @@ def button(svg, x, y, name, pin, ard_x0):
 
 def schematic():
     width = 940
-    svg = Svg(width, 1200)
+    svg = Svg(width, 900)
     svg.text(width / 2, 22, "Settings menu test - wiring", size=17, anchor="middle", weight="bold")
     ard_x0, ard_x1 = 600, 910
-    svg.rect(ard_x0, 50, ard_x1 - ard_x0, 800, fill="#e8f0fe")
+    svg.rect(ard_x0, 50, ard_x1 - ard_x0, 780, fill="#e8f0fe")
     svg.text((ard_x0 + ard_x1) / 2, 74, "Arduino Mega 2560", size=14, anchor="middle", weight="bold")
     svg.text((ard_x0 + ard_x1) / 2, 92, "powered over USB for this test", size=11, anchor="middle", color=GREY)
 
-    hex_switch(svg, 40, 140, "PSW  program hex rotary switch", "absolute position 0-F = the program number", PROGRAM, ard_x0)
-    hex_switch(svg, 40, 340, "MSW  menu hex rotary switch", "free-running: moves the menu / changes a value", MENU, ard_x0)
+    hex_switch(svg, 40, 140, "MSW  menu hex rotary switch", "free-running: moves the menu / changes a value", MENU, ard_x0)
 
-    svg.text(40, 520, "Push buttons (to GND, internal pull-ups; no resistors)", size=13, weight="bold")
+    svg.text(40, 320, "Push buttons (to GND, internal pull-ups; no resistors)", size=13, weight="bold")
     # buttons stacked on the left
     for i, (name, pin) in enumerate((("OK", OK), ("BACK", BACK), ("SHIFT (hold while turning = x10)", SHIFT))):
-        button(svg, 60, 560 + i * 70, name, pin, ard_x0)
+        button(svg, 60, 360 + i * 70, name, pin, ard_x0)
     # slide switches
-    svg.text(40, 790, "Slide switches (middle contact to the pin, one side contact to GND)", size=13, weight="bold")
+    svg.text(40, 590, "Slide switches (middle contact to the pin, one side contact to GND)", size=13, weight="bold")
     for i, (name, pin, low) in enumerate((("Arrow switch", ARROW, "handle on the GND side = arrow points left"),
                                           ("Casino switch", CASINO, "handle on the GND side = casino closed"))):
-        y = 820 + i * 60
+        y = 620 + i * 60
         svg.text(60, y, name, size=12, weight="bold")
         svg.text(60, y + 16, low, size=10, color=GREY)
         svg.circle(330, y + 6, 3.5, ORANGE)
@@ -129,7 +124,7 @@ def schematic():
         svg.text(340, y - 6, "middle contact", size=10, color=GREY)
 
     # LCD
-    ly = 960
+    ly = 760
     svg.text(40, ly - 20, "LCD  2x16 character LCD, I2C backpack (address 0x27)", size=13, weight="bold")
     svg.rect(60, ly, 150, 100, fill="#f3f3f3")
     svg.text(135, ly + 54, "LCD 16 x 2", size=13, anchor="middle", weight="bold")
@@ -155,8 +150,7 @@ def layout():
     svg = Svg(width, height)
     svg.text(width / 2, 28, "Settings menu test - where the wires go (not to scale)", size=18, anchor="middle", weight="bold")
     svg.text(60, 66, "Mega 2560: long double-row header (from above)", size=12, weight="bold")
-    used = {str(p): ("program leg %d" % w) for p, w in zip(PROGRAM, (1, 2, 4, 8))}
-    used.update({str(p): ("menu leg %d" % w) for p, w in zip(MENU, (1, 2, 4, 8))})
+    used = {str(p): ("menu leg %d" % w) for p, w in zip(MENU, (1, 2, 4, 8))}
     used.update({str(OK): "OK", str(BACK): "BACK", str(SHIFT): "SHIFT", str(ARROW): "arrow switch", str(CASINO): "casino switch"})
     rows = [("5V", "5V"), ("30", "31"), ("32", "33"), ("34", "35"), ("36", "37"), ("38", "39"), ("40", "41"), ("42", "43"),
             ("44", "45"), ("46", "47"), ("48", "49"), ("50", "51"), ("52", "53"), ("GND", "GND")]
@@ -180,8 +174,6 @@ def layout():
     svg.text(tx, 66, "What goes where", size=13, weight="bold")
     svg.rect(tx, 78, 420, 330, fill="#f3f3f3")
     table = [("Part", "Pin / contact", "Mega pin"),
-             ("Program hex switch", "legs 1, 2, 4, 8", "D%d D%d D%d D%d" % tuple(PROGRAM)),
-             ("", "C (one leg)", "GND"),
              ("Menu hex switch", "legs 1, 2, 4, 8", "D%d D%d D%d D%d" % tuple(MENU)),
              ("", "C (one leg)", "GND"),
              ("OK button", "one contact", "D%d" % OK), ("BACK button", "one contact", "D%d" % BACK), ("SHIFT button", "one contact", "D%d" % SHIFT),

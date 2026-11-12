@@ -1,6 +1,6 @@
 // Makes a scenario (key and switch events) and the trace the JS menu engine (menu-core.js) gives for it.
 //   node tests/menu_diff_scenario.js <menu.json> <seed> <events> <scenario-out> <trace-out>
-// Scenario line:  <t> turn <steps> <shift> | key <0 OK|1 BACK> | phys <prop> <pos> | set <prop> <pos> | rt <seconds|-1> | tick
+// Scenario line:  <t> turn <steps> <shift> | key <0 OK|1 BACK> | phys <prop> <pos> | set <prop> <pos> | rt <seconds|-1> <activeFrame> <activeLetters> | tick
 // Trace line:     hex of row 0 and row 1 at t, the same at t+1700, callbacks "cb:prop:pos,...", EEPROM batches "p.p.p,...",
 //                 all property positions, mode letter
 'use strict';
@@ -18,7 +18,7 @@ const hex = s => Array.from(s).map(c => ('0' + c.charCodeAt(0).toString(16)).sli
 const e = new core.Engine(model);
 const scen = [], trace = [];
 let t = 1000, cbSeen = 0, batchSeen = 0;
-const statusIdx = [st.program, st.casino, st.arrow].map(id => ids.indexOf(id));
+const statusIdx = [st.casino, st.arrow].map(id => ids.indexOf(id));
 function emit(line, apply) {
   scen.push(t + ' ' + line);
   e.tick(t);
@@ -36,12 +36,12 @@ for (let i = 0; i < N; i++) {
   if (w < 0.34) { const steps = ri(-3, 3) || 1, shift = rnd() < 0.3 ? 1 : 0; emit('turn ' + steps + ' ' + shift, () => e.turn(steps, !!shift, t)); }
   else if (w < 0.62) { const k = rnd() < 0.7 ? 0 : 1; emit('key ' + k, () => e.key(k ? 'BACK' : 'OK', t)); }
   else if (w < 0.70) {
-    const which = ri(0, 2), id = [st.program, st.casino, st.arrow][which], p = model.props[id], pos = ri(0, p.count - 1);
+    const which = ri(0, 1), id = [st.casino, st.arrow][which], p = model.props[id], pos = ri(0, p.count - 1);
     emit('phys ' + statusIdx[which] + ' ' + pos, () => e.physical(id, core.valueAt(p, pos), t));
   } else if (w < 0.76) {
     const cand = ids.filter(id => !model.props[id].readOnly), id = cand[ri(0, cand.length - 1)], p = model.props[id], pos = ri(0, p.count - 1);
     emit('set ' + ids.indexOf(id) + ' ' + pos, () => e.set(id, core.valueAt(p, pos)));
-  } else if (w < 0.82) { const secs = rnd() < 0.2 ? -1 : ri(0, 1800); emit('rt ' + secs, () => e.setRuntime({ changeInSec: secs < 0 ? null : secs })); }
+  } else if (w < 0.82) { const secs = rnd() < 0.2 ? -1 : ri(0, 1800), af = ri(0, 15), al = ri(0, 15); emit('rt ' + secs + ' ' + af + ' ' + al, () => e.setRuntime({ changeInSec: secs < 0 ? null : secs, activeFrame: af, activeLetters: al })); }
   else emit('tick', () => {});
 }
 fs.writeFileSync(scenOut, scen.join('\n') + '\n');

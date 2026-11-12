@@ -11,8 +11,6 @@ ohjelmaa (casino_open_sign_v2/): valikkoa ei ole vielä kyltissä.
 
 Ohjaimet
 --------
-  Ohjelmakytkin        jalat 1, 2, 4, 8 -> D34-D37, yksi C-jalka GND:hen. Absoluuttinen asento 0..F = ohjelman numero
-                       tilasivulla. Luetaan koko ajan; sen kääntäminen valikon ollessa auki sulkee valikon.
   Valikkokytkin        jalat 1, 2, 4, 8 -> D42-D45, yksi C-jalka GND:hen. Vapaasti pyörivä: kääntäminen siirtää valintaa
                        tai muuttaa arvoa (suunta ja askeleet asennon muutoksesta, kuten hex_rotary_testissä).
   OK D48, BACK D49, SHIFT D50   painikkeet GND:hen. SHIFT pohjassa käännettäessä askel on kymmenkertainen.
@@ -23,15 +21,16 @@ Tarkka kytkentä: wiring-diagram.svg/.pdf (kytkentäkaavio) ja layout-diagram.sv
 
 Mitä näet ja teet
 -----------------
-  Tilasivu      rivi 0 "#<ohjelma> Casino Open|Closed", rivi 1 nuoli + "Customer right|left". Ohjelmassa F rivi 1 vaihtuu
-                3 sekunnin välein tekstiksi "Change in M:SS" (lähtölaskenta on tässä vain simuloitu "Change delay" -arvosta).
+  Tilasivu      rivi 0 "F12 L03 Open|Closed" (reunuksen ja kirjainten efekti, tähti satunnaisen edessä, esim. "F*07"), rivi 1 nuoli +
+                "Customer right|left". Kun efekti on satunnainen, rivi 1 vaihtuu 3 sekunnin välein tekstiksi "Change in M:SS" (lähtölaskenta
+                ja satunnaiset numerot ovat tässä vain simuloituja "Random delay" -arvosta; LEDejä ei ole). Efektit asetetaan kohdassa Effects.
   OK            avaa valikon juuresta (otsikko "Menu" ja laskuri "NNs"). Listassa OK avaa alivalikon tai aloittaa arvon
                 muokkauksen. BACK menee tason ylös tai poistuu valikosta juuressa.
   Valikkokytkin siirtää valintaa (lista pysähtyy päihin) tai muuttaa arvoa muokattaessa (heti; sarjamonitori tulostaa
                 "CB ..." -rivin jokaisesta callbackista). OK tallentaa arvon EEPROMiin, BACK peruu (vanha arvo).
   Restore defaults  kysyy "OK=yes BACK=no" (kysymys "Restore defaults?" on 17 merkkiä ja vierii 16 merkin rivillä).
   Aikakatkaisu  valikko sulkeutuu 60 s ilman syötettä, vain juurilistassa (jäljellä olevat sekunnit näkyvät).
-  Kytkimet      nuoli-, casino- tai ohjelmakytkimen muutos valikon ollessa auki sulkee valikon / peruu muokkauksen.
+  Kytkimet      nuoli- tai casino-kytkimen muutos valikon ollessa auki sulkee valikon / peruu muokkauksen.
                 "Arrow reverse" ja "Casino reverse" kääntävät liukukytkinten merkityksen heti.
   Pitkät tekstit  rivi, joka ei mahdu, odottaa 1 s ja vierii sitten yhden merkin 400 ms välein.
 Rivin 1 nuolet ovat LCD:n ROM-merkit 0x7E / 0x7F. Jos näytössä on muita symboleja, kerro AI:lle
@@ -45,14 +44,14 @@ Väärä kääntösuunta: aseta MENU_SWITCH_REVERSED arvoon true. Asento 0 näky
 
 Mitä kokeilla ja kirjata ylös
 -----------------------------
-  1. Tilasivu: seuraavatko ohjelman numero, Casino ja nuoli kolmea kytkintä (ja Reverse-asetuksia)?
+  1. Tilasivu: seuraavatko Casino ja nuoli kahta liukukytkintä (ja Reverse-asetuksia)?
   2. OK avaa valikon; liikkuuko valinta yhden kohdan per napsahdus oikeaan suuntaan ja pysähtyykö se päihin?
   3. Muokkaa arvoa (esim. Brightness > Frame > Max): muuttuuko heti, tekeekö SHIFT kymmenen askelta, tallentaako OK,
      peruuttaako BACK? Katkaise Megan virta ja kytke uudelleen: onko tallennettu arvo tallella (sarjamonitori "EEPROM: saved ...")?
   4. Restore defaults: vahvistussivu, OK = kyllä, BACK = ei.
   5. Näyttävätkö rivin 1 nuolet nuolilta? (Muuten "arrowAscii".)
   6. Onko vierivä pitkä teksti luettavissa (esim. "Restore defaults?")?
-  7. Käännä ohjelmakytkin asentoon F: rivi 1 vaihtelee tekstin "Change in M:SS" kanssa.
+  7. Effects > Frame effect: käännä arvoon 0 (satunnainen): tilasivu näyttää F*.. ja rivi 1 vaihtelee tekstin "Change in M:SS" kanssa. BACK palauttaa vanhan efektin.
 
 Tiedostot
 ---------

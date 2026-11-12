@@ -84,7 +84,7 @@ def read_config(text):
         if not match:
             sys.exit("Could not find %s in sketch.ino" % name)
         config[name] = match.group(1).upper()
-    for name in ("PIN_MENU_SWITCH", "PIN_PROGRAM"):
+    for name in ("PIN_MENU_SWITCH",):
         match = re.search(r"constexpr\s+uint8_t\s+%s\[\d*\]\s*=\s*\{([^}]*)\}" % name, text)
         if not match:
             sys.exit("Could not find %s in sketch.ino" % name)
@@ -293,7 +293,6 @@ class Layout:
             "D%d: casino closed switch SW5 (handle toward GND = closed)" % c["PIN_CASINO_CLOSED_SWITCH"],
             "D%d-D%d: menu switch SW3 (free-running hex rotary, relative): selection / value" % (c["PIN_MENU_SWITCH"][0], c["PIN_MENU_SWITCH"][3]),
             "D%d OK (opens the menu), D%d BACK, D%d SHIFT (bigger steps while held)" % (c["PIN_OK"], c["PIN_BACK"], c["PIN_SHIFT"]),
-            "D%d-D%d: program switch SW6 (hex rotary 0-F): letter program + frame pattern" % (c["PIN_PROGRAM"][0], c["PIN_PROGRAM"][3]),
             "D%d (LED L on the board): sign of life; Serial Monitor 115200 baud" % c["PIN_STATUS_LED"],
             "One Wokwi LED = one real pixel (one chip = 3 LEDs, 10 cm).",
         ]
@@ -321,14 +320,14 @@ class Layout:
         for part in self.parts:
             parts.append({k: v for k, v in part.items() if not k.startswith("_")})
         parts.extend(self.legend())
-        # List of the letter modes under the sign (the modes are defined in sketch.ino).
+        # List of the effects under the sign (chosen in the menu: Effects > Frame effect / Letters effect; 0 = random).
         for i, line in enumerate((
-                "Program switch SW6 (D%d-D%d) picks the letter program AND the frame pattern:" % (self.cfg["PIN_PROGRAM"][0], self.cfg["PIN_PROGRAM"][3]),
-                "0 breathe   1 wave   2 typewriter   3 ignite   4 word blink",
-                "5 alternate   6 scanner   7 sparkle   8 chase   9 pulse",
-                "A converge   B words swap   C slot machine   D twin chase   E marquee",
-                "F random auto: a random program from 0-E, new one every 2 min",
-                "Frame patterns 0-E follow the same number. The sign starts in the switch position.")):
+                "Effects (menu: Effects > Frame effect, Letters effect; each 0 = random, 1-15 = a fixed effect):",
+                "1 breathe   2 wave   3 typewriter   4 ignite   5 word blink",
+                "6 alternate   7 scanner   8 sparkle   9 chase   10 pulse",
+                "11 converge   12 words swap   13 slot machine   14 twin chase   15 marquee",
+                "0 random: every group set to 0 picks a new effect after the Random delay (default 2 min).",
+                "The frame effect N and the letters effect N are separate choices; both start at 1.")):
             parts.append({"type": "wokwi-text", "id": "mode_list_%d" % (i + 1),
                           "top": round(fy + height + 30 + i * 20, 1), "left": round(fx, 1),
                           "attrs": {"text": line}})
@@ -378,18 +377,11 @@ class Layout:
         # switches 1-4 are the bits 1, 2, 4, 8. A closed switch pulls its pin to GND = bit set.
         parts.append({"type": "wokwi-dip-switch-8", "id": "menu_switches",
                       "top": dip_top, "left": 80, "attrs": {}})
-        parts.append({"type": "wokwi-dip-switch-8", "id": "program_switches",
-                      "top": dip_top, "left": 290, "attrs": {}})
         for i, line in enumerate((
                 "Menu DIP bank (left) = menu switch SW3 (D%d-D%d):" % (self.cfg["PIN_MENU_SWITCH"][0], self.cfg["PIN_MENU_SWITCH"][3]),
                 "1-4 = bits 1,2,4,8; 5-8 unused. Free-running and RELATIVE:",
                 "a change of the code is a step (1..7 forward, 9..15 back).",
-                "Click the part, press keys 1-4. Buttons OK/BACK/SHIFT above.",
-                "",
-                "",
-                "Right DIP bank = program switch SW6 (D%d-D%d):" % (self.cfg["PIN_PROGRAM"][0], self.cfg["PIN_PROGRAM"][3]),
-                "1-4 = bits 1,2,4,8; 5-8 unused. Binary 0..15 = program 0..F.",
-                "Click the part, press keys 1-4.")):
+                "Click the part, press keys 1-4. Buttons OK/BACK/SHIFT above.")):
             parts.append({"type": "wokwi-text", "id": "speed_label_%d" % (i + 1),
                           "top": dip_label_top + i * 20, "left": 20, "attrs": {"text": line}})
 
@@ -420,9 +412,6 @@ class Layout:
         for key, text in (("PIN_OK", "ok"), ("PIN_BACK", "back"), ("PIN_SHIFT", "shift")):
             connections.append(["mega:%d" % self.cfg[key], "button_%s:1.r" % text, "orange", []])
             connections.append(["button_%s:2.r" % text, "mega:GND.1", "black", []])
-        for k, pin in enumerate(self.cfg["PIN_PROGRAM"], start=1):
-            connections.append(["mega:%d" % pin, "program_switches:%da" % k, "orange", []])
-            connections.append(["program_switches:%db" % k, "mega:GND.1", "black", []])
         for _name, ids, pin in self.chains:   # pin: a number for the strips, "A0".. for the sticks on A0..A2
             first = ids[0]
             connections.append(["mega:%s" % pin, "%s:DIN" % first, "green", []])

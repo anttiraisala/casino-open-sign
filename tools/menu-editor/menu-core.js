@@ -200,8 +200,9 @@
     })(m.root);
     var st = src.status;
     if (st) {
-      ['program', 'casino', 'arrow'].forEach(function (k) { if (!m.props[st[k]]) errors.push('status.' + k + ' must name a property'); });
-      m.status = { program: st.program, casino: st.casino, arrow: st.arrow, randomValue: st.randomValue === undefined ? 15 : st.randomValue, arrowAscii: !!st.arrowAscii };
+      ['casino', 'arrow', 'effectFrame', 'effectLetters'].forEach(function (k) { if (!m.props[st[k]]) errors.push('status.' + k + ' must name a property'); });
+      ['effectFrame', 'effectLetters'].forEach(function (k) { if (m.props[st[k]] && m.props[st[k]].kind !== 'choice') errors.push('status.' + k + ' must be a choice property (position 0 = random)'); });
+      m.status = { casino: st.casino, arrow: st.arrow, effectFrame: st.effectFrame, effectLetters: st.effectLetters, arrowAscii: !!st.arrowAscii };
     }
     m.ok = errors.length === 0;
     return m;
@@ -240,7 +241,7 @@
     opts = opts || {};
     this.m = model; this.pos = {}; this.opts = opts;
     this.mode = 'status'; this.stack = []; this.edit = null; this.confirmItem = null;
-    this.lastInput = 0; this.since = 0; this.undo = null; this.runtime = { changeInSec: null };
+    this.lastInput = 0; this.since = 0; this.undo = null; this.runtime = { changeInSec: null, activeFrame: 0, activeLetters: 0 };
     this.callLog = []; this.batches = [];
     var self = this;
     model.order.forEach(function (id) { self.pos[id] = model.props[id].defaultPos; });
@@ -290,7 +291,7 @@
 
   // physical control changed (arrow switch, casino switch, program switch): value follows; an open menu is closed
   Engine.prototype.physical = function (id, value, now) {
-    var st = this.m.status, isStatus = !!st && (id === st.program || id === st.casino || id === st.arrow);
+    var st = this.m.status, isStatus = !!st && (id === st.casino || id === st.arrow);
     if (isStatus && this.mode === 'edit' && this.edit) this._setPos(this.edit.id, this.edit.start);
     this._setPos(id, posOf(this.m.props[id], value));
     if (isStatus && this.mode !== 'status') this._toStatus(now);
@@ -350,8 +351,10 @@
     var m = this.m, since = this.since, st = m.status, r0, r1;
     if (this.mode === 'status') {
       if (!st) return ['', ''].map(function () { return fit('', '', now, since); });
-      var prog = this.get(st.program), isRandom = prog === st.randomValue;
-      r0 = '#' + Math.round(prog).toString(16).toUpperCase() + ' Casino ' + this.text(st.casino);
+      var self = this, rt = this.runtime;
+      var eff = function (id, active) { var pos = self.getPos(id), n = pos === 0 ? active : pos; return (pos === 0 ? '*' : '') + (n > 0 ? ('0' + n).slice(-2) : '--'); };
+      var isRandom = this.getPos(st.effectFrame) === 0 || this.getPos(st.effectLetters) === 0;
+      r0 = 'F' + eff(st.effectFrame, rt.activeFrame) + ' L' + eff(st.effectLetters, rt.activeLetters) + ' ' + this.text(st.casino);
       var left = this.getPos(st.arrow) === 0;
       var dir = st.arrowAscii ? (left ? '<-Customer right' : '->Customer left') : (left ? LEFT_ARROW + ' Customer right' : RIGHT_ARROW + ' Customer left');
       if (isRandom && this.runtime.changeInSec !== null && Math.floor(Math.max(0, now - since) / STATUS_ALT_MS) % 2 === 1) {

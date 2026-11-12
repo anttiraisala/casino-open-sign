@@ -11,8 +11,6 @@ Menu Editor); sketch.ino is generated from it (node tools/generate_menu_test.js)
 
 Controls
 --------
-  Program hex switch   legs 1, 2, 4, 8 on D34-D37, one C leg to GND. Absolute position 0..F = the program number on the
-                       status page. It is read all the time; turning it while the menu is open closes the menu.
   Menu hex switch      legs 1, 2, 4, 8 on D42-D45, one C leg to GND. Free-running: turning it moves the selection or
                        changes the value (direction and steps from the position change, as in hex_rotary_test).
   OK D48, BACK D49, SHIFT D50   push buttons to GND. SHIFT held while turning makes the step ten times larger.
@@ -23,15 +21,16 @@ Exact wiring: wiring-diagram.svg/.pdf (schematic) and layout-diagram.svg/.pdf (M
 
 What you see and do
 -------------------
-  Status page   row 0 "#<program> Casino Open|Closed", row 1 arrow + "Customer right|left". In program F row 1 changes every
-                3 seconds to "Change in M:SS" (the countdown is only simulated here, from the "Change delay" property).
+  Status page   row 0 "F12 L03 Open|Closed" (frame and letters effect, a star before a random one, e.g. "F*07"), row 1 arrow +
+                "Customer right|left". While an effect is random row 1 changes every 3 seconds to "Change in M:SS" (the countdown and the
+                random numbers are only simulated here, from the "Random delay" property; there are no LEDs). Effects are set in Effects.
   OK            opens the menu at the root (title "Menu" and a countdown "NNs"). In a list: OK enters a submenu or starts
                 editing a value. BACK goes up one level, or leaves the menu at the root.
   Menu switch   moves the selection (the list stops at both ends), or changes the value while editing (live; the Serial
                 Monitor prints a "CB ..." line for every callback). OK saves the value to EEPROM, BACK cancels (old value).
   Restore defaults  asks "OK=yes BACK=no" (the question "Restore defaults?" is 17 characters and scrolls on the 16-character row).
   Time-out      the menu closes after 60 s without input, only at the root list (the seconds left are shown).
-  Switches      changing the arrow or casino switch (or the program switch) while the menu is open closes it / cancels an edit.
+  Switches      changing the arrow or casino switch while the menu is open closes it / cancels an edit.
                 "Arrow reverse" and "Casino reverse" swap what the slide switches mean, at once.
   Long texts    a row that does not fit waits 1 s and then scrolls one character per 400 ms.
 The arrows on row 1 are the LCD's ROM characters 0x7E / 0x7F. If your display shows other symbols there, tell the AI
@@ -45,14 +44,14 @@ Wrong turning direction: set MENU_SWITCH_REVERSED to true. Position 0 reads as F
 
 What to try and write down
 --------------------------
-  1. Status page: do the program number, Casino and the arrow follow the three switches (and the Reverse properties)?
+  1. Status page: do Casino and the arrow follow the two slide switches (and the Reverse properties)?
   2. OK opens the menu; does the menu switch move one item per click, in the right direction, and stop at the ends?
   3. Edit a value (for example Brightness > Frame > Max): does it change live, does SHIFT make steps of 10, does OK save,
      does BACK restore? Power the Mega off and on: is the saved value still there (Serial Monitor "EEPROM: saved ...")?
   4. Restore defaults: confirm page, OK = yes, BACK = no.
   5. Do the arrow symbols on row 1 look like arrows? (Otherwise "arrowAscii".)
   6. Is the long text scrolling readable (for example "Restore defaults?")?
-  7. Turn the program switch to F: row 1 alternates with "Change in M:SS".
+  7. Effects > Frame effect: turn it to 0 (random): the status page shows F*.. and row 1 alternates with "Change in M:SS". BACK restores the old effect.
 
 Files
 -----

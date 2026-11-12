@@ -52,8 +52,8 @@ muts=[
  ("frame runs backwards","const uint8_t pos = (uint8_t)((distance % FRAME_PERIOD + FRAME_PERIOD - (t % FRAME_PERIOD)) % FRAME_PERIOD);","const uint8_t pos = (uint8_t)((distance % FRAME_PERIOD + (t % FRAME_PERIOD)) % FRAME_PERIOD);"),
  ("frame bar 3","FRAME_BAR_LEDS = 2;","FRAME_BAR_LEDS = 3;"),
  ("frame speed","FRAME_SPEED_MS = 200;","FRAME_SPEED_MS = 100;"),
- ("frame not mirrored","drawFrame(arrowPointsRight, activeMode, frameStep)","drawFrame(true, activeMode, frameStep)"),
- ("frame direction inverted","drawFrame(arrowPointsRight, activeMode, frameStep)","drawFrame(!arrowPointsRight, activeMode, frameStep)"),
+ ("frame not mirrored","drawFrame(arrowPointsRight, activeFrame, frameStep)","drawFrame(true, activeFrame, frameStep)"),
+ ("frame direction inverted","drawFrame(arrowPointsRight, activeFrame, frameStep)","drawFrame(!arrowPointsRight, activeFrame, frameStep)"),
  ("OPEN not reversed","return (uint8_t)(FIRST_WORD_LETTERS + (LETTER_COUNT - 1 - letter));","return letter;"),
  ("OPEN reversed off by one","return (uint8_t)(FIRST_WORD_LETTERS + (LETTER_COUNT - 1 - letter));","return (uint8_t)(LETTER_COUNT - 1 - letter);"),
  ("first word reversed","if (letter < FIRST_WORD_LETTERS) return letter;","if (letter < FIRST_WORD_LETTERS) return (uint8_t)(FIRST_WORD_LETTERS - 1 - letter);"),
@@ -97,9 +97,28 @@ muts=[
  ("curves not rebuilt after the menu start","  const bool menuFromEeprom = menuBegin();   // saved menu values (speeds, curves, reverse flags) or the defaults\n  rebuildAllCurves();","  const bool menuFromEeprom = menuBegin();   // saved menu values (speeds, curves, reverse flags) or the defaults"),
  ("marquee text","press D33 to skip   \";","press D3 to skip   \";"),
  # --- program switch, new letter programs, frame patterns (added with the 15 programs) ---
- ("program pins","PIN_PROGRAM[4] = {34, 35, 36, 37};","PIN_PROGRAM[4] = {35, 34, 36, 37};"),
- ("program not polled","  if (pollHexSwitch(SLOT_PROGRAM, PIN_PROGRAM, now)) {","  if (false) {"),
- ("program not applied at start","  menuSet(P_program, hexStable[SLOT_PROGRAM]);\n  setLetterMode(hexStable[SLOT_PROGRAM], now);","  menuSet(P_program, 0);\n  setLetterMode(0, now);"),
+ ("frame effect off by one","    showFramePattern((uint8_t)(effect - 1));","    showFramePattern((uint8_t)effect);"),
+ ("letters effect off by one","    showLettersPattern((uint8_t)(effect - 1));","    showLettersPattern((uint8_t)effect);"),
+ ("frame random keeps timer","    showFramePattern(pickDifferent(atStart ? PATTERN_MODE_COUNT : activeFrame));\n    restartRandomTimer(now);","    showFramePattern(pickDifferent(atStart ? PATTERN_MODE_COUNT : activeFrame));"),
+ ("letters random keeps timer","    showLettersPattern(pickDifferent(atStart ? PATTERN_MODE_COUNT : activeLetters));\n    restartRandomTimer(now);","    showLettersPattern(pickDifferent(atStart ? PATTERN_MODE_COUNT : activeLetters));"),
+ ("frame random may repeat","    showFramePattern(pickDifferent(atStart ? PATTERN_MODE_COUNT : activeFrame));","    showFramePattern(pickDifferent(PATTERN_MODE_COUNT));"),
+ ("letters random may repeat","    showLettersPattern(pickDifferent(atStart ? PATTERN_MODE_COUNT : activeLetters));","    showLettersPattern(pickDifferent(PATTERN_MODE_COUNT));"),
+ ("pick may repeat","  if (pick >= previous) pick++;  // skip the previous pattern","  // no skip"),
+ ("pick not uniform","uint8_t pick = (uint8_t)random(PATTERN_MODE_COUNT - 1);","uint8_t pick = (uint8_t)random(PATTERN_MODE_COUNT - 2);"),
+ ("timer fixed frame changes","  if (frameIsRandom()) showFramePattern(pickDifferent(activeFrame));","  showFramePattern(pickDifferent(activeFrame));"),
+ ("timer fixed letters change","  if (lettersIsRandom()) showLettersPattern(pickDifferent(activeLetters));","  showLettersPattern(pickDifferent(activeLetters));"),
+ ("timer frame never changes","  if (frameIsRandom()) showFramePattern(pickDifferent(activeFrame));","  if (false) showFramePattern(pickDifferent(activeFrame));"),
+ ("timer letters never change","  if (lettersIsRandom()) showLettersPattern(pickDifferent(activeLetters));","  if (false) showLettersPattern(pickDifferent(activeLetters));"),
+ ("timer runs when both fixed","  if (!frameIsRandom() && !lettersIsRandom()) return;\n  if (now - autoPickedAt","  if (now - autoPickedAt"),
+ ("timer ignores delay","  if (now - autoPickedAt < autoDelayMs) return;\n  if (frameIsRandom())","  if (frameIsRandom())"),
+ ("timer not restarted","  restartRandomTimer(now);\n  printEffects();\n}\n\n// A small deterministic hash","  printEffects();\n}\n\n// A small deterministic hash"),
+ ("random group needs both","  if (!frameIsRandom() && !lettersIsRandom()) return;","  if (!frameIsRandom() || !lettersIsRandom()) return;"),
+ ("frame random is effect 1","bool frameIsRandom() { return menuPos(P_frameEffect) == 0; }","bool frameIsRandom() { return menuPos(P_frameEffect) == 1; }"),
+ ("letters random is effect 1","bool lettersIsRandom() { return menuPos(P_lettersEffect) == 0; }","bool lettersIsRandom() { return menuPos(P_lettersEffect) == 1; }"),
+ ("status frame number","  menuActiveFrame = (uint8_t)(pattern + 1);","  menuActiveFrame = pattern;"),
+ ("status letters number","  menuActiveLetters = (uint8_t)(pattern + 1);","  menuActiveLetters = pattern;"),
+ ("letters pattern not restarted","  letterModeStart = letterClockMs;  // the new pattern starts from its beginning\n  menuActiveLetters","  menuActiveLetters"),
+ ("effect callbacks swapped","  } else if (cb == CB_effectFrameChanged) {","  } else if (cb == CB_effectLettersChanged) {"),
  ("converge step","LETTER_CONVERGE_STEP_MS = 400;","LETTER_CONVERGE_STEP_MS = 300;"),
  ("converge off phase","if (step >= 6) return 0;","if (step >= 7) return 0;"),
  ("converge from one end","const uint8_t fromEnd = inWord < wordLength - 1 - inWord ? inWord : (uint8_t)(wordLength - 1 - inWord);","const uint8_t fromEnd = inWord;"),
@@ -117,9 +136,8 @@ muts=[
  ("marquee modulo","return ((letter + step) % 4) != 0 ? 230 : 40;","return ((letter + step) % 3) != 0 ? 230 : 40;"),
  ("marquee direction","return ((letter + step) % 4) != 0 ? 230 : 40;","return ((letter + 4 - step) % 4) != 0 ? 230 : 40;"),
  ("marquee step","LETTER_MARQUEE_STEP_MS = 250;","LETTER_MARQUEE_STEP_MS = 300;"),
- ("random auto not 15","MODE_RANDOM_AUTO = 15;","MODE_RANDOM_AUTO = 14;"),
  ("frame step wrap","FRAME_STEP_WRAP = 3600;","FRAME_STEP_WRAP = 3601;"),
- ("frame step not reset on program","  letterModeStart = letterClockMs;\n  frameStep = 0;\n","  letterModeStart = letterClockMs;\n"),
+ ("frame step not reset on pattern","  activeFrame = pattern;\n  frameStep = 0;\n","  activeFrame = pattern;\n"),
  ("frame wave tail","return k < 5 ? (uint8_t)(255 - 50 * k) : 0;","return k < 5 ? (uint8_t)(255 - 40 * k) : 0;"),
  ("frame fill hold","return p < 14 ? 255 : 0;\n    }\n    case 3:","return p < 13 ? 255 : 0;\n    }\n    case 3:"),
  ("frame ignite hold","return p < 30 ? 230 : 0;","return p < 28 ? 230 : 0;"),
@@ -174,10 +192,11 @@ muts=[
  ("random delay zero","if (minutes <= 0) minutes = 1 + (long)random(30);","if (minutes <= 0) minutes = 0;"),
  ("random delay in seconds","autoDelayMs = (unsigned long)minutes * 60000UL;","autoDelayMs = (unsigned long)minutes * 1000UL;"),
  ("countdown rounds down","(long)((autoDelayMs - elapsed + 999UL) / 1000UL)","(long)((autoDelayMs - elapsed) / 1000UL)"),
- ("countdown only in F","if (letterMode == MODE_RANDOM_AUTO) {\n    const unsigned long elapsed","if (true) {\n    const unsigned long elapsed"),
+ ("countdown only for frame","  if (frameIsRandom() || lettersIsRandom()) {\n    const unsigned long elapsed","  if (frameIsRandom()) {\n    const unsigned long elapsed"),
+ ("countdown only for letters","  if (frameIsRandom() || lettersIsRandom()) {\n    const unsigned long elapsed","  if (lettersIsRandom()) {\n    const unsigned long elapsed"),
+ ("countdown always","  if (frameIsRandom() || lettersIsRandom()) {\n    const unsigned long elapsed","  if (true) {\n    const unsigned long elapsed"),
  ("status alternate","(since / MENU_STATUS_ALT_MS) % 2 == 1","(since / MENU_STATUS_ALT_MS) % 2 == 0"),
  ("hex debounce","HEX_DEBOUNCE_MS = 10;","HEX_DEBOUNCE_MS = 0;"),
- ("program applies old value","    menuPhysical(P_program, hexStable[SLOT_PROGRAM], now);","    menuPhysical(P_program, 0, now);"),
 ]
 def run(i):
     name,old,new=muts[i]
@@ -210,8 +229,8 @@ def run_variant(name,old,new,expect,extra=()):
     return name,(last[-1] if last else 'no result')
 
 
-ONLY=os.environ.get('MUT_ONLY')   # MUT_ONLY=new runs only the mutants added with the 15 programs (after the 'program pins' one)
-IDX=range(len(muts)) if not ONLY else range([m[0] for m in muts].index('program pins'),len(muts))
+ONLY=os.environ.get('MUT_ONLY')   # MUT_ONLY=new runs only the mutants added with the 15 programs (after the 'frame effect off by one' one)
+IDX=range(len(muts)) if not ONLY else range([m[0] for m in muts].index('frame effect off by one'),len(muts))
 with cf.ThreadPoolExecutor(8) as ex:
     for name,res in ex.map(run,IDX):
         print(("DETECTED " if 'failures' in res or 'ERROR' in res or 'no result' in res else "SURVIVED ")+name+": "+res)
