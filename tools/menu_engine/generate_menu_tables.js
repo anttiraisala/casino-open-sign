@@ -119,6 +119,11 @@ function tables(src, sourceName) {
   ids.forEach((id, i) => { t += 'constexpr uint8_t P_' + id + ' = ' + i + ';\n'; });
   cbNames.forEach((c, i) => { t += 'constexpr uint8_t CB_' + c + ' = ' + i + ';\n'; });
   t += 'constexpr uint8_t MENU_CB_COUNT = ' + cbNames.length + ';\n';
+  // menu table index of every menu that is used through a menuRef (so the sketch can tell which menu is open)
+  Object.keys(memo).forEach((r) => {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(r)) throw new Error('menu ref is not a C identifier: ' + r);
+    t += 'constexpr uint8_t MENU_REF_' + r + ' = ' + memo[r] + ';\n';
+  });
   t += 'constexpr uint8_t MENU_STATUS_CASINO = P_' + m.status.casino + ';\n';
   t += 'constexpr uint8_t MENU_STATUS_ARROW = P_' + m.status.arrow + ';\n';
   t += 'constexpr uint8_t MENU_STATUS_EFFECT_FRAME = P_' + m.status.effectFrame + ';\n';

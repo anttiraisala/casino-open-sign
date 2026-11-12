@@ -759,7 +759,8 @@ int main(int argc, char **argv) {
       key(PIN_OK); settle(); CHECK(line0() == "Letters" && line1().rfind("Letters effect:", 0) == 0, "Letters group: first row is the Letters effect");
       key(PIN_CANCEL); turn(1); settle(); CHECK(line1().rfind("Arrow", 0) == 0, "root item 5 is the Arrow group");
       turn(1); settle(); key(PIN_OK); settle();
-      CHECK(line0() == "Brightness" && line1().rfind("Frame", 0) == 0, "Brightness has Frame, Letters and Arrow groups");
+      CHECK(line0() == "Brightness" && line1().rfind("Brightness tes", 0) == 0, "Brightness starts with the Brightness test submenu");
+      turn(1); settle(); CHECK(line1().rfind("Frame", 0) == 0, "Brightness: then the Frame, Letters and Arrow groups");
       key(PIN_OK); settle(); CHECK(line0() == "Frame" && line1().rfind("Min", 0) == 0, "Brightness > Frame starts with Min");
       key(PIN_CANCEL); key(PIN_CANCEL); key(PIN_CANCEL); settle();
       CHECK(menuMode == MM_STATUS, "back at the status page");
@@ -770,6 +771,82 @@ int main(int argc, char **argv) {
       key(PIN_OK); settle(); key(PIN_CANCEL); settle(); CHECK(menuMode == MM_MENU, "CANCEL leaves the view page");
       key(PIN_OK); key(PIN_OK); key(PIN_OK); run(65000); CHECK(menuMode == MM_VIEW, "no timeout on the view page");
       key(PIN_CANCEL); key(PIN_CANCEL); key(PIN_CANCEL); settle(); }
+
+    // ---- brightness test mode: Brightness > Brightness test shows a fixed pattern on every LED ----
+    { const uint32_t gray[10] = {0x1a1a1a, 0x333333, 0x4d4d4d, 0x666666, 0x808080, 0x999999, 0xb3b3b3, 0xcccccc, 0xe6e6e6, 0xffffff};   // 26 51 77 102 128 153 179 204 230 255
+      const int frameStep[18] = {0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9};
+      const int letterPix[10] = {0, 1, 2, 3, 4, 5, 9, 8, 7, 6};
+      auto allEqual = [&](uint32_t v) {
+        for (auto c : frame.shown_) if (c != v) return false;
+        for (auto c : letters.shown_) if (c != v) return false;
+        for (auto c : closedLight.shown_) if (c != v) return false;
+        for (uint8_t k = 0; k < STICK_COUNT; k++) for (auto c : sticks[k]->shown_) if (c != v) return false;
+        return true; };
+      auto ramp = [&]() {
+        for (int i = 0; i < 18; i++) if (frame.shown_[i] != gray[frameStep[i]]) return false;
+        for (int l = 0; l < 10; l++) if (letters.shown_[letterPix[l]] != gray[l]) return false;
+        for (int led = 0; led < 10; led++) {
+          if (closedLight.shown_[led] != gray[led]) return false;
+          for (uint8_t k = 0; k < STICK_COUNT; k++) if (sticks[k]->shown_[led] != gray[led]) return false; }
+        return true; };
+      const auto arrowBefore = g_pinLevel[PIN_ARROW_SWITCH];
+      g_pinLevel[PIN_ARROW_SWITCH] = SW_RIGHT; run(300);
+      menuSetPos(P_stripMax, 80); menuSetPos(P_lettersMax, 80); menuSetPos(P_stickMax, 80); rebuildAllCurves();
+      const long eepromWrites = EEPROM.writes;
+      key(PIN_OK); turn(6); key(PIN_OK); settle();                                  // Brightness
+      CHECK(line0() == "Brightness" && !brightTestActive(), "the test mode is off while only the Brightness group is open");
+      key(PIN_OK); settle();                                                        // Brightness test
+      CHECK(line0() == "Brightness test" && line1().rfind("Pattern", 0) == 0 && brightTestActive() && menuMode == MM_MENU, "Brightness test opens on the Pattern row and the test mode is on");
+      // identity curves: the pattern values come out unchanged, so the ramp is compared with hard-coded levels
+      for (uint8_t ty = 0; ty < LED_TYPE_COUNT; ty++) setBrightnessCurve(ty, 0, 255, 1.0f, 0.0f, true);
+      run(150);
+      CHECK(ramp(), "Ramp: 10 steps 26..255 on every stick (LED 1..10) and the CLOSED stick, in reading order on the letters, two frame pixels per step");
+      { bool allLit = true; for (uint8_t k = 0; k < STICK_COUNT; k++) for (auto c : sticks[k]->shown_) if (c == 0) allLit = false;
+        CHECK(allLit, "all ten sticks are lit, whatever the arrow direction"); }
+      CHECK(menuPos(P_testPattern) == 0, "the pattern starts at Ramp");
+      key(PIN_OK); turn(1); run(150);
+      CHECK(menuMode == MM_EDIT && menuPos(P_testPattern) == 1 && allEqual(0xffffff), "All white: every LED at 255 while the value is being turned");
+      turn(1); run(150); CHECK(allEqual(0xff0000), "Red");
+      turn(1); run(150); CHECK(allEqual(0x00ff00), "Green");
+      turn(1); run(150); CHECK(allEqual(0x0000ff), "Blue");
+      turn(1); run(150); CHECK(menuPos(P_testPattern) == 5 && allEqual(0x808080), "Level: every LED white at the Level value (default 128)");
+      key(PIN_CANCEL); settle();
+      CHECK(menuMode == MM_MENU && menuPos(P_testPattern) == 0 && ramp() && brightTestActive(), "CANCEL restores the pattern (Ramp) and stays in the test mode");
+      key(PIN_OK); turn(2); key(PIN_OK); settle();
+      CHECK(menuPos(P_testPattern) == 2 && allEqual(0xff0000), "OK accepts the pattern (Red)");
+      turn(1); settle(); CHECK(line1().rfind("Level", 0) == 0, "Brightness test: second row is the Level");
+      key(PIN_OK); turn(1); key(PIN_OK); settle();
+      CHECK(menuValue(P_testLevel) == 129.0f, "the Level can be edited (128 -> 129)");
+      turn(-1); key(PIN_OK); turn(3); key(PIN_OK); settle();                        // pattern Red -> Level
+      CHECK(menuPos(P_testPattern) == 5 && allEqual(0x818181), "Level pattern: every LED at 129");
+      turn(1); key(PIN_OK); turn(-89); run(150);
+      CHECK(menuMode == MM_EDIT && allEqual(0x282828), "turning the Level changes every LED at once (40)");
+      key(PIN_CANCEL); settle(); CHECK(allEqual(0x818181), "CANCEL restores the Level");
+      turn(-1); key(PIN_OK); turn(-5); key(PIN_OK); settle();
+      CHECK(menuPos(P_testPattern) == 0 && ramp(), "back to Ramp");
+      CHECK(EEPROM.writes == eepromWrites, "the test pattern and level are not saved in EEPROM");
+      // the curve properties are inside the submenu and act on the pattern at once
+      rebuildAllCurves(); run(150);
+      CHECK(frame.shown_[17] == 0x505050 && letters.shown_[6] == 0x505050 && sticks[3]->shown_[9] == 0x505050, "with the saved curves the brightest step shows Max 80 on all three LED types");
+      turn(2); settle(); CHECK(line1().rfind("Frame", 0) == 0, "Brightness test: then the Frame, Letters and Arrow groups");
+      key(PIN_OK); settle(); CHECK(line0() == "Frame" && line1().rfind("Min", 0) == 0 && brightTestActive(), "the Frame group is inside the test mode");
+      turn(1); key(PIN_OK); turn(-3); run(150);
+      CHECK(menuMode == MM_EDIT && brightTestActive() && frame.shown_[17] == 0x4d4d4d && letters.shown_[6] == 0x505050, "editing the frame Max (80 -> 77) changes the frame pattern at once, the test mode stays on");
+      key(PIN_CANCEL); run(150); CHECK(frame.shown_[17] == 0x505050, "CANCEL restores the frame Max");
+      key(PIN_CANCEL); settle(); CHECK(line0() == "Brightness test" && brightTestActive(), "CANCEL from the Frame group stays inside the test submenu");
+      key(PIN_CANCEL); run(300);
+      CHECK(line0() == "Brightness" && !brightTestActive() && !ramp(), "CANCEL out of the submenu ends the test mode: the effects go on");
+      { bool inactiveDark = true; for (uint8_t k = 0; k < STICK_COUNT; k++) if (!stickActive(k)) for (auto c : sticks[k]->shown_) if (c != 0) inactiveDark = false;
+        CHECK(inactiveDark, "the sticks that are dark in the arrow direction are cleared again"); }
+      // the menu timeout does not apply inside the test, and a switch change ends it
+      const unsigned long clockBefore = letterClockMs;
+      key(PIN_OK); settle(); run(65000);
+      CHECK(menuMode == MM_MENU && brightTestActive() && ramp() == false && menuDepth == 3, "no timeout inside the test submenu");
+      g_pinLevel[PIN_ARROW_SWITCH] = (arrowBefore == SW_RIGHT ? SW_LEFT : SW_RIGHT); run(300);
+      CHECK(menuMode == MM_STATUS && !brightTestActive(), "turning the arrow switch ends the test mode and shows the status page");
+      CHECK(letterClockMs - clockBefore < 3000UL, "the letter clock did not run on during the 65 s in the test (no jump when the effects come back)");
+      g_pinLevel[PIN_ARROW_SWITCH] = arrowBefore; run(300);
+      rebuildAllCurves(); }
 
     // a glitch of the menu switch shorter than the 10 ms debounce is not a step (contact bounce)
     { key(PIN_OK); settle(); const std::string g1 = line1(); const int p0 = menuPinPos;

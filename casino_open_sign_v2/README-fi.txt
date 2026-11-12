@@ -101,6 +101,13 @@ Arrow speed: x0.125..x4, logaritminen, 30 askelta, kolme desimaalia, oletus x1),
 Letters (kirjainten LED-nauha) ja Arrow (nuolen tikut), kussakin oma nopeus (Frame ja Letters alkavat lisäksi omalla efektillään: yksi arvo, kaksi paikkaa) sekä kirkkauden Min, Max, Exponent ja Mix (käyrän max on raja,
 yleistä kirkkautta ei ole); Brightness (samat kirkkausarvot uudelleen ryhmiteltynä Frame / Letters / Arrow: yksi ominaisuus, kaksi paikkaa),
 Restore defaults (kysyy vahvistuksen).
+Brightness > Brightness test (Brightnessin ensimmäinen kohta): kun tämä alivalikko tai jokin sen alla oleva on auki, jokainen LED näyttää kiinteää koekuviota efektien
+sijaan, ja kuvio kulkee samojen kirkkauskäyrien läpi, joten käyriä voi arvioida samalla kun niitä muokataan. Sisällä: Pattern (Ramp, All white,
+Red, Green, Blue, Level; alkaa Rampista), Level (0..255, oletus 128, käytössä kuviossa Level) sekä ryhmät Frame, Letters ja Arrow kirkkauden
+Min, Max, Exponent ja Mix -arvoineen. Ramp = 10 askelta syöttötasoilla 26, 51, 77, 102, 128, 153, 179, 204, 230, 255: jokaisen tikun ja CLOSED-tikun LED 1..10 (kaikki kymmenen
+tikkua palavat nuolen suunnasta riippumatta), kirjaimet lukujärjestyksessä, kehyksen 18 pikseliä kaksi per askel. All white / Red / Green / Blue: kaikki arvolla 255 (käyrän
+maksimi, suurin virta). Pattern ja Level eivät tallennu. CANCEL alivalikosta ulos tai nuoli- tai casino-kytkimen muutos lopettaa kokeen ja efektit jatkuvat;
+alivalikossa ei ole aikakatkaisua.
 Ominaisuusrivi näyttää "Nimi  arvo" (arvo oikeassa reunassa); jos ne eivät mahdu 16 merkkiin, rivi vierii yhtenä tekstinä "Nimi: arvo"
 (tauko alussa, yksi merkki askeleessa, tauko viimeisen merkin ollessa oikeassa reunassa). OK vain luettavan arvon kohdalla avaa saman sivun kuin
 muokkaus (nimi, sitten lukko ja arvo), mutta mitään ei voi muuttaa; CANCEL tai OK palaa.

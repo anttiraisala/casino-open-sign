@@ -8,7 +8,7 @@ PROGMEM tables is a later step (AP-003); the sketch does not use the menu yet.
 ## Files
 - `menu-core.js` - validation of the JSON (format 1) and the menu engine (keys, editing, EEPROM image, rows). Pure logic, used by the page and by the tests.
 - `app.js`, `index.html` - the editor page. `menu-v2-data.js` is generated from `menu-v2.json` by `tools/build_menu_editor_single.py`, which also builds `menu-editor-single.html` (everything inline, for the published artifact).
-- `menu-v2.json` - the V2 menu (Controls, Effects with Frame effect, Letters effect and Random delay, Speed with Frame/Letters/Arrow speed, a group each for Frame, Letters and Arrow with the speed (Frame and Letters also start with their effect) and Min, Max, Exponent, Mix, Brightness with the same values grouped, and Restore defaults; read-only values open a view page with a padlock, character code 1).
+- `menu-v2.json` - the V2 menu (Controls, Effects with Frame effect, Letters effect and Random delay, Speed with Frame/Letters/Arrow speed, a group each for Frame, Letters and Arrow with the speed (Frame and Letters also start with their effect) and Min, Max, Exponent, Mix, Brightness (first the submenu Brightness test with Pattern, Level and the three curve groups, then the same values grouped), and Restore defaults; read-only values open a view page with a padlock, character code 1).
 - Tests: `node tests/menu_core_test.js`, `python3 tests/mutate_menu_core.py` (127 mutants), `python3 tests/menu_editor_ui_test.py`.
 
 ## JSON format 1 (short)

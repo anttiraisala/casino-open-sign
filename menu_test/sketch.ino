@@ -72,8 +72,8 @@ constexpr uint8_t LCD_BIT_E = 0x04;
 constexpr uint8_t LCD_BIT_BACKLIGHT = 0x08;
 
 // BEGIN GENERATED MENU TABLES (do not edit: made by tools/menu_engine/generate_menu_tables.js from menu-v2.json)
-// 22 properties, 50 items, 11 menus, 1 presets; EEPROM layout tag adc94b94, 20 stored properties
-constexpr uint8_t MENU_PROP_COUNT = 22;
+// 24 properties, 56 items, 12 menus, 1 presets; EEPROM layout tag adc94b94, 20 stored properties
+constexpr uint8_t MENU_PROP_COUNT = 24;
 constexpr uint8_t MENU_STORED_COUNT = 20;
 constexpr uint32_t MENU_LAYOUT_TAG = 0xADC94B94UL;
 constexpr uint16_t MENU_NO_STR16 = 0xFFFF;
@@ -99,6 +99,8 @@ constexpr uint8_t P_lettersMax = 18;
 constexpr uint8_t P_lettersExp = 19;
 constexpr uint8_t P_lettersMix = 20;
 constexpr uint8_t P_stickMix = 21;
+constexpr uint8_t P_testPattern = 22;
+constexpr uint8_t P_testLevel = 23;
 constexpr uint8_t CB_effectFrameChanged = 0;
 constexpr uint8_t CB_effectLettersChanged = 1;
 constexpr uint8_t CB_applySwitches = 2;
@@ -107,12 +109,16 @@ constexpr uint8_t CB_rebuildStripCurve = 4;
 constexpr uint8_t CB_rebuildStickCurve = 5;
 constexpr uint8_t CB_rebuildLettersCurve = 6;
 constexpr uint8_t MENU_CB_COUNT = 7;
+constexpr uint8_t MENU_REF_brightnessTest = 8;
+constexpr uint8_t MENU_REF_stripBrightness = 9;
+constexpr uint8_t MENU_REF_lettersBrightness = 10;
+constexpr uint8_t MENU_REF_stickBrightness = 11;
 constexpr uint8_t MENU_STATUS_CASINO = P_casino;
 constexpr uint8_t MENU_STATUS_ARROW = P_arrow;
 constexpr uint8_t MENU_STATUS_EFFECT_FRAME = P_frameEffect;
 constexpr uint8_t MENU_STATUS_EFFECT_LETTERS = P_lettersEffect;
 constexpr bool MENU_STATUS_ARROW_ASCII = false;
-constexpr uint16_t MENU_ROOT_NAME_STR = 59;
+constexpr uint16_t MENU_ROOT_NAME_STR = 66;
 // strings
 const char MENU_STR[] PROGMEM =
   "Frame effect\0"
@@ -167,6 +173,13 @@ const char MENU_STR[] PROGMEM =
   "Max\0"
   "Exponent\0"
   "Mix\0"
+  "Pattern\0"
+  "Ramp\0"
+  "All white\0"
+  "Red\0"
+  "Green\0"
+  "Blue\0"
+  "Level\0"
   "effectFrameChanged\0"
   "effectLettersChanged\0"
   "applySwitches\0"
@@ -182,42 +195,43 @@ const char MENU_STR[] PROGMEM =
   "Letters\0"
   "Brightness\0"
   "Restore defaults\0"
+  "Brightness test\0"
   "Restore defaults?\0";
-const uint16_t MENU_STR_OFF[] PROGMEM = {0, 13, 20, 26, 34, 41, 50, 64, 75, 87, 97, 106, 119, 130, 144, 160, 175, 185, 200, 210, 217, 230, 243, 255, 265, 275, 283, 292, 304, 318, 332, 343, 349, 354, 360, 367, 374, 379, 393, 396, 400, 415, 427, 429, 441, 455, 468, 473, 480, 484, 488, 497, 501, 520, 541, 555, 567, 585, 603, 623, 628, 637, 645, 651, 657, 665, 676, 693};
+const uint16_t MENU_STR_OFF[] PROGMEM = {0, 13, 20, 26, 34, 41, 50, 64, 75, 87, 97, 106, 119, 130, 144, 160, 175, 185, 200, 210, 217, 230, 243, 255, 265, 275, 283, 292, 304, 318, 332, 343, 349, 354, 360, 367, 374, 379, 393, 396, 400, 415, 427, 429, 441, 455, 468, 473, 480, 484, 488, 497, 501, 509, 514, 524, 528, 534, 539, 545, 564, 585, 599, 611, 629, 647, 667, 672, 681, 689, 695, 701, 709, 720, 737, 753};
 // properties
-const uint8_t PP_KIND[] PROGMEM = {3, 3, 3, 3, 3, 3, 2, 2, 2, 0, 0, 0, 2, 0, 0, 2, 1, 0, 0, 2, 1, 1};
-const uint8_t PP_FLAGS[] PROGMEM = {2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
-const uint8_t PP_SHIFT[] PROGMEM = {1, 1, 1, 1, 1, 1, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
-const uint8_t PP_DEC[] PROGMEM = {0, 0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 2, 2, 2};
-const uint16_t PP_COUNT[] PROGMEM = {16, 16, 2, 2, 2, 2, 31, 31, 31, 31, 256, 256, 51, 256, 256, 51, 51, 256, 256, 51, 51, 51};
-const uint16_t PP_DEFPOS[] PROGMEM = {1, 1, 0, 0, 0, 0, 18, 18, 18, 2, 0, 80, 31, 0, 80, 31, 50, 0, 80, 31, 50, 50};
-const float PP_MIN[] PROGMEM = {0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.125000000f, 0.125000000f, 0.125000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f};
-const float PP_MAX[] PROGMEM = {0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 4.00000000f, 4.00000000f, 4.00000000f, 30.0000000f, 255.000000f, 255.000000f, 20.0000000f, 255.000000f, 255.000000f, 20.0000000f, 1.00000000f, 255.000000f, 255.000000f, 20.0000000f, 1.00000000f, 1.00000000f};
-const uint16_t PP_AUX[] PROGMEM = {0, 0, 0, 0, 0, 0, 30, 30, 30, 1, 1, 1, 50, 1, 1, 50, 50, 1, 1, 50, 50, 50};
-const uint16_t PP_NAME[] PROGMEM = {0, 17, 31, 34, 37, 40, 41, 43, 44, 45, 48, 49, 50, 48, 49, 50, 51, 48, 49, 50, 51, 51};
-const uint16_t PP_UNIT[] PROGMEM = {MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, 42, 42, 42, 46, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16};
-const uint8_t PP_VT_FIRST[] PROGMEM = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-const uint8_t PP_VT_COUNT[] PROGMEM = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-const uint16_t PP_CH_FIRST[] PROGMEM = {0, 16, 32, 34, 36, 38, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40};
-const uint8_t PP_CB_FIRST[] PROGMEM = {0, 1, 2, 2, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
-const uint8_t PP_CB_COUNT[] PROGMEM = {1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-const uint8_t PP_SLOT[] PROGMEM = {0, 1, 255, 255, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+const uint8_t PP_KIND[] PROGMEM = {3, 3, 3, 3, 3, 3, 2, 2, 2, 0, 0, 0, 2, 0, 0, 2, 1, 0, 0, 2, 1, 1, 3, 0};
+const uint8_t PP_FLAGS[] PROGMEM = {2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0};
+const uint8_t PP_SHIFT[] PROGMEM = {1, 1, 1, 1, 1, 1, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 1, 10};
+const uint8_t PP_DEC[] PROGMEM = {0, 0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 2, 2, 2, 0, 0};
+const uint16_t PP_COUNT[] PROGMEM = {16, 16, 2, 2, 2, 2, 31, 31, 31, 31, 256, 256, 51, 256, 256, 51, 51, 256, 256, 51, 51, 51, 6, 256};
+const uint16_t PP_DEFPOS[] PROGMEM = {1, 1, 0, 0, 0, 0, 18, 18, 18, 2, 0, 80, 31, 0, 80, 31, 50, 0, 80, 31, 50, 50, 0, 128};
+const float PP_MIN[] PROGMEM = {0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.125000000f, 0.125000000f, 0.125000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f};
+const float PP_MAX[] PROGMEM = {0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 4.00000000f, 4.00000000f, 4.00000000f, 30.0000000f, 255.000000f, 255.000000f, 20.0000000f, 255.000000f, 255.000000f, 20.0000000f, 1.00000000f, 255.000000f, 255.000000f, 20.0000000f, 1.00000000f, 1.00000000f, 0.00000000f, 255.000000f};
+const uint16_t PP_AUX[] PROGMEM = {0, 0, 0, 0, 0, 0, 30, 30, 30, 1, 1, 1, 50, 1, 1, 50, 50, 1, 1, 50, 50, 50, 0, 1};
+const uint16_t PP_NAME[] PROGMEM = {0, 17, 31, 34, 37, 40, 41, 43, 44, 45, 48, 49, 50, 48, 49, 50, 51, 48, 49, 50, 51, 51, 52, 58};
+const uint16_t PP_UNIT[] PROGMEM = {MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, 42, 42, 42, 46, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16};
+const uint8_t PP_VT_FIRST[] PROGMEM = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+const uint8_t PP_VT_COUNT[] PROGMEM = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+const uint16_t PP_CH_FIRST[] PROGMEM = {0, 16, 32, 34, 36, 38, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 46};
+const uint8_t PP_CB_FIRST[] PROGMEM = {0, 1, 2, 2, 2, 3, 4, 5, 6, 7, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 19};
+const uint8_t PP_CB_COUNT[] PROGMEM = {1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0};
+const uint8_t PP_SLOT[] PROGMEM = {0, 1, 255, 255, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 255, 255};
 const float VT_KEY[] PROGMEM = {0.00000000f};
 const uint16_t VT_STR[] PROGMEM = {47};
-const uint16_t CH_STR[] PROGMEM = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 1, 18, 19, 20, 5, 21, 22, 23, 24, 25, 26, 27, 28, 14, 29, 30, 32, 33, 35, 36, 38, 39, 38, 39};
+const uint16_t CH_STR[] PROGMEM = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 1, 18, 19, 20, 5, 21, 22, 23, 24, 25, 26, 27, 28, 14, 29, 30, 32, 33, 35, 36, 38, 39, 38, 39, 53, 54, 55, 56, 57, 58};
 const uint8_t CB_LIST[] PROGMEM = {0, 1, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 4, 6, 6, 6, 6, 5};
-const uint16_t CB_NAME_STR[] PROGMEM = {52, 53, 54, 55, 56, 57, 58};
+const uint16_t CB_NAME_STR[] PROGMEM = {59, 60, 61, 62, 63, 64, 65};
 // menus and items
-const uint8_t MN_FIRST[] PROGMEM = {0, 8, 12, 15, 18, 24, 30, 35, 38, 42, 46};
-const uint8_t MN_COUNT[] PROGMEM = {8, 4, 3, 3, 6, 6, 5, 3, 4, 4, 4};
-const uint8_t IT_TYPE[] PROGMEM = {0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-const uint8_t IT_A[] PROGMEM = {1, 2, 3, 4, 5, 6, 7, 0, 2, 4, 3, 5, 0, 1, 9, 6, 8, 7, 0, 6, 10, 11, 12, 16, 1, 8, 17, 18, 19, 20, 7, 13, 14, 15, 21, 8, 9, 10, 10, 11, 12, 16, 17, 18, 19, 20, 13, 14, 15, 21};
-const uint16_t IT_NAME[] PROGMEM = {60, 61, 62, 63, 64, 31, 65, 66, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, 63, 64, 31, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16};
-const uint16_t IT_TEXT[] PROGMEM = {MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16};
+const uint8_t MN_FIRST[] PROGMEM = {0, 8, 12, 15, 18, 24, 30, 35, 39, 44, 48, 52};
+const uint8_t MN_COUNT[] PROGMEM = {8, 4, 3, 3, 6, 6, 5, 4, 5, 4, 4, 4};
+const uint8_t IT_TYPE[] PROGMEM = {0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+const uint8_t IT_A[] PROGMEM = {1, 2, 3, 4, 5, 6, 7, 0, 2, 4, 3, 5, 0, 1, 9, 6, 8, 7, 0, 6, 10, 11, 12, 16, 1, 8, 17, 18, 19, 20, 7, 13, 14, 15, 21, 8, 9, 10, 11, 22, 23, 9, 10, 11, 10, 11, 12, 16, 17, 18, 19, 20, 13, 14, 15, 21};
+const uint16_t IT_NAME[] PROGMEM = {67, 68, 69, 70, 71, 31, 72, 73, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, 74, 70, 71, 31, MENU_NO_STR16, MENU_NO_STR16, 70, 71, 31, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16};
+const uint16_t IT_TEXT[] PROGMEM = {MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16, MENU_NO_STR16};
 // presets
-const uint16_t PR_NAME[] PROGMEM = {66};
+const uint16_t PR_NAME[] PROGMEM = {73};
 const uint16_t PR_TEXT[] PROGMEM = {MENU_NO_STR16};
-const uint16_t PR_CONFIRM[] PROGMEM = {67};
+const uint16_t PR_CONFIRM[] PROGMEM = {75};
 const uint8_t PR_FLAGS[] PROGMEM = {3};
 const uint8_t PR_FIRST[] PROGMEM = {0};
 const uint8_t PR_COUNT[] PROGMEM = {0};

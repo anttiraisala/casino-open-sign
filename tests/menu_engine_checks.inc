@@ -53,6 +53,9 @@
   // ---- loading ----
   menuSet(P_stripMax, 5); menuSet(P_stripExp, 3);
   CHECK(menuBegin() == true, "saved image is valid");
+  // the generated index of the menu used through the menuRef "brightnessTest": it has 5 items, the first is the Pattern, the second the Level
+  CHECK(menuRd8(MN_COUNT, MENU_REF_brightnessTest) == 5 && menuRd8(IT_A, menuItemBase(MENU_REF_brightnessTest)) == P_testPattern && menuRd8(IT_A, menuItemBase(MENU_REF_brightnessTest) + 1) == P_testLevel, "MENU_REF_brightnessTest is the menu of the Brightness test");
+  CHECK(menuRd8(MN_COUNT, MENU_REF_stripBrightness) == 4 && menuRd8(IT_A, menuItemBase(MENU_REF_stripBrightness)) == P_stripMin, "MENU_REF_stripBrightness is the frame curve group");
   CHECK(menuPos(P_stripMax) == 201 && menuPos(P_stripExp) == 31, "saved values loaded");
   menuSet(P_arrow, 1);
   menuBegin();

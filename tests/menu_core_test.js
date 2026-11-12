@@ -18,7 +18,7 @@ const clone = o => JSON.parse(JSON.stringify(o));
 {
   const m = core.build(V2);
   eq(m.errors, [], 'V2 menu has no errors'); eq(m.warnings, [], 'V2 menu has no warnings');
-  eq(m.order.length, 22, 'V2 has 22 properties');
+  eq(m.order.length, 24, 'V2 has 24 properties');
   eq(core.persistIds(m).length, 20, 'V2 stores 20 properties (arrow and casino are not stored)');
   eq(['strip', 'letters', 'stick'].map(g => ['Min', 'Max', 'Exp', 'Mix'].map(x => m.props[g + x].name).join()).join('|'), 'Min,Max,Exponent,Mix|Min,Max,Exponent,Mix|Min,Max,Exponent,Mix', 'strip, letters and stick each have min, max, exponent and mix');
   eq(m.props.lettersMix.count, 51, 'mix 0..1 linear has 51 positions'); eq(core.valueAt(m.props.stickMix, m.props.stickMix.defaultPos), 1, 'mix default 1.0'); eq(m.props.letersMix === undefined, true, 'no typo property');
@@ -36,6 +36,16 @@ const clone = o => JSON.parse(JSON.stringify(o));
   eq(core.valueText(m.props.lettersEffect, 0), 'Random', 'effect 0 is random'); eq(core.valueText(m.props.lettersEffect, 13), '13 Slot machine', 'letters effect 13'); eq(core.valueText(m.props.frameEffect, 15), '15 Dashes', 'frame effect 15'); eq(core.valueText(m.props.frameEffect, 2), '2 Comet', 'frame effect 2');
   eq(m.props.frameEffect.callbacks, ['effectFrameChanged'], 'frame effect callback'); eq(m.props.lettersEffect.callbacks, ['effectLettersChanged'], 'letters effect callback');
   eq(m.props.arrowReverse.trueText, 'Yes', 'bool texts from the type template');
+  // brightness test: Brightness > Brightness test (Pattern, Level, then the three curve groups); nothing of it is stored
+  eq(m.props.testPattern.choices, ['Ramp', 'All white', 'Red', 'Green', 'Blue', 'Level'], 'test patterns'); eq(m.props.testPattern.defaultPos, 0, 'the pattern starts at Ramp');
+  eq(m.props.testPattern.persist, false, 'the pattern is not stored'); eq(m.props.testLevel.persist, false, 'the level is not stored');
+  eq([m.props.testLevel.min, m.props.testLevel.max, m.props.testLevel.default, m.props.testLevel.step], [0, 255, 128, 1], 'test level 0..255, default 128, step 1');
+  eq(core.persistIds(m).indexOf('testPattern') < 0 && core.persistIds(m).indexOf('testLevel') < 0, true, 'the test properties have no EEPROM slot');
+  eq(core.layoutTag(m), 'adc94b94', 'the EEPROM layout tag is unchanged by the test mode');
+  const br = m.root.items.filter(i => i.name === 'Brightness')[0];
+  eq(br.items.map(i => i.name), ['Brightness test', 'Frame', 'Letters', 'Arrow'], 'Brightness: the test submenu first, then the three groups');
+  eq(br.items[0].ref, 'brightnessTest', 'the test submenu is the menu brightnessTest');
+  eq(br.items[0].items.map(i => i.name || i.id), ['testPattern', 'testLevel', 'Frame', 'Letters', 'Arrow'], 'Brightness test: Pattern, Level and the three curve groups');
 }
 
 // ---- property types, steps, limits, wrap

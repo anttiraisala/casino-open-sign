@@ -103,6 +103,13 @@ Arrow speed: x0.125..x4, logarithmic, 30 steps, shown with 3 decimals, default x
 Letters (the letter LED strip) and Arrow (the arrow sticks), each with its speed (Frame and Letters also start with their effect: one value, two places) and the brightness Min, Max, Exponent and Mix (the curve max is the
 limit, there is no global brightness); Brightness (the same brightness values again, grouped Frame / Letters / Arrow: one property, two places),
 Restore defaults (asks for confirmation).
+Brightness > Brightness test (first item of Brightness): while this submenu, or anything below it, is open every LED shows a fixed test pattern instead of the
+effects, and the pattern goes through the same brightness curves, so the curves can be judged while they are edited. Inside: Pattern (Ramp, All white,
+Red, Green, Blue, Level; starts at Ramp), Level (0..255, default 128, used by the pattern Level) and the groups Frame, Letters and Arrow with the brightness
+Min, Max, Exponent and Mix. Ramp = 10 steps of the input level 26, 51, 77, 102, 128, 153, 179, 204, 230, 255: LED 1..10 of every stick and of the CLOSED stick (all ten
+sticks are lit whatever the arrow direction), the letters in reading order, the 18 frame pixels two per step. All white / Red / Green / Blue: everything at 255 (the curve
+maximum, the highest current). Pattern and Level are not saved. CANCEL out of the submenu or a change of the arrow or casino switch ends the test and the effects go on;
+there is no timeout inside the submenu.
 A property row shows "Name  value" (value at the right edge); if the two do not fit in 16 characters the row scrolls as one text "Name: value"
 (pause at the start, one character per step, pause with the last character at the right edge). OK on a read-only value opens the same page as
 an edit (name, then a padlock and the value) but nothing can be changed; CANCEL or OK returns.

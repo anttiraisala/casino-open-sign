@@ -108,6 +108,8 @@ muts = [
  ("begin to status", "  menuEepromValid = ok;\n  menuMode = MM_STATUS;\n  menuDepth = 0;", "  menuEepromValid = ok;"),
  # (no 'hex digits' mutant: no property of the current menu uses the hex flag, so that path is not exercised)
  # shell
+ ("menu ref index", "MENU_REF_brightnessTest = 8;", "MENU_REF_brightnessTest = 9;"),
+ ("menu ref index frame group", "MENU_REF_stripBrightness = 9;", "MENU_REF_stripBrightness = 10;"),
  ("menu pins", "MENU_PINS[4] = {38, 41, 42, 45};", "MENU_PINS[4] = {41, 38, 42, 45};"),
  ("hex polarity", "HEX_BIT_IS_LOW = true;", "HEX_BIT_IS_LOW = false;"),
  ("hex debounce", "HEX_DEBOUNCE_MS = 10;", "HEX_DEBOUNCE_MS = 0;"),

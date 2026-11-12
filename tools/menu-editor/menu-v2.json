@@ -254,6 +254,28 @@
         "callbacks": [
           "rebuildStickCurve"
         ]
+      },
+      "testPattern": {
+        "name": "Pattern",
+        "kind": "choice",
+        "choices": [
+          "Ramp",
+          "All white",
+          "Red",
+          "Green",
+          "Blue",
+          "Level"
+        ],
+        "default": "Ramp",
+        "persist": false
+      },
+      "testLevel": {
+        "name": "Level",
+        "kind": "int",
+        "min": 0,
+        "max": 255,
+        "default": 128,
+        "persist": false
       }
     },
     "menus": {
@@ -305,6 +327,26 @@
           },
           {
             "propertyRef": "stickMix"
+          }
+        ]
+      },
+      "brightnessTest": {
+        "name": "Brightness test",
+        "items": [
+          {
+            "propertyRef": "testPattern"
+          },
+          {
+            "propertyRef": "testLevel"
+          },
+          {
+            "menuRef": "stripBrightness"
+          },
+          {
+            "menuRef": "lettersBrightness"
+          },
+          {
+            "menuRef": "stickBrightness"
           }
         ]
       }
@@ -434,6 +476,9 @@
       {
         "menu": "Brightness",
         "items": [
+          {
+            "menuRef": "brightnessTest"
+          },
           {
             "menuRef": "stripBrightness"
           },

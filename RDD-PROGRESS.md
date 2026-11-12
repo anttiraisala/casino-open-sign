@@ -22,6 +22,7 @@ Statuses: planned, in progress, done, verified, changed, dropped.
 | REQ-016 | done | 2026-11-11, host only (V2 sketch with the menu): `tests/menu_core_test.js`: a preset on a read-only property gives a warning and the target is dropped; `tests/mutate_menu_core.py` 129/129 mutants; V2 harness: Restore defaults sets every stored value, one callback batch, one EEPROM write. Not run on hardware; not verified. |
 | REQ-017 | done | 2026-11-11: `tests/menu_core_test.js` passes (V2 menu valid, loop and read-only quick-pick rejected, 16-character rows, EEPROM image), `tests/mutate_menu_core.py` 128/128 mutants detected, `tests/menu_editor_ui_test.py` passes (also for the single-file page; JSON round trip). Published as an artifact. Not yet verified by the maintainer. |
 | REQ-018 | done | 2026-11-12, host only: V2 harness turns the Frame/Letters effect while editing (effect shows at once, only that group changes), BACK restores value and effect, OK accepts and saves to EEPROM; JS core and C++ engine tests cover callbacks per turn and BACK (menu_core_test, menu_engine_checks). Not run on hardware; not verified. |
+| REQ-019 | done | 2026-11-12, host only: `tests/casino_open_sign_v2_harness.cpp` (Ramp with identity curves: exact levels 26..255 on every stick LED, the CLOSED stick, the letters in reading order and the frame two pixels per step; all ten sticks lit; All white/Red/Green/Blue/Level patterns; live turning and CANCEL restore of Pattern and Level; Max 80 on all three LED types; editing the frame Max inside the submenu changes the pattern at once; mode off in the Brightness group, ends by CANCEL out of the submenu and by the arrow switch; no timeout inside; letter clock does not jump; nothing written to EEPROM), `tests/menu_core_test.js` (menu structure, props not stored, layout tag unchanged), `tests/menu_engine_checks.inc` (generated `MENU_REF_` indexes), `tests/menu_diff_test.py` 36006 events 0 mismatches, `tests/menu_editor_ui_test.py`, `tests/mutate_v2.py` 225 mutant lines detected and none survived (26 new brightness-test mutants), `tests/mutate_menu_core.py` 151/151, `tests/mutate_menu_engine.py` 126/126. Not run on hardware or Wokwi; not verified. |
 
 Action points are added per requirement when the maintainer asks for them.
 
@@ -38,3 +39,7 @@ Action points are added per requirement when the maintainer asks for them.
 
 ## REQ-018 action points
 - [x] AP-008 (2026-11-12, effect tests in the V2 harness) Add explicit host tests (JS core, C++ engine, V2 harness): callbacks per turn while editing, none written to EEPROM until OK, BACK restores and calls the callbacks again; add mutants
+
+## REQ-019 action points
+- [x] AP-009 (2026-11-12) Menu JSON: submenu Brightness test (Pattern, Level, three curve groups) first in Brightness; generator emits `MENU_REF_<id>` constants; V2 sketch test pattern (`brightTestActive`, `updateBrightTest`); host tests in the V2 harness, JS core and C++ engine, mutants in `tests/mutate_v2.py` and `tests/mutate_menu_engine.py`.
+- [ ] AP-010 Try the Brightness test on the real sign and judge the patterns (owner).
