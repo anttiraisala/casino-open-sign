@@ -11,6 +11,7 @@ EEPROMClass EEPROM;
 std::vector<Adafruit_NeoPixel*> g_strips;
 #include SKETCH_PATH
 #include <cstring>
+#include <set>
 // Expected value of STICK_BALL_AT_DIN_END in the sketch under test (hard-coded here; tests/mutate.py builds a
 // variant with the bit false and defines EXPECT_BALL_AT_DIN=0). The logical LED number counts from the ball.
 #ifndef EXPECT_BALL_AT_DIN
@@ -104,13 +105,13 @@ int main(int argc, char **argv) {
   CHECK(startupTestActive, "the power-on LED test starts at power-up");
   // The older tests below check the colours the sketch computes, so they run with an identity curve (min 0,
   // max 255, exponent 1, mix 0). The default curves are tested separately at the end.
-  CHECK(brightnessLut[0][128] == 13 && brightnessLut[1][128] == 13 && brightnessLut[2][128] == 13 && brightnessLut[0][255] == 80 && (brightnessLut[1][192] == 37 || brightnessLut[1][192] == 38) && brightnessLut[2][255] == 80, "setup() builds the default tables of the three LED types (frame, sticks, letters)");
+  CHECK(brightnessLut[0][128] == 13 && brightnessLut[1][128] == 10 && brightnessLut[2][128] == 13 && brightnessLut[0][255] == 80 && brightnessLut[1][192] == 28 && brightnessLut[1][255] == 60 && brightnessLut[2][255] == 80, "setup() builds the default tables of the three LED types (frame, sticks, letters)");
   for (auto *s : g_strips) CHECK(s->brightness_ == 255, "no global library brightness: the curve maximum is the limit");
   CHECK(LED_TYPE_COUNT == 3 && CURVE_DEFAULT_MIN[0] == 0 && CURVE_DEFAULT_MIN[1] == 0 && CURVE_DEFAULT_MIN[2] == 0 &&
-        CURVE_DEFAULT_MAX[0] == 80 && CURVE_DEFAULT_MAX[1] == 80 && CURVE_DEFAULT_MAX[2] == 80 &&
+        CURVE_DEFAULT_MAX[0] == 80 && CURVE_DEFAULT_MAX[1] == 60 && CURVE_DEFAULT_MAX[2] == 80 &&
         CURVE_DEFAULT_EXPONENT[0] == 2.67f && CURVE_DEFAULT_EXPONENT[1] == 2.67f && CURVE_DEFAULT_EXPONENT[2] == 2.67f &&
         CURVE_DEFAULT_MIX[0] == 1.0f && CURVE_DEFAULT_MIX[1] == 1.0f && CURVE_DEFAULT_MIX[2] == 1.0f &&
-        CURVE_DEFAULT_KEEP_ZERO[0] && CURVE_DEFAULT_KEEP_ZERO[1] && CURVE_DEFAULT_KEEP_ZERO[2], "default curve values: min 0, max 80, exponent 2.67, mix 1, keep zero dark");
+        CURVE_DEFAULT_KEEP_ZERO[0] && CURVE_DEFAULT_KEEP_ZERO[1] && CURVE_DEFAULT_KEEP_ZERO[2], "default curve values: min 0, max 80 (arrow sticks 60), exponent 2.67, mix 1, keep zero dark");
   const uint8_t IDENT_TYPES[3] = {0, 1, 2};
   for (uint8_t ty : IDENT_TYPES) setBrightnessCurve(ty, 0, 255, 1.0f, 0.0f, true);
   finishStartup(g_millis, true);   // the older tests below start from the normal operation
@@ -180,13 +181,13 @@ int main(int argc, char **argv) {
     }
     // frame program 14 (grey bands) has its own step list: the four phases of 36 steps, the phase edges and the broken-pixel bursts
     {
-      static const int GSTEPS[30] = {0, 1, 2, 3, 7, 8, 17, 35, 36, 37, 43, 44, 53, 71, 72, 73, 79, 80, 100, 107, 108, 109, 115, 116, 143, 144, 145, 2602, 2605, 2609};
-      struct GreyExpect { bool right; const char *rows[30]; };
+      static const int GSTEPS[40] = {0, 1, 2, 3, 7, 8, 17, 35, 36, 37, 43, 44, 53, 71, 72, 73, 79, 80, 100, 107, 108, 109, 115, 116, 120, 121, 122, 123, 124, 125, 143, 144, 145, 364, 2400, 2602, 2605, 2609, 2640, 3545};
+      struct GreyExpect { bool right; const char *rows[40]; };
       static const GreyExpect GREY[] = {
-      {true, {"ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffff00ff", "ffffffffffffffffffffffffffffffff80ff", "ffffffffffffffffffffffffffffffff00ff", "ffffffffffffffffffffffffffffffff00ff", "ffff80800000ffff80800000ffff80800000", "800000ffff80800000ffff80800000ffff80", "800000ffff80800000ffff80800000ffff80", "808080808080808080808080808080808080", "808080808080808080808080808080808080", "808080808080808080808080808080808080", "008080ffff00008080ffff00008080ffff00", "ffff00008080ffff00008080ffff00008080", "ffff00008080ffff00008080ffff00008080", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000080ffff80000080ffff80000080ffff80", "8080ff0000ff8080ff0000ff8080ff0000ff", "000080ffff80000080ffff80000080ffff80", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ff808080000000808080ffffff808080ffff", "ffff808080000000808080ffffff808080ff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "80800000ffff80800000ffff80808000ffff", "00ffff80800000ffff80800000ffff808000", "800000ffff80800000ffff80800000ffff80"}},
-      {false, {"ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffff00ff", "ffffffffffffffffffffffffffffffff80ff", "ffffffffffffffffffffffffffffffff00ff", "ffffffffffffffffffffffffffffffff00ff", "00008080ffff00008080ffff00008080ffff", "80ffff00008080ffff00008080ffff000080", "80ffff00008080ffff00008080ffff000080", "808080808080808080808080808080808080", "808080808080808080808080808080808080", "808080808080808080808080808080808080", "00ffff80800000ffff80800000ffff808000", "80800000ffff80800000ffff80800000ffff", "80800000ffff80800000ffff80800000ffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000080ffff80000080ffff80000080ffff80", "8080ff0000ff8080ff0000ff8080ff0000ff", "000080ffff80000080ffff80000080ffff80", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "0000808080ffffff808080ffffff80808000", "00808080ffffff808080ffffff8080800000", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffff00008080ffff00008080ffff80008080", "008080ffff00008080ffff000080ffffff00", "80ffff00008080ffff00008080ffff000080"}},
+      {true, {"ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffff00ff", "ffffffffffffffffffffffffffffffff80ff", "ffffffffffffffffffffffffffffffff00ff", "ffffffffffffffffffffffffffffffff00ff", "ffff80800000ffff80800000ffff80800000", "800000ffff80800000ffff80800000ffff80", "800000ffff80800000ffff80800000ffff80", "808080808080808080808080808080808080", "808080808080808080808080808080808080", "808080808080808080808080808080808080", "008080ffff00008080ffff00008080ffff00", "ffff00008080ffff00008080ffff00008080", "ffff00008080ffff00008080ffff00008080", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000080ffff80000080ffff80000080ffff80", "8080ff0000ff8080ff0000ff8080ff0000ff", "000080ffff80000080ffff80000080ffff80", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ff808080000000808080ffffff808080ffff", "000000000000000000000000000000000000", "000000000000000000000000000000000000", "000000000000000000000000000000000000", "000000000000000000000000000000000000", "8080ffffff808080000000808080ff000080", "8080ffffff808080000000808080ff000080", "ffff808080000000808080ffffff808080ff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000000000000000000000000000000000000", "80800000ffff80800000ffff80808000ffff", "00ffff80800000ffff80800000ffff808000", "800000ffff80800000ffff80800000ffff80", "80ffff00008080ffff00008080ffff000080", "000000000000000000000000000000000000"}},
+      {false, {"ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffff00ff", "ffffffffffffffffffffffffffffffff80ff", "ffffffffffffffffffffffffffffffff00ff", "ffffffffffffffffffffffffffffffff00ff", "00008080ffff00008080ffff00008080ffff", "80ffff00008080ffff00008080ffff000080", "80ffff00008080ffff00008080ffff000080", "808080808080808080808080808080808080", "808080808080808080808080808080808080", "808080808080808080808080808080808080", "00ffff80800000ffff80800000ffff808000", "80800000ffff80800000ffff80800000ffff", "80800000ffff80800000ffff80800000ffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000080ffff80000080ffff80000080ffff80", "8080ff0000ff8080ff0000ff8080ff0000ff", "000080ffff80000080ffff80000080ffff80", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "0000808080ffffff808080ffffff80808000", "000000000000000000000000000000000000", "000000000000000000000000000000000000", "000000000000000000000000000000000000", "000000000000000000000000000000000000", "80ffffff8080800000ff8080800000008080", "80ffffff8080800000ff8080800000008080", "00808080ffffff808080ffffff8080800000", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000000000000000000000000000000000000", "ffff00008080ffff00008080ffff80008080", "008080ffff00008080ffff000080ffffff00", "80ffff00008080ffff00008080ffff000080", "800000ffff80800000ffff80800000ffff80", "000000000000000000000000000000000000"}},
       };
-      for (const GreyExpect &e : GREY) for (int k = 0; k < 30; k++) {
+      for (const GreyExpect &e : GREY) for (int k = 0; k < 40; k++) {
         std::string got; char b[4];
         for (uint16_t i = 0; i < 18; i++) { snprintf(b, sizeof b, "%02x", frameLevel(i, e.right, 14, (uint16_t)GSTEPS[k])); got += b; }
         if (got != e.rows[k]) { printf("FAIL: frame program 14 arrow %s step %d: got %s expected %s\n", e.right ? "right" : "left", GSTEPS[k], got.c_str(), e.rows[k]); fails++; }
@@ -195,10 +196,15 @@ int main(int argc, char **argv) {
       bool levelsOk = true;
       for (int t = 0; t < 3600; t++) for (uint16_t i = 0; i < 18; i++) { const uint8_t v = frameLevel(i, t % 2 == 0, 14, (uint16_t)t); if (v != 0 && v != 128 && v != 255) levelsOk = false; }
       CHECK(levelsOk, "frame program 14: only the levels 0, 128, 255");
+      // the whole frame blinks out: 95 of the 3600 steps (made by the reference), all of them in the first 6 steps of a 60-step slot, in 23 different slots
+      { int offSteps = 0, offOutside = 0; std::set<int> offSlots;
+        for (int t = 0; t < 3600; t++) { bool allDark = true; for (uint16_t i = 0; i < 18; i++) if (frameLevel(i, true, 14, (uint16_t)t) != 0) allDark = false;
+          if (allDark) { offSteps++; if (t % 60 >= 6) offOutside++; else offSlots.insert(t / 60); } }
+        CHECK(offSteps >= 95 && offOutside == 0 && offSlots.size() == 23, "frame program 14: the whole frame blinks out only in the first 6 steps of some 60-step slots"); }
       // every phase starts with 8 steps all lit (full, in phase 1 half); 1728 is a multiple of 144, so phase ph starts at 1728 + 36 * ph
       for (int ph = 0; ph < 4; ph++) for (int k = 0; k < 8; k++) for (uint16_t i = 0; i < 18; i++) {
         const int t = 1728 + ph * 36 + k;
-        if (t % 50 < 8) continue;                               // inside a burst one pixel may differ
+        if (t % 50 < 8 || t % 60 < 6) continue;                 // inside a burst one pixel may differ, or the whole frame is blinking out
         CHECK(frameLevel(i, true, 14, (uint16_t)t) == (ph == 1 ? 128 : 255), "frame program 14: every phase starts with all pixels lit (half in phase 1)"); }
     }
     // frame program 3: steady until step 29, dark from step 30
@@ -317,6 +323,7 @@ int main(int argc, char **argv) {
     if (g_millis > 1 && letterMode != lastMode) { modeChanges++; lastMode = letterMode; }
     if (fr->shows != lastFrameShows) {
       lastFrameShows = fr->shows;
+      for (auto c : fr->shown_) CHECK(((c >> 16) & 0xFF) == ((c >> 8) & 0xFF) && ((c >> 8) & 0xFF) == (c & 0xFF), "the frame shows only greys (R = G = B)");
       // Rebuild the two light paths (start corner -> end corner) from the ONE frame strip. Strip pixels (0-based, seen from
       // the front): 0 = lower-left corner, 0-5 bottom going right, 5 = lower-right, 6-8 right edge going up, 9 = upper-right,
       // 9-14 top going left, 14 = upper-left, 15-17 left edge going down. All indices are hard-coded here.
@@ -1086,6 +1093,8 @@ int main(int argc, char **argv) {
     // lit[pass][strip][led]
     std::vector<std::vector<std::vector<char>>> lit(STARTUP_TEST_PASSES);
     for (auto &p : lit) { p.resize(STRIP_COUNT); for (int k = 0; k < STRIP_COUNT; k++) p[k].assign(allStrips[k]->numPixels(), 0); }
+    const bool ledColour = getenv("V2_LED_COLOUR") != nullptr;   // run with Monochrome off: the LED test shows red, green and blue
+    if (ledColour) menuSetPos(P_monochrome, 0);
     int maxLit = 0; bool wrongColour = false, onlyTestPattern = true;
     bool charsRow[2][256] = {};
     bool lcdExact = true; int lcdSamples = 0; std::string firstBad;
@@ -1102,7 +1111,8 @@ int main(int argc, char **argv) {
         const uint32_t c = allStrips[s]->shown_[i];
         if (!c) continue;
         total++; lit[pass][s][i] = 1;
-        const uint32_t want = pass == 0 ? 0xFFFFFFu : (i % 3 == 0 ? 0xFF0000u : i % 3 == 1 ? 0x00FF00u : 0x0000FFu);
+        const uint32_t want = pass == 0 ? 0xFFFFFFu : (ledColour ? (i % 3 == 0 ? 0xFF0000u : i % 3 == 1 ? 0x00FF00u : 0x0000FFu)
+                                                              : (i % 3 == 0 ? 0xFFFFFFu : i % 3 == 1 ? 0x808080u : 0x404040u));   // Monochrome (the default): full, half, quarter grey
         if ((c & 0xFFFFFF) != want) wrongColour = true;
       }
       if (total > maxLit) maxLit = total;
@@ -1124,7 +1134,7 @@ int main(int argc, char **argv) {
       }
     }
     CHECK(endedAt >= STARTUP_TEST_MS - 5 && endedAt <= STARTUP_TEST_MS + 40, "LED test: lasts 10 seconds");
-    CHECK(!wrongColour, "LED test: white on pass 1, red-green-blue by LED number on pass 2");
+    CHECK(!wrongColour, "LED test: white on pass 1; pass 2 greys (Monochrome, default) or red-green-blue (Monochrome off) by LED number");
     CHECK(onlyTestPattern, "LED test: at most 2 pixels per strip are lit at the same time (nothing else is drawn)");
     bool all = true;
     for (int pass = 0; pass < STARTUP_TEST_PASSES; pass++) for (int s = 0; s < STRIP_COUNT; s++) for (char c : lit[pass][s]) if (!c) all = false;
@@ -1245,8 +1255,8 @@ int main(int argc, char **argv) {
     CHECK(LED_TYPE_COUNT == 3 && LED_TYPE_STRIP == 0 && LED_TYPE_STICK == 1 && LED_TYPE_LETTERS == 2, "three LED types: frame strip 0, sticks 1, letters strip 2");
     // defaults: min 0, max 255, exponent 1.97, mix 1, keep zero dark, for both types
     buildDefaultBrightnessCurves();
-    const int in[10] = {0, 1, 2, 16, 32, 64, 128, 192, 254, 255}, want[10] = {0, 0, 0, 0, 0, 2, 13, 38, 79, 80};
-    for (int ty = 0; ty < 3; ty++) for (int i = 0; i < 10; i++) CHECK(brightnessLut[ty][in[i]] == want[i], "default curve value");
+    const int in[10] = {0, 1, 2, 16, 32, 64, 128, 192, 254, 255}, want[10] = {0, 0, 0, 0, 0, 2, 13, 38, 79, 80}, wantStick[10] = {0, 0, 0, 0, 0, 1, 10, 28, 59, 60};
+    for (int ty = 0; ty < 3; ty++) for (int i = 0; i < 10; i++) CHECK(brightnessLut[ty][in[i]] == (ty == 1 ? wantStick[i] : want[i]), "default curve value (arrow sticks: max 60)");
     bool mono = true; for (int ty = 0; ty < 3; ty++) for (int i = 1; i < 256; i++) if (brightnessLut[ty][i] < brightnessLut[ty][i - 1]) mono = false;
     CHECK(mono, "default curve never decreases");
     // custom curve: min 20, max 200, exponent 1, mix 0 (linear), keep zero dark

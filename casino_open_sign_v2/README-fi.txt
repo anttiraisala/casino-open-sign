@@ -48,7 +48,7 @@ lukujärjestyksessä: OPENin kirjaimet vasemmalta oikealle O P E N ovat pikselit
 Mikä pysyy kuten versiossa 1
 ----------------------------
 Nuolianimaatio, CLOSED-valo (viallinen loisteputki), kytkimet (D32 nuolen suunta, D30 kasino kiinni),
-LCD (I2C, SDA D20, SCL D21), kirkkauskäyrät (LED-tyypeittäin, max 80, eksponentti 2.67; nyt valikon ominaisuuksia), käynnistyksen LED-testi (10 s; ikkuna nyt 2 pikseliä), elonmerkki (pinnin 13 LED vilkkuu; yksi Serial-rivi sekunnissa, 115200 baud).
+LCD (I2C, SDA D20, SCL D21), kirkkauskäyrät (LED-tyypeittäin, max 80 reunukselle ja kirjaimille ja 60 nuolen tikuille = 25 % vähemmän, eksponentti 2.67; valikon ominaisuuksia; CLOSED-tikku käyttää samaa tikkukäyrää), käynnistyksen LED-testi (10 s; ikkuna nyt 2 pikseliä; Monochromen ollessa päällä vain harmaita), elonmerkki (pinnin 13 LED vilkkuu; yksi Serial-rivi sekunnissa, 115200 baud).
 
 Johdotus (tarkasti)
 -------------------
@@ -144,7 +144,7 @@ Efekti 15 (Grey bands, reunus ja kirjaimet) on aina harmaa Monochromesta riippum
 liike on pääasia. Reunus: neljä vaihetta, 36 askelta kukin; jokainen alkaa 8 askeleella, jolloin kaikki palaa (toisessa vaiheessa kaikki puolella), sitten
 kuvio kaksi täyttä, kaksi puolikasta ja kaksi sammunutta pikseliä vierii reunuksella; sama toiseen suuntaan; parilliset ja parittomat pikselit juoksevat
 vastakkain; kolmen pikselin leveät lohkot vierivät. Rikkinäinen pikseli välkkyy silloin tällöin (8 askeleen purske jokaisessa 50 askeleen jaksossa, yksi
-jakso kolmesta, yksi pikseli). Kirjaimet: kolme 6 s vaihetta, jokainen alkaa 1 s ajalla jolloin kaikki palaa (toinen vaihe kaikki puolella): kaksi täyttä, kaksi
+jakso kolmesta, yksi pikseli), ja silloin tällöin koko reunus räpsähtää pois (60 askeleen jakson 6 ensimmäisessä askeleessa, joka toinen jakso, pimeänä kaksi askelta kolmesta). Kirjaimet: kolme 6 s vaihetta, jokainen alkaa 1 s ajalla jolloin kaikki palaa (toinen vaihe kaikki puolella): kaksi täyttä, kaksi
 puolikasta ja kaksi sammunutta kirjainta vierii kirjainten yli; sanat juoksevat vastakkain; lohko pomppii ensimmäisestä viimeiseen kirjaimeen ja takaisin;
 tavallinen neonvälkyntä (yksi kirjain) jatkuu päällä.
 Reunuskuviot ovat valkoisia ja seuraavat nuolen aloituskulmaa efekteissä 1, 2, 3, 7, 9, 14 ja 15. Molemmat ovat ensimmäisiä versioita,

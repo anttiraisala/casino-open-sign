@@ -204,7 +204,7 @@
       "stickMax": {
         "name": "Max",
         "type": "level255",
-        "default": 80,
+        "default": 60,
         "callbacks": [
           "rebuildStickCurve"
         ]

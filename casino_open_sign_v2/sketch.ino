@@ -80,7 +80,7 @@
  *   13 slot machine (letters flicker like reels and lock in one by one)  14 twin chase (two dim spots run in opposite directions)
  *   15 grey bands (always grey: only off, half and full; all lit now and then, moving patterns between; the neon flicker runs on top)
  * frame (white): 1 bar  2 comet  3 fill  4 ignite  5 sides blink  6 odd even  7 ping-pong  8 twinkle  9 runner
- *   10 heartbeat  11 corners  12 edges swap  13 slot machine  14 twin comets  15 grey bands (always grey: off, half, full; four phases of 36 steps, all lit at the start of each, a broken pixel flickers; see frameLevel())
+ *   10 heartbeat  11 corners  12 edges swap  13 slot machine  14 twin comets  15 grey bands (always grey: off, half, full; four phases of 36 steps, all lit at the start of each, a broken pixel flickers, the whole frame blinks out now and then; see frameLevel())
  * Frame and letters are chosen independently. Random (0): the group picks a pattern, never the same twice in a row;
  * one shared timer (menu Effects > Random delay, default 2 minutes, 0 = 1..30 minutes at random) changes every group that
  * is set to random at the same moment. Patterns 1, 2, 3, 7, 9, 14 and 15 of the frame follow the arrow direction.
@@ -224,7 +224,7 @@ constexpr uint8_t LED_TYPE_LETTERS = 2;  // the letters strip
 constexpr uint8_t LED_TYPE_COUNT = 3;
 // Defaults (same values for every type for now):
 constexpr uint8_t CURVE_DEFAULT_MIN[LED_TYPE_COUNT] = {0, 0, 0};              // 0..255, output for the dimmest lit LED
-constexpr uint8_t CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 80, 80};              // 0..255, output for input 255 = the brightness limit
+constexpr uint8_t CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 60, 80};              // 0..255, output for input 255 = the brightness limit (arrow sticks 60 = 25 % less than the others)
 constexpr float CURVE_DEFAULT_EXPONENT[LED_TYPE_COUNT] = {2.67f, 2.67f, 2.67f};   // 0.1..20, 1 = linear
 constexpr float CURVE_DEFAULT_MIX[LED_TYPE_COUNT] = {1.0f, 1.0f, 1.0f};          // 0..1, 0 = linear, 1 = full power curve
 constexpr bool CURVE_DEFAULT_KEEP_ZERO[LED_TYPE_COUNT] = {true, true, true};
@@ -519,7 +519,7 @@ const uint8_t PP_FLAGS[] PROGMEM = {2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 const uint8_t PP_SHIFT[] PROGMEM = {1, 1, 1, 1, 1, 1, 10, 10, 10, 10, 1, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 1, 10};
 const uint8_t PP_DEC[] PROGMEM = {0, 0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 2, 2, 2, 0, 0};
 const uint16_t PP_COUNT[] PROGMEM = {16, 16, 2, 2, 2, 2, 31, 31, 31, 31, 2, 256, 256, 51, 256, 256, 51, 51, 256, 256, 51, 51, 51, 6, 256};
-const uint16_t PP_DEFPOS[] PROGMEM = {1, 1, 0, 0, 0, 0, 18, 18, 18, 2, 1, 0, 80, 31, 0, 80, 31, 50, 0, 80, 31, 50, 50, 0, 128};
+const uint16_t PP_DEFPOS[] PROGMEM = {1, 1, 0, 0, 0, 0, 18, 18, 18, 2, 1, 0, 80, 31, 0, 60, 31, 50, 0, 80, 31, 50, 50, 0, 128};
 const float PP_MIN[] PROGMEM = {0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.125000000f, 0.125000000f, 0.125000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.100000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f};
 const float PP_MAX[] PROGMEM = {0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f, 4.00000000f, 4.00000000f, 4.00000000f, 30.0000000f, 0.00000000f, 255.000000f, 255.000000f, 20.0000000f, 255.000000f, 255.000000f, 20.0000000f, 1.00000000f, 255.000000f, 255.000000f, 20.0000000f, 1.00000000f, 1.00000000f, 0.00000000f, 255.000000f};
 const uint16_t PP_AUX[] PROGMEM = {0, 0, 0, 0, 0, 0, 30, 30, 30, 1, 0, 1, 1, 50, 1, 1, 50, 50, 1, 1, 50, 50, 50, 0, 1};
@@ -1538,6 +1538,9 @@ uint8_t frameLevel(uint16_t i, bool arrowRight, uint8_t mode, uint16_t t) {
         const uint8_t pick = (uint8_t)(hash16(i, t) % 3);
         level = pick == 0 ? 0 : (pick == 1 ? 128 : 255);
       }
+      // The whole frame blinks out now and then: in the first 6 steps of every 60-step slot (one slot in two) it is dark
+      // in two steps out of three, irregularly, like a faulty supply.
+      if (t % 60 < 6 && hash16(t / 60, 91) % 2 == 0 && hash16(t, 3) % 3 != 0) level = 0;
       return level;
     }
     default: {  // 0: the bar pattern
@@ -2045,6 +2048,10 @@ void updateStartupTest(unsigned long now) {
       uint32_t color = 0;
       if (i < front && i + w >= front) {
         if (pass == 0) color = strip.Color(255, 255, 255);
+        else if (menuPos(P_monochrome) == 1) {   // Monochrome: only greys (full, half, quarter), never a colour
+          const uint8_t grey = i % 3 == 0 ? 255 : (i % 3 == 1 ? 128 : 64);
+          color = strip.Color(grey, grey, grey);
+        }
         else if (i % 3 == 0) color = strip.Color(255, 0, 0);
         else if (i % 3 == 1) color = strip.Color(0, 255, 0);
         else color = strip.Color(0, 0, 255);

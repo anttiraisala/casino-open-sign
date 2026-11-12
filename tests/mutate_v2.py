@@ -78,11 +78,11 @@ muts=[
  ("analog seed on stick pin","randomSeed(analogRead(A15))","randomSeed(analogRead(A0))"),
  ("curve default exponent","CURVE_DEFAULT_EXPONENT[LED_TYPE_COUNT] = {2.67f, 2.67f, 2.67f}","CURVE_DEFAULT_EXPONENT[LED_TYPE_COUNT] = {2.2f, 2.67f, 2.67f}"),
  ("curve default exponent stick","CURVE_DEFAULT_EXPONENT[LED_TYPE_COUNT] = {2.67f, 2.67f, 2.67f}","CURVE_DEFAULT_EXPONENT[LED_TYPE_COUNT] = {2.67f, 2.0f, 2.67f}"),
- ("curve default letters max","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 80, 80}","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 80, 79}"),
- ("curve default max stick","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 80, 80}","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 90, 80}"),
+ ("curve default letters max","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 60, 80}","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 60, 79}"),
+ ("curve default max stick","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 60, 80}","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 90, 80}"),
  ("global brightness back","    allStrips[k]->begin();\n","    allStrips[k]->begin();\n    allStrips[k]->setBrightness(80);\n"),
  ("curve default min","CURVE_DEFAULT_MIN[LED_TYPE_COUNT] = {0, 0, 0}","CURVE_DEFAULT_MIN[LED_TYPE_COUNT] = {0, 2, 0}"),
- ("curve default max","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 80, 80}","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {81, 80, 80}"),
+ ("curve default max","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 60, 80}","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {81, 60, 80}"),
  ("curve default mix","CURVE_DEFAULT_MIX[LED_TYPE_COUNT] = {1.0f, 1.0f, 1.0f}","CURVE_DEFAULT_MIX[LED_TYPE_COUNT] = {1.0f, 0.9f, 1.0f}"),
  ("curve default keep zero","CURVE_DEFAULT_KEEP_ZERO[LED_TYPE_COUNT] = {true, true, true}","CURVE_DEFAULT_KEEP_ZERO[LED_TYPE_COUNT] = {true, false, true}"),
  ("curve exponent max","CURVE_EXPONENT_MAX = 20.0f","CURVE_EXPONENT_MAX = 25.0f"),
@@ -179,6 +179,19 @@ muts=[
  ("frame grey flicker rate","hash16(slot, 77) % 3 == 0","hash16(slot, 77) % 2 == 0"),
  ("frame grey broken pixel","i == hash16(slot, 5) % FRAME_PIXELS","i == hash16(slot, 6) % FRAME_PIXELS"),
  ("frame grey flicker levels","level = pick == 0 ? 0 : (pick == 1 ? 128 : 255);","level = pick == 0 ? 0 : (pick == 1 ? 128 : 128);"),
+ ("stick max default","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 60, 80};","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 80, 80};"),
+ ("stick max default frame","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {80, 60, 80};","CURVE_DEFAULT_MAX[LED_TYPE_COUNT] = {60, 60, 80};"),
+ ("led test mono inverted","else if (menuPos(P_monochrome) == 1) {   // Monochrome: only greys","else if (menuPos(P_monochrome) == 0) {   // Monochrome: only greys"),
+ ("led test mono ignored","else if (menuPos(P_monochrome) == 1) {   // Monochrome: only greys","else if (false) {   // Monochrome: only greys"),
+ ("led test grey half","i % 3 == 0 ? 255 : (i % 3 == 1 ? 128 : 64);","i % 3 == 0 ? 255 : (i % 3 == 1 ? 127 : 64);"),
+ ("led test grey quarter","i % 3 == 0 ? 255 : (i % 3 == 1 ? 128 : 64);","i % 3 == 0 ? 255 : (i % 3 == 1 ? 128 : 63);"),
+ ("led test grey order","i % 3 == 0 ? 255 : (i % 3 == 1 ? 128 : 64);","i % 3 == 1 ? 255 : (i % 3 == 0 ? 128 : 64);"),
+ ("frame blink length","if (t % 60 < 6 && hash16(t / 60, 91) % 2 == 0","if (t % 60 < 7 && hash16(t / 60, 91) % 2 == 0"),
+ ("frame blink slots","hash16(t / 60, 91) % 2 == 0 && hash16(t, 3) % 3 != 0","hash16(t / 60, 91) % 3 == 0 && hash16(t, 3) % 3 != 0"),
+ ("frame blink seed","hash16(t / 60, 91) % 2 == 0","hash16(t / 60, 92) % 2 == 0"),
+ ("frame blink step rate","hash16(t, 3) % 3 != 0) level = 0;","hash16(t, 3) % 3 != 1) level = 0;"),
+ ("frame blink slot size","if (t % 60 < 6 && hash16(t / 60, 91)","if (t % 60 < 6 && hash16(t / 50, 91)"),
+ ("frame blink only pixel","hash16(t, 3) % 3 != 0) level = 0;","hash16(t, 3) % 3 != 0 && i == 0) level = 0;"),
  ("frame step wrap","FRAME_STEP_WRAP = 3600;","FRAME_STEP_WRAP = 3601;"),
  ("frame step not reset on pattern","  activeFrame = pattern;\n  frameStep = 0;\n","  activeFrame = pattern;\n"),
  ("frame wave tail","return k < 5 ? (uint8_t)(255 - 50 * k) : 0;","return k < 5 ? (uint8_t)(255 - 40 * k) : 0;"),
@@ -281,8 +294,8 @@ def run(i):
     res=(last[-1] if last else 'no result')
     if 'failures' not in res and res!='no result':   # the boot-mode run (saved EEPROM image at power-up) is part of the test
         try:
-            for bm in ('1','tag','range'):
-                r2=subprocess.run([d+'/h'],capture_output=True,text=True,timeout=60,env=dict(os.environ,V2_BOOT=bm))
+            for bm in ('1','tag','range','colour'):
+                r2=subprocess.run([d+'/h'],capture_output=True,text=True,timeout=60,env=dict(os.environ,**({'V2_LED_COLOUR':'1'} if bm=='colour' else {'V2_BOOT':bm})))
                 last2=[l for l in r2.stdout.splitlines() if l.startswith('RESULT')]
                 res2=(last2[-1] if last2 else 'no result')
                 if 'failures' in res2 or res2=='no result': return name,res2+' (boot mode %s)'%bm

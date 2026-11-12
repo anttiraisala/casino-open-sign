@@ -19,6 +19,7 @@ const clone = o => JSON.parse(JSON.stringify(o));
   const m = core.build(V2);
   eq(m.errors, [], 'V2 menu has no errors'); eq(m.warnings, [], 'V2 menu has no warnings');
   eq(m.order.length, 25, 'V2 has 25 properties');
+  eq([m.props.stripMax.defaultPos, m.props.lettersMax.defaultPos, m.props.stickMax.defaultPos], [80, 80, 60], 'default Max: frame 80, letters 80, arrow sticks 60 (25 % less)');
   eq(core.persistIds(m).length, 21, 'V2 stores 21 properties (arrow and casino are not stored)');
   eq(['strip', 'letters', 'stick'].map(g => ['Min', 'Max', 'Exp', 'Mix'].map(x => m.props[g + x].name).join()).join('|'), 'Min,Max,Exponent,Mix|Min,Max,Exponent,Mix|Min,Max,Exponent,Mix', 'strip, letters and stick each have min, max, exponent and mix');
   eq(m.props.lettersMix.count, 51, 'mix 0..1 linear has 51 positions'); eq(core.valueAt(m.props.stickMix, m.props.stickMix.defaultPos), 1, 'mix default 1.0'); eq(m.props.letersMix === undefined, true, 'no typo property');

@@ -49,7 +49,7 @@ What stays as in version 1
 --------------------------
 Arrow animation, CLOSED light (faulty fluorescent tube), the switches (D32 arrow direction,
 D30 casino closed), the LCD (I2C, SDA D20, SCL D21), the
-brightness curves (per LED type, max 80, exponent 2.67; now menu properties), the power-on LED test (10 s; window now 2 pixels), the sign of life
+brightness curves (per LED type, max 80 for the frame and the letters and 60 for the arrow sticks = 25 % less, exponent 2.67; menu properties; the CLOSED stick shares the stick curve), the power-on LED test (10 s; window now 2 pixels; with Monochrome on it shows only greys), the sign of life
 (LED on pin 13 blinks; one Serial line per second at 115200 baud).
 
 Wiring (exactly)
@@ -145,7 +145,7 @@ property changes the EEPROM layout tag, so on the first start after uploading th
 Effect 15 (Grey bands, frame and letters) is always grey, whatever Monochrome says, and uses only three levels: off, half (128) and full (255);
 the point is the movement. Frame: four phases of 36 steps, each starting with 8 steps all lit (the second phase all half lit), then a pattern of
 two full, two half and two dark pixels scrolls along the frame; the same the other way; even and odd pixels run opposite ways; wide blocks of three
-pixels scroll. A broken pixel flickers now and then (a burst of 8 steps in every 50-step slot, one slot in three, one pixel). Letters: three phases of
+pixels scroll. A broken pixel flickers now and then (a burst of 8 steps in every 50-step slot, one slot in three, one pixel), and now and then the whole frame blinks out (in the first 6 steps of a 60-step slot, one slot in two, it is dark in two steps out of three). Letters: three phases of
 6 s, each starting with 1 s all lit (the second all half lit): a pattern of two full, two half and two dark letters scrolls along the letters; the two
 words run in opposite directions; a block bounces from the first to the last letter and back; the usual neon flicker of one letter runs on top.
 The frame patterns are white and follow the arrow's start corner in effects 1, 2, 3, 7, 9, 14 and 15. Both are first versions to be
