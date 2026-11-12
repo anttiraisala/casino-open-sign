@@ -7,8 +7,8 @@
  * it by tools/generate_menu_test.js, and the engine is tools/menu_engine/engine.inc. Nothing here touches LED strips or sticks.
  *
  * CONTROLS (all wired to GND, internal pull-ups):
- *   menu hex switch      legs 1,2,4,8 on D42-D45, C to GND   free-running: turning it moves the selection or changes the value
- *   OK    D48   CANCEL D49   SHIFT D50      push buttons to GND; SHIFT held while turning makes the step ten times larger
+ *   menu hex switch      legs 1,2,4,8 on D38, D41, D42, D45, C to GND   free-running: turning it moves the selection or changes the value
+ *   OK    D46   CANCEL D49   SHIFT D50      push buttons to GND; SHIFT held while turning makes the step ten times larger
  *   arrow slide switch   D32   handle on the GND side = arrow points left (the "Arrow reverse" menu property swaps it)
  *   casino slide switch  D30   handle on the GND side = casino closed (the "Casino reverse" menu property swaps it)
  *
@@ -37,12 +37,12 @@
 constexpr uint32_t SERIAL_BAUD = 115200;
 constexpr uint8_t PIN_STATUS_LED = 13;
 
-constexpr uint8_t MENU_PINS[4] = {42, 43, 44, 45};       // menu hex switch: leg 1, 2, 4, 8
+constexpr uint8_t MENU_PINS[4] = {38, 41, 42, 45};       // menu hex switch: leg 1, 2, 4, 8
 constexpr bool HEX_BIT_IS_LOW = true;                    // a leg connected to C reads LOW and counts as a set bit
 constexpr unsigned long HEX_DEBOUNCE_MS = 10;
 constexpr bool MENU_SWITCH_REVERSED = false;             // true: turning the menu switch clockwise moves the other way
 
-constexpr uint8_t PIN_OK = 48;
+constexpr uint8_t PIN_OK = 46;
 constexpr uint8_t PIN_CANCEL = 49;
 constexpr uint8_t PIN_SHIFT = 50;
 constexpr uint8_t PIN_ARROW_SWITCH = 32;

@@ -462,7 +462,7 @@
       "top": 42,
       "left": 936,
       "attrs": {
-        "text": "D11 frame: 18 pixels, pixel 1 lower-left, counter-clockwise (12 V WS2811)"
+        "text": "D12 frame: 18 pixels, pixel 1 lower-left, counter-clockwise (12 V WS2811)"
       }
     },
     {
@@ -471,7 +471,7 @@
       "top": 64,
       "left": 936,
       "attrs": {
-        "text": "D12 letters: 10 pixels C A S I N O N E P O (OPEN wired reversed)"
+        "text": "D10 letters: 10 pixels C A S I N O N E P O (OPEN wired reversed)"
       }
     },
     {
@@ -543,7 +543,7 @@
       "top": 240,
       "left": 936,
       "attrs": {
-        "text": "D42-D45: menu switch SW3 (free-running hex rotary, relative): selection / value"
+        "text": "D38-D45: menu switch SW3 (free-running hex rotary, relative): selection / value"
       }
     },
     {
@@ -552,7 +552,7 @@
       "top": 262,
       "left": 936,
       "attrs": {
-        "text": "D48 OK (opens the menu), D49 CANCEL, D50 SHIFT (bigger steps while held)"
+        "text": "D46 OK (opens the menu), D49 CANCEL, D50 SHIFT (bigger steps while held)"
       }
     },
     {
@@ -1027,7 +1027,7 @@
       "top": 108,
       "left": 20,
       "attrs": {
-        "text": "D48: OK"
+        "text": "D46: OK"
       }
     },
     {
@@ -1088,7 +1088,7 @@
       "top": 216,
       "left": 20,
       "attrs": {
-        "text": "Menu DIP bank (left) = menu switch SW3 (D42-D45):"
+        "text": "Menu DIP bank (left) = menu switch SW3 (D38-D45):"
       }
     },
     {
@@ -1196,7 +1196,7 @@
       []
     ],
     [
-      "mega:42",
+      "mega:38",
       "menu_switches:1a",
       "orange",
       []
@@ -1208,7 +1208,7 @@
       []
     ],
     [
-      "mega:43",
+      "mega:41",
       "menu_switches:2a",
       "orange",
       []
@@ -1220,7 +1220,7 @@
       []
     ],
     [
-      "mega:44",
+      "mega:42",
       "menu_switches:3a",
       "orange",
       []
@@ -1244,7 +1244,7 @@
       []
     ],
     [
-      "mega:48",
+      "mega:46",
       "button_ok:1.r",
       "orange",
       []
@@ -1280,7 +1280,7 @@
       []
     ],
     [
-      "mega:11",
+      "mega:12",
       "frame_01:DIN",
       "green",
       []
@@ -1604,7 +1604,7 @@
       []
     ],
     [
-      "mega:12",
+      "mega:10",
       "letter_pixel_01_C:DIN",
       "green",
       []

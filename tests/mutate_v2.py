@@ -39,9 +39,9 @@ muts=[
  ("closed light 6 LEDs","CLOSED_LIGHT_LEDS = 10;","CLOSED_LIGHT_LEDS = 6;"),
  ("stick pins swapped","{2, 6, 5, 7, 8, 3, 4, A3, A1, A2}","{2, 6, 7, 5, 8, 3, 4, A3, A1, A2}"),
  ("last stick pin","{2, 6, 5, 7, 8, 3, 4, A3, A1, A2}","{2, 6, 5, 7, 8, 3, 4, A3, A1, A0}"),
- ("frame pin","PIN_FRAME = 11","PIN_FRAME = 6"),
- ("letters pin on the status LED","PIN_LETTERS = 12","PIN_LETTERS = 13"),
- ("letters pin","PIN_LETTERS = 12","PIN_LETTERS = 11"),
+ ("frame pin","PIN_FRAME = 12","PIN_FRAME = 6"),
+ ("letters pin on the status LED","PIN_LETTERS = 10","PIN_LETTERS = 13"),
+ ("letters pin","PIN_LETTERS = 10","PIN_LETTERS = 11"),
  ("frame 17 pixels","FRAME_EDGE_SHORT = 3;","FRAME_EDGE_SHORT = 2;"),
  ("frame long edge 5","FRAME_EDGE_LONG = 6;","FRAME_EDGE_LONG = 5;"),
  ("start corner right","const uint16_t start = arrowRight ? FRAME_UPPER_LEFT : FRAME_UPPER_RIGHT;","const uint16_t start = arrowRight ? FRAME_UPPER_RIGHT : FRAME_UPPER_LEFT;"),
@@ -165,7 +165,7 @@ muts=[
  ("frame long edge","i <= FRAME_LOWER_RIGHT || (i >= FRAME_UPPER_RIGHT && i <= FRAME_UPPER_LEFT)","i < FRAME_LOWER_RIGHT || (i >= FRAME_UPPER_RIGHT && i <= FRAME_UPPER_LEFT)"),
 
  # --- menu integration (OK/CANCEL/SHIFT, menu switch, EEPROM, speeds and curves as menu properties) ---
- ("menu switch pins","PIN_MENU_SWITCH[4] = {42, 43, 44, 45};","PIN_MENU_SWITCH[4] = {43, 42, 44, 45};"),
+ ("menu switch pins","PIN_MENU_SWITCH[4] = {38, 41, 42, 45};","PIN_MENU_SWITCH[4] = {41, 38, 42, 45};"),
  ("menu switch not polled","  if (pollHexSwitch(SLOT_MENU, PIN_MENU_SWITCH, now)) {","  if (false) {"),
  ("menu switch half turn used","if (delta != 8) {","if (true) {"),
  ("menu switch direction","if (delta > 8) steps = (int)delta - 16;","if (delta > 8) steps = (int)delta;"),

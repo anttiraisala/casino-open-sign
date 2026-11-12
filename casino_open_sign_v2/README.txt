@@ -4,8 +4,8 @@ CASINO OPEN SIGN V2 - Arduino Mega 2560, two 12 V WS2811 strips + 11 Grove RGB L
 Version 2 of the sign program. Version 1 (the sketch.ino in the folder above) stays untouched.
 V2 has exactly TWO LED strips and ELEVEN sticks:
 
-  Strip 1  D11  frame     12 V WS2811, 18 pixels (one pixel = one chip = 3 LEDs = 10 cm), around the 60 x 30 cm plate
-  Strip 2  D12  letters   12 V WS2811, 10 pixels, one pixel behind each letter
+  Strip 1  D12  frame     12 V WS2811, 18 pixels (one pixel = one chip = 3 LEDs = 10 cm), around the 60 x 30 cm plate
+  Strip 2  D10  letters   12 V WS2811, 10 pixels, one pixel behind each letter
   Sticks   Grove Base Shield D2-D8, A1-A3: the 10 arrow sticks (V2 wiring, see below), A0: the CLOSED light stick
   D13 is the status LED (sign of life), as before.
 
@@ -23,7 +23,7 @@ parts-list.csv/.pdf        Parts to buy (partco.fi snapshot of 2026-11-02; price
 README.txt / README-fi.txt This file (English / Finnish).
 The arrow (drill template, stick drawings, stick wiring) is unchanged: see ../arrow_sticks/.
 
-Frame strip (D11): 18 pixels, front view
+Frame strip (D12): 18 pixels, front view
 ----------------------------------------
 Pixel 1 is in the LOWER-LEFT corner; the strip runs counter-clockwise:
     pixels  1-6    bottom edge, left to right (6 = lower-right corner)
@@ -38,7 +38,7 @@ Frame light (a bar of 2 lit pixels, 2 dark, repeating; one step every 200 ms at 
                                               LOWER-RIGHT corner (pixel 6).
 Both paths are 9 steps long and move exactly together (no time offset); they meet at the end corner.
 
-Letters strip (D12): 10 pixels, one per letter
+Letters strip (D10): 10 pixels, one per letter
 ----------------------------------------------
     pixels 1-6    C A S I N O    (CASINO, left to right)
     pixels 7-10   N E P O        (OPEN is wired REVERSED: pixel 7 = N ... pixel 10 = O)
@@ -54,8 +54,8 @@ brightness curves (per LED type, max 80, exponent 2.67; now menu properties), th
 
 Wiring (exactly)
 ----------------
-    Arduino D11   -> 330 ohm resistor R1 -> DIN of the frame strip (pixel 1, the lower-left corner end)
-    Arduino D12   -> 330 ohm resistor R2 -> DIN of the letters strip (pixel 1, behind the C)
+    Arduino D12   -> 330 ohm resistor R1 -> DIN of the frame strip (pixel 1, the lower-left corner end)
+    Arduino D10   -> 330 ohm resistor R2 -> DIN of the letters strip (pixel 1, behind the C)
     PSU2 12 V +   -> fuse F2 (5 A) -> +12 V of BOTH strips (feed the frame at the start and the end; the letters at the start)
     PSU2 12 V -   -> GND of both strips AND Arduino GND (common ground)
     Capacitor C2 1000 uF 25 V across +12 V and GND at the strips (plus to +12 V)
@@ -65,8 +65,8 @@ Wiring (exactly)
                   D3 RAIL-DN-L, D4 RAIL-DN-R, A3 R-CAP, A1 R-WING-UP, A2 R-WING-DN, A0 CLOSED light stick (no wire from a supply to a stick)
                   (V2 only: the connectors differ from version 1 and ../arrow_sticks/; the stick positions on the plate are unchanged)
     D32 -> slide switch SW1 common (contact 1 -> GND)      D30 -> slide switch SW5 common (contact 1 -> GND)
-    D42-D45 -> SW3 menu switch pins 1, 2, 4, 8 (common C -> GND)
-    D48 -> push button SW7 OK -> GND     D49 -> push button SW8 CANCEL -> GND     D50 -> push button SW9 SHIFT -> GND
+    D38, D41, D42, D45 -> SW3 menu switch pins 1, 2, 4, 8 (common C -> GND)
+    D46 -> push button SW7 OK -> GND     D49 -> push button SW8 CANCEL -> GND     D50 -> push button SW9 SHIFT -> GND
     (every button: contact 1 to the Arduino pin, contact 2 to GND; all inputs use INPUT_PULLUP, no resistors)
     The old speed switches SW3/SW4 (D22-D29) are gone: the speeds are menu properties. The menu pins are the same as in ../menu_test/.
     D20 SDA, D21 SCL, 5V, GND -> LCD I2C backpack
@@ -92,7 +92,7 @@ then power up; Serial Monitor 115200 baud. Wokwi: new Arduino Mega project, past
 If the colours are wrong, the strip's colour order may differ: change NEO_GRB + NEO_KHZ800 in the two strip lines of the sketch.
 The power-on LED test (10 s) lights a 2-pixel window running along every strip (pass 1 white, pass 2 red-green-blue); the CANCEL button (D49) skips it (the LCD scrolls "press CANCEL to skip" and then says "Test skipped" for a moment; a CANCEL held down at power-up does not skip it). D33 is free.
 
-Settings menu (menu switch SW3 D42-D45, buttons OK D48, CANCEL D49, SHIFT D50)
+Settings menu (menu switch SW3 D38/D41/D42/D45, buttons OK D46, CANCEL D49, SHIFT D50)
 --------------------------------------------------------------------------
 Status page (the display after power-up): row 0 shows the two effects and the casino state, e.g. "F12 L03 Open" (F = frame effect, L = letters
 effect, two digits; a star before the number marks a random group and the number is the effect really showing, e.g. "F*07"; "--" = unknown);

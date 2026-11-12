@@ -27,8 +27,8 @@
  *
  * Strip overview (one Adafruit_NeoPixel object and one data pin each; the strips run on a separate 12 V supply,
  * the Arduino, the Grove shield and the sticks on the 5 V supply, all grounds are joined; D13 is the status LED):
- *   frame            D11  12 V WS2811, 18 pixels (see above)
- *   letters          D12  12 V WS2811, 10 pixels: C A S I N O N E P O (OPEN reversed)
+ *   frame            D12  12 V WS2811, 18 pixels (see above)
+ *   letters          D10  12 V WS2811, 10 pixels: C A S I N O N E P O (OPEN reversed)
  *   closedLight      A0   the 11th Grove stick (connector A0 of the shield): 10 white LEDs behind the plate
  *                         that light the "CLOSED" hole text
  *   Arrow sticks (Grove Base Shield connectors; LED 1 of a stick is its DIN end):
@@ -43,9 +43,9 @@
  *                     way as the arrow does in real space (toward the customer's left = the back's right).
  *   D30 slide switch  SW5 "casino closed" (handle on the GND side = LOW = closed): the OPEN
  *                     letters go dark and the CLOSED light turns on
- *   D42-D45  menu switch: 16-position hex rotary switch (pins 1, 2, 4, 8), free-running (relative): moves the
+ *   D38, D41, D42, D45  menu switch: 16-position hex rotary switch (legs 1, 2, 4, 8), free-running (relative): moves the
  *                 menu selection or changes a value
- *   D48 OK, D49 CANCEL, D50 SHIFT  push buttons to GND: OK opens the menu from the status page, enters a submenu,
+ *   D46 OK, D49 CANCEL, D50 SHIFT  push buttons to GND: OK opens the menu from the status page, enters a submenu,
  *                 starts and accepts an edit; CANCEL goes one level up, cancels an edit, or skips the power-on
  *                 LED test; SHIFT held while turning makes the step bigger
  *   (the common pin of each hex switch goes to GND; the speeds and brightness curves are no longer set with switches:
@@ -138,8 +138,8 @@ constexpr bool STICK_BALL_AT_DIN_END = true;
 constexpr uint16_t CLOSED_LIGHT_LEDS = 10;
 
 // --- Data pins -------------------------------------------------------------
-constexpr uint8_t PIN_FRAME = 11;          // strip 1: the frame (18 pixels)
-constexpr uint8_t PIN_LETTERS = 12;        // strip 2: the letters (10 pixels); D13 stays the status LED
+constexpr uint8_t PIN_FRAME = 12;          // strip 1: the frame (18 pixels)
+constexpr uint8_t PIN_LETTERS = 10;        // strip 2: the letters (10 pixels); D13 stays the status LED
 constexpr uint8_t PIN_CLOSED_LIGHT = A0;   // Grove Base Shield connector A0 (the 11th stick)
 
 // Arrow sticks. The data pins are the signal pins of the Grove Base Shield connectors D2..D8 and
@@ -177,9 +177,9 @@ constexpr bool HEX_BIT_IS_LOW = true;      // a bit counts as set when its pin r
 constexpr unsigned long HEX_DEBOUNCE_MS = 10;   // a hex switch position must stay unchanged this long
 
 // Settings menu controls (the menu is described in tools/menu-editor/menu-v2.json):
-constexpr uint8_t PIN_MENU_SWITCH[4] = {42, 43, 44, 45};  // menu hex switch (free-running, relative): selection / value
+constexpr uint8_t PIN_MENU_SWITCH[4] = {38, 41, 42, 45};  // menu hex switch (free-running, relative): selection / value
 constexpr bool MENU_SWITCH_REVERSED = false;              // true: turning it clockwise moves the other way
-constexpr uint8_t PIN_OK = 48;             // push button OK: opens the menu, enters a submenu, starts / accepts an edit
+constexpr uint8_t PIN_OK = 46;             // push button OK: opens the menu, enters a submenu, starts / accepts an edit
 constexpr uint8_t PIN_CANCEL = 49;           // push button CANCEL: one level up, cancels an edit
 constexpr uint8_t PIN_SHIFT = 50;          // push button SHIFT: held while turning makes the step bigger
 constexpr int MENU_EEPROM_BASE = 0;        // the saved menu image starts at this EEPROM address

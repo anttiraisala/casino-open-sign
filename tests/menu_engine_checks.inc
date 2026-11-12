@@ -118,7 +118,7 @@
   CHECK(menuSwitch.stable == 0, "all legs open reads 0");
   unsigned long now = 100;
   auto settle = [&](unsigned long ms) { pollInputs(now); now += ms; pollInputs(now); };
-  const int pins[4] = {42, 43, 44, 45};
+  const int pins[4] = {38, 41, 42, 45};
   for (int v = 0; v < 16; v++) {
     for (int k = 0; k < 4; k++) g_pinLevel[pins[k]] = (v >> k) & 1 ? LOW : HIGH;
     pollInputs(now); now += 5;
@@ -129,16 +129,16 @@
   settle(30); settle(30);
   CHECK(menuSwitch.stable == 0, "menu switch back to 0");
   // debounce: a new level is not accepted after 5 ms
-  g_pinLevel[42] = LOW;
+  g_pinLevel[38] = LOW;
   pollInputs(now); now += 5; pollInputs(now);
   CHECK(menuSwitch.stable == 0, "hex debounce holds a new level for 10 ms");
   now += 10; pollInputs(now);
   CHECK(menuSwitch.stable == 1, "hex debounce accepts it afterwards");
-  g_pinLevel[42] = HIGH; settle(30); settle(30);
+  g_pinLevel[38] = HIGH; settle(30); settle(30);
   // each menu leg alone
-  g_pinLevel[43] = LOW; settle(30); settle(30); CHECK(menuSwitch.stable == 2, "leg 2 = D43");
-  g_pinLevel[43] = HIGH; g_pinLevel[44] = LOW; settle(30); settle(30); CHECK(menuSwitch.stable == 4, "leg 4 = D44");
-  g_pinLevel[44] = HIGH; g_pinLevel[45] = LOW; settle(30); settle(30); CHECK(menuSwitch.stable == 8, "leg 8 = D45");
+  g_pinLevel[41] = LOW; settle(30); settle(30); CHECK(menuSwitch.stable == 2, "leg 2 = D41");
+  g_pinLevel[41] = HIGH; g_pinLevel[42] = LOW; settle(30); settle(30); CHECK(menuSwitch.stable == 4, "leg 4 = D42");
+  g_pinLevel[42] = HIGH; g_pinLevel[45] = LOW; settle(30); settle(30); CHECK(menuSwitch.stable == 8, "leg 8 = D45");
   g_pinLevel[45] = HIGH; settle(30); settle(30);
   menuSwitch.stable = menuSwitch.candidate = readHexRaw(HEX_MENU);
 
@@ -152,15 +152,15 @@
   g_pinLevel[30] = HIGH; settle(40); settle(40);
   CHECK(menuPos(P_casino) == 1, "casino switch HIGH = open");
   // button debounce
-  g_pinLevel[48] = LOW; pollInputs(now); now += 10; pollInputs(now);
+  g_pinLevel[46] = LOW; pollInputs(now); now += 10; pollInputs(now);
   CHECK(menuMode == MM_STATUS, "button debounce holds 30 ms");
   now += 30; pollInputs(now);
-  CHECK(menuMode == MM_MENU && menuDepth == 1, "OK on D48 opens the menu (on press only)");
-  g_pinLevel[48] = HIGH; settle(40); settle(40);
+  CHECK(menuMode == MM_MENU && menuDepth == 1, "OK on D46 opens the menu (on press only)");
+  g_pinLevel[46] = HIGH; settle(40); settle(40);
   CHECK(menuMode == MM_MENU && menuDepth == 1 && menuLevelItem[0] == 0, "releasing OK does nothing");
 
-  // menu switch on D42-D45, free running
-  const int mpins[4] = {42, 43, 44, 45};
+  // menu switch on D38, D41, D42, D45, free running
+  const int mpins[4] = {38, 41, 42, 45};
   auto menuTo = [&](int v) {
     for (int k = 0; k < 4; k++) g_pinLevel[mpins[k]] = (v >> k) & 1 ? LOW : HIGH;
     settle(20); settle(20);
@@ -174,13 +174,13 @@
   menuTo(15); CHECK(menuLevelItem[0] == 5, "1 -> 15 (two steps back) moves two items up");
   // the pins map to the right bits one by one
   menuTo(0); menuLevelItem[0] = 2;
-  g_pinLevel[43] = LOW; settle(20); settle(20);
-  CHECK(menuLevelItem[0] == 4, "leg 2 = D43 (0 -> 2)");
-  g_pinLevel[43] = HIGH; settle(20); settle(20);
+  g_pinLevel[41] = LOW; settle(20); settle(20);
+  CHECK(menuLevelItem[0] == 4, "leg 2 = D41 (0 -> 2)");
+  g_pinLevel[41] = HIGH; settle(20); settle(20);
   menuLevelItem[0] = 0;
-  g_pinLevel[44] = LOW; settle(20); settle(20);
-  CHECK(menuLevelItem[0] == 4, "leg 4 = D44 (0 -> 4)");
-  g_pinLevel[44] = HIGH; settle(20); settle(20);
+  g_pinLevel[42] = LOW; settle(20); settle(20);
+  CHECK(menuLevelItem[0] == 4, "leg 4 = D42 (0 -> 4)");
+  g_pinLevel[42] = HIGH; settle(20); settle(20);
 
   // SHIFT on D50: ten times larger steps while editing
   menuMode = MM_EDIT; menuEditProp = P_stripMax; menuEditStart = menuPos(P_stripMax); menuSet(P_stripMax, 80);

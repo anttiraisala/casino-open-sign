@@ -88,7 +88,7 @@
   ],
   "connections": [
     [
-      "mega:42",
+      "mega:38",
       "menu:1b",
       "orange",
       []
@@ -100,7 +100,7 @@
       []
     ],
     [
-      "mega:43",
+      "mega:41",
       "menu:2b",
       "orange",
       []
@@ -112,7 +112,7 @@
       []
     ],
     [
-      "mega:44",
+      "mega:42",
       "menu:3b",
       "orange",
       []
@@ -136,7 +136,7 @@
       []
     ],
     [
-      "mega:48",
+      "mega:46",
       "ok:1.l",
       "orange",
       []

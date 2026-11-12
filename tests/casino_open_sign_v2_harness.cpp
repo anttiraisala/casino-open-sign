@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
   // sticks in the order L-CAP D2, L-WING-UP D6, L-WING-DN D5, RAIL-UP-L D7, RAIL-UP-R D8, RAIL-DN-L D3, RAIL-DN-R D4,
   // R-CAP A3 (57), R-WING-UP A1 (55), R-WING-DN A2 (56) (A0 = 54 on the Mega), arrow switch D32 (D33 is free).
   CHECK(FRAME_SPEED_MS == 200 && FRAME_BAR_LEDS == 2 && STARTUP_TEST_WINDOW_LEDS == 2, "frame step 200 ms, bar of 2 pixels, LED test window of 2 pixels");
-  CHECK(PIN_FRAME == 11 && PIN_LETTERS == 12 && PIN_CLOSED_LIGHT == 54 && PIN_STATUS_LED == 13, "strip pins (D13 stays the status LED)");
+  CHECK(PIN_FRAME == 12 && PIN_LETTERS == 10 && PIN_CLOSED_LIGHT == 54 && PIN_STATUS_LED == 13, "strip pins (D13 stays the status LED)");
   for (auto *s : g_strips) CHECK(s->pin_ != 31, "pin 31 is free: nothing is on D31 any more");
   CHECK(PIN_ARROW_SWITCH == 32 && PIN_CANCEL == 49 && PIN_CASINO_CLOSED_SWITCH == 30, "input pins");
   const int wantStickPins[10] = {2, 6, 5, 7, 8, 3, 4, 57, 55, 56};
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
   Adafruit_NeoPixel *st[10] = {};          // the sticks in the order L-CAP, L-WING-UP, L-WING-DN, RAIL-UP-L, RAIL-UP-R,
                                            // RAIL-DN-L, RAIL-DN-R, R-CAP, R-WING-UP, R-WING-DN
   for (auto *s : g_strips) {
-    if (s->pin_ == 11) fr = s; else if (s->pin_ == 12) let = s; else if (s->pin_ == 54) clo = s;
+    if (s->pin_ == 12) fr = s; else if (s->pin_ == 10) let = s; else if (s->pin_ == 54) clo = s;
     for (int k = 0; k < 10; k++) if (s->pin_ == wantStickPins[k]) st[k] = s;
   }
   { bool allThere = fr && let && clo; for (int k = 0; k < 10; k++) allThere = allThere && st[k];
@@ -638,8 +638,8 @@ int main(int argc, char **argv) {
     CHECK(!Wire.oversize, "LCD: no transmission longer than the 32 byte Wire buffer");
     auto printable = [&]() { for (int r = 0; r < 2; r++) for (char c : Wire.row(r)) if ((c < 32 || c > 126) && c != 0x7E && c != 0x7F) return false; return true; };
     // Hard-coded pins of the menu controls and a model of the menu switch (starts at position 0 = all pins HIGH).
-    CHECK(PIN_MENU_SWITCH[0] == 42 && PIN_MENU_SWITCH[1] == 43 && PIN_MENU_SWITCH[2] == 44 && PIN_MENU_SWITCH[3] == 45, "menu switch pins D42-D45");
-    CHECK(PIN_OK == 48 && PIN_CANCEL == 49 && PIN_SHIFT == 50, "OK D48, CANCEL D49, SHIFT D50");
+    CHECK(PIN_MENU_SWITCH[0] == 38 && PIN_MENU_SWITCH[1] == 41 && PIN_MENU_SWITCH[2] == 42 && PIN_MENU_SWITCH[3] == 45, "menu switch pins D38, D41, D42, D45");
+    CHECK(PIN_OK == 46 && PIN_CANCEL == 49 && PIN_SHIFT == 50, "OK D46, CANCEL D49, SHIFT D50");
     static int menuPinPos = 0;
     auto setMenuPins = [&](int v) { for (int b = 0; b < 4; b++) g_pinLevel[PIN_MENU_SWITCH[b]] = ((v >> b) & 1) ? LOW : HIGH; };
     auto turn = [&](int steps) { const int d = steps < 0 ? -1 : 1; for (int k = 0; k < (steps < 0 ? -steps : steps); k++) { menuPinPos = (menuPinPos + d) & 15; setMenuPins(menuPinPos); run(25); } };

@@ -9,9 +9,9 @@ after changing a pin or the frame size:
 V2 has two 12 V WS2811 strips (Wokwi has no 12 V part: the strips are simulated as LED strips powered from the Mega
 5V pin; one Wokwi LED stands for one pixel = one chip = 3 real LEDs) and 11 Grove sticks:
 
-  * Frame (D11): 18 pixels in a ring. Pixel 1 is the lower-left corner, then counter-clockwise: bottom edge 6 pixels
+  * Frame (D12): 18 pixels in a ring. Pixel 1 is the lower-left corner, then counter-clockwise: bottom edge 6 pixels
     (left to right), right edge 3 (going up), top edge 6 (right to left), left edge 3 (going down).
-  * Letters (D12): 10 pixels, one per letter. Strip pixels 1-6 are C A S I N O, pixels 7-10 are N E P O: the OPEN
+  * Letters (D10): 10 pixels, one per letter. Strip pixels 1-6 are C A S I N O, pixels 7-10 are N E P O: the OPEN
     letters are wired in REVERSED order (O is the last pixel). The drawing shows each pixel behind its letter.
   * CLOSED light: the 11th Grove stick (shield connector A0).
   * Arrow: 10 Grove RGB LED sticks in the real arrow shape (tools/arrow_geometry.py), drawn below the frame at

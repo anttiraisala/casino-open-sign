@@ -49,7 +49,7 @@ def v2_rows():
         elif r["sku"] == "KOTEV-171":
             r["used_for"] = "encloses both power supplies and the mains wiring (check the size: two supplies)"
         elif r["sku"] == "VASTUS-2W-330R" and r["group"] == pd_.G_WIRING:
-            r["qty"], r["used_for"] = 2, "R1, R2: data lines of the frame (D11) and the letters (D12) strips; the sticks have none"
+            r["qty"], r["used_for"] = 2, "R1, R2: data lines of the frame (D12) and the letters (D10) strips; the sticks have none"
         elif r["sku"] == "KYTKENTÄLEVY" or r["sku"] == "KL-PL200":
             r["used_for"] = "resistors, capacitors, fuse holders, hex switches, connections"
         elif r["sku"] == "-" and r["part"] == "Red plexiglass letters":

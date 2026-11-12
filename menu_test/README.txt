@@ -11,9 +11,9 @@ Menu Editor); sketch.ino is generated from it (node tools/generate_menu_test.js)
 
 Controls
 --------
-  Menu hex switch      legs 1, 2, 4, 8 on D42-D45, one C leg to GND. Free-running: turning it moves the selection or
+  Menu hex switch      legs 1, 2, 4, 8 on D38, D41, D42, D45, one C leg to GND. Free-running: turning it moves the selection or
                        changes the value (direction and steps from the position change, as in hex_rotary_test).
-  OK D48, CANCEL D49, SHIFT D50   push buttons to GND. SHIFT held while turning makes the step ten times larger.
+  OK D46, CANCEL D49, SHIFT D50   push buttons to GND. SHIFT held while turning makes the step ten times larger.
   Arrow slide switch   D32 (middle contact), side contact to GND. Handle on the GND side = arrow points left.
   Casino slide switch  D30 (middle contact), side contact to GND. Handle on the GND side = casino closed.
   LCD                  I2C backpack 0x27: GND, VCC to 5V, SDA D20, SCL D21.

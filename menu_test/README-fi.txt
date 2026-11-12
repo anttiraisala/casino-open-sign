@@ -11,9 +11,9 @@ ohjelmaa (casino_open_sign_v2/): valikkoa ei ole vielä kyltissä.
 
 Ohjaimet
 --------
-  Valikkokytkin        jalat 1, 2, 4, 8 -> D42-D45, yksi C-jalka GND:hen. Vapaasti pyörivä: kääntäminen siirtää valintaa
+  Valikkokytkin        jalat 1, 2, 4, 8 -> D38, D41, D42, D45, yksi C-jalka GND:hen. Vapaasti pyörivä: kääntäminen siirtää valintaa
                        tai muuttaa arvoa (suunta ja askeleet asennon muutoksesta, kuten hex_rotary_testissä).
-  OK D48, CANCEL D49, SHIFT D50   painikkeet GND:hen. SHIFT pohjassa käännettäessä askel on kymmenkertainen.
+  OK D46, CANCEL D49, SHIFT D50   painikkeet GND:hen. SHIFT pohjassa käännettäessä askel on kymmenkertainen.
   Nuolikytkin          D32 (keskikosketin), sivukosketin GND:hen. Kahva GND-puolella = nuoli osoittaa vasemmalle.
   Casino-kytkin        D30 (keskikosketin), sivukosketin GND:hen. Kahva GND-puolella = casino kiinni (Closed).
   LCD                  I2C-moduuli 0x27: GND, VCC -> 5V, SDA D20, SCL D21.

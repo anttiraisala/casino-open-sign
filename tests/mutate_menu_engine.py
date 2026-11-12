@@ -108,12 +108,12 @@ muts = [
  ("begin to status", "  menuEepromValid = ok;\n  menuMode = MM_STATUS;\n  menuDepth = 0;", "  menuEepromValid = ok;"),
  # (no 'hex digits' mutant: no property of the current menu uses the hex flag, so that path is not exercised)
  # shell
- ("menu pins", "MENU_PINS[4] = {42, 43, 44, 45};", "MENU_PINS[4] = {43, 42, 44, 45};"),
+ ("menu pins", "MENU_PINS[4] = {38, 41, 42, 45};", "MENU_PINS[4] = {41, 38, 42, 45};"),
  ("hex polarity", "HEX_BIT_IS_LOW = true;", "HEX_BIT_IS_LOW = false;"),
  ("hex debounce", "HEX_DEBOUNCE_MS = 10;", "HEX_DEBOUNCE_MS = 0;"),
  ("menu switch direction", "MENU_SWITCH_REVERSED = false;", "MENU_SWITCH_REVERSED = true;"),
- ("button pins ok", "PIN_OK = 48;", "PIN_OK = 49;"),
- ("button pins back", "PIN_CANCEL = 49;", "PIN_CANCEL = 48;"),
+ ("button pins ok", "PIN_OK = 46;", "PIN_OK = 49;"),
+ ("button pins back", "PIN_CANCEL = 49;", "PIN_CANCEL = 46;"),
  ("shift pin", "PIN_SHIFT = 50;", "PIN_SHIFT = 51;"),
  ("arrow pin", "PIN_ARROW_SWITCH = 32;", "PIN_ARROW_SWITCH = 33;"),
  ("casino pin", "PIN_CASINO_SWITCH = 30;", "PIN_CASINO_SWITCH = 31;"),

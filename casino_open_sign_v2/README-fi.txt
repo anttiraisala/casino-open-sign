@@ -4,8 +4,8 @@ CASINO OPEN SIGN V2 - Arduino Mega 2560, kaksi 12 V WS2811 -nauhaa + 11 Grove RG
 Kyltin ohjelman versio 2. Versio 1 (ylempi kansio, sketch.ino) pysyy koskemattomana.
 V2:ssa on tasan KAKSI LED-nauhaa ja YHDESTOISTA tikkua:
 
-  Nauha 1  D11  frame     12 V WS2811, 18 pikseliä (yksi pikseli = yksi piiri = 3 LEDiä = 10 cm), 60 x 30 cm levyn reunus
-  Nauha 2  D12  letters   12 V WS2811, 10 pikseliä, yksi pikseli jokaisen kirjaimen takana
+  Nauha 1  D12  frame     12 V WS2811, 18 pikseliä (yksi pikseli = yksi piiri = 3 LEDiä = 10 cm), 60 x 30 cm levyn reunus
+  Nauha 2  D10  letters   12 V WS2811, 10 pikseliä, yksi pikseli jokaisen kirjaimen takana
   Tikut    Grove Base Shield D2-D8, A1-A3: 10 nuolitikkua (V2-johdotus, katso alla), A0: CLOSED-valotikku
   D13 on edelleen tilaledi (elonmerkki).
 
@@ -23,7 +23,7 @@ parts-list.csv/.pdf        Ostoslista (partco.fi, tilanne 2026-11-02; hintoja/sa
 README.txt / README-fi.txt Tämä tiedosto (englanti / suomi).
 Nuoli (porausmalli, tikkupiirrokset, tikkujen johdotus) on ennallaan: katso ../arrow_sticks/.
 
-Reunusnauha (D11): 18 pikseliä, edestä katsottuna
+Reunusnauha (D12): 18 pikseliä, edestä katsottuna
 --------------------------------------------------
 Pikseli 1 on ALAVASEMMASSA kulmassa; nauha kulkee vastapäivään:
     pikselit  1-6    alareuna vasemmalta oikealle (6 = oikea alakulma)
@@ -38,7 +38,7 @@ Reunuksen valo (2 pikselin palkki valaisee, 2 pimeänä, toistuu; yksi askel 200
                                               OIKEAAN ALAKULMAAN (pikseli 6).
 Molemmat reitit ovat 9 askelta pitkiä ja liikkuvat täsmälleen yhtä aikaa (ei aikaeroa); ne kohtaavat loppukulmassa.
 
-Kirjainnauha (D12): 10 pikseliä, yksi per kirjain
+Kirjainnauha (D10): 10 pikseliä, yksi per kirjain
 --------------------------------------------------
     pikselit 1-6    C A S I N O    (CASINO, vasemmalta oikealle)
     pikselit 7-10   N E P O        (OPEN on kytketty KÄÄNTEISESSÄ järjestyksessä: pikseli 7 = N ... pikseli 10 = O)
@@ -52,8 +52,8 @@ LCD (I2C, SDA D20, SCL D21), kirkkauskäyrät (LED-tyypeittäin, max 80, ekspone
 
 Johdotus (tarkasti)
 -------------------
-    Arduino D11   -> 330 ohmin vastus R1 -> reunusnauhan DIN (pikseli 1, vasemman alakulman pää)
-    Arduino D12   -> 330 ohmin vastus R2 -> kirjainnauhan DIN (pikseli 1, C:n takana)
+    Arduino D12   -> 330 ohmin vastus R1 -> reunusnauhan DIN (pikseli 1, vasemman alakulman pää)
+    Arduino D10   -> 330 ohmin vastus R2 -> kirjainnauhan DIN (pikseli 1, C:n takana)
     PSU2 12 V +   -> sulake F2 (5 A) -> KUMMANKIN nauhan +12 V (reunus syötetään alusta ja lopusta; kirjaimet alusta)
     PSU2 12 V -   -> molempien nauhojen GND JA Arduinon GND (yhteinen maa)
     Kondensaattori C2 1000 uF 25 V +12 V:n ja GND:n välille nauhoilla (plus +12 V:iin)
@@ -63,8 +63,8 @@ Johdotus (tarkasti)
                   D3 RAIL-DN-L, D4 RAIL-DN-R, A3 R-CAP, A1 R-WING-UP, A2 R-WING-DN, A0 CLOSED-valotikku (ei johtoa virtalähteestä tikkuun)
                   (vain V2: liittimet eroavat versiosta 1 ja kansiosta ../arrow_sticks/; tikkujen paikat levyllä eivät muutu)
     D32 -> liukukytkin SW1 yhteinen (kontakti 1 -> GND)    D30 -> liukukytkin SW5 yhteinen (kontakti 1 -> GND)
-    D42-D45 -> SW3 valikkokytkimen pinnit 1, 2, 4, 8 (yhteinen C -> GND)
-    D48 -> painike SW7 OK -> GND     D49 -> painike SW8 CANCEL -> GND     D50 -> painike SW9 SHIFT -> GND
+    D38, D41, D42, D45 -> SW3 valikkokytkimen pinnit 1, 2, 4, 8 (yhteinen C -> GND)
+    D46 -> painike SW7 OK -> GND     D49 -> painike SW8 CANCEL -> GND     D50 -> painike SW9 SHIFT -> GND
     (jokainen painike: kontakti 1 Arduinon pinniin, kontakti 2 GND:hen; kaikki tulot käyttävät INPUT_PULLUP:ia, ei vastuksia)
     Vanhat nopeuskytkimet SW3/SW4 (D22-D29) on poistettu: nopeudet ovat valikon ominaisuuksia. Valikon pinnit ovat samat kuin ../menu_test/-kansiossa.
     D20 SDA, D21 SCL, 5V, GND -> LCD:n I2C-taustalevy
@@ -90,7 +90,7 @@ kytke sitten virrat; Serial Monitor 115200 baud. Wokwi: uusi Arduino Mega -proje
 Jos värit ovat väärin, nauhan värijärjestys voi olla toinen: vaihda NEO_GRB + NEO_KHZ800 sketchin kahdella nauharivillä.
 Käynnistyksen LED-testi (10 s) ajaa 2 pikselin ikkunan jokaisen nauhan läpi (kierros 1 valkoinen, kierros 2 punainen-vihreä-sininen); CANCEL-painike (D49) ohittaa sen (LCD vierittää tekstiä "press CANCEL to skip" ja sanoo sitten hetken "Test skipped"; käynnistyksessä pohjassa pidetty CANCEL ei ohita testiä). D33 on vapaa.
 
-Asetusvalikko (valikkokytkin SW3 D42-D45, painikkeet OK D48, CANCEL D49, SHIFT D50)
+Asetusvalikko (valikkokytkin SW3 D38/D41/D42/D45, painikkeet OK D46, CANCEL D49, SHIFT D50)
 --------------------------------------------------------------------------------
 Tilasivu (näyttö käynnistyksen jälkeen): rivi 0 näyttää kaksi efektiä ja kasinon tilan, esim. "F12 L03 Open" (F = reunuksen efekti, L = kirjainten
 efekti, kaksi numeroa; tähti numeron edessä merkitsee satunnaista ryhmää ja numero on efekti, joka oikeasti näkyy, esim. "F*07"; "--" = ei tiedossa);

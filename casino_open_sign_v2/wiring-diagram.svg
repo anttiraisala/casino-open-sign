@@ -181,7 +181,7 @@
 <text x='682' y='903' font-size='10' text-anchor='end' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>DIN</text>
 <text x='936' y='896' font-size='10' text-anchor='end' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>+5V, GND: via the shield</text>
 <text x='936' y='913' font-size='9' text-anchor='end' fill='#666666' font-weight='normal' font-style='italic' font-family='DejaVu Sans, Arial, sans-serif'>(Grove cable)</text>
-<text x='492' y='980' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D11</text>
+<text x='492' y='980' font-size='12' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D10</text>
 <line x1='500' y1='976' x2='540' y2='976' stroke='#1565c0' stroke-width='2'/>
 <line x1='540' y1='976' x2='548' y2='976' stroke='#1565c0' stroke-width='2'/>
 <rect x='548' y='968' width='44' height='16' rx='0' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
@@ -190,13 +190,13 @@
 <line x1='600' y1='976' x2='690' y2='976' stroke='#1565c0' stroke-width='2'/>
 <circle cx='690' cy='976' r='3.5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
 <rect x='690' y='949' width='250' height='54' rx='0' fill='#fff8e1' stroke='#222222' stroke-width='2'/>
-<text x='702' y='968' font-size='13' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>frame</text>
-<text x='702' y='984' font-size='11' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>18 pixels, WS2811 12 V</text>
-<text x='702' y='998' font-size='10' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>1-6 bottom 7-9 right 10-15 top 16-18 left</text>
+<text x='702' y='968' font-size='13' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>letters</text>
+<text x='702' y='984' font-size='11' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>10 pixels, WS2811 12 V</text>
+<text x='702' y='998' font-size='10' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>1-6 C A S I N O, 7-10 N E P O (reversed)</text>
 <text x='682' y='969' font-size='10' text-anchor='end' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>DIN</text>
 <text x='936' y='962' font-size='10' text-anchor='end' fill='#c62828' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>+12V</text>
 <text x='936' y='995' font-size='10' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>GND</text>
-<text x='936' y='979' font-size='9' text-anchor='end' fill='#666666' font-weight='normal' font-style='italic' font-family='DejaVu Sans, Arial, sans-serif'>12 V: start + end</text>
+<text x='936' y='979' font-size='9' text-anchor='end' fill='#666666' font-weight='normal' font-style='italic' font-family='DejaVu Sans, Arial, sans-serif'>12 V: start</text>
 <line x1='940' y1='959' x2='995' y2='959' stroke='#c62828' stroke-width='2'/>
 <circle cx='995' cy='959' r='4' fill='#c62828'/>
 <path d='M 940 993 L 989 993 A 6 6 0 0 1 1001 993 L 1035 993' stroke='#222222' stroke-width='2' fill='none' stroke-linejoin='round'/>
@@ -210,13 +210,13 @@
 <line x1='600' y1='1042' x2='690' y2='1042' stroke='#1565c0' stroke-width='2'/>
 <circle cx='690' cy='1042' r='3.5' fill='#ffffff' stroke='#1565c0' stroke-width='2'/>
 <rect x='690' y='1015' width='250' height='54' rx='0' fill='#fff8e1' stroke='#222222' stroke-width='2'/>
-<text x='702' y='1034' font-size='13' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>letters</text>
-<text x='702' y='1050' font-size='11' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>10 pixels, WS2811 12 V</text>
-<text x='702' y='1064' font-size='10' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>1-6 C A S I N O, 7-10 N E P O (reversed)</text>
+<text x='702' y='1034' font-size='13' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>frame</text>
+<text x='702' y='1050' font-size='11' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>18 pixels, WS2811 12 V</text>
+<text x='702' y='1064' font-size='10' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>1-6 bottom 7-9 right 10-15 top 16-18 left</text>
 <text x='682' y='1035' font-size='10' text-anchor='end' fill='#1565c0' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>DIN</text>
 <text x='936' y='1028' font-size='10' text-anchor='end' fill='#c62828' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>+12V</text>
 <text x='936' y='1061' font-size='10' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>GND</text>
-<text x='936' y='1045' font-size='9' text-anchor='end' fill='#666666' font-weight='normal' font-style='italic' font-family='DejaVu Sans, Arial, sans-serif'>12 V: start</text>
+<text x='936' y='1045' font-size='9' text-anchor='end' fill='#666666' font-weight='normal' font-style='italic' font-family='DejaVu Sans, Arial, sans-serif'>12 V: start + end</text>
 <line x1='940' y1='1025' x2='995' y2='1025' stroke='#c62828' stroke-width='2'/>
 <circle cx='995' cy='1025' r='4' fill='#c62828'/>
 <path d='M 940 1059 L 989 1059 A 6 6 0 0 1 1001 1059 L 1035 1059' stroke='#222222' stroke-width='2' fill='none' stroke-linejoin='round'/>
@@ -280,15 +280,15 @@
 <text x='192' y='679' font-size='11' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>1</text>
 <circle cx='200' cy='675' r='3.5' fill='#ffffff' stroke='#ef6c00' stroke-width='2'/>
 <line x1='200' y1='675' x2='300' y2='675' stroke='#ef6c00' stroke-width='2'/>
-<text x='308' y='679' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D42</text>
+<text x='308' y='679' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D38</text>
 <text x='192' y='703' font-size='11' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>2</text>
 <circle cx='200' cy='699' r='3.5' fill='#ffffff' stroke='#ef6c00' stroke-width='2'/>
 <line x1='200' y1='699' x2='300' y2='699' stroke='#ef6c00' stroke-width='2'/>
-<text x='308' y='703' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D43</text>
+<text x='308' y='703' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D41</text>
 <text x='192' y='727' font-size='11' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>4</text>
 <circle cx='200' cy='723' r='3.5' fill='#ffffff' stroke='#ef6c00' stroke-width='2'/>
 <line x1='200' y1='723' x2='300' y2='723' stroke='#ef6c00' stroke-width='2'/>
-<text x='308' y='727' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D44</text>
+<text x='308' y='727' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D42</text>
 <text x='192' y='751' font-size='11' text-anchor='end' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>8</text>
 <circle cx='200' cy='747' r='3.5' fill='#ffffff' stroke='#ef6c00' stroke-width='2'/>
 <line x1='200' y1='747' x2='300' y2='747' stroke='#ef6c00' stroke-width='2'/>
@@ -300,7 +300,7 @@
 <line x1='141' y1='780' x2='159' y2='780' stroke='#222222' stroke-width='2'/>
 <line x1='144' y1='784' x2='156' y2='784' stroke='#222222' stroke-width='2'/>
 <line x1='147' y1='788' x2='153' y2='788' stroke='#222222' stroke-width='2'/>
-<text x='308' y='854' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D48</text>
+<text x='308' y='854' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D46</text>
 <line x1='300' y1='850' x2='222' y2='850' stroke='#ef6c00' stroke-width='2'/>
 <circle cx='222' cy='850' r='3.5' fill='#ffffff' stroke='#ef6c00' stroke-width='2'/>
 <circle cx='140' cy='850' r='3.5' fill='#ffffff' stroke='#ef6c00' stroke-width='2'/>
@@ -313,7 +313,7 @@
 <line x1='131' y1='888' x2='149' y2='888' stroke='#222222' stroke-width='2'/>
 <line x1='134' y1='892' x2='146' y2='892' stroke='#222222' stroke-width='2'/>
 <line x1='137' y1='896' x2='143' y2='896' stroke='#222222' stroke-width='2'/>
-<text x='40' y='792' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>SW7  push button OK, D48</text>
+<text x='40' y='792' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>SW7  push button OK, D46</text>
 <text x='40' y='807' font-size='10' text-anchor='start' fill='#666666' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>opens the menu, enters a submenu, starts / accepts an edit</text>
 <text x='308' y='964' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D49</text>
 <line x1='300' y1='960' x2='222' y2='960' stroke='#ef6c00' stroke-width='2'/>

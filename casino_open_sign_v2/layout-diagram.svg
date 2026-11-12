@@ -1,7 +1,7 @@
 <svg xmlns='http://www.w3.org/2000/svg' width='297mm' height='210mm' viewBox='-54.7165 -32.5773 1209.43 855.155'>
 <rect x='-54.7165' y='-32.5773' width='1209.43' height='855.155' fill='#ffffff'/>
 <text x='550' y='30' font-size='18' text-anchor='middle' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Casino Open Sign V2 - layout (front view, 60 x 30 cm plate, to scale)</text>
-<text x='550' y='50' font-size='12' text-anchor='middle' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>2 strips (12 V WS2811, 1 pixel = 1 chip = 3 LEDs = 10 cm): frame 18 pixels on D11, letters 10 pixels on D12; + 11 Grove sticks (10 arrow + CLOSED).</text>
+<text x='550' y='50' font-size='12' text-anchor='middle' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>2 strips (12 V WS2811, 1 pixel = 1 chip = 3 LEDs = 10 cm): frame 18 pixels on D12, letters 10 pixels on D10; + 11 Grove sticks (10 arrow + CLOSED).</text>
 <text x='550' y='68' font-size='12' text-anchor='middle' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Positions are indicative (letter and arrow positions are your choice); the pixel numbers and the wiring order are exact.</text>
 <rect x='70' y='118' width='960' height='480' rx='0' fill='#f6f6f6' stroke='#444444' stroke-width='2.5'/>
 <line x1='70' y1='96' x2='1030' y2='96' stroke='#222222' stroke-width='1.5'/>

@@ -11,25 +11,25 @@
 <text x='260' y='137' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>LEDs</text>
 <text x='330' y='137' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Length / contents</text>
 <rect x='30' y='144' width='700' height='40' rx='0' fill='#ffffff' stroke='#dddddd' stroke-width='1'/>
-<text x='40' y='160' font-size='12' text-anchor='start' fill='#1e88e5' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>frame</text>
-<text x='150' y='160' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D11</text>
-<text x='205' y='160' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>18</text>
-<text x='260' y='160' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>54</text>
-<text x='330' y='160' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>180 cm, one piece</text>
-<text x='330' y='176' font-size='11' text-anchor='start' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>1-6 bottom 7-9 right 10-15 top 16-18 left</text>
+<text x='40' y='160' font-size='12' text-anchor='start' fill='#e53935' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>letters</text>
+<text x='150' y='160' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D10</text>
+<text x='205' y='160' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>10</text>
+<text x='260' y='160' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>30</text>
+<text x='330' y='160' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>100 cm, one piece</text>
+<text x='330' y='176' font-size='11' text-anchor='start' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>1-6 C A S I N O, 7-10 N E P O (reversed)</text>
 <rect x='30' y='184' width='700' height='40' rx='0' fill='#fafafa' stroke='#dddddd' stroke-width='1'/>
-<text x='40' y='200' font-size='12' text-anchor='start' fill='#e53935' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>letters</text>
+<text x='40' y='200' font-size='12' text-anchor='start' fill='#1e88e5' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>frame</text>
 <text x='150' y='200' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D12</text>
-<text x='205' y='200' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>10</text>
-<text x='260' y='200' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>30</text>
-<text x='330' y='200' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>100 cm, one piece</text>
-<text x='330' y='216' font-size='11' text-anchor='start' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>1-6 C A S I N O, 7-10 N E P O (reversed)</text>
+<text x='205' y='200' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>18</text>
+<text x='260' y='200' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>54</text>
+<text x='330' y='200' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>180 cm, one piece</text>
+<text x='330' y='216' font-size='11' text-anchor='start' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>1-6 bottom 7-9 right 10-15 top 16-18 left</text>
 <rect x='30' y='224' width='700' height='24' rx='0' fill='#eeeeee' stroke='#bbbbbb' stroke-width='1'/>
 <text x='40' y='241' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Total</text>
 <text x='205' y='241' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>28</text>
 <text x='260' y='241' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>84</text>
 <text x='330' y='241' font-size='12' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>2.8 m of one 5 m reel (50 pixels): 2.2 m left over</text>
-<text x='40' y='282' font-size='15' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Frame strip (D11): pixel numbers (front view, counter-clockwise)</text>
+<text x='40' y='282' font-size='15' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Frame strip (D12): pixel numbers (front view, counter-clockwise)</text>
 <rect x='30' y='294' width='700' height='24' rx='0' fill='#eeeeee' stroke='#bbbbbb' stroke-width='1'/>
 <text x='40' y='311' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Pixels</text>
 <text x='130' y='311' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Position</text>
@@ -52,7 +52,7 @@
 <text x='360' y='399' font-size='11' text-anchor='start' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>the strip ends here (DOUT end)</text>
 <text x='40' y='426' font-size='11' text-anchor='start' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Frame light, arrow right: start pixel 15 (upper left), end pixel 6 (lower right).</text>
 <text x='40' y='442' font-size='11' text-anchor='start' fill='#777777' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>Frame light, arrow left: start pixel 10 (upper right), end pixel 1 (lower left).</text>
-<text x='40' y='470' font-size='15' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Letters strip (D12): one pixel per letter</text>
+<text x='40' y='470' font-size='15' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>Letters strip (D10): one pixel per letter</text>
 <rect x='30' y='482' width='700' height='24' rx='0' fill='#eeeeee' stroke='#bbbbbb' stroke-width='1'/>
 <rect x='30' y='506' width='700' height='24' rx='0' fill='#ffffff' stroke='#dddddd' stroke-width='1'/>
 <text x='65' y='499' font-size='11' text-anchor='middle' fill='#e53935' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>C (line 1)</text>
