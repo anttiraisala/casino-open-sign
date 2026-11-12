@@ -66,7 +66,7 @@
           "12 Edges swap",
           "13 Slot machine",
           "14 Twin comets",
-          "15 Dashes"
+          "15 Grey bands"
         ],
         "default": "1 Bar",
         "callbacks": [
@@ -92,7 +92,7 @@
           "12 Words swap",
           "13 Slot machine",
           "14 Twin chase",
-          "15 Marquee"
+          "15 Grey bands"
         ],
         "default": "1 Breathe",
         "callbacks": [
@@ -164,6 +164,10 @@
         "valueTexts": {
           "0": "random"
         }
+      },
+      "monochrome": {
+        "name": "Monochrome",
+        "type": "yesno"
       },
       "stripMin": {
         "name": "Min",
@@ -390,6 +394,9 @@
           },
           {
             "propertyRef": "randomDelay"
+          },
+          {
+            "propertyRef": "monochrome"
           }
         ]
       },

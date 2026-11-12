@@ -325,7 +325,7 @@ class Layout:
                 "Effects (menu: Effects > Frame effect, Letters effect; each 0 = random, 1-15 = a fixed effect):",
                 "1 breathe   2 wave   3 typewriter   4 ignite   5 word blink",
                 "6 alternate   7 scanner   8 sparkle   9 chase   10 pulse",
-                "11 converge   12 words swap   13 slot machine   14 twin chase   15 marquee",
+                "11 converge   12 words swap   13 slot machine   14 twin chase   15 grey bands",
                 "0 random: every group set to 0 picks a new effect after the Random delay (default 2 min).",
                 "The frame effect N and the letters effect N are separate choices; both start at 1.")):
             parts.append({"type": "wokwi-text", "id": "mode_list_%d" % (i + 1),

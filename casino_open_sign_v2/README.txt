@@ -98,7 +98,7 @@ Status page (the display after power-up): row 0 shows the two effects and the ca
 effect, two digits; a star before the number marks a random group and the number is the effect really showing, e.g. "F*07"; "--" = unknown);
 row 1 shows the arrow symbol and the customer side ("<- Customer right" = the arrow points to the customer's right) and, while the frame
 or the letters are random, alternates with "Change in M:SS" (time to the next random change). OK opens the menu; the display shows the LCD button name OK.
-Menu: Controls (arrow, casino: read-only switch positions; Arrow reverse / Casino reverse flags), Effects (Frame effect, Letters effect, Random delay), Speed (Frame speed, Letters speed,
+Menu: Controls (arrow, casino: read-only switch positions; Arrow reverse / Casino reverse flags), Effects (Frame effect, Letters effect, Random delay, Monochrome), Speed (Frame speed, Letters speed,
 Arrow speed: x0.125..x4, logarithmic, 30 steps, shown with 3 decimals, default x1), then one group per LED type: Frame (the frame LED strip),
 Letters (the letter LED strip) and Arrow (the arrow sticks), each with its speed (Frame and Letters also start with their effect: one value, two places) and the brightness Min, Max, Exponent and Mix (the curve max is the
 limit, there is no global brightness); Brightness (the same brightness values again, grouped Frame / Letters / Arrow: one property, two places),
@@ -127,16 +127,26 @@ Values are saved in EEPROM (layout tag checked at start-up; a layout that does n
 Tested on the host only (tests/casino_open_sign_v2_harness.cpp, the menu engine tests), not yet on hardware or in Wokwi.
 Known limitation: the LCD is retried after a failed transmit, but not fully re-initialised periodically as in hex_rotary_test.
 
-Effects (menu: Effects > Frame effect, Letters effect, Random delay)
+Effects (menu: Effects > Frame effect, Letters effect, Random delay, Monochrome)
 ----------------------------------------------------------------------
 The frame and the letters each have their own effect, 0..15: 0 = Random, 1..15 = a fixed effect (default 1; no wrap-around; the value row
 shows the number first, e.g. "12 Slot machine"). While you turn the value the effect is shown live; OK accepts and saves it, CANCEL restores the
 old value and the old effect.
   1 breathe  2 wave  3 typewriter  4 ignite  5 word blink  6 alternate  7 scanner  8 sparkle  9 chase  10 pulse
-  11 converge  12 words swap  13 slot machine  14 twin chase  15 marquee
+  11 converge  12 words swap  13 slot machine  14 twin chase  15 grey bands
 Random: one shared timer, its length is the Random delay (minutes; 0 = a random 1..30 minutes; default 2). When it runs out, only the groups set
 to 0 pick a new effect (each its own, never the same twice in a row); a fixed effect never changes by itself. Setting a group to 0 picks an
 effect at once and restarts the shared timer, so random groups always change at the same moment.
+Monochrome (menu: Effects > Monochrome, No/Yes, default No, saved in EEPROM): when Yes, every LED of the frame, the letters, the arrow and the CLOSED
+light shows a grey instead of its colour: the brightest of the three colour channels (R, G, B) becomes the grey level, then the normal brightness
+curves apply. It takes effect at once when you press OK. The Brightness test and the power-on LED test stay coloured. NOTE: adding this stored
+property changes the EEPROM layout tag, so on the first start after uploading this version all saved menu values go back to their defaults once
+(then everything is saved normally again).
+Effect 15 (Grey bands, frame and letters) is always grey, whatever Monochrome says, and uses only four grey levels (0, 70, 150, 255): the point is
+the movement. Frame: four phases of 36 steps (an 8-step ramp scrolls along the frame; the same ramp the other way; even and odd pixels run
+opposite ways; wide blocks of three pixels scroll). A broken pixel flickers now and then (a burst of 8 steps in every 50-step slot, one slot in
+three, one pixel). Letters: three phases of 6 s (the ramp scrolls along the letters; the two words run in opposite directions; a block of
+three grey steps bounces from the first to the last letter and back); the usual neon flicker of one letter runs on top.
 The frame patterns are white and follow the arrow's start corner in effects 1, 2, 3, 7, 9, 14 and 15. Both are first versions to be
 judged live on the sign (RDD-IDEAS.md IDEA-015, IDEA-016). Tested on the host only, not yet on hardware.
 

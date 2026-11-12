@@ -11,7 +11,7 @@
   CHECK(text(P_stripMix, 0) == "0.00" && text(P_stripMix, 25) == "0.50" && text(P_stripMix, 50) == "1.00", "mix texts");
   CHECK(text(P_arrowReverse, 0) == "No" && text(P_arrowReverse, 1) == "Yes", "bool texts");
   CHECK(text(P_arrow, 0) == "Left" && text(P_arrow, 1) == "Right" && text(P_casino, 0) == "Closed", "choice texts");
-  CHECK(text(P_lettersEffect, 0) == "Random" && text(P_lettersEffect, 13) == "13 Slot machine" && text(P_frameEffect, 15) == "15 Dashes" && text(P_frameEffect, 2) == "2 Comet", "effect texts");
+  CHECK(text(P_lettersEffect, 0) == "Random" && text(P_lettersEffect, 13) == "13 Slot machine" && text(P_frameEffect, 15) == "15 Grey bands" && text(P_frameEffect, 2) == "2 Comet", "effect texts");
   CHECK(text(P_randomDelay, 0) == "random" && text(P_randomDelay, 2) == "2 min" && text(P_randomDelay, 30) == "30 min", "value texts");
 
   // ---- start-up with an empty EEPROM ----
@@ -33,17 +33,17 @@
   menuSet(P_stripMax, 200);
   uint8_t one = P_stripMax;
   menuSave(&one, 1);
-  CHECK(EEPROM.mem[0] == 0x94 && EEPROM.mem[1] == 0x4B && EEPROM.mem[2] == 0xC9 && EEPROM.mem[3] == 0xAD, "tag, little endian");
-  CHECK(EEPROM.mem[4 + 9] == 200, "stripMax in slot 9");
-  CHECK(EEPROM.mem[4 + 2] == 0 && EEPROM.mem[4 + 4] == 18 && EEPROM.mem[4 + 7] == 2, "other slots hold defaults (arrowReverse, speedFrame, randomDelay)");
+  CHECK(EEPROM.mem[0] == 0xEF && EEPROM.mem[1] == 0x98 && EEPROM.mem[2] == 0x5C && EEPROM.mem[3] == 0x6E, "tag, little endian");
+  CHECK(EEPROM.mem[4 + 10] == 200, "stripMax in slot 10");
+  CHECK(EEPROM.mem[4 + 2] == 0 && EEPROM.mem[4 + 4] == 18 && EEPROM.mem[4 + 7] == 2 && EEPROM.mem[4 + 8] == 0, "other slots hold defaults (arrowReverse, speedFrame, randomDelay, monochrome)");
   CHECK(EEPROM.mem[4 + 0] == 1 && EEPROM.mem[4 + 1] == 1, "both effects default to 1 in slots 0 and 1");
-  CHECK(EEPROM.mem[4 + 10] == 31 && EEPROM.mem[4 + 14] == 50 && EEPROM.mem[4 + 19] == 50, "exponent and mix slots");
+  CHECK(EEPROM.mem[4 + 11] == 31 && EEPROM.mem[4 + 15] == 50 && EEPROM.mem[4 + 20] == 50, "exponent and mix slots");
   CHECK(menuEepromValid, "valid after the first save");
   CHECK(EEPROM.writes > 4, "image written");
   // later saves write only the changed slot
   long w = EEPROM.writes;
   menuSet(P_stripMax, 201); menuSave(&one, 1);
-  CHECK(EEPROM.writes == w + 1 && EEPROM.mem[4 + 9] == 201, "one changed slot");
+  CHECK(EEPROM.writes == w + 1 && EEPROM.mem[4 + 10] == 201, "one changed slot");
   w = EEPROM.writes;
   uint8_t ro = P_casino;
   menuSave(&ro, 1);
@@ -76,7 +76,7 @@
   EEPROM.mem[0] = 0;
   menuBegin();
   menuSet(P_stickMin, 7); one = P_stickMin; menuSave(&one, 1);
-  CHECK(EEPROM.mem[0] == 0x94 && EEPROM.mem[4 + 11] == 7 && EEPROM.mem[4 + 9] == 80, "rewritten after a mismatch");
+  CHECK(EEPROM.mem[0] == 0xEF && EEPROM.mem[4 + 12] == 7 && EEPROM.mem[4 + 10] == 80, "rewritten after a mismatch");
 
   // ---- status page strings ----
   menuBegin(); menuSet(P_casino, 1); menuSet(P_arrow, 0);

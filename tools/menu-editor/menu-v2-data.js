@@ -67,7 +67,7 @@ window.MENU_V2 = {
      "12 Edges swap",
      "13 Slot machine",
      "14 Twin comets",
-     "15 Dashes"
+     "15 Grey bands"
     ],
     "default": "1 Bar",
     "callbacks": [
@@ -93,7 +93,7 @@ window.MENU_V2 = {
      "12 Words swap",
      "13 Slot machine",
      "14 Twin chase",
-     "15 Marquee"
+     "15 Grey bands"
     ],
     "default": "1 Breathe",
     "callbacks": [
@@ -165,6 +165,10 @@ window.MENU_V2 = {
     "valueTexts": {
      "0": "random"
     }
+   },
+   "monochrome": {
+    "name": "Monochrome",
+    "type": "yesno"
    },
    "stripMin": {
     "name": "Min",
@@ -391,6 +395,9 @@ window.MENU_V2 = {
      },
      {
       "propertyRef": "randomDelay"
+     },
+     {
+      "propertyRef": "monochrome"
      }
     ]
    },

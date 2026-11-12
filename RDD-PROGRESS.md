@@ -24,6 +24,7 @@ Statuses: planned, in progress, done, verified, changed, dropped.
 | REQ-018 | done | 2026-11-12, host only: V2 harness turns the Frame/Letters effect while editing (effect shows at once, only that group changes), BACK restores value and effect, OK accepts and saves to EEPROM; JS core and C++ engine tests cover callbacks per turn and BACK (menu_core_test, menu_engine_checks). Not run on hardware; not verified. |
 | REQ-019 | done | 2026-11-12, host only: `tests/casino_open_sign_v2_harness.cpp` (Ramp with identity curves: exact levels 26..255 on every stick LED, the CLOSED stick, the letters in reading order and the frame two pixels per step; all ten sticks lit; All white/Red/Green/Blue/Level patterns; live turning and CANCEL restore of Pattern and Level; Max 80 on all three LED types; editing the frame Max inside the submenu changes the pattern at once; mode off in the Brightness group, ends by CANCEL out of the submenu and by the arrow switch; no timeout inside; letter clock does not jump; nothing written to EEPROM), `tests/menu_core_test.js` (menu structure, props not stored, layout tag unchanged), `tests/menu_engine_checks.inc` (generated `MENU_REF_` indexes), `tests/menu_diff_test.py` 36006 events 0 mismatches, `tests/menu_editor_ui_test.py`, `tests/mutate_v2.py` 225 mutant lines detected and none survived (26 new brightness-test mutants), `tests/mutate_menu_core.py` 151/151, `tests/mutate_menu_engine.py` 126/126. Not run on hardware or Wokwi; not verified. |
 | REQ-020 | done | 2026-11-12, host only: `tests/eeprom_clear_harness.cpp` (7 used bytes, an empty EEPROM writes nothing, a full EEPROM writes 1024, first and last byte, a stuck byte gives FAILED text + fast LED + `state=FAIL`, slow LED 500 ms, one DBG line per second with the exact text, baud 115200), `tests/mutate_eeprom_clear.py` 52 mutants, 52 detected, none survived. Not run on the real Mega or in Wokwi; not verified. |
+| REQ-021 | done | 2026-11-12, host only: `tests/casino_open_sign_v2_harness.cpp` (toGrey/shapeShow, Monochrome on/off on all LEDs, Brightness test stays coloured, frame grey bands vs `tests/frame_pattern_reference.py`, letters grey bands in three phases), `tests/menu_core_test.js`, `tests/menu_engine_checks.inc`, mutation tests (see PROGRESS.md). Not run on hardware or Wokwi; not verified. |
 
 Action points are added per requirement when the maintainer asks for them.
 
@@ -48,3 +49,7 @@ Action points are added per requirement when the maintainer asks for them.
 ## REQ-020 action points
 - [x] AP-011 (2026-11-12) Sketch `eeprom_clear/sketch.ino`, README EN+FI, wiring drawing (USB only, SVG + PDF), Wokwi `diagram.json`, host harness and mutation test.
 - [ ] AP-012 Run the tool on the real Mega and check the Serial Monitor text and the LED (owner).
+
+## REQ-021 action points
+- [x] AP-013 (2026-11-12) Menu JSON: Monochrome (yes/no, stored, last row of Effects); effect 15 renamed Grey bands; sketch `toGrey`/`shapeShow`, frame pattern 14 and letters mode 14 rewritten; tests, mutants, docs, Menu Editor republished.
+- [ ] AP-014 Judge Monochrome and the grey bands (movement, flicker) on the real sign (owner).

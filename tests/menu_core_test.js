@@ -18,8 +18,8 @@ const clone = o => JSON.parse(JSON.stringify(o));
 {
   const m = core.build(V2);
   eq(m.errors, [], 'V2 menu has no errors'); eq(m.warnings, [], 'V2 menu has no warnings');
-  eq(m.order.length, 24, 'V2 has 24 properties');
-  eq(core.persistIds(m).length, 20, 'V2 stores 20 properties (arrow and casino are not stored)');
+  eq(m.order.length, 25, 'V2 has 25 properties');
+  eq(core.persistIds(m).length, 21, 'V2 stores 21 properties (arrow and casino are not stored)');
   eq(['strip', 'letters', 'stick'].map(g => ['Min', 'Max', 'Exp', 'Mix'].map(x => m.props[g + x].name).join()).join('|'), 'Min,Max,Exponent,Mix|Min,Max,Exponent,Mix|Min,Max,Exponent,Mix', 'strip, letters and stick each have min, max, exponent and mix');
   eq(m.props.lettersMix.count, 51, 'mix 0..1 linear has 51 positions'); eq(core.valueAt(m.props.stickMix, m.props.stickMix.defaultPos), 1, 'mix default 1.0'); eq(m.props.letersMix === undefined, true, 'no typo property');
   eq(m.props.lettersExp.callbacks, ['rebuildLettersCurve'], 'letters curve callback'); eq(m.props.stripMix.scale, 'linear', 'mix is linear');
@@ -33,7 +33,7 @@ const clone = o => JSON.parse(JSON.stringify(o));
   eq(m.props.arrow.readOnly, true, 'arrow is read-only via the type template');
   eq(m.props.frameEffect.count, 16, 'frame effect has positions 0..15'); eq(m.props.lettersEffect.count, 16, 'letters effect has positions 0..15');
   eq(m.props.frameEffect.defaultPos, 1, 'frame effect default is 1'); eq(m.props.lettersEffect.defaultPos, 1, 'letters effect default is 1');
-  eq(core.valueText(m.props.lettersEffect, 0), 'Random', 'effect 0 is random'); eq(core.valueText(m.props.lettersEffect, 13), '13 Slot machine', 'letters effect 13'); eq(core.valueText(m.props.frameEffect, 15), '15 Dashes', 'frame effect 15'); eq(core.valueText(m.props.frameEffect, 2), '2 Comet', 'frame effect 2');
+  eq(core.valueText(m.props.lettersEffect, 0), 'Random', 'effect 0 is random'); eq(core.valueText(m.props.lettersEffect, 13), '13 Slot machine', 'letters effect 13'); eq(core.valueText(m.props.frameEffect, 15), '15 Grey bands', 'frame effect 15'); eq(core.valueText(m.props.frameEffect, 2), '2 Comet', 'frame effect 2');
   eq(m.props.frameEffect.callbacks, ['effectFrameChanged'], 'frame effect callback'); eq(m.props.lettersEffect.callbacks, ['effectLettersChanged'], 'letters effect callback');
   eq(m.props.arrowReverse.trueText, 'Yes', 'bool texts from the type template');
   // brightness test: Brightness > Brightness test (Pattern, Level, then the three curve groups); nothing of it is stored
@@ -41,7 +41,7 @@ const clone = o => JSON.parse(JSON.stringify(o));
   eq(m.props.testPattern.persist, false, 'the pattern is not stored'); eq(m.props.testLevel.persist, false, 'the level is not stored');
   eq([m.props.testLevel.min, m.props.testLevel.max, m.props.testLevel.default, m.props.testLevel.step], [0, 255, 128, 1], 'test level 0..255, default 128, step 1');
   eq(core.persistIds(m).indexOf('testPattern') < 0 && core.persistIds(m).indexOf('testLevel') < 0, true, 'the test properties have no EEPROM slot');
-  eq(core.layoutTag(m), 'adc94b94', 'the EEPROM layout tag is unchanged by the test mode');
+  eq(core.layoutTag(m), '6e5c98ef', 'the EEPROM layout tag is unchanged by the test mode');
   const br = m.root.items.filter(i => i.name === 'Brightness')[0];
   eq(br.items.map(i => i.name), ['Brightness test', 'Frame', 'Letters', 'Arrow'], 'Brightness: the test submenu first, then the three groups');
   eq(br.items[0].ref, 'brightnessTest', 'the test submenu is the menu brightnessTest');
@@ -282,7 +282,7 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
 // ---- EEPROM load
 {
   const e = eng(), img0 = e.eeprom();
-  eq(img0.slots.length, 20, 'image has one slot per stored property'); eq(typeof img0.tag, 'string', 'layout tag');
+  eq(img0.slots.length, 21, 'image has one slot per stored property'); eq(typeof img0.tag, 'string', 'layout tag');
   eq(img0.tag.length, 8, 'tag is 8 hex digits');
   e.set('stripMax', 100); e.set('speedArrow', 2); const img = e.eeprom();
   const f = eng(); eq(f.load(img), true, 'valid image loads'); eq(f.get('stripMax'), 100, 'value back after restart'); near(f.get('speedArrow'), 2, 1e-9, 'float value back');
@@ -394,7 +394,7 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   e.turn(2, false, 70); eq(e.rows(70)[1], '> 3 Typewriter  ', 'live value text while turning'); eq(log, ['effectLettersChanged:lettersEffect'], 'a turn calls the callback at once');
   e.key('CANCEL', 80); eq(e.text('lettersEffect'), '1 Breathe', 'CANCEL restores the value from the start of editing'); eq(log.length, 2, 'and calls the callback again, so the effect goes back too'); eq(e.batches, [], 'nothing saved after cancel');
   e.key('OK', 90); e.turn(3, false, 100); e.key('OK', 110); eq(e.text('lettersEffect'), '4 Ignite', 'OK keeps the value'); eq(e.batches.length, 1, 'and saves it once');
-  e.key('OK', 130); e.turn(-10, false, 140); eq(e.text('lettersEffect'), 'Random', 'effects stop at 0 = random (no wrap)'); e.turn(40, false, 150); eq(e.text('lettersEffect'), '15 Marquee', 'and at 15 (no wrap)'); e.key('CANCEL', 160);
+  e.key('OK', 130); e.turn(-10, false, 140); eq(e.text('lettersEffect'), 'Random', 'effects stop at 0 = random (no wrap)'); e.turn(40, false, 150); eq(e.text('lettersEffect'), '15 Grey bands', 'and at 15 (no wrap)'); e.key('CANCEL', 160);
   // the same property under the Letters menu
   e.key('CANCEL', 170); e.turn(1, false, 180); eq(e.rows(180)[1], 'Speed          >', 'back at the root'); e.turn(2, false, 190); e.key('OK', 200);
   eq(e.rows(200)[0], 'Letters         ', 'Letters menu'); eq(e.rows(200)[1], 'Letters effect: ', 'its first row is the letters effect'); e.key('OK', 210); eq(e.rows(210)[1], '> 4 Ignite      ', 'same value as under Effects');
@@ -404,6 +404,21 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   // Restore defaults sets both effects back to 1
   const f = new core.Engine(core.build(V2)); f.set('frameEffect', 9); f.set('lettersEffect', 0);
   f.key('OK', 0); f.turn(7, false, 5); f.key('OK', 10); f.key('OK', 20); eq([f.getPos('frameEffect'), f.getPos('lettersEffect')], [1, 1], 'Restore defaults puts both effects back to 1');
+}
+
+// ---- Monochrome: the fourth row of Effects, off by default, stored, restored by Restore defaults
+{
+  const e = new core.Engine(core.build(V2));
+  eq(e.getPos('monochrome'), 0, 'Monochrome is off by default');
+  e.key('OK', 0); e.turn(1, false, 10); e.key('OK', 20);                      // Controls .. Effects
+  e.turn(3, false, 30); eq(e.rows(30), ['Effects         ', 'Monochrome    No'], 'fourth row of Effects: Monochrome, No by default');
+  e.turn(1, false, 40); eq(e.rows(40)[1], 'Monochrome    No', 'Monochrome is the last row of Effects (no wrap)');
+  e.key('OK', 50); e.turn(1, false, 60); eq(e.text('monochrome'), 'Yes', 'turning changes Monochrome live');
+  e.key('CANCEL', 70); eq(e.text('monochrome'), 'No', 'CANCEL restores Monochrome'); eq(e.batches, [], 'nothing saved after cancel');
+  e.key('OK', 80); e.turn(1, false, 90); e.key('OK', 100); eq(e.text('monochrome'), 'Yes', 'OK keeps Monochrome'); eq(e.batches.length, 1, 'and saves it once');
+  const f = new core.Engine(core.build(V2)); f.set('monochrome', 1);
+  f.key('OK', 0); f.turn(8, false, 5); f.key('OK', 10); f.key('OK', 20); eq(f.getPos('monochrome'), 0, 'Restore defaults turns Monochrome off');
+  eq(core.persistIds(core.build(V2)).indexOf('monochrome') >= 0, true, 'Monochrome is a stored property');
 }
 
 if (fails) { console.log(fails + ' check(s) failed'); process.exit(1); }

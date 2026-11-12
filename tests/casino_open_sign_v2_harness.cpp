@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
     struct FrameExpect { int mode; bool right; const char *rows[24]; };
     static const int STEPS[24] = {0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 12, 13, 14, 15, 17, 20, 25, 29, 30, 33, 35, 36, 38, 39};
     static const FrameExpect EXPECT[] = {
-{0, true, {"ffff0000ffffff0000ffff0000ffffff0000", "00ffff0000ff0000ffff0000ffff00ffff00", "0000ffff000000ffff0000ffff000000ffff", "ff0000ffff00ffff0000ffff0000ff0000ff", "ffff0000ffffff0000ffff0000ffffff0000", "00ffff0000ff0000ffff0000ffff00ffff00", "0000ffff000000ffff0000ffff000000ffff", "ff0000ffff00ffff0000ffff0000ff0000ff", "00ffff0000ff0000ffff0000ffff00ffff00", "0000ffff000000ffff0000ffff000000ffff", "ffff0000ffffff0000ffff0000ffffff0000", "00ffff0000ff0000ffff0000ffff00ffff00", "0000ffff000000ffff0000ffff000000ffff", "ff0000ffff00ffff0000ffff0000ff0000ff", "00ffff0000ff0000ffff0000ffff00ffff00", "ffff0000ffffff0000ffff0000ffffff0000", "00ffff0000ff0000ffff0000ffff00ffff00", "00ffff0000ff0000ffff0000ffff00ffff00", "0000ffff000000ffff0000ffff000000ffff", "00ffff0000ff0000ffff0000ffff00ffff00", "ff0000ffff00ffff0000ffff0000ff0000ff", "ffff0000ffffff0000ffff0000ffffff0000", "0000ffff000000ffff0000ffff000000ffff", "ff0000ffff00ffff0000ffff0000ff0000ff"}},
+  {0, true, {"ffff0000ffffff0000ffff0000ffffff0000", "00ffff0000ff0000ffff0000ffff00ffff00", "0000ffff000000ffff0000ffff000000ffff", "ff0000ffff00ffff0000ffff0000ff0000ff", "ffff0000ffffff0000ffff0000ffffff0000", "00ffff0000ff0000ffff0000ffff00ffff00", "0000ffff000000ffff0000ffff000000ffff", "ff0000ffff00ffff0000ffff0000ff0000ff", "00ffff0000ff0000ffff0000ffff00ffff00", "0000ffff000000ffff0000ffff000000ffff", "ffff0000ffffff0000ffff0000ffffff0000", "00ffff0000ff0000ffff0000ffff00ffff00", "0000ffff000000ffff0000ffff000000ffff", "ff0000ffff00ffff0000ffff0000ff0000ff", "00ffff0000ff0000ffff0000ffff00ffff00", "ffff0000ffffff0000ffff0000ffffff0000", "00ffff0000ff0000ffff0000ffff00ffff00", "00ffff0000ff0000ffff0000ffff00ffff00", "0000ffff000000ffff0000ffff000000ffff", "00ffff0000ff0000ffff0000ffff00ffff00", "ff0000ffff00ffff0000ffff0000ff0000ff", "ffff0000ffffff0000ffff0000ffffff0000", "0000ffff000000ffff0000ffff000000ffff", "ff0000ffff00ffff0000ffff0000ff0000ff"}},
   {0, false, {"ffff0000ffff0000ffffff0000ffff0000ff", "ff0000ffff0000ffff00ffff0000ffff0000", "0000ffff0000ffff000000ffff0000ffff00", "00ffff0000ffff0000ff0000ffff0000ffff", "ffff0000ffff0000ffffff0000ffff0000ff", "ff0000ffff0000ffff00ffff0000ffff0000", "0000ffff0000ffff000000ffff0000ffff00", "00ffff0000ffff0000ff0000ffff0000ffff", "ff0000ffff0000ffff00ffff0000ffff0000", "0000ffff0000ffff000000ffff0000ffff00", "ffff0000ffff0000ffffff0000ffff0000ff", "ff0000ffff0000ffff00ffff0000ffff0000", "0000ffff0000ffff000000ffff0000ffff00", "00ffff0000ffff0000ff0000ffff0000ffff", "ff0000ffff0000ffff00ffff0000ffff0000", "ffff0000ffff0000ffffff0000ffff0000ff", "ff0000ffff0000ffff00ffff0000ffff0000", "ff0000ffff0000ffff00ffff0000ffff0000", "0000ffff0000ffff000000ffff0000ffff00", "ff0000ffff0000ffff00ffff0000ffff0000", "00ffff0000ffff0000ff0000ffff0000ffff", "ffff0000ffff0000ffffff0000ffff0000ff", "0000ffff0000ffff000000ffff0000ffff00", "00ffff0000ffff0000ff0000ffff0000ffff"}},
   {1, true, {"3700000000000000000000000000ffcd9b69", "00000000000000000000000000ffcd9b6937", "000000000000000000000000ffcd9b693700", "0000000000000000000000ffcd9b69370000", "00000000000000000000ffcd9b6937000000", "000000000000000000ffcd9b693700000000", "0000000000000000ffcd9b69370000000000", "00000000000000ffcd9b6937000000000000", "0000000000ffcd9b69370000000000000000", "00000000ffcd9b6937000000000000000000", "0000ffcd9b69370000000000000000000000", "00ffcd9b6937000000000000000000000000", "ffcd9b693700000000000000000000000000", "cd9b693700000000000000000000000000ff", "693700000000000000000000000000ffcd9b", "000000000000000000000000ffcd9b693700", "00000000000000ffcd9b6937000000000000", "000000ffcd9b693700000000000000000000", "0000ffcd9b69370000000000000000000000", "cd9b693700000000000000000000000000ff", "693700000000000000000000000000ffcd9b", "3700000000000000000000000000ffcd9b69", "000000000000000000000000ffcd9b693700", "0000000000000000000000ffcd9b69370000"}},
   {1, false, {"000000000037699bcdff0000000000000000", "00000000000037699bcdff00000000000000", "0000000000000037699bcdff000000000000", "000000000000000037699bcdff0000000000", "00000000000000000037699bcdff00000000", "0000000000000000000037699bcdff000000", "000000000000000000000037699bcdff0000", "00000000000000000000000037699bcdff00", "ff0000000000000000000000000037699bcd", "cdff0000000000000000000000000037699b", "699bcdff0000000000000000000000000037", "37699bcdff00000000000000000000000000", "0037699bcdff000000000000000000000000", "000037699bcdff0000000000000000000000", "0000000037699bcdff000000000000000000", "0000000000000037699bcdff000000000000", "00000000000000000000000037699bcdff00", "9bcdff000000000000000000000000003769", "699bcdff0000000000000000000000000037", "000037699bcdff0000000000000000000000", "0000000037699bcdff000000000000000000", "000000000037699bcdff0000000000000000", "0000000000000037699bcdff000000000000", "000000000000000037699bcdff0000000000"}},
@@ -169,8 +169,6 @@ int main(int argc, char **argv) {
   {11, false, {"ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "ffffffffffff000000ffffffffffff000000", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "ffffffffffff000000ffffffffffff000000", "ffffffffffff000000ffffffffffff000000", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff", "000000000000ffffff000000000000ffffff"}},
   {13, true, {"0000000000000000000000005fafffaf5f00", "00000000000000000000000000ffafff0000", "000000000000000000000000ffaf5fafff00", "0000000000000000000000ffaf5f005fafff", "ff000000000000000000ffaf5f0000005faf", "afff00000000000000ffaf5f00000000005f", "5fafff0000000000ffaf5f00000000000000", "005fafff000000ffaf5f0000000000000000", "0000005fafffaf5f00000000000000000000", "00000000ffafff0000000000000000000000", "0000ffaf5f005fafff000000000000000000", "00ffaf5f0000005fafff0000000000000000", "ffaf5f00000000005fafff00000000000000", "af5f000000000000005fafff0000000000ff", "00000000000000000000005fafff00ffaf5f", "000000000000000000000000ffaf5fafff00", "005fafff000000ffaf5f0000000000000000", "000000ffaf5fafff00000000000000000000", "0000ffaf5f005fafff000000000000000000", "af5f000000000000005fafff0000000000ff", "00000000000000000000005fafff00ffaf5f", "0000000000000000000000005fafffaf5f00", "000000000000000000000000ffaf5fafff00", "0000000000000000000000ffaf5f005fafff"}},
   {13, false, {"000000000000005fafffaf5f000000000000", "0000000000000000ffafff00000000000000", "00000000000000ffaf5fafff000000000000", "000000000000ffaf5f005fafff0000000000", "0000000000ffaf5f0000005fafff00000000", "00000000ffaf5f00000000005fafff000000", "000000ffaf5f000000000000005fafff0000", "0000ffaf5f0000000000000000005fafff00", "ffaf5f000000000000000000000000005faf", "afff000000000000000000000000000000ff", "005fafff0000000000000000000000ffaf5f", "00005fafff000000000000000000ffaf5f00", "0000005fafff00000000000000ffaf5f0000", "000000005fafff0000000000ffaf5f000000", "0000000000005fafff00ffaf5f0000000000", "00000000000000ffaf5fafff000000000000", "0000ffaf5f0000000000000000005fafff00", "5fafff00000000000000000000000000ffaf", "005fafff0000000000000000000000ffaf5f", "000000005fafff0000000000ffaf5f000000", "0000000000005fafff00ffaf5f0000000000", "000000000000005fafffaf5f000000000000", "00000000000000ffaf5fafff000000000000", "000000000000ffaf5f005fafff0000000000"}},
-  {14, true, {"ffff00ffff00ffff00ffff00ffff00ffff00", "ff00ffff00ffff00ffff00ffff00ffff00ff", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00", "ff00ffff00ffff00ffff00ffff00ffff00ff", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00", "ff00ffff00ffff00ffff00ffff00ffff00ff", "ffff00ffff00ffff00ffff00ffff00ffff00", "ff00ffff00ffff00ffff00ffff00ffff00ff", "ffff00ffff00ffff00ffff00ffff00ffff00", "ff00ffff00ffff00ffff00ffff00ffff00ff", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff", "00ffff00ffff00ffff00ffff00ffff00ffff", "ff00ffff00ffff00ffff00ffff00ffff00ff", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00"}},
-  {14, false, {"00ffff00ffff00ffff00ffff00ffff00ffff", "ff00ffff00ffff00ffff00ffff00ffff00ff", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff", "ff00ffff00ffff00ffff00ffff00ffff00ff", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff", "ff00ffff00ffff00ffff00ffff00ffff00ff", "00ffff00ffff00ffff00ffff00ffff00ffff", "ff00ffff00ffff00ffff00ffff00ffff00ff", "00ffff00ffff00ffff00ffff00ffff00ffff", "ff00ffff00ffff00ffff00ffff00ffff00ff", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00", "ffff00ffff00ffff00ffff00ffff00ffff00", "ff00ffff00ffff00ffff00ffff00ffff00ff", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff", "ffff00ffff00ffff00ffff00ffff00ffff00", "00ffff00ffff00ffff00ffff00ffff00ffff"}},
     };
     for (const FrameExpect &e : EXPECT) {
       for (int k = 0; k < NSTEPS; k++) {
@@ -179,6 +177,28 @@ int main(int argc, char **argv) {
         for (uint16_t i = 0; i < 18; i++) { snprintf(b, sizeof b, "%02x", frameLevel(i, e.right, (uint8_t)e.mode, (uint16_t)STEPS[k])); got += b; }
         if (got != e.rows[k]) { printf("FAIL: frame program %d arrow %s step %d: got %s expected %s\n", e.mode, e.right ? "right" : "left", STEPS[k], got.c_str(), e.rows[k]); fails++; }
       }
+    }
+    // frame program 14 (grey bands) has its own step list: the four phases of 36 steps, the phase edges and the broken-pixel bursts
+    {
+      static const int GSTEPS[25] = {0, 1, 2, 3, 7, 8, 17, 35, 36, 37, 40, 53, 71, 72, 73, 100, 107, 108, 109, 143, 144, 145, 2602, 2605, 2609};
+      struct GreyExpect { bool right; const char *rows[25]; };
+      static const GreyExpect GREY[] = {
+      {true, {"964600004696ffff964600004696ff96ffff", "4600004696ffff964600004696ffffff0096", "00004696ffff964600004696ffff96ff4646", "004696ffff964600004696ffff9646960000", "ff964600004696ffff9646000046964600ff", "964600004696ffff964600004696ff96ffff", "4600004696ffff964600004696ffffffff96", "004696ffff964600004696ffff9646964600", "96ffff964600004696ffff96460000000046", "4696ffff964600004696ffff964600460000", "4600004696ffff964600004696ffffffff96", "4696ffff964600004696ffff964600460000", "00004696ffff964600004696ffff96ff9646", "ffff009646469600ffff009646469600ffff", "9696ff46000046ff9696ff46000046ff9696", "ffff009646469600ffff009646469600ffff", "000046ff9696ff46000046ff9696ff460000", "969696464646ffffff000000969696000000", "969696464646ffffff000000969696000000", "ffff000000969696464646ffffff004646ff", "964600004696ffff964600004696ff96ffff", "4600004696ffff964600004696ffffffff96", "00004696ffff964600004696ffff46ff9646", "96ffff964600004696ffff964600ff000046", "4600004696ffff964600004696ffffffff96"}},
+      {false, {"964600004696ffff96ff964600004696ffff", "ff964600004696ffffffff964600004600ff", "ffff964600004696ff96ffff964600004696", "96ffff9646000046964696ffff9646000046", "4600004696ffff9646964600004696ff0096", "964600004696ffff96ff964600004696ffff", "ff964600004696ffffffff964600004696ff", "96ffff9646000046964696ffff9646000046", "004696ffff9646000000004696ffff964600", "4696ffff9646000046004696ffff96460000", "ff964600004696ffffffff964600004696ff", "4696ffff9646000046004696ffff96460000", "ffff964600004696ff96ffff964600004696", "ffff009646469600ffff009646469600ffff", "9696ff46000046ff9696ff46000046ff9696", "ffff009646469600ffff009646469600ffff", "000046ff9696ff46000046ff9696ff460000", "464646969696000000969696000000ffffff", "464646969696000000969696000000ffffff", "96000000ffffff464600ffffff4646469696", "964600004696ffff96ff964600004696ffff", "ff964600004696ffffffff964600004696ff", "ffff964600004696ff96ffff964646004696", "004696ffff9646000000004696ffff964600", "ff964600004696ffffffff964600004696ff"}},
+      };
+      for (const GreyExpect &e : GREY) for (int k = 0; k < 25; k++) {
+        std::string got; char b[4];
+        for (uint16_t i = 0; i < 18; i++) { snprintf(b, sizeof b, "%02x", frameLevel(i, e.right, 14, (uint16_t)GSTEPS[k])); got += b; }
+        if (got != e.rows[k]) { printf("FAIL: frame program 14 arrow %s step %d: got %s expected %s\n", e.right ? "right" : "left", GSTEPS[k], got.c_str(), e.rows[k]); fails++; }
+      }
+      // only the four grey levels, always
+      bool levelsOk = true;
+      for (int t = 0; t < 3600; t++) for (uint16_t i = 0; i < 18; i++) { const uint8_t v = frameLevel(i, t % 2 == 0, 14, (uint16_t)t); if (v != 0 && v != 70 && v != 150 && v != 255) levelsOk = false; }
+      CHECK(levelsOk, "frame program 14: only the grey levels 0, 70, 150, 255");
+      // outside the bursts (steps 8..35 of slot 0) phase 0 is the plain scrolling ramp
+      for (int t = 8; t < 36; t += 3) for (uint16_t i = 0; i < 18; i++) {
+        const int q = (14 + 18 - (int)i) % 18; static const int B[8] = {255, 255, 150, 70, 0, 0, 70, 150};
+        CHECK(frameLevel(i, true, 14, (uint16_t)t) == B[((t - q) % 8 + 8) % 8], "frame program 14: phase 0 is the plain scrolling ramp outside the bursts"); }
     }
     // frame program 3: steady until step 29, dark from step 30
     for (int right = 0; right < 2; right++) for (uint16_t i = 0; i < 18; i++) {
@@ -243,10 +263,26 @@ int main(int argc, char **argv) {
         const bool dim = (l == step || l == 9 - step);
         CHECK(lv(13, (unsigned long)step * 250 + 10, l) == (dim ? 30 : 230), "twin chase: the two dim letters run in opposite directions"); }
       CHECK(lv(13, 2500, 0) == 30 && lv(13, 2500, 9) == 30 && lv(13, 2500, 4) == 230, "twin chase: the cycle repeats after 10 steps"); }
-    // 14 marquee: a letter is dark (40) when (letter + step) mod 4 == 0, step = t / 250 mod 4
-    { for (int step = 0; step < 4; step++) for (int l = 0; l < 10; l++)
-        CHECK(lv(14, (unsigned long)step * 250 + 5, l) == (((l + step) % 4 == 0) ? 40 : 230), "marquee: one letter in four is dark and the dark ones move");
-      CHECK(lv(14, 1000, 0) == 40 && lv(14, 1000, 1) == 230, "marquee: repeats every 4 steps"); }
+    // 14 grey bands: only 255/150/70/0; phase 0 (0..5999 ms): ramp 255 255 150 70 0 0 70 150 scrolls one letter per 250 ms;
+    // phase 1 (6000..11999): words run opposite ways in steps of 400 ms (ramp 255 150 70 0); phase 2 (12000..17999): a block bounces (200 ms steps); repeats every 18000 ms
+    { static const int RAMP8[8] = {255, 255, 150, 70, 0, 0, 70, 150};
+      static const int RAMP4[4] = {255, 150, 70, 0};
+      bool levelsOk = true;
+      // phase 0, exact rows
+      for (int step = 0; step < 16; step++) for (int l = 0; l < 10; l++) {
+        const int want = RAMP8[((step - l) % 8 + 8) % 8];
+        CHECK(lv(14, (unsigned long)step * 250 + 7, l) == want, "grey bands phase 0: the ramp scrolls one letter per 250 ms");
+        CHECK(lv(14, 18000UL + (unsigned long)step * 250 + 7, l) == want, "grey bands: repeats every 18000 ms"); }
+      // phase 1, exact rows: first word letter l: RAMP4[(step - l) mod 4]; second word letter l (6..9): RAMP4[(step + l - 6) mod 4]
+      for (int step = 0; step < 8; step++) for (int l = 0; l < 10; l++) {
+        const int want = l < 6 ? RAMP4[((step - l) % 4 + 4) % 4] : RAMP4[(step + l - 6) % 4];
+        CHECK(lv(14, 6000UL + (unsigned long)step * 400 + 9, l) == want, "grey bands phase 1: the two words run in opposite directions"); }
+      // phase 2: head moves 0..9 then 8..1 (period 18 steps of 200 ms); 255 at the head, 150 next to it, 70 two away, else 0
+      for (int step = 0; step < 30; step++) { const int tri = step % 18, head = tri < 10 ? tri : 18 - tri;
+        for (int l = 0; l < 10; l++) { const int d = l > head ? l - head : head - l; const int want = d == 0 ? 255 : (d == 1 ? 150 : (d == 2 ? 70 : 0));
+          CHECK(lv(14, 12000UL + (unsigned long)step * 200 + 3, l) == want, "grey bands phase 2: a block bounces along the letters"); } }
+      for (unsigned long t = 0; t < 36000; t += 50) for (int l = 0; l < 10; l++) { const int v = lv(14, t, l); if (v != 0 && v != 70 && v != 150 && v != 255) levelsOk = false; }
+      CHECK(levelsOk, "grey bands: only the grey levels 0, 70, 150, 255"); }
     activeLetters = saved;
   }
 
@@ -307,11 +343,15 @@ int main(int argc, char **argv) {
       sawMirrored = sawMirrored || mir; sawNormal = sawNormal || !mir;
       } else prevPath.clear();
     }
-    // Letters: one pixel per letter, green channel follows the deep-red colour rule (green = red / 12).
-    {
+    // Letters: one pixel per letter, green channel follows the deep-red colour rule (green = red / 12); effect 15 is grey.
+    // Only checked in a step where the strip was shown (a pattern change between two shows leaves the old colours on the strip).
+    static unsigned long lastLetterShows = 0;
+    if (let->shows != lastLetterShows) {
+      lastLetterShows = let->shows;
       for (size_t p = 0; p < let->numPixels(); p++) {
         const uint32_t c = let->shown_[p];
-        CHECK(((c >> 8) & 0xFF) == ((c >> 16) & 0xFF) / 12 && (c & 0xFF) == 0, "letter pixel colour: red with a little green, no blue");
+        if (activeLetters == 14) CHECK(((c >> 8) & 0xFF) == ((c >> 16) & 0xFF) && (c & 0xFF) == ((c >> 16) & 0xFF), "letter pixel colour: effect 15 is always grey");
+        else CHECK(((c >> 8) & 0xFF) == ((c >> 16) & 0xFF) / 12 && (c & 0xFF) == 0, "letter pixel colour: red with a little green, no blue");
       }
       if (flickerLetter != NO_LETTER) sawFlicker = true;
     }
@@ -807,6 +847,7 @@ int main(int argc, char **argv) {
       key(PIN_OK); turn(1); run(150);
       CHECK(menuMode == MM_EDIT && menuPos(P_testPattern) == 1 && allEqual(0xffffff), "All white: every LED at 255 while the value is being turned");
       turn(1); run(150); CHECK(allEqual(0xff0000), "Red");
+      menuSetPos(P_monochrome, 1); run(100); CHECK(allEqual(0xff0000), "the Brightness test stays coloured with Monochrome on"); menuSetPos(P_monochrome, 0);
       turn(1); run(150); CHECK(allEqual(0x00ff00), "Green");
       turn(1); run(150); CHECK(allEqual(0x0000ff), "Blue");
       turn(1); run(150); CHECK(menuPos(P_testPattern) == 5 && allEqual(0x808080), "Level: every LED white at the Level value (default 128)");
@@ -908,6 +949,31 @@ int main(int argc, char **argv) {
     CHECK(!arrowPointsRight && casinoClosed, "the flags off: the switch positions mean what they say again");
     g_pinLevel[PIN_ARROW_SWITCH] = SW_RIGHT; g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; run(200);
     CHECK(arrowPointsRight && !casinoClosed, "switches back to right / open");
+
+    // ---- Monochrome: effects show grey (the brightest channel), the Brightness test stays coloured ----
+    {
+      for (uint8_t ty = 0; ty < LED_TYPE_COUNT; ty++) setBrightnessCurve(ty, 0, 255, 1.0f, 0.0f, true);   // identity curves: exact colours
+      CHECK(toGrey(0) == 0 && toGrey(0x102030) == 0x303030 && toGrey(0xff0000) == 0xffffff && toGrey(0x0000ff) == 0xffffff && toGrey(0x00ff00) == 0xffffff && toGrey(0x7f1000) == 0x7f7f7f, "toGrey: all three channels get the largest channel");
+      menuSetPos(P_monochrome, 0);
+      CHECK(shapeShow(LED_TYPE_LETTERS, 0x200808, false) == 0x200808 && shapeShow(LED_TYPE_STICK, 0x200808, true) == 0x202020, "shapeShow: colour stays when Monochrome is off, grey only when the effect asks for it");
+      menuSetPos(P_monochrome, 1);
+      CHECK(shapeShow(LED_TYPE_LETTERS, 0x200808, false) == 0x202020 && shapeShow(LED_TYPE_STRIP, 0x0000ff, false) == 0xffffff, "shapeShow: grey when Monochrome is on");
+      menuSetPos(P_monochrome, 0); run(400);
+      bool lettersColoured = false, sticksColoured = false;
+      for (auto c : letters.shown_) if (((c >> 16) & 0xFF) != ((c >> 8) & 0xFF)) lettersColoured = true;
+      for (uint8_t k = 0; k < STICK_COUNT; k++) for (auto c : sticks[k]->shown_) if (((c >> 16) & 0xFF) != (c & 0xFF) || ((c >> 8) & 0xFF) != (c & 0xFF)) sticksColoured = true;
+      CHECK(lettersColoured && sticksColoured, "Monochrome off: the letters are red and the arrow has colours");
+      menuSetPos(P_monochrome, 1); run(400);
+      bool allGrey = true, anyLit = false;
+      auto grey = [&](uint32_t c) { if (c != 0) anyLit = true; if (((c >> 16) & 0xFF) != ((c >> 8) & 0xFF) || ((c >> 8) & 0xFF) != (c & 0xFF)) allGrey = false; };
+      for (auto c : letters.shown_) grey(c);
+      for (auto c : frame.shown_) grey(c);
+      for (auto c : closedLight.shown_) grey(c);
+      for (uint8_t k = 0; k < STICK_COUNT; k++) for (auto c : sticks[k]->shown_) grey(c);
+      CHECK(allGrey && anyLit, "Monochrome on: every LED of every strip and stick shows a grey");
+      menuSetPos(P_monochrome, 0); run(100);
+      rebuildAllCurves();
+    }
 
     // ---- brightness curves are menu properties: each LED type has its own curve ----
     rebuildAllCurves();                                  // the older tests ran with identity curves: back to the menu values

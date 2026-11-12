@@ -96,7 +96,7 @@ Tilasivu (näyttö käynnistyksen jälkeen): rivi 0 näyttää kaksi efektiä ja
 efekti, kaksi numeroa; tähti numeron edessä merkitsee satunnaista ryhmää ja numero on efekti, joka oikeasti näkyy, esim. "F*07"; "--" = ei tiedossa);
 rivi 1 näyttää nuolisymbolin ja asiakkaan puolen ("<- Customer right" = nuoli osoittaa asiakkaan oikealle) ja vuorottelee tekstin
 "Change in M:SS" (aika seuraavaan satunnaiseen vaihtoon) kanssa, kun reunus tai kirjaimet ovat satunnaisia. OK avaa valikon; käyttöliittymässä painikkeen nimi on aina OK.
-Valikko: Controls (arrow, casino: vain luettavia kytkinasentoja; Arrow reverse / Casino reverse -liput), Effects (Frame effect, Letters effect, Random delay), Speed (Frame speed, Letters speed,
+Valikko: Controls (arrow, casino: vain luettavia kytkinasentoja; Arrow reverse / Casino reverse -liput), Effects (Frame effect, Letters effect, Random delay, Monochrome), Speed (Frame speed, Letters speed,
 Arrow speed: x0.125..x4, logaritminen, 30 askelta, kolme desimaalia, oletus x1), sitten yksi ryhmä per LED-tyyppi: Frame (reunuksen LED-nauha),
 Letters (kirjainten LED-nauha) ja Arrow (nuolen tikut), kussakin oma nopeus (Frame ja Letters alkavat lisäksi omalla efektillään: yksi arvo, kaksi paikkaa) sekä kirkkauden Min, Max, Exponent ja Mix (käyrän max on raja,
 yleistä kirkkautta ei ole); Brightness (samat kirkkausarvot uudelleen ryhmiteltynä Frame / Letters / Arrow: yksi ominaisuus, kaksi paikkaa),
@@ -125,16 +125,26 @@ Arvot tallennetaan EEPROMiin (asettelutunniste tarkistetaan käynnistyksessä; e
 Testattu vain koneella (tests/casino_open_sign_v2_harness.cpp, valikkomoottorin testit), ei vielä laitteistolla eikä Wokwissa.
 Tunnettu rajoitus: LCD yritetään uudelleen epäonnistuneen lähetyksen jälkeen, mutta sitä ei alusteta kokonaan uudelleen jaksoittain kuten hex_rotary_testissä.
 
-Efektit (valikko: Effects > Frame effect, Letters effect, Random delay)
+Efektit (valikko: Effects > Frame effect, Letters effect, Random delay, Monochrome)
 ----------------------------------------------------------------------
 Reunuksella ja kirjaimilla on kummallakin oma efekti 0..15: 0 = Random (satunnainen), 1..15 = kiinteä efekti (oletus 1; ei kierrä ympäri; arvorivi
 näyttää numeron ensin, esim. "12 Slot machine"). Arvoa käännettäessä efekti näkyy heti; OK hyväksyy ja tallentaa, CANCEL palauttaa vanhan arvon ja
 vanhan efektin.
   1 hengitys  2 aalto  3 kirjoituskone  4 syttyminen  5 sanojen vilkku  6 vuorottelu  7 skanneri  8 kipinä  9 jahti  10 pulssi
-  11 yhtyminen  12 sanojen vaihto  13 hedelmäpeli  14 kaksoisjahti  15 markiisi
+  11 yhtyminen  12 sanojen vaihto  13 hedelmäpeli  14 kaksoisjahti  15 harmaat raidat
 Satunnainen: yksi yhteinen ajastin, jonka pituus on Random delay (minuuttia; 0 = satunnaisesti 1..30 min; oletus 2). Kun ajastin päättyy, vain
 arvoon 0 asetetut ryhmät arpovat uuden efektin (kukin omansa, ei koskaan samaa kahdesti peräkkäin); kiinteä efekti ei vaihdu itsestään. Kun ryhmä
 asetetaan arvoon 0, se arpoo efektin heti ja yhteinen ajastin käynnistyy alusta, joten satunnaiset ryhmät vaihtuvat aina yhtä aikaa.
+Monochrome (valikko: Effects > Monochrome, No/Yes, oletus No, tallentuu EEPROMiin): kun arvo on Yes, reunuksen, kirjainten, nuolen ja CLOSED-valon
+jokainen LED näyttää värin sijasta harmaan: kolmesta värikanavasta (R, G, B) kirkkain on harmaan taso, ja sen jälkeen käytetään tavallisia
+kirkkauskäyriä. Asetus vaikuttaa heti, kun painat OK. Brightness test ja käynnistyksen LED-testi pysyvät värillisinä. HUOM: uusi tallennettava
+asetus muuttaa EEPROMin asetteluttunnisteen, joten tämän version ensimmäisellä käynnistyksellä kaikki tallennetut valikkoarvot palaavat kerran
+oletuksiin (sen jälkeen kaikki tallentuu taas normaalisti).
+Efekti 15 (Grey bands, reunus ja kirjaimet) on aina harmaa Monochromesta riippumatta ja käyttää vain neljää harmaan tasoa (0, 70, 150, 255):
+liike on pääasia. Reunus: neljä vaihetta, 36 askelta kukin (8 askeleen porras vierii reunuksella; sama porras toiseen suuntaan; parilliset ja
+parittomat pikselit juoksevat vastakkain; kolmen pikselin leveät lohkot vierivät). Rikkinäinen pikseli välkkyy silloin tällöin (8 askeleen purske
+jokaisessa 50 askeleen jaksossa, yksi jakso kolmesta, yksi pikseli). Kirjaimet: kolme 6 s vaihetta (porras vierii kirjainten yli; sanat juoksevat
+vastakkain; kolmen harmaan askeleen lohko pomppii ensimmäisestä viimeiseen kirjaimeen ja takaisin); tavallinen neonvälkyntä (yksi kirjain) jatkuu päällä.
 Reunuskuviot ovat valkoisia ja seuraavat nuolen aloituskulmaa efekteissä 1, 2, 3, 7, 9, 14 ja 15. Molemmat ovat ensimmäisiä versioita,
 joita arvioidaan livenä kyltissä (RDD-IDEAS.md IDEA-015, IDEA-016). Testattu vain koneella, ei vielä laitteistolla.
 
