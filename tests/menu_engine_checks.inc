@@ -35,7 +35,7 @@
   menuSave(&one, 1);
   CHECK(EEPROM.mem[0] == 0xEF && EEPROM.mem[1] == 0x98 && EEPROM.mem[2] == 0x5C && EEPROM.mem[3] == 0x6E, "tag, little endian");
   CHECK(EEPROM.mem[4 + 10] == 200, "stripMax in slot 10");
-  CHECK(EEPROM.mem[4 + 2] == 0 && EEPROM.mem[4 + 4] == 18 && EEPROM.mem[4 + 7] == 2 && EEPROM.mem[4 + 8] == 0, "other slots hold defaults (arrowReverse, speedFrame, randomDelay, monochrome)");
+  CHECK(EEPROM.mem[4 + 2] == 0 && EEPROM.mem[4 + 4] == 18 && EEPROM.mem[4 + 7] == 2 && EEPROM.mem[4 + 8] == 1, "other slots hold defaults (arrowReverse, speedFrame, randomDelay, monochrome Yes)");
   CHECK(EEPROM.mem[4 + 0] == 1 && EEPROM.mem[4 + 1] == 1, "both effects default to 1 in slots 0 and 1");
   CHECK(EEPROM.mem[4 + 11] == 31 && EEPROM.mem[4 + 15] == 50 && EEPROM.mem[4 + 20] == 50, "exponent and mix slots");
   CHECK(menuEepromValid, "valid after the first save");

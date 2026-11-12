@@ -135,7 +135,7 @@ vanhan efektin.
 Satunnainen: yksi yhteinen ajastin, jonka pituus on Random delay (minuuttia; 0 = satunnaisesti 1..30 min; oletus 2). Kun ajastin päättyy, vain
 arvoon 0 asetetut ryhmät arpovat uuden efektin (kukin omansa, ei koskaan samaa kahdesti peräkkäin); kiinteä efekti ei vaihdu itsestään. Kun ryhmä
 asetetaan arvoon 0, se arpoo efektin heti ja yhteinen ajastin käynnistyy alusta, joten satunnaiset ryhmät vaihtuvat aina yhtä aikaa.
-Monochrome (valikko: Effects > Monochrome, No/Yes, oletus No, tallentuu EEPROMiin): kun arvo on Yes, reunuksen, kirjainten, nuolen ja CLOSED-valon
+Monochrome (valikko: Effects > Monochrome, No/Yes, oletus Yes = vakiotila on harmaa, tallentuu EEPROMiin): kun arvo on Yes, reunuksen, kirjainten, nuolen ja CLOSED-valon
 jokainen LED näyttää värin sijasta harmaan: kolmesta värikanavasta (R, G, B) kirkkain on harmaan taso, ja sen jälkeen käytetään tavallisia
 kirkkauskäyriä. Asetus vaikuttaa heti, kun painat OK. Brightness test ja käynnistyksen LED-testi pysyvät värillisinä. HUOM: uusi tallennettava
 asetus muuttaa EEPROMin asetteluttunnisteen, joten tämän version ensimmäisellä käynnistyksellä kaikki tallennetut valikkoarvot palaavat kerran

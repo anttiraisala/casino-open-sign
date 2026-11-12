@@ -168,7 +168,8 @@ window.MENU_V2 = {
    },
    "monochrome": {
     "name": "Monochrome",
-    "type": "yesno"
+    "type": "yesno",
+    "default": true
    },
    "stripMin": {
     "name": "Min",

@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
     for (int k = 0; k < 300; k++) { g_millis++; loop(); }
     if (bootMode == "tag" || bootMode == "range") {
       CHECK(!menuEepromValid && Serial.captured.find("EEPROM: no saved values for this menu layout, defaults used.") != std::string::npos, "boot: a wrong layout tag / a value out of range gives the defaults and says so");
-      CHECK(menuPos(P_speedFrame) == 18 && menuPos(P_speedArrow) == 18 && menuPos(P_speedLetters) == 18 && menuPos(P_arrowReverse) == 0 && menuPos(P_randomDelay) == 2, "boot: after the rejected image all properties have their defaults (also the valid-looking ones)");
+      CHECK(menuPos(P_speedFrame) == 18 && menuPos(P_speedArrow) == 18 && menuPos(P_speedLetters) == 18 && menuPos(P_arrowReverse) == 0 && menuPos(P_randomDelay) == 2 && menuPos(P_monochrome) == 1, "boot: after the rejected image all properties have their defaults (also the valid-looking ones; Monochrome is Yes)");
       if (fails) printf("RESULT: %d failures\n", fails); else printf("RESULT: all checks passed (boot mode %s)\n", bootMode.c_str());
       return fails ? 1 : 0;
     }
@@ -286,6 +286,7 @@ int main(int argc, char **argv) {
     activeLetters = saved;
   }
 
+  menuSetPos(P_monochrome, 0);   // the timeline below checks the colours of the effects: Monochrome is Yes by default, so turn it off here
   // Timeline: program k (both effects k + 1) is active from MODE_MS*k; it is chosen in the menu properties just before.
   const unsigned long MODE_MS = 14000, END = MODE_MS * LETTER_MODE_COUNT + 2000;
   // Arrow switch: LOW (left) at 5 s, HIGH (right) at 25 s, short glitch at 45 s, bouncing change at 60 s.

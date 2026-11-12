@@ -167,7 +167,8 @@
       },
       "monochrome": {
         "name": "Monochrome",
-        "type": "yesno"
+        "type": "yesno",
+        "default": true
       },
       "stripMin": {
         "name": "Min",

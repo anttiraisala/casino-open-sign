@@ -406,18 +406,18 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   f.key('OK', 0); f.turn(7, false, 5); f.key('OK', 10); f.key('OK', 20); eq([f.getPos('frameEffect'), f.getPos('lettersEffect')], [1, 1], 'Restore defaults puts both effects back to 1');
 }
 
-// ---- Monochrome: the fourth row of Effects, off by default, stored, restored by Restore defaults
+// ---- Monochrome: the fourth row of Effects, on by default, stored, restored by Restore defaults
 {
   const e = new core.Engine(core.build(V2));
-  eq(e.getPos('monochrome'), 0, 'Monochrome is off by default');
+  eq(e.getPos('monochrome'), 1, 'Monochrome is on by default');
   e.key('OK', 0); e.turn(1, false, 10); e.key('OK', 20);                      // Controls .. Effects
-  e.turn(3, false, 30); eq(e.rows(30), ['Effects         ', 'Monochrome    No'], 'fourth row of Effects: Monochrome, No by default');
-  e.turn(1, false, 40); eq(e.rows(40)[1], 'Monochrome    No', 'Monochrome is the last row of Effects (no wrap)');
-  e.key('OK', 50); e.turn(1, false, 60); eq(e.text('monochrome'), 'Yes', 'turning changes Monochrome live');
-  e.key('CANCEL', 70); eq(e.text('monochrome'), 'No', 'CANCEL restores Monochrome'); eq(e.batches, [], 'nothing saved after cancel');
-  e.key('OK', 80); e.turn(1, false, 90); e.key('OK', 100); eq(e.text('monochrome'), 'Yes', 'OK keeps Monochrome'); eq(e.batches.length, 1, 'and saves it once');
-  const f = new core.Engine(core.build(V2)); f.set('monochrome', 1);
-  f.key('OK', 0); f.turn(8, false, 5); f.key('OK', 10); f.key('OK', 20); eq(f.getPos('monochrome'), 0, 'Restore defaults turns Monochrome off');
+  e.turn(3, false, 30); eq(e.rows(30), ['Effects         ', 'Monochrome   Yes'], 'fourth row of Effects: Monochrome, Yes by default');
+  e.turn(1, false, 40); eq(e.rows(40)[1], 'Monochrome   Yes', 'Monochrome is the last row of Effects (no wrap)');
+  e.key('OK', 50); e.turn(-1, false, 60); eq(e.text('monochrome'), 'No', 'turning changes Monochrome live');
+  e.key('CANCEL', 70); eq(e.text('monochrome'), 'Yes', 'CANCEL restores Monochrome'); eq(e.batches, [], 'nothing saved after cancel');
+  e.key('OK', 80); e.turn(-1, false, 90); e.key('OK', 100); eq(e.text('monochrome'), 'No', 'OK keeps Monochrome'); eq(e.batches.length, 1, 'and saves it once');
+  const f = new core.Engine(core.build(V2)); f.set('monochrome', 0);
+  f.key('OK', 0); f.turn(8, false, 5); f.key('OK', 10); f.key('OK', 20); eq(f.getPos('monochrome'), 1, 'Restore defaults turns Monochrome on');
   eq(core.persistIds(core.build(V2)).indexOf('monochrome') >= 0, true, 'Monochrome is a stored property');
 }
 

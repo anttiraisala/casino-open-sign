@@ -137,7 +137,7 @@ old value and the old effect.
 Random: one shared timer, its length is the Random delay (minutes; 0 = a random 1..30 minutes; default 2). When it runs out, only the groups set
 to 0 pick a new effect (each its own, never the same twice in a row); a fixed effect never changes by itself. Setting a group to 0 picks an
 effect at once and restarts the shared timer, so random groups always change at the same moment.
-Monochrome (menu: Effects > Monochrome, No/Yes, default No, saved in EEPROM): when Yes, every LED of the frame, the letters, the arrow and the CLOSED
+Monochrome (menu: Effects > Monochrome, No/Yes, default Yes = the standard look is grey, saved in EEPROM): when Yes, every LED of the frame, the letters, the arrow and the CLOSED
 light shows a grey instead of its colour: the brightest of the three colour channels (R, G, B) becomes the grey level, then the normal brightness
 curves apply. It takes effect at once when you press OK. The Brightness test and the power-on LED test stay coloured. NOTE: adding this stored
 property changes the EEPROM layout tag, so on the first start after uploading this version all saved menu values go back to their defaults once
