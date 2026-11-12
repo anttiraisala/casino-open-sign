@@ -13,7 +13,7 @@ constexpr char MENU_LEFT_ARROW = 0x7F;                    // HD44780 ROM arrows
 constexpr char MENU_RIGHT_ARROW = 0x7E;
 constexpr char MENU_LOCK_CHAR = 1;                        // custom character 1 (a padlock) drawn by the sketch; 0 is not usable in C strings
 constexpr uint8_t MENU_KEY_OK = 0;
-constexpr uint8_t MENU_KEY_BACK = 1;
+constexpr uint8_t MENU_KEY_CANCEL = 1;
 constexpr uint8_t MENU_NO_SLOT = 255;                    // property is not stored in EEPROM
 
 constexpr uint8_t MM_STATUS = 0, MM_MENU = 1, MM_EDIT = 2, MM_CONFIRM = 3, MM_VIEW = 4;   // MM_VIEW: a read-only property shown like an edit page
@@ -251,7 +251,7 @@ void menuRows(unsigned long now, char *row0, char *row1) {
       a[l + 1] = 0;
     }
     menuFit(row0, a, "", now, menuSince);
-    menuFit(row1, "OK=yes BACK=no", "", now, menuSince);
+    menuFit(row1, "OK=yes CANCEL=no", "", now, menuSince);
     return;
   }
   const uint8_t level = menuDepth - 1;
@@ -437,7 +437,7 @@ void menuKey(uint8_t key, unsigned long now) {
     return;
   }
   if (menuMode == MM_MENU) {
-    if (key == MENU_KEY_BACK) {
+    if (key == MENU_KEY_CANCEL) {
       if (menuDepth > 1) { menuDepth--; menuTouch(now, true); }
       else menuToStatus(now);
       return;

@@ -19,8 +19,8 @@ Property fields: `kind` (int, float, choice, bool), `type` (template), `name`, `
 Order of precedence: built-in default < type template (chain) < property.
 
 ## Behaviour (also in the preview)
-Status page -> OK opens the menu at the root. Hex switch moves the selection (stops at both ends); OK enters a submenu or starts editing; while editing the value changes live (callbacks run), OK saves to EEPROM, BACK restores the value;
-SHIFT multiplies the step. Presets apply all values first, then callbacks once per changed property, one EEPROM batch; a preset with `confirm` asks OK / BACK.
+Status page -> OK opens the menu at the root. Hex switch moves the selection (stops at both ends); OK enters a submenu or starts editing; while editing the value changes live (callbacks run), OK saves to EEPROM, CANCEL restores the value;
+SHIFT multiplies the step. Presets apply all values first, then callbacks once per changed property, one EEPROM batch; a preset with `confirm` asks OK / CANCEL.
 Turning the arrow or casino switch closes the menu and shows the status page. At the root level the menu closes after 60 s without input (the seconds are shown at the right edge of row 0).
 EEPROM image: one slot per stored property plus a layout tag; a different layout or invalid data means all defaults.
 

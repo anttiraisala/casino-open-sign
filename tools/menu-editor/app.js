@@ -240,7 +240,7 @@
   $('k-left').onclick = function () { if (engine) { engine.turn(-1, shiftOn, now()); render(); } };
   $('k-right').onclick = function () { if (engine) { engine.turn(1, shiftOn, now()); render(); } };
   $('k-ok').onclick = function () { if (engine) { engine.key('OK', now()); render(); } };
-  $('k-back').onclick = function () { if (engine) { engine.key('BACK', now()); render(); } };
+  $('k-cancel').onclick = function () { if (engine) { engine.key('CANCEL', now()); render(); } };
   $('k-shift').onclick = function () { shiftOn = !shiftOn; $('k-shift').className = shiftOn ? 'on' : ''; };
   $('btn-restart').onclick = function () { if (engine) { eeprom = engine.eeprom(); rebuild(true); } };
   $('btn-wipe').onclick = function () { eeprom = null; rebuild(false); };
@@ -249,7 +249,7 @@
     if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') engine.turn(-1, e.shiftKey, now());
     else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') engine.turn(1, e.shiftKey, now());
     else if (e.key === 'Enter') engine.key('OK', now());
-    else if (e.key === 'Escape' || e.key === 'Backspace') engine.key('BACK', now());
+    else if (e.key === 'Escape' || e.key === 'Backspace') engine.key('CANCEL', now());
     else return;
     e.preventDefault(); render();
   });

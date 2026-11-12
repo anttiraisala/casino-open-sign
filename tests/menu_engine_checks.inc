@@ -190,9 +190,9 @@
   menuTo(0);
   CHECK(menuPos(P_stripMax) == 71, "SHIFT on D50 makes the step ten times larger");
   g_pinLevel[50] = HIGH; settle(40); settle(40);
-  // BACK on D49 leaves an edit and restores the value
+  // CANCEL on D49 leaves an edit and restores the value
   g_pinLevel[49] = LOW; settle(40); settle(40);
-  CHECK(menuMode == MM_MENU && menuPos(P_stripMax) == menuEditStart, "BACK on D49 cancels the edit");
+  CHECK(menuMode == MM_MENU && menuPos(P_stripMax) == menuEditStart, "CANCEL on D49 cancels the edit");
   g_pinLevel[49] = HIGH; settle(40); settle(40);
 
   // reverse flags and applySwitches

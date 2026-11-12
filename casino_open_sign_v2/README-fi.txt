@@ -63,9 +63,8 @@ Johdotus (tarkasti)
                   D3 RAIL-DN-L, D4 RAIL-DN-R, A3 R-CAP, A1 R-WING-UP, A2 R-WING-DN, A0 CLOSED-valotikku (ei johtoa virtalähteestä tikkuun)
                   (vain V2: liittimet eroavat versiosta 1 ja kansiosta ../arrow_sticks/; tikkujen paikat levyllä eivät muutu)
     D32 -> liukukytkin SW1 yhteinen (kontakti 1 -> GND)    D30 -> liukukytkin SW5 yhteinen (kontakti 1 -> GND)
-    D33 -> painike SW2 -> GND (ohittaa vain käynnistyksen LED-testin)
     D42-D45 -> SW3 valikkokytkimen pinnit 1, 2, 4, 8 (yhteinen C -> GND)
-    D48 -> painike SW7 OK -> GND     D49 -> painike SW8 BACK -> GND     D50 -> painike SW9 SHIFT -> GND
+    D48 -> painike SW7 OK -> GND     D49 -> painike SW8 CANCEL -> GND     D50 -> painike SW9 SHIFT -> GND
     (jokainen painike: kontakti 1 Arduinon pinniin, kontakti 2 GND:hen; kaikki tulot käyttävät INPUT_PULLUP:ia, ei vastuksia)
     Vanhat nopeuskytkimet SW3/SW4 (D22-D29) on poistettu: nopeudet ovat valikon ominaisuuksia. Valikon pinnit ovat samat kuin ../menu_test/-kansiossa.
     D20 SDA, D21 SCL, 5V, GND -> LCD:n I2C-taustalevy
@@ -89,9 +88,9 @@ Oikea laitteisto: avaa sketch.ino Arduino IDE:ssä (kirjasto Adafruit NeoPixel),
 kytke sitten virrat; Serial Monitor 115200 baud. Wokwi: uusi Arduino Mega -projekti, liitä sketch.ino ja diagram.json, lisää kirjasto
 "Adafruit NeoPixel", paina Play (Wokwissa ei ole 12 V osaa: nauhat saavat siellä virran Megan 5 V:sta).
 Jos värit ovat väärin, nauhan värijärjestys voi olla toinen: vaihda NEO_GRB + NEO_KHZ800 sketchin kahdella nauharivillä.
-Käynnistyksen LED-testi (10 s) ajaa 2 pikselin ikkunan jokaisen nauhan läpi (kierros 1 valkoinen, kierros 2 punainen-vihreä-sininen); D33 ohittaa sen.
+Käynnistyksen LED-testi (10 s) ajaa 2 pikselin ikkunan jokaisen nauhan läpi (kierros 1 valkoinen, kierros 2 punainen-vihreä-sininen); CANCEL-painike (D49) ohittaa sen (LCD vierittää tekstiä "press CANCEL to skip" ja sanoo sitten hetken "Test skipped"; käynnistyksessä pohjassa pidetty CANCEL ei ohita testiä). D33 on vapaa.
 
-Asetusvalikko (valikkokytkin SW3 D42-D45, painikkeet OK D48, BACK D49, SHIFT D50)
+Asetusvalikko (valikkokytkin SW3 D42-D45, painikkeet OK D48, CANCEL D49, SHIFT D50)
 --------------------------------------------------------------------------------
 Tilasivu (näyttö käynnistyksen jälkeen): rivi 0 näyttää kaksi efektiä ja kasinon tilan, esim. "F12 L03 Open" (F = reunuksen efekti, L = kirjainten
 efekti, kaksi numeroa; tähti numeron edessä merkitsee satunnaista ryhmää ja numero on efekti, joka oikeasti näkyy, esim. "F*07"; "--" = ei tiedossa);
@@ -104,13 +103,13 @@ yleistä kirkkautta ei ole); Brightness (samat kirkkausarvot uudelleen ryhmitelt
 Restore defaults (kysyy vahvistuksen).
 Ominaisuusrivi näyttää "Nimi  arvo" (arvo oikeassa reunassa); jos ne eivät mahdu 16 merkkiin, rivi vierii yhtenä tekstinä "Nimi: arvo"
 (tauko alussa, yksi merkki askeleessa, tauko viimeisen merkin ollessa oikeassa reunassa). OK vain luettavan arvon kohdalla avaa saman sivun kuin
-muokkaus (nimi, sitten lukko ja arvo), mutta mitään ei voi muuttaa; BACK tai OK palaa.
+muokkaus (nimi, sitten lukko ja arvo), mutta mitään ei voi muuttaa; CANCEL tai OK palaa.
 Valikkokytkin SW3 on vapaasti pyörivä ja SUHTEELLINEN: koodin muutos on askel (1..7 eteen, 9..15 taakse, tasan 8 ohitetaan).
 Tässä sketchissä käytetty valikon määrittely on tallennettu tähän tiedostoon menu-v2.json (tarkka kopio tiedostosta tools/menu-editor/menu-v2.json;
 tools/generate_v2_menu.js kirjoittaa sen sketch.ino:n valikkolohkon kanssa; avaa se Menu Editorissa nähdäksesi tai muuttaaksesi valikkoa).
 Valikkokytkimen käännös ensimmäisellä tai viimeisellä kohdalla ei tee mitään (pitkän rivin vieritys jatkuu); käännös pois ja heti takaisin
 alle 300 ms sisällä (koskettimen pomppu) säilyttää myös sen rivin vierityksen.
-SHIFT pohjassa kierrettäessä askel on isompi. OK menee alivalikkoon / aloittaa muokkauksen / hyväksyy, BACK menee tason ylös / peruu muokkauksen.
+SHIFT pohjassa kierrettäessä askel on isompi. OK menee alivalikkoon / aloittaa muokkauksen / hyväksyy, CANCEL menee tason ylös / peruu muokkauksen.
 Pitkä rivinteksti vierii. Valikon juuressa, kun mitään ominaisuutta ei ole auki eikä muokata, 60 s ilman syötettä palauttaa näytön tilasivulle.
 Ohjelmakytkintä ei ole: efektit valitaan valikosta (Effects).
 Arvot tallennetaan EEPROMiin (asettelutunniste tarkistetaan käynnistyksessä; ei-täsmäävä asettelu antaa oletukset).
@@ -120,7 +119,7 @@ Tunnettu rajoitus: LCD yritetään uudelleen epäonnistuneen lähetyksen jälkee
 Efektit (valikko: Effects > Frame effect, Letters effect, Random delay)
 ----------------------------------------------------------------------
 Reunuksella ja kirjaimilla on kummallakin oma efekti 0..15: 0 = Random (satunnainen), 1..15 = kiinteä efekti (oletus 1; ei kierrä ympäri; arvorivi
-näyttää numeron ensin, esim. "12 Slot machine"). Arvoa käännettäessä efekti näkyy heti; OK hyväksyy ja tallentaa, BACK palauttaa vanhan arvon ja
+näyttää numeron ensin, esim. "12 Slot machine"). Arvoa käännettäessä efekti näkyy heti; OK hyväksyy ja tallentaa, CANCEL palauttaa vanhan arvon ja
 vanhan efektin.
   1 hengitys  2 aalto  3 kirjoituskone  4 syttyminen  5 sanojen vilkku  6 vuorottelu  7 skanneri  8 kipinä  9 jahti  10 pulssi
   11 yhtyminen  12 sanojen vaihto  13 hedelmäpeli  14 kaksoisjahti  15 markiisi
@@ -141,7 +140,7 @@ Pinnien tai reunuksen koon muuttamisen jälkeen generoi piirrokset ja Wokwi-tied
 Testit
 ------
 tests/casino_open_sign_v2_harness.cpp tarkistaa ohjelman tietokoneella (odotetut arvot on kirjoitettu koodiin, ei lueta sketchistä),
-tests/mutate_v2.py tarkistaa testit noin 190 sketchin mutantilla:
+tests/mutate_v2.py tarkistaa testit noin 196 sketchin mutantilla:
     g++ -std=c++17 -O1 -w -Itests -DSKETCH_PATH='"'$PWD'/casino_open_sign_v2/sketch.ino"' -o /tmp/v2 tests/casino_open_sign_v2_harness.cpp && /tmp/v2
     python3 tests/mutate_v2.py
 (Ei ajettu oikealla laitteistolla eikä Wokwissa.)

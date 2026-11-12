@@ -2,21 +2,21 @@
  * Menu test - the settings menu of Casino Open Sign V2 on its real controls and the I2C LCD (no LEDs)
  *
  * Purpose: try the planned settings menu (see ../RDD-REQUIREMENTS.md REQ-001..017) on the real hardware before it goes
- * into the sign: hex rotary switches, the OK / BACK / SHIFT buttons, the two slide switches and the LCD. The menu itself
+ * into the sign: hex rotary switches, the OK / CANCEL / SHIFT buttons, the two slide switches and the LCD. The menu itself
  * is described in ../tools/menu-editor/menu-v2.json (edit it with the Menu Editor); the tables below are generated from
  * it by tools/generate_menu_test.js, and the engine is tools/menu_engine/engine.inc. Nothing here touches LED strips or sticks.
  *
  * CONTROLS (all wired to GND, internal pull-ups):
  *   menu hex switch      legs 1,2,4,8 on D42-D45, C to GND   free-running: turning it moves the selection or changes the value
- *   OK    D48   BACK D49   SHIFT D50      push buttons to GND; SHIFT held while turning makes the step ten times larger
+ *   OK    D48   CANCEL D49   SHIFT D50      push buttons to GND; SHIFT held while turning makes the step ten times larger
  *   arrow slide switch   D32   handle on the GND side = arrow points left (the "Arrow reverse" menu property swaps it)
  *   casino slide switch  D30   handle on the GND side = casino closed (the "Casino reverse" menu property swaps it)
  *
  * WHAT YOU SEE: the status page (row 0 "F12 L03 Open|Closed" = frame and letters effect, a star before a random one,
  * e.g. "F*07"; row 1 arrow + "Customer right|left"; while an effect is random row 1 alternates with "Change in M:SS").
- * There are no LEDs here: a random effect only shows a made-up number that changes when the countdown ends. OK opens the menu, the menu switch moves, OK enters or edits, BACK goes back or
+ * There are no LEDs here: a random effect only shows a made-up number that changes when the countdown ends. OK opens the menu, the menu switch moves, OK enters or edits, CANCEL goes back or
  * cancels an edit. A value changes while you turn (the callbacks are printed on the Serial Monitor); OK also saves it to EEPROM.
- * "Restore defaults" asks OK / BACK. The menu closes after 60 s without input at the top level (the seconds are shown).
+ * "Restore defaults" asks OK / CANCEL. The menu closes after 60 s without input at the top level (the seconds are shown).
  * The arrows on row 1 are the LCD's ROM characters 0x7E / 0x7F: if your display shows other symbols, tell the AI
  * (the menu JSON then gets "arrowAscii": true).
  *
@@ -43,7 +43,7 @@ constexpr unsigned long HEX_DEBOUNCE_MS = 10;
 constexpr bool MENU_SWITCH_REVERSED = false;             // true: turning the menu switch clockwise moves the other way
 
 constexpr uint8_t PIN_OK = 48;
-constexpr uint8_t PIN_BACK = 49;
+constexpr uint8_t PIN_CANCEL = 49;
 constexpr uint8_t PIN_SHIFT = 50;
 constexpr uint8_t PIN_ARROW_SWITCH = 32;
 constexpr uint8_t PIN_CASINO_SWITCH = 30;
@@ -240,7 +240,7 @@ constexpr char MENU_LEFT_ARROW = 0x7F;                    // HD44780 ROM arrows
 constexpr char MENU_RIGHT_ARROW = 0x7E;
 constexpr char MENU_LOCK_CHAR = 1;                        // custom character 1 (a padlock) drawn by the sketch; 0 is not usable in C strings
 constexpr uint8_t MENU_KEY_OK = 0;
-constexpr uint8_t MENU_KEY_BACK = 1;
+constexpr uint8_t MENU_KEY_CANCEL = 1;
 constexpr uint8_t MENU_NO_SLOT = 255;                    // property is not stored in EEPROM
 
 constexpr uint8_t MM_STATUS = 0, MM_MENU = 1, MM_EDIT = 2, MM_CONFIRM = 3, MM_VIEW = 4;   // MM_VIEW: a read-only property shown like an edit page
@@ -478,7 +478,7 @@ void menuRows(unsigned long now, char *row0, char *row1) {
       a[l + 1] = 0;
     }
     menuFit(row0, a, "", now, menuSince);
-    menuFit(row1, "OK=yes BACK=no", "", now, menuSince);
+    menuFit(row1, "OK=yes CANCEL=no", "", now, menuSince);
     return;
   }
   const uint8_t level = menuDepth - 1;
@@ -664,7 +664,7 @@ void menuKey(uint8_t key, unsigned long now) {
     return;
   }
   if (menuMode == MM_MENU) {
-    if (key == MENU_KEY_BACK) {
+    if (key == MENU_KEY_CANCEL) {
       if (menuDepth > 1) { menuDepth--; menuTouch(now, true); }
       else menuToStatus(now);
       return;
@@ -733,7 +733,7 @@ struct Button {
   unsigned long since;
 };
 Button buttonOk = {PIN_OK, false, false, 0};
-Button buttonBack = {PIN_BACK, false, false, 0};
+Button buttonBack = {PIN_CANCEL, false, false, 0};
 Button buttonShift = {PIN_SHIFT, false, false, 0};
 Button switchArrow = {PIN_ARROW_SWITCH, false, false, 0};     // true = pin LOW
 Button switchCasino = {PIN_CASINO_SWITCH, false, false, 0};
@@ -852,7 +852,7 @@ void pollInputs(unsigned long now) {
   }
   if (pollButton(BTN_SHIFT, now)) noteEvent(now);
   if (pollButton(BTN_OK, now) && buttonOk.stable) { keyCount++; noteEvent(now); menuKey(MENU_KEY_OK, now); }
-  if (pollButton(BTN_BACK, now) && buttonBack.stable) { keyCount++; noteEvent(now); menuKey(MENU_KEY_BACK, now); }
+  if (pollButton(BTN_BACK, now) && buttonBack.stable) { keyCount++; noteEvent(now); menuKey(MENU_KEY_CANCEL, now); }
   if (pollButton(BTN_ARROW, now)) { noteEvent(now); menuPhysical(P_arrow, arrowPosition(), now); }
   if (pollButton(BTN_CASINO, now)) { noteEvent(now); menuPhysical(P_casino, casinoPosition(), now); }
 }
@@ -1079,7 +1079,7 @@ void setup() {
     pinMode(MENU_PINS[k], INPUT_PULLUP);
   }
   pinMode(PIN_OK, INPUT_PULLUP);
-  pinMode(PIN_BACK, INPUT_PULLUP);
+  pinMode(PIN_CANCEL, INPUT_PULLUP);
   pinMode(PIN_SHIFT, INPUT_PULLUP);
   pinMode(PIN_ARROW_SWITCH, INPUT_PULLUP);
   pinMode(PIN_CASINO_SWITCH, INPUT_PULLUP);

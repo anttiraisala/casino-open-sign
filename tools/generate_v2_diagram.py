@@ -57,7 +57,7 @@ def read_config(text):
     for name in ("FRAME_EDGE_LONG", "FRAME_EDGE_SHORT", "LEDS_PER_STICK", "STICK_COUNT",
                  "CLOSED_LIGHT_LEDS", "PIN_CASINO_CLOSED_SWITCH",
                  "PIN_FRAME", "PIN_LETTERS",
-                 "PIN_ARROW_SWITCH", "PIN_SKIP_BUTTON", "PIN_STATUS_LED"):
+                 "PIN_ARROW_SWITCH", "PIN_STATUS_LED"):
         match = re.search(r"constexpr\s+\w+\s+%s\s*=\s*(\d+)\s*;" % name, text)
         if not match:
             sys.exit("Could not find constant %s in sketch.ino" % name)
@@ -91,7 +91,7 @@ def read_config(text):
         config[name] = [int(v) for v in match.group(1).split(",") if v.strip()]
         if len(config[name]) != 4:
             sys.exit("%s needs exactly 4 pins" % name)
-    for name in ("PIN_OK", "PIN_BACK", "PIN_SHIFT"):
+    for name in ("PIN_OK", "PIN_CANCEL", "PIN_SHIFT"):
         match = re.search(r"constexpr\s+uint8_t\s+%s\s*=\s*(\d+)\s*;" % name, text)
         if not match:
             sys.exit("Could not find constant %s in sketch.ino" % name)
@@ -292,7 +292,7 @@ class Layout:
             "%s closedLight: 11th Grove stick, %d white LEDs behind the CLOSED hole text" % (c["PIN_CLOSED_LIGHT"], c["CLOSED_LIGHT_LEDS"]),
             "D%d: casino closed switch SW5 (handle toward GND = closed)" % c["PIN_CASINO_CLOSED_SWITCH"],
             "D%d-D%d: menu switch SW3 (free-running hex rotary, relative): selection / value" % (c["PIN_MENU_SWITCH"][0], c["PIN_MENU_SWITCH"][3]),
-            "D%d OK (opens the menu), D%d BACK, D%d SHIFT (bigger steps while held)" % (c["PIN_OK"], c["PIN_BACK"], c["PIN_SHIFT"]),
+            "D%d OK (opens the menu), D%d CANCEL, D%d SHIFT (bigger steps while held)" % (c["PIN_OK"], c["PIN_CANCEL"], c["PIN_SHIFT"]),
             "D%d (LED L on the board): sign of life; Serial Monitor 115200 baud" % c["PIN_STATUS_LED"],
             "One Wokwi LED = one real pixel (one chip = 3 LEDs, 10 cm).",
         ]
@@ -306,7 +306,7 @@ class Layout:
         # Every caption sits ABOVE its component; the DIP bank is below its caption block.
         label_top = SIGN_TOP                     # first caption line of the switches and button
         inputs_top = label_top + 56              # slide switches and push button
-        buttons_top = inputs_top + 70            # second row: menu buttons OK, BACK, SHIFT
+        buttons_top = inputs_top + 70            # second row: menu buttons OK, CANCEL, SHIFT
         dip_label_top = buttons_top + 70         # caption block of the DIP bank
         dip_top = dip_label_top + 10 * 20 + 10    # the DIP bank itself
         mega_top = dip_top + 90 + 40
@@ -347,17 +347,13 @@ class Layout:
             parts.append({"type": "wokwi-text", "id": "frame_label_%d" % (n + 1),
                           "top": round(py + 12, 1), "left": round(px - 8, 1), "attrs": {"text": str(pix)}})
 
-        # Inputs above the Arduino: slide switch (arrow direction) and push button (letter mode).
+        # Inputs above the Arduino: slide switch (arrow direction) and push buttons (below).
         # Both use the internal pull-up, so each one only needs a wire to GND.
         # Everything stays left of x = 460 so no label runs into the sign (which starts at SIGN_LEFT).
         parts.append({"type": "wokwi-text", "id": "arrow_switch_label", "top": label_top + 18,
                       "left": 20, "attrs": {"text": "D%d: arrow direction" % self.cfg["PIN_ARROW_SWITCH"]}})
         parts.append({"type": "wokwi-slide-switch", "id": "arrow_switch",
                       "top": inputs_top, "left": 40, "attrs": {}})
-        parts.append({"type": "wokwi-text", "id": "mode_button_label", "top": label_top + 18,
-                      "left": 170, "attrs": {"text": "D%d: skips LED test" % self.cfg["PIN_SKIP_BUTTON"]}})
-        parts.append({"type": "wokwi-pushbutton", "id": "mode_button",
-                      "top": inputs_top, "left": 180, "attrs": {"color": "green"}})
         parts.append({"type": "wokwi-text", "id": "casino_closed_label", "top": label_top,
                       "left": 290, "attrs": {"text": "D%d: casino closed" % self.cfg["PIN_CASINO_CLOSED_SWITCH"]}})
         parts.append({"type": "wokwi-text", "id": "casino_closed_label_2", "top": label_top + 18,
@@ -365,8 +361,8 @@ class Layout:
         parts.append({"type": "wokwi-slide-switch", "id": "casino_closed_switch",
                       "top": inputs_top, "left": 330, "attrs": {"value": "1"}})
 
-        # Menu buttons OK, BACK, SHIFT (to GND, internal pull-up).
-        for k, (key, text) in enumerate((("PIN_OK", "OK"), ("PIN_BACK", "BACK"), ("PIN_SHIFT", "SHIFT"))):
+        # Menu buttons OK, CANCEL, SHIFT (to GND, internal pull-up).
+        for k, (key, text) in enumerate((("PIN_OK", "OK"), ("PIN_CANCEL", "CANCEL"), ("PIN_SHIFT", "SHIFT"))):
             bx = 40 + k * 130
             parts.append({"type": "wokwi-text", "id": "menu_button_label_%d" % (k + 1), "top": buttons_top - 38,
                           "left": bx - 20, "attrs": {"text": "D%d: %s" % (self.cfg[key], text)}})
@@ -381,7 +377,7 @@ class Layout:
                 "Menu DIP bank (left) = menu switch SW3 (D%d-D%d):" % (self.cfg["PIN_MENU_SWITCH"][0], self.cfg["PIN_MENU_SWITCH"][3]),
                 "1-4 = bits 1,2,4,8; 5-8 unused. Free-running and RELATIVE:",
                 "a change of the code is a step (1..7 forward, 9..15 back).",
-                "Click the part, press keys 1-4. Buttons OK/BACK/SHIFT above.")):
+                "Click the part, press keys 1-4. Buttons OK/CANCEL/SHIFT above.")):
             parts.append({"type": "wokwi-text", "id": "speed_label_%d" % (i + 1),
                           "top": dip_label_top + i * 20, "left": 20, "attrs": {"text": line}})
 
@@ -403,13 +399,11 @@ class Layout:
             ["arrow_switch:1", "mega:GND.1", "black", []],
             ["mega:%d" % self.cfg["PIN_CASINO_CLOSED_SWITCH"], "casino_closed_switch:2", "orange", []],
             ["casino_closed_switch:1", "mega:GND.1", "black", []],
-            ["mega:%d" % self.cfg["PIN_SKIP_BUTTON"], "mode_button:1.r", "orange", []],
-            ["mode_button:2.r", "mega:GND.1", "black", []],
         ]
         for k, pin in enumerate(self.cfg["PIN_MENU_SWITCH"], start=1):
             connections.append(["mega:%d" % pin, "menu_switches:%da" % k, "orange", []])
             connections.append(["menu_switches:%db" % k, "mega:GND.1", "black", []])
-        for key, text in (("PIN_OK", "ok"), ("PIN_BACK", "back"), ("PIN_SHIFT", "shift")):
+        for key, text in (("PIN_OK", "ok"), ("PIN_CANCEL", "cancel"), ("PIN_SHIFT", "shift")):
             connections.append(["mega:%d" % self.cfg[key], "button_%s:1.r" % text, "orange", []])
             connections.append(["button_%s:2.r" % text, "mega:GND.1", "black", []])
         for _name, ids, pin in self.chains:   # pin: a number for the strips, "A0".. for the sticks on A0..A2

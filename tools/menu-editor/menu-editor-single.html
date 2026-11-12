@@ -62,7 +62,7 @@
     <div class="ctl">
       <span class="grp"><button id="k-left" title="menu switch one step back">&#9664; turn</button><button id="k-right" title="menu switch one step forward">turn &#9654;</button></span>
       <button id="k-shift" title="hold SHIFT while turning">SHIFT</button>
-      <button id="k-ok">OK</button><button id="k-back">BACK</button>
+      <button id="k-ok">OK</button><button id="k-cancel">CANCEL</button>
     </div>
     <div class="ctl" id="phys"></div>
     <div class="ctl"><label>Seconds to next random effect change <input id="rt" type="number" min="0" value="125" style="width:70px"></label></div>
@@ -400,7 +400,7 @@
     this.undo = null;
     if (this.mode === 'status') { if (name === 'OK') { this.mode = 'menu'; this.stack = [{ menu: this.m.root, idx: 0 }]; this._touch(now, true); } return; }
     if (this.mode === 'menu') {
-      if (name === 'BACK') { if (this.stack.length > 1) { this.stack.pop(); this._touch(now, true); } else this._toStatus(now); return; }
+      if (name === 'CANCEL') { if (this.stack.length > 1) { this.stack.pop(); this._touch(now, true); } else this._toStatus(now); return; }
       var it = this._item();
       if (it.type === 'menu') { this.stack.push({ menu: it, idx: 0 }); this._touch(now, true); }
       else if (it.type === 'prop') { var p = this.m.props[it.id]; this.mode = p.readOnly ? 'view' : 'edit'; this.edit = { id: it.id, start: this.pos[it.id] }; this._touch(now, true); }
@@ -443,7 +443,7 @@
     }
     if (this.mode === 'confirm') {
       var c = this.confirmItem;
-      return [fit(c.confirmText || (c.text || c.name) + '?', '', now, since), fit('OK=yes BACK=no', '', now, since)];
+      return [fit(c.confirmText || (c.text || c.name) + '?', '', now, since), fit('OK=yes CANCEL=no', '', now, since)];
     }
     var l = this._level(), it = l.menu.items[l.idx];
     if (this.stack.length === 1) {
@@ -1172,7 +1172,7 @@ window.MENU_V2 = {
   $('k-left').onclick = function () { if (engine) { engine.turn(-1, shiftOn, now()); render(); } };
   $('k-right').onclick = function () { if (engine) { engine.turn(1, shiftOn, now()); render(); } };
   $('k-ok').onclick = function () { if (engine) { engine.key('OK', now()); render(); } };
-  $('k-back').onclick = function () { if (engine) { engine.key('BACK', now()); render(); } };
+  $('k-cancel').onclick = function () { if (engine) { engine.key('CANCEL', now()); render(); } };
   $('k-shift').onclick = function () { shiftOn = !shiftOn; $('k-shift').className = shiftOn ? 'on' : ''; };
   $('btn-restart').onclick = function () { if (engine) { eeprom = engine.eeprom(); rebuild(true); } };
   $('btn-wipe').onclick = function () { eeprom = null; rebuild(false); };
@@ -1181,7 +1181,7 @@ window.MENU_V2 = {
     if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') engine.turn(-1, e.shiftKey, now());
     else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') engine.turn(1, e.shiftKey, now());
     else if (e.key === 'Enter') engine.key('OK', now());
-    else if (e.key === 'Escape' || e.key === 'Backspace') engine.key('BACK', now());
+    else if (e.key === 'Escape' || e.key === 'Backspace') engine.key('CANCEL', now());
     else return;
     e.preventDefault(); render();
   });

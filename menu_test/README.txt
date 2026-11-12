@@ -4,7 +4,7 @@ MENU TEST - the settings menu of Casino Open Sign V2 on its real controls and an
 Purpose
 -------
 Try the planned settings menu (see ../RDD-REQUIREMENTS.md REQ-012..017) on real hardware before it goes into the sign:
-two hex rotary switches, the OK / BACK / SHIFT buttons, two slide switches and the 2x16 LCD. No LED strips or sticks are
+two hex rotary switches, the OK / CANCEL / SHIFT buttons, two slide switches and the 2x16 LCD. No LED strips or sticks are
 connected; the Mega is powered over USB. The menu content comes from ../tools/menu-editor/menu-v2.json (edit it with the
 Menu Editor); sketch.ino is generated from it (node tools/generate_menu_test.js). This test does NOT change the sign program
 (casino_open_sign_v2/): nothing of the menu is in the sign yet.
@@ -13,7 +13,7 @@ Controls
 --------
   Menu hex switch      legs 1, 2, 4, 8 on D42-D45, one C leg to GND. Free-running: turning it moves the selection or
                        changes the value (direction and steps from the position change, as in hex_rotary_test).
-  OK D48, BACK D49, SHIFT D50   push buttons to GND. SHIFT held while turning makes the step ten times larger.
+  OK D48, CANCEL D49, SHIFT D50   push buttons to GND. SHIFT held while turning makes the step ten times larger.
   Arrow slide switch   D32 (middle contact), side contact to GND. Handle on the GND side = arrow points left.
   Casino slide switch  D30 (middle contact), side contact to GND. Handle on the GND side = casino closed.
   LCD                  I2C backpack 0x27: GND, VCC to 5V, SDA D20, SCL D21.
@@ -25,10 +25,10 @@ What you see and do
                 "Customer right|left". While an effect is random row 1 changes every 3 seconds to "Change in M:SS" (the countdown and the
                 random numbers are only simulated here, from the "Random delay" property; there are no LEDs). Effects are set in Effects.
   OK            opens the menu at the root (title "Menu" and a countdown "NNs"). In a list: OK enters a submenu or starts
-                editing a value. BACK goes up one level, or leaves the menu at the root.
+                editing a value. CANCEL goes up one level, or leaves the menu at the root.
   Menu switch   moves the selection (the list stops at both ends), or changes the value while editing (live; the Serial
-                Monitor prints a "CB ..." line for every callback). OK saves the value to EEPROM, BACK cancels (old value).
-  Restore defaults  asks "OK=yes BACK=no" (the question "Restore defaults?" is 17 characters and scrolls on the 16-character row).
+                Monitor prints a "CB ..." line for every callback). OK saves the value to EEPROM, CANCEL cancels (old value).
+  Restore defaults  asks "OK=yes CANCEL=no" (the question "Restore defaults?" is 17 characters and scrolls on the 16-character row).
   Time-out      the menu closes after 60 s without input, only at the root list (the seconds left are shown).
   Switches      changing the arrow or casino switch while the menu is open closes it / cancels an edit.
                 "Arrow reverse" and "Casino reverse" swap what the slide switches mean, at once.
@@ -47,11 +47,11 @@ What to try and write down
   1. Status page: do Casino and the arrow follow the two slide switches (and the Reverse properties)?
   2. OK opens the menu; does the menu switch move one item per click, in the right direction, and stop at the ends?
   3. Edit a value (for example Brightness > Frame > Max): does it change live, does SHIFT make steps of 10, does OK save,
-     does BACK restore? Power the Mega off and on: is the saved value still there (Serial Monitor "EEPROM: saved ...")?
-  4. Restore defaults: confirm page, OK = yes, BACK = no.
+     does CANCEL restore? Power the Mega off and on: is the saved value still there (Serial Monitor "EEPROM: saved ...")?
+  4. Restore defaults: confirm page, OK = yes, CANCEL = no.
   5. Do the arrow symbols on row 1 look like arrows? (Otherwise "arrowAscii".)
   6. Is the long text scrolling readable (for example "Restore defaults?")?
-  7. Effects > Frame effect: turn it to 0 (random): the status page shows F*.. and row 1 alternates with "Change in M:SS". BACK restores the old effect.
+  7. Effects > Frame effect: turn it to 0 (random): the status page shows F*.. and row 1 alternates with "Change in M:SS". CANCEL restores the old effect.
 
 Files
 -----
@@ -69,7 +69,7 @@ Sign of life (rule for the whole project)
     four times faster (125 ms) while many events happen.
   - Serial Monitor speed: 115200 baud (SERIAL_BAUD at the top of sketch.ino, printed at start-up). Once per second:
       DBG up=12 mode=S prog=F arrow=R casino=O menu=3 keys=5 cb=2 eeprom=saved lcd=1
-    mode S status / M menu / E edit / C confirm, prog hex, arrow L/R, casino C/O, menu = menu switch steps, keys = OK/BACK
+    mode S status / M menu / E edit / C confirm, prog hex, arrow L/R, casino C/O, menu = menu switch steps, keys = OK/CANCEL
     presses, cb = callbacks, eeprom saved or defaults, lcd = 1 while the display answers.
   - At start-up an I2C scan lists the devices and warns if nothing answers on the LCD address.
   - The display is checked all the time: retried every second when lost and fully re-initialised every 5 s (LCD_REINIT_MS).

@@ -326,7 +326,7 @@
     this.undo = null;
     if (this.mode === 'status') { if (name === 'OK') { this.mode = 'menu'; this.stack = [{ menu: this.m.root, idx: 0 }]; this._touch(now, true); } return; }
     if (this.mode === 'menu') {
-      if (name === 'BACK') { if (this.stack.length > 1) { this.stack.pop(); this._touch(now, true); } else this._toStatus(now); return; }
+      if (name === 'CANCEL') { if (this.stack.length > 1) { this.stack.pop(); this._touch(now, true); } else this._toStatus(now); return; }
       var it = this._item();
       if (it.type === 'menu') { this.stack.push({ menu: it, idx: 0 }); this._touch(now, true); }
       else if (it.type === 'prop') { var p = this.m.props[it.id]; this.mode = p.readOnly ? 'view' : 'edit'; this.edit = { id: it.id, start: this.pos[it.id] }; this._touch(now, true); }
@@ -369,7 +369,7 @@
     }
     if (this.mode === 'confirm') {
       var c = this.confirmItem;
-      return [fit(c.confirmText || (c.text || c.name) + '?', '', now, since), fit('OK=yes BACK=no', '', now, since)];
+      return [fit(c.confirmText || (c.text || c.name) + '?', '', now, since), fit('OK=yes CANCEL=no', '', now, since)];
     }
     var l = this._level(), it = l.menu.items[l.idx];
     if (this.stack.length === 1) {

@@ -552,7 +552,7 @@
       "top": 262,
       "left": 936,
       "attrs": {
-        "text": "D48 OK (opens the menu), D49 BACK, D50 SHIFT (bigger steps while held)"
+        "text": "D48 OK (opens the menu), D49 CANCEL, D50 SHIFT (bigger steps while held)"
       }
     },
     {
@@ -996,24 +996,6 @@
     },
     {
       "type": "wokwi-text",
-      "id": "mode_button_label",
-      "top": 38,
-      "left": 170,
-      "attrs": {
-        "text": "D33: skips LED test"
-      }
-    },
-    {
-      "type": "wokwi-pushbutton",
-      "id": "mode_button",
-      "top": 76,
-      "left": 180,
-      "attrs": {
-        "color": "green"
-      }
-    },
-    {
-      "type": "wokwi-text",
       "id": "casino_closed_label",
       "top": 20,
       "left": 290,
@@ -1063,12 +1045,12 @@
       "top": 108,
       "left": 150,
       "attrs": {
-        "text": "D49: BACK"
+        "text": "D49: CANCEL"
       }
     },
     {
       "type": "wokwi-pushbutton",
-      "id": "button_back",
+      "id": "button_cancel",
       "top": 126,
       "left": 170,
       "attrs": {
@@ -1133,7 +1115,7 @@
       "top": 276,
       "left": 20,
       "attrs": {
-        "text": "Click the part, press keys 1-4. Buttons OK/BACK/SHIFT above."
+        "text": "Click the part, press keys 1-4. Buttons OK/CANCEL/SHIFT above."
       }
     },
     {
@@ -1214,18 +1196,6 @@
       []
     ],
     [
-      "mega:33",
-      "mode_button:1.r",
-      "orange",
-      []
-    ],
-    [
-      "mode_button:2.r",
-      "mega:GND.1",
-      "black",
-      []
-    ],
-    [
       "mega:42",
       "menu_switches:1a",
       "orange",
@@ -1287,12 +1257,12 @@
     ],
     [
       "mega:49",
-      "button_back:1.r",
+      "button_cancel:1.r",
       "orange",
       []
     ],
     [
-      "button_back:2.r",
+      "button_cancel:2.r",
       "mega:GND.1",
       "black",
       []

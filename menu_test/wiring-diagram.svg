@@ -47,7 +47,7 @@
 <line x1='91' y1='408' x2='109' y2='408' stroke='#222222' stroke-width='2'/>
 <line x1='94' y1='412' x2='106' y2='412' stroke='#222222' stroke-width='2'/>
 <line x1='97' y1='416' x2='103' y2='416' stroke='#222222' stroke-width='2'/>
-<text x='60' y='424' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>BACK</text>
+<text x='60' y='424' font-size='12' text-anchor='start' fill='#222222' font-weight='bold' font-family='DejaVu Sans, Arial, sans-serif'>CANCEL</text>
 <circle cx='100' cy='440' r='3.5' fill='#ffffff' stroke='#ef6c00' stroke-width='2'/>
 <line x1='100' y1='440' x2='600' y2='440' stroke='#ef6c00' stroke-width='2'/>
 <text x='608' y='444' font-size='13' text-anchor='start' fill='#222222' font-weight='normal' font-family='DejaVu Sans, Arial, sans-serif'>D49</text>

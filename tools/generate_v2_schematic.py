@@ -210,8 +210,6 @@ def main():
         svg.text(40, bt_y - 58, title, size=12, weight="bold")
         svg.text(40, bt_y - 43, subtitle, size=10, color=GREY)
 
-    push_button(540, cfg["PIN_SKIP_BUTTON"], "SW2  push button (momentary), D%d" % cfg["PIN_SKIP_BUTTON"],
-                "skips the power-on LED test only")
 
     # ---- Hex rotary switches (speed) -----------------------------------------------------------
     def hex_switch(y0, title, subtitle, pins):
@@ -235,7 +233,7 @@ def main():
 
     hex_switch(650, "SW3  hex rotary switch 0-F, MENU", "free-running, relative: selection / value in the menu", cfg["PIN_MENU_SWITCH"])
     push_button(850, cfg["PIN_OK"], "SW7  push button OK, D%d" % cfg["PIN_OK"], "opens the menu, enters a submenu, starts / accepts an edit")
-    push_button(960, cfg["PIN_BACK"], "SW8  push button BACK, D%d" % cfg["PIN_BACK"], "one level up, cancels an edit")
+    push_button(960, cfg["PIN_CANCEL"], "SW8  push button CANCEL, D%d" % cfg["PIN_CANCEL"], "one level up, cancels an edit, skips the power-on LED test")
     push_button(1290, cfg["PIN_SHIFT"], "SW9  push button SHIFT, D%d" % cfg["PIN_SHIFT"], "held while turning the menu switch: bigger steps")
 
     # ---- I2C LCD (below SHIFT) ------------------------------------------------------------------
@@ -293,7 +291,7 @@ def main():
         "7. SW3 (menu, relative; the only hex switch, there is no program switch any more): pins 1, 2, 4, 8 go to D42-D45, C to GND; "
         "a change of the code is a step (1..7 forward, 9..15 back). A position counts in binary (0..F). "
         "If your switch gives the complement (15 - position), set HEX_BIT_IS_LOW to false in sketch.ino.",
-        "8. All inputs (SW1, SW2, SW3, SW5, SW7 to SW9) use the internal pull-ups (INPUT_PULLUP), so no resistors are needed for them. "
+        "8. All inputs (SW1, SW3, SW5, SW7 to SW9) use the internal pull-ups (INPUT_PULLUP), so no resistors are needed for them. "
         "Speeds and brightness curves are menu properties (saved in EEPROM); the old speed switches SW3/SW4 on D22-D29 are gone.",
         "9. CLOSED (the 11th Grove stick, 10 white LEDs, shield connector A0) sits BEHIND the plate under the CLOSED hole text and is lit only while SW5 says closed.",
         "10. LCD1 (I2C backpack) uses the Mega's I2C pins D20 (SDA) and D21 (SCL) plus the Mega 5V and GND pins (about 30 mA with the backlight).",

@@ -116,11 +116,11 @@ int main(int argc, char **argv) {
   finishStartup(g_millis, true);   // the older tests below start from the normal operation
   // Pins hard-coded here (not taken from the sketch): frame D11, letters D12, CLOSED light = 11th stick on A0 (54),
   // sticks in the order L-CAP D2, L-WING-UP D6, L-WING-DN D5, RAIL-UP-L D7, RAIL-UP-R D8, RAIL-DN-L D3, RAIL-DN-R D4,
-  // R-CAP A3 (57), R-WING-UP A1 (55), R-WING-DN A2 (56) (A0 = 54 on the Mega), arrow switch D32, mode button D33.
+  // R-CAP A3 (57), R-WING-UP A1 (55), R-WING-DN A2 (56) (A0 = 54 on the Mega), arrow switch D32 (D33 is free).
   CHECK(FRAME_SPEED_MS == 200 && FRAME_BAR_LEDS == 2 && STARTUP_TEST_WINDOW_LEDS == 2, "frame step 200 ms, bar of 2 pixels, LED test window of 2 pixels");
   CHECK(PIN_FRAME == 11 && PIN_LETTERS == 12 && PIN_CLOSED_LIGHT == 54 && PIN_STATUS_LED == 13, "strip pins (D13 stays the status LED)");
   for (auto *s : g_strips) CHECK(s->pin_ != 31, "pin 31 is free: nothing is on D31 any more");
-  CHECK(PIN_ARROW_SWITCH == 32 && PIN_SKIP_BUTTON == 33 && PIN_CASINO_CLOSED_SWITCH == 30, "input pins");
+  CHECK(PIN_ARROW_SWITCH == 32 && PIN_CANCEL == 49 && PIN_CASINO_CLOSED_SWITCH == 30, "input pins");
   const int wantStickPins[10] = {2, 6, 5, 7, 8, 3, 4, 57, 55, 56};
   Adafruit_NeoPixel *fr=nullptr,*let=nullptr,*clo=nullptr;
   Adafruit_NeoPixel *st[10] = {};          // the sticks in the order L-CAP, L-WING-UP, L-WING-DN, RAIL-UP-L, RAIL-UP-R,
@@ -639,7 +639,7 @@ int main(int argc, char **argv) {
     auto printable = [&]() { for (int r = 0; r < 2; r++) for (char c : Wire.row(r)) if ((c < 32 || c > 126) && c != 0x7E && c != 0x7F) return false; return true; };
     // Hard-coded pins of the menu controls and a model of the menu switch (starts at position 0 = all pins HIGH).
     CHECK(PIN_MENU_SWITCH[0] == 42 && PIN_MENU_SWITCH[1] == 43 && PIN_MENU_SWITCH[2] == 44 && PIN_MENU_SWITCH[3] == 45, "menu switch pins D42-D45");
-    CHECK(PIN_OK == 48 && PIN_BACK == 49 && PIN_SHIFT == 50, "OK D48, BACK D49, SHIFT D50");
+    CHECK(PIN_OK == 48 && PIN_CANCEL == 49 && PIN_SHIFT == 50, "OK D48, CANCEL D49, SHIFT D50");
     static int menuPinPos = 0;
     auto setMenuPins = [&](int v) { for (int b = 0; b < 4; b++) g_pinLevel[PIN_MENU_SWITCH[b]] = ((v >> b) & 1) ? LOW : HIGH; };
     auto turn = [&](int steps) { const int d = steps < 0 ? -1 : 1; for (int k = 0; k < (steps < 0 ? -steps : steps); k++) { menuPinPos = (menuPinPos + d) & 15; setMenuPins(menuPinPos); run(25); } };
@@ -684,8 +684,8 @@ int main(int argc, char **argv) {
       const std::string h0 = line0(), h1 = line1();
       menuPinPos = (menuPinPos + 8) & 15; setMenuPins(menuPinPos); run(300);
       CHECK(line0() == h0 && line1() == h1, "a half turn (code change of exactly 8) of the menu switch is ignored");
-      key(PIN_BACK); run(200);
-      CHECK(menuMode == MM_STATUS, "BACK from the menu root returns to the status page"); }
+      key(PIN_CANCEL); run(200);
+      CHECK(menuMode == MM_STATUS, "CANCEL from the menu root returns to the status page"); }
     // random: row 1 alternates between the arrow text and "Change in M:SS"
     { setProgram(0); run(200); bool noCountdown = true;   // other programs never show the countdown
       for (int k = 0; k < 7000; k++) { run(1); if (line1().rfind("Change in ", 0) == 0) noCountdown = false; }
@@ -727,21 +727,21 @@ int main(int argc, char **argv) {
     turn(1); settle();
     CHECK(menuPos(P_speedFrame) == 30, "SHIFT held makes the step bigger (10 steps, clamped at the top)");
     g_pinLevel[PIN_SHIFT] = HIGH; run(60);
-    key(PIN_BACK); settle();
-    CHECK(menuMode == MM_MENU && menuPos(P_speedFrame) == 18 && frameIntervalMs == 200, "BACK cancels the edit: the old speed returns");
+    key(PIN_CANCEL); settle();
+    CHECK(menuMode == MM_MENU && menuPos(P_speedFrame) == 18 && frameIntervalMs == 200, "CANCEL cancels the edit: the old speed returns");
     key(PIN_OK); turn(-4); key(PIN_OK); settle();       // edit and accept
     CHECK(menuMode == MM_MENU && menuPos(P_speedFrame) == 14, "OK accepts the edited value");
     CHECK(EEPROM.mem[0] != 0xFF && EEPROM.mem[3] != 0xFF, "the layout tag was written to EEPROM at address 0");
     { unsigned char savedSlot = EEPROM.mem[4 + menuRd8(PP_SLOT, P_speedFrame)]; CHECK(savedSlot == 14, "EEPROM holds position 14 for the frame speed"); }
-    key(PIN_BACK); key(PIN_BACK); key(PIN_BACK); settle();
-    CHECK(menuMode == MM_STATUS, "BACK from a submenu leads back to the status page");
+    key(PIN_CANCEL); key(PIN_CANCEL); key(PIN_CANCEL); settle();
+    CHECK(menuMode == MM_STATUS, "CANCEL from a submenu leads back to the status page");
     // the 60 s timer runs only at the root while browsing
     key(PIN_OK); run(59000); CHECK(menuMode == MM_MENU, "root: still open after 59 s");
     run(1500); CHECK(menuMode == MM_STATUS, "root: back to the status page after 60 s without input");
     key(PIN_OK); turn(1); key(PIN_OK); run(65000); CHECK(menuMode == MM_MENU && menuDepth == 2, "inside a submenu there is no timeout");
     key(PIN_OK); run(65000); CHECK(menuMode == MM_EDIT, "while editing there is no timeout");
-    key(PIN_BACK); key(PIN_BACK); key(PIN_BACK); settle();
-    CHECK(menuMode == MM_STATUS, "BACK at the root returns to the status page");
+    key(PIN_CANCEL); key(PIN_CANCEL); key(PIN_CANCEL); settle();
+    CHECK(menuMode == MM_STATUS, "CANCEL at the root returns to the status page");
 
     // ---- the menu structure: Frame / Letters / Arrow groups, a view page with a padlock for read-only values ----
     { static const uint8_t lock[8] = {0x0E, 0x11, 0x11, 0x1F, 0x1B, 0x1B, 0x1F, 0x00};
@@ -755,21 +755,21 @@ int main(int argc, char **argv) {
       CHECK(line0() == "Frame" && line1().rfind("Frame effect:", 0) == 0, "Frame group: first row is the Frame effect");
       turn(1); settle(); CHECK(line1().rfind("Frame speed:", 0) == 0, "Frame group: then the Frame speed");
       turn(1); settle(); CHECK(line1().rfind("Min", 0) == 0, "Frame group: then the brightness Min");
-      key(PIN_BACK); turn(1); settle(); CHECK(line1().rfind("Letters", 0) == 0, "root item 4 is the Letters group");
+      key(PIN_CANCEL); turn(1); settle(); CHECK(line1().rfind("Letters", 0) == 0, "root item 4 is the Letters group");
       key(PIN_OK); settle(); CHECK(line0() == "Letters" && line1().rfind("Letters effect:", 0) == 0, "Letters group: first row is the Letters effect");
-      key(PIN_BACK); turn(1); settle(); CHECK(line1().rfind("Arrow", 0) == 0, "root item 5 is the Arrow group");
+      key(PIN_CANCEL); turn(1); settle(); CHECK(line1().rfind("Arrow", 0) == 0, "root item 5 is the Arrow group");
       turn(1); settle(); key(PIN_OK); settle();
       CHECK(line0() == "Brightness" && line1().rfind("Frame", 0) == 0, "Brightness has Frame, Letters and Arrow groups");
       key(PIN_OK); settle(); CHECK(line0() == "Frame" && line1().rfind("Min", 0) == 0, "Brightness > Frame starts with Min");
-      key(PIN_BACK); key(PIN_BACK); key(PIN_BACK); settle();
+      key(PIN_CANCEL); key(PIN_CANCEL); key(PIN_CANCEL); settle();
       CHECK(menuMode == MM_STATUS, "back at the status page");
       key(PIN_OK); key(PIN_OK); key(PIN_OK); settle();                      // Controls > Arrow (read-only)
       CHECK(menuMode == MM_VIEW && line0() == "Arrow" && line1().size() >= 3 && line1()[0] == (char)1 && line1()[1] == ' ', "a read-only property opens the view page: name, padlock, value");
       turn(3); settle(); CHECK(menuMode == MM_VIEW, "turning does nothing on the view page");
       key(PIN_OK); settle(); CHECK(menuMode == MM_MENU, "OK leaves the view page");
-      key(PIN_OK); settle(); key(PIN_BACK); settle(); CHECK(menuMode == MM_MENU, "BACK leaves the view page");
+      key(PIN_OK); settle(); key(PIN_CANCEL); settle(); CHECK(menuMode == MM_MENU, "CANCEL leaves the view page");
       key(PIN_OK); key(PIN_OK); key(PIN_OK); run(65000); CHECK(menuMode == MM_VIEW, "no timeout on the view page");
-      key(PIN_BACK); key(PIN_BACK); key(PIN_BACK); settle(); }
+      key(PIN_CANCEL); key(PIN_CANCEL); key(PIN_CANCEL); settle(); }
 
     // a glitch of the menu switch shorter than the 10 ms debounce is not a step (contact bounce)
     { key(PIN_OK); settle(); const std::string g1 = line1(); const int p0 = menuPinPos;
@@ -777,7 +777,7 @@ int main(int argc, char **argv) {
       CHECK(line1() == g1, "a 4 ms glitch on the menu switch is ignored (debounce)");
       setMenuPins((p0 + 13) & 15); run(4); setMenuPins((p0 + 1) & 15); menuPinPos = (p0 + 1) & 15; run(100);
       CHECK(line1().rfind("Effects", 0) == 0, "a code that stays is one step: the 4 ms glitch before it did not count (debounce)");
-      key(PIN_BACK); settle(); CHECK(menuMode == MM_STATUS, "back at the status page after the debounce test"); }
+      key(PIN_CANCEL); settle(); CHECK(menuMode == MM_STATUS, "back at the status page after the debounce test"); }
     // choosing random for a group never gives the pattern that is showing now
     { bool repeat = false;
       for (int e = 1; e <= 15 && !repeat; e++) for (int k = 0; k < 20; k++) {
@@ -792,7 +792,7 @@ int main(int argc, char **argv) {
       CHECK(autoPickedAt == t0 && Serial.captured.find("Effects:", mark) == std::string::npos, "both effects fixed: the timer neither restarts nor prints");
       setProgram(0); run(100); }
 
-    // ---- Effects menu: live preview while editing (REQ-018), OK accepts, BACK restores value and effect ----
+    // ---- Effects menu: live preview while editing (REQ-018), OK accepts, CANCEL restores value and effect ----
     { setProgram(0); run(200);
       key(PIN_OK); turn(1); settle(); CHECK(line1().rfind("Effects", 0) == 0, "Effects is root item 1");
       key(PIN_OK); settle();
@@ -801,8 +801,8 @@ int main(int argc, char **argv) {
       CHECK(menuMode == MM_EDIT && menuPos(P_frameEffect) == 4 && activeFrame == 3 && activeLetters == 0, "turning the frame effect shows it at once (only the frame changes)");
       turn(-4); settle();
       CHECK(menuPos(P_frameEffect) == 0 && frameIsRandom() && activeFrame < PATTERN_MODE_COUNT, "turning to 0 makes the frame random while editing");
-      key(PIN_BACK); settle();
-      CHECK(menuMode == MM_MENU && menuPos(P_frameEffect) == 1 && activeFrame == 0 && !frameIsRandom(), "BACK restores the old value and the old effect");
+      key(PIN_CANCEL); settle();
+      CHECK(menuMode == MM_MENU && menuPos(P_frameEffect) == 1 && activeFrame == 0 && !frameIsRandom(), "CANCEL restores the old value and the old effect");
       key(PIN_OK); turn(6); key(PIN_OK); settle();
       CHECK(menuPos(P_frameEffect) == 7 && activeFrame == 6, "OK accepts the new frame effect");
       { unsigned char saved = EEPROM.mem[4 + menuRd8(PP_SLOT, P_frameEffect)]; CHECK(saved == 7, "the accepted frame effect is saved in EEPROM"); }
@@ -810,10 +810,10 @@ int main(int argc, char **argv) {
       key(PIN_OK); turn(11); settle();
       CHECK(menuPos(P_lettersEffect) == 12 && activeLetters == 11 && activeFrame == 6, "turning the letters effect shows it at once (12 Slot machine)");
       CHECK(line1().find("12") != std::string::npos, "the value row shows the number first");
-      key(PIN_BACK); settle();
-      CHECK(menuPos(P_lettersEffect) == 1 && activeLetters == 0, "BACK restores the letters effect");
+      key(PIN_CANCEL); settle();
+      CHECK(menuPos(P_lettersEffect) == 1 && activeLetters == 0, "CANCEL restores the letters effect");
       turn(1); settle(); CHECK(line1().rfind("Random delay:", 0) == 0, "Effects: third row is the Random delay");
-      key(PIN_BACK); key(PIN_BACK); settle(); CHECK(menuMode == MM_STATUS, "back at the status page");
+      key(PIN_CANCEL); key(PIN_CANCEL); settle(); CHECK(menuMode == MM_STATUS, "back at the status page");
       menuSetPos(P_frameEffect, 1); menuSave(&P_frameEffect, 1); setProgram(0); run(200); }
 
     // ---- reverse flags: the slide switches follow the flags at once ----
@@ -851,15 +851,15 @@ int main(int argc, char **argv) {
     CHECK(brightnessLut[LED_TYPE_STICK][255] == 80 && brightnessLut[LED_TYPE_STICK][1] == 10 && brightnessLut[LED_TYPE_STICK][0] == 0 && brightnessLut[LED_TYPE_STRIP][1] == 0, "Stick Min 10 lifts only the stick curve (zero stays dark)");
     menuSetPos(P_stickMin, 0); run(10);
 
-    // ---- Restore defaults through the menu: asks OK / BACK, sets every stored value to its default ----
+    // ---- Restore defaults through the menu: asks OK / CANCEL, sets every stored value to its default ----
     menuSetPos(P_speedArrow, 20); menuSetPos(P_randomDelay, 7); run(10);
     key(PIN_OK); turn(7); key(PIN_OK);                   // root item 7 = Restore defaults
     CHECK(menuMode == MM_CONFIRM, "Restore defaults asks for confirmation");
-    key(PIN_BACK); CHECK(menuMode == MM_MENU && menuPos(P_speedArrow) == 20, "BACK at the question changes nothing");
+    key(PIN_CANCEL); CHECK(menuMode == MM_MENU && menuPos(P_speedArrow) == 20, "CANCEL at the question changes nothing");
     key(PIN_OK); key(PIN_OK); settle();
     CHECK(menuPos(P_speedArrow) == 18 && menuPos(P_speedFrame) == 18 && menuPos(P_randomDelay) == 2 && frameIntervalMs == 200 && arrowIntervalMs == 35,
           "OK at the question restores every default and applies it");
-    key(PIN_BACK); key(PIN_BACK); settle();
+    key(PIN_CANCEL); key(PIN_CANCEL); settle();
 
     // ---- power cycle: the saved values come back from EEPROM ----
     menuSetPos(P_speedLetters, 20); menuSave(&P_speedLetters, 1);
@@ -929,7 +929,7 @@ int main(int argc, char **argv) {
   {
     auto rtrimS = [](std::string r) { while (!r.empty() && r.back() == ' ') r.pop_back(); return r; };
     auto line0 = [&]() { return rtrimS(Wire.row(0)); };
-    g_pinLevel[PIN_SKIP_BUTTON] = HIGH; g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH;
+    g_pinLevel[PIN_CANCEL] = HIGH; g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH;
     while (letterMode != MODE_BREATHE) pressMode();
     run(300);
     const unsigned long t0 = g_millis;
@@ -942,7 +942,7 @@ int main(int argc, char **argv) {
     int maxLit = 0; bool wrongColour = false, onlyTestPattern = true;
     bool charsRow[2][256] = {};
     bool lcdExact = true; int lcdSamples = 0; std::string firstBad;
-    const std::string marquee = "press D33 to skip   ";
+    const std::string marquee = "press CANCEL to skip   ";
     unsigned long endedAt = 0;
     for (unsigned long k = 0; k < STARTUP_TEST_MS + 200 && startupTestActive; k++) {
       if (k == 2000) g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = LOW;      // changed during the test: takes effect afterwards
@@ -995,23 +995,36 @@ int main(int argc, char **argv) {
     g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = HIGH; run(100);
     CHECK(!casinoClosed, "casino open again");
 
-    // D33 skips the test and the same press does not change the mode
+    // CANCEL skips the test, the same press does nothing else, and nothing else skips it
     run(300); beginStartupTest(g_millis); run(500);
     CHECK(startupTestActive, "LED test: still running after 0.5 s");
-    g_pinLevel[PIN_SKIP_BUTTON] = LOW; run(100); g_pinLevel[PIN_SKIP_BUTTON] = HIGH; run(100);
-    CHECK(!startupTestActive, "LED test: D33 skips the test");
-    CHECK(letterMode == MODE_BREATHE, "LED test: the skipping press does not change the letter mode");
-    run(400); CHECK(line0() == "F01 L01 Open", "LED test: after a skip the LCD shows the status page");
+    CHECK(Serial.captured.find("press CANCEL to skip") != std::string::npos, "LED test: the serial line says press CANCEL to skip");
+    g_pinLevel[PIN_OK] = LOW; run(100); g_pinLevel[PIN_OK] = HIGH; run(100);
+    g_pinLevel[PIN_SHIFT] = LOW; run(100); g_pinLevel[PIN_SHIFT] = HIGH; run(100);
+    g_pinLevel[PIN_ARROW_SWITCH] = g_pinLevel[PIN_ARROW_SWITCH] == LOW ? HIGH : LOW; run(100);
+    g_pinLevel[PIN_ARROW_SWITCH] = g_pinLevel[PIN_ARROW_SWITCH] == LOW ? HIGH : LOW; run(100);
+    CHECK(startupTestActive && menuMode == MM_STATUS, "LED test: OK, SHIFT and the arrow switch neither skip the test nor open the menu");
+    const size_t skipMark = Serial.captured.size();
+    g_pinLevel[PIN_CANCEL] = LOW; run(100); g_pinLevel[PIN_CANCEL] = HIGH; run(100);
+    CHECK(!startupTestActive, "LED test: CANCEL skips the test");
+    CHECK(Serial.captured.find("LED test skipped", skipMark) != std::string::npos, "LED test: the serial monitor says the test was skipped");
+    CHECK(letterMode == MODE_BREATHE && menuMode == MM_STATUS, "LED test: the skipping press does nothing else (no mode change, no menu)");
+    CHECK(line0() == "Test skipped" && rtrimS(Wire.row(1)).empty(), "LED test: after a skip the LCD says Test skipped");
+    run(1000); CHECK(line0() == "Test skipped", "LED test: the notice stays for a moment");
+    run(700); CHECK(line0() == "F01 L01 Open", "LED test: then the LCD shows the status page");
 
-    // a button held down during power-up does not skip the test until it was released and pressed again
-    g_pinLevel[PIN_SKIP_BUTTON] = LOW; run(100);          // normal operation: this changes the mode
+    // CANCEL held down during power-up does not skip the test until it was released and pressed again
+    g_pinLevel[PIN_CANCEL] = LOW; run(100);               // normal operation: CANCEL does nothing on the status page
     beginStartupTest(g_millis); run(2000);
-    CHECK(startupTestActive, "LED test: a button held during power-up does not skip the test");
-    g_pinLevel[PIN_SKIP_BUTTON] = HIGH; run(100);
-    CHECK(startupTestActive, "LED test: releasing the button does not skip it");
-    g_pinLevel[PIN_SKIP_BUTTON] = LOW; run(100);
+    CHECK(startupTestActive, "LED test: CANCEL held during power-up does not skip the test");
+    g_pinLevel[PIN_CANCEL] = HIGH; run(100);
+    CHECK(startupTestActive, "LED test: releasing CANCEL does not skip it");
+    g_pinLevel[PIN_CANCEL] = LOW; run(100);
     CHECK(!startupTestActive, "LED test: a new press skips it");
-    g_pinLevel[PIN_SKIP_BUTTON] = HIGH; run(100);
+    g_pinLevel[PIN_CANCEL] = HIGH; run(100);
+    // after a test that ran to the end there is no notice
+    run(2000); beginStartupTest(g_millis); run(STARTUP_TEST_MS + 300);
+    CHECK(!startupTestActive && line0() == "F01 L01 Open", "LED test: a test that runs to the end shows no Test skipped notice");
     while (letterMode != MODE_BREATHE) pressMode();
 
     // a skipped test leaves no LED test pattern behind: the strips are cleared and the sign runs normally
@@ -1038,7 +1051,7 @@ int main(int argc, char **argv) {
     CHECK(SERIAL_BAUD == 115200 && Serial.baud == 115200, "serial speed is 115200 baud");
     CHECK(PIN_STATUS_LED == 13, "the debug LED is on pin 13");
     CHECK(Serial.captured.find("Serial speed 115200 baud") != std::string::npos, "the baud rate is printed at start-up");
-    g_pinLevel[PIN_SKIP_BUTTON] = HIGH; run(3000);                // calm: no state change for a while
+    g_pinLevel[PIN_CANCEL] = HIGH; run(3000);                    // calm: no state change for a while
     // calm: the heartbeat toggles every 250 ms (3 or 4 toggles in 800 ms)
     { const unsigned long b0 = beatCount; run(800); const unsigned long d = beatCount - b0;
       CHECK(d >= 3 && d <= 4, "calm: the LED toggles every 250 ms (3-4 times in 800 ms)"); }
@@ -1141,8 +1154,8 @@ int main(int argc, char **argv) {
     CHECK(cmax == 100, "the CLOSED stick follows the stick table (its full white 255 shows as 100)");
     g_pinLevel[PIN_CASINO_CLOSED_SWITCH] = closedPin; run(500);
     // the lookup table is rebuilt at once when a value changes: a new maximum shows within one frame
-    setBrightnessCurve(0, 0, 255, 1.0f, 0.0f, true); run(200);
-    unsigned fmax2 = 0; for (auto *s : {fr}) for (auto c : s->shown_) fmax2 = (c & 255u) > fmax2 ? (c & 255u) : fmax2;
+    setBrightnessCurve(0, 0, 255, 1.0f, 0.0f, true);
+    unsigned fmax2 = 0; for (int k = 0; k < 400; k++) { run(10); for (auto *s : {fr}) for (auto c : s->shown_) fmax2 = (c & 255u) > fmax2 ? (c & 255u) : fmax2; }   // the frame bar may be in a pause: watch 4 s
     CHECK(fmax2 == 255, "after setBrightnessCurve the frame shows full white again");
   }
   for (auto *s : g_strips) CHECK(s->overflow == 0, "no setPixelColor beyond strip length");

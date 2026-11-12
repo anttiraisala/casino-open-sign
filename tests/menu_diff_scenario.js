@@ -1,6 +1,6 @@
 // Makes a scenario (key and switch events) and the trace the JS menu engine (menu-core.js) gives for it.
 //   node tests/menu_diff_scenario.js <menu.json> <seed> <events> <scenario-out> <trace-out>
-// Scenario line:  <t> turn <steps> <shift> | key <0 OK|1 BACK> | phys <prop> <pos> | set <prop> <pos> | rt <seconds|-1> <activeFrame> <activeLetters> | tick
+// Scenario line:  <t> turn <steps> <shift> | key <0 OK|1 CANCEL> | phys <prop> <pos> | set <prop> <pos> | rt <seconds|-1> <activeFrame> <activeLetters> | tick
 // Trace line:     hex of row 0 and row 1 at t, the same at t+1700, callbacks "cb:prop:pos,...", EEPROM batches "p.p.p,...",
 //                 all property positions, mode letter
 'use strict';
@@ -34,7 +34,7 @@ for (let i = 0; i < N; i++) {
   const w = rnd();
   t += rnd() < 0.02 ? ri(20000, 70000) : (rnd() < 0.5 ? ri(1, 120) : ri(100, 4000));
   if (w < 0.34) { const steps = ri(-3, 3) || 1, shift = rnd() < 0.3 ? 1 : 0; emit('turn ' + steps + ' ' + shift, () => e.turn(steps, !!shift, t)); }
-  else if (w < 0.62) { const k = rnd() < 0.7 ? 0 : 1; emit('key ' + k, () => e.key(k ? 'BACK' : 'OK', t)); }
+  else if (w < 0.62) { const k = rnd() < 0.7 ? 0 : 1; emit('key ' + k, () => e.key(k ? 'CANCEL' : 'OK', t)); }
   else if (w < 0.70) {
     const which = ri(0, 1), id = [st.casino, st.arrow][which], p = model.props[id], pos = ri(0, p.count - 1);
     emit('phys ' + statusIdx[which] + ' ' + pos, () => e.physical(id, core.valueAt(p, pos), t));

@@ -16,7 +16,7 @@
       "top": -170,
       "left": 20,
       "attrs": {
-        "text": "Settings menu test: menu switch + OK/BACK/SHIFT + 2 slide switches + LCD"
+        "text": "Settings menu test: menu switch + OK/CANCEL/SHIFT + 2 slide switches + LCD"
       }
     },
     {
@@ -46,7 +46,7 @@
     },
     {
       "type": "wokwi-pushbutton",
-      "id": "back",
+      "id": "cancel",
       "top": -120,
       "left": 470,
       "attrs": {
@@ -149,13 +149,13 @@
     ],
     [
       "mega:49",
-      "back:1.l",
+      "cancel:1.l",
       "orange",
       []
     ],
     [
       "mega:GND.1",
-      "back:2.l",
+      "cancel:2.l",
       "black",
       []
     ],

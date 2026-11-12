@@ -58,7 +58,14 @@ muts=[
  ("OPEN reversed off by one","return (uint8_t)(FIRST_WORD_LETTERS + (LETTER_COUNT - 1 - letter));","return (uint8_t)(LETTER_COUNT - 1 - letter);"),
  ("first word reversed","if (letter < FIRST_WORD_LETTERS) return letter;","if (letter < FIRST_WORD_LETTERS) return (uint8_t)(FIRST_WORD_LETTERS - 1 - letter);"),
  ("startup window 3","STARTUP_TEST_WINDOW_LEDS = 2;","STARTUP_TEST_WINDOW_LEDS = 3;"),
- ("button pin","PIN_SKIP_BUTTON = 33;","PIN_SKIP_BUTTON = 3;"),
+ # equivalent, left out: the end of the skip notice flag (only matters after millis() wraps) and initInput(INPUT_CANCEL) at power-up (a zero-filled state behaves the same)
+ ("cancel pin","PIN_CANCEL = 49;","PIN_CANCEL = 3;"),
+ ("skip on release","    if (cancelChanged && inputStable[INPUT_CANCEL] == LOW) {\n      noteEvent(now);\n      finishStartup(now, true);","    if (cancelChanged) {\n      noteEvent(now);\n      finishStartup(now, true);"),
+ ("skip not announced","    if (skipped) { skipNoticeOn = true;","    if (false) { skipNoticeOn = true;"),
+ ("skip notice too short","LCD_SKIP_NOTICE_MS = 1500;","LCD_SKIP_NOTICE_MS = 15;"),
+ ("skip notice too long","LCD_SKIP_NOTICE_MS = 1500;","LCD_SKIP_NOTICE_MS = 15000;"),
+ ("skip text","const char marquee[] = \"press CANCEL to skip   \";","const char marquee[] = \"press D33 to skip   \";"),
+ ("ok skips test","    if (cancelChanged && inputStable[INPUT_CANCEL] == LOW) {\n      noteEvent(now);\n      finishStartup(now, true);","    if (pollInput(INPUT_OK, PIN_OK, now) || cancelChanged && inputStable[INPUT_CANCEL] == LOW) {\n      noteEvent(now);\n      finishStartup(now, true);"),
  ("status led pin","PIN_STATUS_LED = 13","PIN_STATUS_LED = 12"),
  ("fast heartbeat","HEARTBEAT_FAST_MS = 125","HEARTBEAT_FAST_MS = 250"),
  ("no inversion","(beatOn != inverted) ? HIGH : LOW","(beatOn) ? HIGH : LOW"),
@@ -95,7 +102,7 @@ muts=[
  ("arrow not shaped","shapeColor(LED_TYPE_STICK, arrowPixel(*sticks[k], s, stickLowerLane(k, led)))","arrowPixel(*sticks[k], s, stickLowerLane(k, led))"),
  ("arrow wrong type","shapeColor(LED_TYPE_STICK, arrowPixel(*sticks[k], s, stickLowerLane(k, led)))","shapeColor(LED_TYPE_STRIP, arrowPixel(*sticks[k], s, stickLowerLane(k, led)))"),
  ("curves not rebuilt after the menu start","  const bool menuFromEeprom = menuBegin();   // saved menu values (speeds, curves, reverse flags) or the defaults\n  rebuildAllCurves();","  const bool menuFromEeprom = menuBegin();   // saved menu values (speeds, curves, reverse flags) or the defaults"),
- ("marquee text","press D33 to skip   \";","press D3 to skip   \";"),
+ ("marquee text","press CANCEL to skip   \";","press CANCEL to skip  \";"),
  # --- program switch, new letter programs, frame patterns (added with the 15 programs) ---
  ("frame effect off by one","    showFramePattern((uint8_t)(effect - 1));","    showFramePattern((uint8_t)effect);"),
  ("letters effect off by one","    showLettersPattern((uint8_t)(effect - 1));","    showLettersPattern((uint8_t)effect);"),
@@ -157,7 +164,7 @@ muts=[
  ("frame q arrow left","(uint16_t)((i + FRAME_PIXELS - FRAME_UPPER_RIGHT) % FRAME_PIXELS)","(uint16_t)((i + FRAME_PIXELS - FRAME_UPPER_LEFT) % FRAME_PIXELS)"),
  ("frame long edge","i <= FRAME_LOWER_RIGHT || (i >= FRAME_UPPER_RIGHT && i <= FRAME_UPPER_LEFT)","i < FRAME_LOWER_RIGHT || (i >= FRAME_UPPER_RIGHT && i <= FRAME_UPPER_LEFT)"),
 
- # --- menu integration (OK/BACK/SHIFT, menu switch, EEPROM, speeds and curves as menu properties) ---
+ # --- menu integration (OK/CANCEL/SHIFT, menu switch, EEPROM, speeds and curves as menu properties) ---
  ("menu switch pins","PIN_MENU_SWITCH[4] = {42, 43, 44, 45};","PIN_MENU_SWITCH[4] = {43, 42, 44, 45};"),
  ("menu switch not polled","  if (pollHexSwitch(SLOT_MENU, PIN_MENU_SWITCH, now)) {","  if (false) {"),
  ("menu switch half turn used","if (delta != 8) {","if (true) {"),
@@ -165,8 +172,8 @@ muts=[
  ("menu switch ignores shift","menuTurn(steps, inputStable[INPUT_SHIFT] == LOW, now);","menuTurn(steps, false, now);"),
  ("shift inverted","menuTurn(steps, inputStable[INPUT_SHIFT] == LOW, now);","menuTurn(steps, inputStable[INPUT_SHIFT] != LOW, now);"),
  ("ok key not sent","menuKey(MENU_KEY_OK, now); }","}"),
- ("back key not sent","menuKey(MENU_KEY_BACK, now); }","}"),
- ("ok sends back","menuKey(MENU_KEY_OK, now); }","menuKey(MENU_KEY_BACK, now); }"),
+ ("back key not sent","menuKey(MENU_KEY_CANCEL, now); }","}"),
+ ("ok sends back","menuKey(MENU_KEY_OK, now); }","menuKey(MENU_KEY_CANCEL, now); }"),
  ("ok on release","if (pollInput(INPUT_OK, PIN_OK, now) && inputStable[INPUT_OK] == LOW)","if (pollInput(INPUT_OK, PIN_OK, now) && inputStable[INPUT_OK] != LOW)"),
  ("menu timeout 30 s","MENU_TIMEOUT_MS = 60000UL;","MENU_TIMEOUT_MS = 30000UL;"),
  ("menu timeout in submenus","menuDepth == 1 && now - menuLastInput >= MENU_TIMEOUT_MS","now - menuLastInput >= MENU_TIMEOUT_MS"),

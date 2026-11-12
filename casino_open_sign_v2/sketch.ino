@@ -41,21 +41,21 @@
  *                     seen from the front). The switch is on the back of the sign: mount it so that, seen from
  *                     the back, the GND contact (1) is on the right-hand side; then the handle points the same
  *                     way as the arrow does in real space (toward the customer's left = the back's right).
- *   D33 push button   skips the power-on LED test (it has no other function)
  *   D30 slide switch  SW5 "casino closed" (handle on the GND side = LOW = closed): the OPEN
  *                     letters go dark and the CLOSED light turns on
  *   D42-D45  menu switch: 16-position hex rotary switch (pins 1, 2, 4, 8), free-running (relative): moves the
  *                 menu selection or changes a value
- *   D48 OK, D49 BACK, D50 SHIFT  push buttons to GND: OK opens the menu from the status page, enters a submenu,
- *                 starts and accepts an edit; BACK goes one level up or cancels an edit; SHIFT held while turning
- *                 makes the step bigger
+ *   D48 OK, D49 CANCEL, D50 SHIFT  push buttons to GND: OK opens the menu from the status page, enters a submenu,
+ *                 starts and accepts an edit; CANCEL goes one level up, cancels an edit, or skips the power-on
+ *                 LED test; SHIFT held while turning makes the step bigger
  *   (the common pin of each hex switch goes to GND; the speeds and brightness curves are no longer set with switches:
  *   they are menu properties, saved in EEPROM)
  *
  * Power-on LED test: for 10 s after power-up all strips run a short window of lit LEDs from the first
  * to the last LED at the same time (2 passes: white, then red-green-blue), so every LED and the
  * colour order can be checked. The LCD shows the seconds in a progress bar and a scrolling
- * "press D33 to skip" (the two rows swap places every 2.5 s). Pressing D33 skips the test.
+ * "press CANCEL to skip" (the two rows swap places every 2.5 s). Pressing CANCEL (D49) skips the test and the
+ * LCD shows "Test skipped" for a moment. D33 is free (the old skip button was removed).
  *
  * SIGN OF LIFE: the LED on pin 13 blinks all the time while the program runs (every HEARTBEAT_MS, twice as
  * fast while many state changes happen; it is shortly inverted on every state change: arrow direction,
@@ -159,7 +159,6 @@ constexpr uint8_t STICK_R_WING_DN = 9;   // right arrowhead, lower wing   (A2)
 
 // --- Input pins ------------------------------------------------------------
 constexpr uint8_t PIN_ARROW_SWITCH = 32;   // slide switch: arrow direction
-constexpr uint8_t PIN_SKIP_BUTTON = 33;    // push button: skips the power-on LED test only
 // Direction of the arrow switch (D32, slide switch, internal pull-up). It depends on how the mechanical switch
 // is wired and mounted, so it is a source-code setting:
 //   true  = pin LOW (handle on the GND side) -> the arrow points to the customer's LEFT, pin HIGH -> RIGHT
@@ -181,7 +180,7 @@ constexpr unsigned long HEX_DEBOUNCE_MS = 10;   // a hex switch position must st
 constexpr uint8_t PIN_MENU_SWITCH[4] = {42, 43, 44, 45};  // menu hex switch (free-running, relative): selection / value
 constexpr bool MENU_SWITCH_REVERSED = false;              // true: turning it clockwise moves the other way
 constexpr uint8_t PIN_OK = 48;             // push button OK: opens the menu, enters a submenu, starts / accepts an edit
-constexpr uint8_t PIN_BACK = 49;           // push button BACK: one level up, cancels an edit
+constexpr uint8_t PIN_CANCEL = 49;           // push button CANCEL: one level up, cancels an edit
 constexpr uint8_t PIN_SHIFT = 50;          // push button SHIFT: held while turning makes the step bigger
 constexpr int MENU_EEPROM_BASE = 0;        // the saved menu image starts at this EEPROM address
 
@@ -201,12 +200,12 @@ constexpr uint8_t LCD_CHARS_PER_LOOP = 4;  // characters sent per loop() pass, s
 
 // --- Power-on LED test -----------------------------------------------------
 // At power-up every LED is lit once per pass (all strips at the same time, each with a short
-// moving window) so wiring and colours can be checked. Pressing D33 skips the test.
+// moving window) so wiring and colours can be checked. Pressing CANCEL skips the test.
 constexpr uint32_t STARTUP_TEST_MS = 10000;      // length of the test (0 = no test)
 constexpr uint8_t STARTUP_TEST_PASSES = 2;       // pass 1 is white, the other passes red-green-blue
 constexpr uint8_t STARTUP_TEST_WINDOW_LEDS = 2;  // pixels lit at the same time in each strip (the strips are short)
 constexpr uint16_t LCD_TEST_SWAP_MS = 2500;      // the two LCD rows swap places this often during the test
-constexpr uint16_t LCD_TEST_SCROLL_MS = 250;     // the "press D33 to skip" text scrolls one character per step
+constexpr uint16_t LCD_TEST_SCROLL_MS = 250;     // the "press CANCEL to skip" text scrolls one character per step
 
 // --- Look and timing -------------------------------------------------------
 // There is no global brightness: the library brightness stays at 255 and the maximum of each brightness curve
@@ -551,7 +550,7 @@ constexpr char MENU_LEFT_ARROW = 0x7F;                    // HD44780 ROM arrows
 constexpr char MENU_RIGHT_ARROW = 0x7E;
 constexpr char MENU_LOCK_CHAR = 1;                        // custom character 1 (a padlock) drawn by the sketch; 0 is not usable in C strings
 constexpr uint8_t MENU_KEY_OK = 0;
-constexpr uint8_t MENU_KEY_BACK = 1;
+constexpr uint8_t MENU_KEY_CANCEL = 1;
 constexpr uint8_t MENU_NO_SLOT = 255;                    // property is not stored in EEPROM
 
 constexpr uint8_t MM_STATUS = 0, MM_MENU = 1, MM_EDIT = 2, MM_CONFIRM = 3, MM_VIEW = 4;   // MM_VIEW: a read-only property shown like an edit page
@@ -789,7 +788,7 @@ void menuRows(unsigned long now, char *row0, char *row1) {
       a[l + 1] = 0;
     }
     menuFit(row0, a, "", now, menuSince);
-    menuFit(row1, "OK=yes BACK=no", "", now, menuSince);
+    menuFit(row1, "OK=yes CANCEL=no", "", now, menuSince);
     return;
   }
   const uint8_t level = menuDepth - 1;
@@ -975,7 +974,7 @@ void menuKey(uint8_t key, unsigned long now) {
     return;
   }
   if (menuMode == MM_MENU) {
-    if (key == MENU_KEY_BACK) {
+    if (key == MENU_KEY_CANCEL) {
       if (menuDepth > 1) { menuDepth--; menuTouch(now, true); }
       else menuToStatus(now);
       return;
@@ -1059,15 +1058,14 @@ bool lcdRebuild = true;                   // rebuild the text at once
 // Debounced inputs with the internal pull-up: a closed switch reads LOW.
 
 constexpr uint8_t INPUT_ARROW = 0;
-constexpr uint8_t INPUT_SKIP = 1;
-constexpr uint8_t INPUT_CLOSED = 2;
-constexpr uint8_t INPUT_OK = 3;
-constexpr uint8_t INPUT_BACK = 4;
-constexpr uint8_t INPUT_SHIFT = 5;
+constexpr uint8_t INPUT_CLOSED = 1;
+constexpr uint8_t INPUT_OK = 2;
+constexpr uint8_t INPUT_CANCEL = 3;
+constexpr uint8_t INPUT_SHIFT = 4;
 
-uint8_t inputStable[6];            // debounced level (HIGH or LOW)
-uint8_t inputLastRaw[6];           // last raw reading
-unsigned long inputChangedAt[6];   // when the raw reading last changed
+uint8_t inputStable[5];            // debounced level (HIGH or LOW)
+uint8_t inputLastRaw[5];           // last raw reading
+unsigned long inputChangedAt[5];   // when the raw reading last changed
 
 // Reads the pin and returns true when the debounced level just changed.
 bool pollInput(uint8_t slot, uint8_t pin, unsigned long now) {
@@ -1899,13 +1897,16 @@ void updateArrow() {
 // slower than a long one). The test has STARTUP_TEST_PASSES passes: pass 1 is white, the others
 // light the LEDs red, green, blue, red, ... (by LED number) so a wrong colour order shows.
 // At most STRIP_COUNT x STARTUP_TEST_WINDOW_LEDS LEDs are lit at a time, which keeps the current low.
-// The LCD shows the time and a progress bar (see the LCD DISPLAY section). The push button D33
-// skips the test (only a new press counts, so a button held during power-up does not skip it).
-// The other inputs are read again when the test ends, so they take effect only after it.
+// The LCD shows the time and a progress bar (see the LCD DISPLAY section). The CANCEL button
+// (D49) skips the test (only a new press counts, so a button held during power-up does not skip it).
+// During the test nothing else is read; the other inputs are read again when the test ends.
 
 bool startupTestActive = false;
 unsigned long startupTestStart = 0;
 uint32_t startupLast[STRIP_COUNT];           // last drawn (pass, window position) of each strip
+bool skipNoticeOn = false;                   // the LCD says "Test skipped" for LCD_SKIP_NOTICE_MS after a skip
+unsigned long skipNoticeUntil = 0;
+constexpr unsigned long LCD_SKIP_NOTICE_MS = 1500;
 
 // The normal start of the sign: read the switches and start the patterns.
 void finishStartup(unsigned long now, bool skipped) {
@@ -1916,11 +1917,11 @@ void finishStartup(unsigned long now, bool skipped) {
       allStrips[k]->show();
     }
     Serial.println(skipped ? F("LED test skipped") : F("LED test done"));
+    if (skipped) { skipNoticeOn = true; skipNoticeUntil = now + LCD_SKIP_NOTICE_MS; }
   }
   initInput(INPUT_ARROW, PIN_ARROW_SWITCH);
   initInput(INPUT_CLOSED, PIN_CASINO_CLOSED_SWITCH);
   initInput(INPUT_OK, PIN_OK);
-  initInput(INPUT_BACK, PIN_BACK);
   initInput(INPUT_SHIFT, PIN_SHIFT);
   initHexSwitch(SLOT_MENU, PIN_MENU_SWITCH);
   applySpeeds();
@@ -1944,7 +1945,7 @@ void beginStartupTest(unsigned long now) {
   startupTestActive = true;
   startupTestStart = now;
   for (uint8_t k = 0; k < STRIP_COUNT; k++) startupLast[k] = 0xFFFFFFFFUL;
-  Serial.println(F("Power-on LED test (press D33 to skip)"));
+  Serial.println(F("Power-on LED test (press CANCEL to skip)"));
 }
 
 // Draws one step of the test; ends the test when the time is up.
@@ -2105,13 +2106,21 @@ void lcdPut(uint8_t row, const char *text) {
 
 // Builds the two text rows (status page or menu) with the menu engine.
 void lcdBuildText(unsigned long now) {
+  if (skipNoticeOn) {
+    if ((long)(now - skipNoticeUntil) < 0) {      // after a skipped LED test: a short notice before the status page
+      lcdPut(0, "Test skipped");
+      lcdPut(1, "");
+      return;
+    }
+    skipNoticeOn = false;
+  }
   char row0[LCD_COLS + 1], row1[LCD_COLS + 1];
   menuRows(now, row0, row1);
   lcdPut(0, row0);
   lcdPut(1, row1);
 }
 
-// The LCD during the power-on test: one row scrolls "press D33 to skip", the other shows the
+// The LCD during the power-on test: one row scrolls "press CANCEL to skip", the other shows the
 // elapsed seconds in the middle of a progress bar. The rows swap places every LCD_TEST_SWAP_MS,
 // so every character gets shown on both rows.
 void lcdBuildTestText(unsigned long now) {
@@ -2121,7 +2130,7 @@ void lcdBuildTestText(unsigned long now) {
   const uint8_t skipRow = 1 - counterRow;
 
   // Scrolling text: the text and three spaces repeat around the row.
-  const char marquee[] = "press D33 to skip   ";
+  const char marquee[] = "press CANCEL to skip   ";
   const uint8_t marqueeLen = sizeof(marquee) - 1;
   const uint8_t shift = (uint8_t)((elapsed / LCD_TEST_SCROLL_MS) % marqueeLen);
   char line[LCD_COLS + 1];
@@ -2300,7 +2309,7 @@ void setup() {
     allStrips[k]->show();
   }
 
-  initInput(INPUT_SKIP, PIN_SKIP_BUTTON);
+  initInput(INPUT_CANCEL, PIN_CANCEL);          // read from power-up: CANCEL also skips the LED test
 
   Wire.begin();
   Wire.setClock(400000UL);
@@ -2327,11 +2336,11 @@ void setup() {
 void loop() {
   const unsigned long now = millis();
   signOfLife(now);
-  const bool buttonChanged = pollInput(INPUT_SKIP, PIN_SKIP_BUTTON, now);
+  const bool cancelChanged = pollInput(INPUT_CANCEL, PIN_CANCEL, now);
 
-  // Power-on LED test: only the button (skip) is watched; everything else waits for the end.
+  // Power-on LED test: only CANCEL (skip) is watched; everything else waits for the end.
   if (startupTestActive) {
-    if (buttonChanged && inputStable[INPUT_SKIP] == LOW) {
+    if (cancelChanged && inputStable[INPUT_CANCEL] == LOW) {
       noteEvent(now);
       finishStartup(now, true);  // this press only skips the test, it does not change the mode
     } else {
@@ -2354,7 +2363,7 @@ void loop() {
     noteEvent(now);
   }
 
-  // Menu controls: the menu switch moves the selection or changes the value, OK and BACK are the keys, SHIFT makes
+  // Menu controls: the menu switch moves the selection or changes the value, OK and CANCEL are the keys, SHIFT makes
   // the step bigger while it is held.
   const uint8_t menuFrom = hexStable[SLOT_MENU];
   if (pollHexSwitch(SLOT_MENU, PIN_MENU_SWITCH, now)) {
@@ -2369,7 +2378,7 @@ void loop() {
   }
   if (pollInput(INPUT_SHIFT, PIN_SHIFT, now)) noteEvent(now);
   if (pollInput(INPUT_OK, PIN_OK, now) && inputStable[INPUT_OK] == LOW) { noteEvent(now); menuKey(MENU_KEY_OK, now); }
-  if (pollInput(INPUT_BACK, PIN_BACK, now) && inputStable[INPUT_BACK] == LOW) { noteEvent(now); menuKey(MENU_KEY_BACK, now); }
+  if (cancelChanged && inputStable[INPUT_CANCEL] == LOW) { noteEvent(now); menuKey(MENU_KEY_CANCEL, now); }
   menuTick(now);
   menuChangeInSec = -1;                         // status page, a random effect: seconds until the next change
   updateRandomEffects(now);

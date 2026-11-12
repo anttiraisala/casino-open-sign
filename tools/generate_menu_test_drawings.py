@@ -29,7 +29,7 @@ def pin_const(name):
 
 
 MENU = pin_array("MENU_PINS")
-OK, BACK, SHIFT = pin_const("PIN_OK"), pin_const("PIN_BACK"), pin_const("PIN_SHIFT")
+OK, CANCEL, SHIFT = pin_const("PIN_OK"), pin_const("PIN_CANCEL"), pin_const("PIN_SHIFT")
 ARROW, CASINO = pin_const("PIN_ARROW_SWITCH"), pin_const("PIN_CASINO_SWITCH")
 
 
@@ -37,12 +37,12 @@ def wokwi():
     parts = [
         {"type": "wokwi-arduino-mega", "id": "mega", "top": 0, "left": 0, "attrs": {}},
         {"type": "wokwi-text", "id": "t1", "top": -170, "left": 20,
-         "attrs": {"text": "Settings menu test: menu switch + OK/BACK/SHIFT + 2 slide switches + LCD"}},
+         "attrs": {"text": "Settings menu test: menu switch + OK/CANCEL/SHIFT + 2 slide switches + LCD"}},
         {"type": "wokwi-text", "id": "t2", "top": -152, "left": 20,
          "attrs": {"text": "Wokwi has no hex rotary switch: a DIP bank stands in (ON = leg connected to C = bit set)"}},
         {"type": "wokwi-dip-switch-8", "id": "menu", "top": -120, "left": 200, "attrs": {}},
         {"type": "wokwi-pushbutton", "id": "ok", "top": -120, "left": 400, "attrs": {"color": "green"}},
-        {"type": "wokwi-pushbutton", "id": "back", "top": -120, "left": 470, "attrs": {"color": "red"}},
+        {"type": "wokwi-pushbutton", "id": "cancel", "top": -120, "left": 470, "attrs": {"color": "red"}},
         {"type": "wokwi-pushbutton", "id": "shift", "top": -120, "left": 540, "attrs": {"color": "blue"}},
         {"type": "wokwi-slide-switch", "id": "arrow", "top": -60, "left": 400, "attrs": {}},
         {"type": "wokwi-slide-switch", "id": "casino", "top": -60, "left": 480, "attrs": {}},
@@ -51,7 +51,7 @@ def wokwi():
     c = []
     for k, pin in enumerate(MENU):
         c += [["mega:%d" % pin, "menu:%db" % (k + 1), "orange", []], ["mega:GND.1", "menu:%da" % (k + 1), "black", []]]
-    for name, pin in (("ok", OK), ("back", BACK), ("shift", SHIFT)):
+    for name, pin in (("ok", OK), ("cancel", CANCEL), ("shift", SHIFT)):
         c += [["mega:%d" % pin, "%s:1.l" % name, "orange", []], ["mega:GND.1", "%s:2.l" % name, "black", []]]
     for name, pin in (("arrow", ARROW), ("casino", CASINO)):
         c += [["mega:%d" % pin, "%s:2" % name, "orange", []], ["mega:GND.1", "%s:3" % name, "black", []]]
@@ -109,7 +109,7 @@ def schematic():
 
     svg.text(40, 320, "Push buttons (to GND, internal pull-ups; no resistors)", size=13, weight="bold")
     # buttons stacked on the left
-    for i, (name, pin) in enumerate((("OK", OK), ("BACK", BACK), ("SHIFT (hold while turning = x10)", SHIFT))):
+    for i, (name, pin) in enumerate((("OK", OK), ("CANCEL", CANCEL), ("SHIFT (hold while turning = x10)", SHIFT))):
         button(svg, 60, 360 + i * 70, name, pin, ard_x0)
     # slide switches
     svg.text(40, 590, "Slide switches (middle contact to the pin, one side contact to GND)", size=13, weight="bold")
@@ -151,7 +151,7 @@ def layout():
     svg.text(width / 2, 28, "Settings menu test - where the wires go (not to scale)", size=18, anchor="middle", weight="bold")
     svg.text(60, 66, "Mega 2560: long double-row header (from above)", size=12, weight="bold")
     used = {str(p): ("menu leg %d" % w) for p, w in zip(MENU, (1, 2, 4, 8))}
-    used.update({str(OK): "OK", str(BACK): "BACK", str(SHIFT): "SHIFT", str(ARROW): "arrow switch", str(CASINO): "casino switch"})
+    used.update({str(OK): "OK", str(CANCEL): "CANCEL", str(SHIFT): "SHIFT", str(ARROW): "arrow switch", str(CASINO): "casino switch"})
     rows = [("5V", "5V"), ("30", "31"), ("32", "33"), ("34", "35"), ("36", "37"), ("38", "39"), ("40", "41"), ("42", "43"),
             ("44", "45"), ("46", "47"), ("48", "49"), ("50", "51"), ("52", "53"), ("GND", "GND")]
     x_left, x_right, y0, dy = 230, 350, 110, 38
@@ -176,7 +176,7 @@ def layout():
     table = [("Part", "Pin / contact", "Mega pin"),
              ("Menu hex switch", "legs 1, 2, 4, 8", "D%d D%d D%d D%d" % tuple(MENU)),
              ("", "C (one leg)", "GND"),
-             ("OK button", "one contact", "D%d" % OK), ("BACK button", "one contact", "D%d" % BACK), ("SHIFT button", "one contact", "D%d" % SHIFT),
+             ("OK button", "one contact", "D%d" % OK), ("CANCEL button", "one contact", "D%d" % CANCEL), ("SHIFT button", "one contact", "D%d" % SHIFT),
              ("", "other contact", "GND"),
              ("Arrow slide switch", "middle contact", "D%d" % ARROW), ("Casino slide switch", "middle contact", "D%d" % CASINO),
              ("", "one side contact", "GND"),

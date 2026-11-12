@@ -65,9 +65,8 @@ Wiring (exactly)
                   D3 RAIL-DN-L, D4 RAIL-DN-R, A3 R-CAP, A1 R-WING-UP, A2 R-WING-DN, A0 CLOSED light stick (no wire from a supply to a stick)
                   (V2 only: the connectors differ from version 1 and ../arrow_sticks/; the stick positions on the plate are unchanged)
     D32 -> slide switch SW1 common (contact 1 -> GND)      D30 -> slide switch SW5 common (contact 1 -> GND)
-    D33 -> push button SW2 -> GND (only skips the power-on LED test)
     D42-D45 -> SW3 menu switch pins 1, 2, 4, 8 (common C -> GND)
-    D48 -> push button SW7 OK -> GND     D49 -> push button SW8 BACK -> GND     D50 -> push button SW9 SHIFT -> GND
+    D48 -> push button SW7 OK -> GND     D49 -> push button SW8 CANCEL -> GND     D50 -> push button SW9 SHIFT -> GND
     (every button: contact 1 to the Arduino pin, contact 2 to GND; all inputs use INPUT_PULLUP, no resistors)
     The old speed switches SW3/SW4 (D22-D29) are gone: the speeds are menu properties. The menu pins are the same as in ../menu_test/.
     D20 SDA, D21 SCL, 5V, GND -> LCD I2C backpack
@@ -91,9 +90,9 @@ Real hardware: open sketch.ino in the Arduino IDE (library: Adafruit NeoPixel), 
 then power up; Serial Monitor 115200 baud. Wokwi: new Arduino Mega project, paste sketch.ino and diagram.json, add the library
 "Adafruit NeoPixel", press Play (Wokwi has no 12 V part: the strips are powered from the Mega 5V there).
 If the colours are wrong, the strip's colour order may differ: change NEO_GRB + NEO_KHZ800 in the two strip lines of the sketch.
-The power-on LED test (10 s) lights a 2-pixel window running along every strip (pass 1 white, pass 2 red-green-blue); D33 skips it.
+The power-on LED test (10 s) lights a 2-pixel window running along every strip (pass 1 white, pass 2 red-green-blue); the CANCEL button (D49) skips it (the LCD scrolls "press CANCEL to skip" and then says "Test skipped" for a moment; a CANCEL held down at power-up does not skip it). D33 is free.
 
-Settings menu (menu switch SW3 D42-D45, buttons OK D48, BACK D49, SHIFT D50)
+Settings menu (menu switch SW3 D42-D45, buttons OK D48, CANCEL D49, SHIFT D50)
 --------------------------------------------------------------------------
 Status page (the display after power-up): row 0 shows the two effects and the casino state, e.g. "F12 L03 Open" (F = frame effect, L = letters
 effect, two digits; a star before the number marks a random group and the number is the effect really showing, e.g. "F*07"; "--" = unknown);
@@ -106,13 +105,13 @@ limit, there is no global brightness); Brightness (the same brightness values ag
 Restore defaults (asks for confirmation).
 A property row shows "Name  value" (value at the right edge); if the two do not fit in 16 characters the row scrolls as one text "Name: value"
 (pause at the start, one character per step, pause with the last character at the right edge). OK on a read-only value opens the same page as
-an edit (name, then a padlock and the value) but nothing can be changed; BACK or OK returns.
+an edit (name, then a padlock and the value) but nothing can be changed; CANCEL or OK returns.
 The menu switch SW3 is free-running and RELATIVE: the change of its code is a step (1..7 forward, 9..15 back, exactly 8 ignored).
 The menu definition used for this sketch is stored here as menu-v2.json (an exact copy of tools/menu-editor/menu-v2.json, written by
 tools/generate_v2_menu.js together with the menu block of sketch.ino; open it in the Menu Editor to see or change the menu).
 A move of the menu switch at the first or last item does nothing (the scroll of a long row goes on); a move away and straight back
 within 300 ms (contact bounce) also keeps the scroll of that row.
-Holding SHIFT while turning makes the step bigger. OK enters / starts an edit / accepts, BACK goes one level up / cancels an edit.
+Holding SHIFT while turning makes the step bigger. OK enters / starts an edit / accepts, CANCEL goes one level up / cancels an edit.
 Long row text scrolls. At the menu root, with no property open and no edit, 60 s without any input returns the display to the status page.
 There is no program switch: the effects are chosen in the menu (Effects).
 Values are saved in EEPROM (layout tag checked at start-up; a layout that does not match gives the defaults).
@@ -122,7 +121,7 @@ Known limitation: the LCD is retried after a failed transmit, but not fully re-i
 Effects (menu: Effects > Frame effect, Letters effect, Random delay)
 ----------------------------------------------------------------------
 The frame and the letters each have their own effect, 0..15: 0 = Random, 1..15 = a fixed effect (default 1; no wrap-around; the value row
-shows the number first, e.g. "12 Slot machine"). While you turn the value the effect is shown live; OK accepts and saves it, BACK restores the
+shows the number first, e.g. "12 Slot machine"). While you turn the value the effect is shown live; OK accepts and saves it, CANCEL restores the
 old value and the old effect.
   1 breathe  2 wave  3 typewriter  4 ignite  5 word blink  6 alternate  7 scanner  8 sparkle  9 chase  10 pulse
   11 converge  12 words swap  13 slot machine  14 twin chase  15 marquee
@@ -143,7 +142,7 @@ After changing pins or the frame size regenerate the drawings and Wokwi file:
 Tests
 -----
 tests/casino_open_sign_v2_harness.cpp checks the program on the computer (expected values are hard-coded, not read from the sketch),
-tests/mutate_v2.py checks the tests with about 190 mutants of the sketch:
+tests/mutate_v2.py checks the tests with about 196 mutants of the sketch:
     g++ -std=c++17 -O1 -w -Itests -DSKETCH_PATH='"'$PWD'/casino_open_sign_v2/sketch.ino"' -o /tmp/v2 tests/casino_open_sign_v2_harness.cpp && /tmp/v2
     python3 tests/mutate_v2.py
 (Not run on real hardware or in Wokwi.)

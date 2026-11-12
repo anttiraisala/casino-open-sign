@@ -179,7 +179,7 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   const e = eng(); let log = [];
   e.opts.onCallback = (cb, id, v) => log.push(cb + ':' + id + ':' + v);
   e.turn(1, false, 0); eq(e.mode, 'status', 'turning does nothing on the status page');
-  e.key('BACK', 0); eq(e.mode, 'status', 'BACK does nothing on the status page');
+  e.key('CANCEL', 0); eq(e.mode, 'status', 'CANCEL does nothing on the status page');
   e.key('OK', 1000);
   eq(e.mode, 'menu', 'OK opens the menu'); eq(e.rows(1000), ['Menu         60s', 'Controls       >'], 'menu opens at the root, first item');
   e.turn(-1, false, 1100); eq(e.rows(1100)[1], 'Controls       >', 'list stops at the first item');
@@ -189,14 +189,14 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   e.key('OK', 2000); eq(e.rows(2000), ['Speed           ', 'Frame speed: 1.0'], 'submenu shows its first property (name and value scroll as one text)');
   eq(e.rows(3399)[1], 'Frame speed: 1.0', 'still at the start during the first pause'); eq(e.rows(3400)[1], 'rame speed: 1.00', 'then one character per 400 ms'); eq(e.rows(5199)[1], 'me speed: 1.000x', 'the last character stays at the right edge during the end pause');
   e.turn(1, false, 2100); eq(e.rows(2100)[1], 'Letters speed: 1', 'second property');
-  e.key('BACK', 2200); eq(e.rows(2200)[1], 'Speed          >', 'BACK returns to the submenu item that was selected');
+  e.key('CANCEL', 2200); eq(e.rows(2200)[1], 'Speed          >', 'CANCEL returns to the submenu item that was selected');
   e.key('OK', 2300); e.key('OK', 2400);
   eq(e.mode, 'edit', 'OK on a property starts editing'); eq(e.rows(2400), ['Frame speed     ', '> 1.000x        '], 'edit rows');
   e.turn(1, false, 2500); eq(e.text('speedFrame'), '1.122x', 'one step up'); eq(log, ['applySpeeds:speedFrame:' + e.get('speedFrame')], 'callback runs on every change while editing');
   e.turn(1, true, 2600); eq(e.getPos('speedFrame'), 18 + 1 + 10, 'shift multiplies the step by 10');
   e.turn(5, true, 2700); eq(e.getPos('speedFrame'), 30, 'shift step is capped at the range end');
   eq(e.batches.length, 0, 'nothing is written to EEPROM while editing');
-  e.key('BACK', 2800); eq(e.getPos('speedFrame'), 18, 'BACK restores the value from the start of editing'); eq(e.mode, 'menu', 'BACK returns to the menu');
+  e.key('CANCEL', 2800); eq(e.getPos('speedFrame'), 18, 'CANCEL restores the value from the start of editing'); eq(e.mode, 'menu', 'CANCEL returns to the menu');
   eq(e.batches.length, 0, 'cancel writes nothing'); eq(log.length >= 4, true, 'restoring also calls the callback');
   e.key('OK', 2900); e.turn(-1, false, 2950); e.key('OK', 3000);
   eq(e.mode, 'menu', 'OK accepts and returns'); eq(e.batches, [['speedFrame']], 'OK writes the property to EEPROM'); eq(e.getPos('speedFrame'), 17, 'accepted value kept');
@@ -208,7 +208,7 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   eq(e.mode, 'view', 'OK on a read-only property opens the view page'); eq(e.rows(20), ['Arrow           ', '\u0001 Left          '], 'view page: name, lock and value');
   e.turn(3, true, 25); eq(e.text('arrow'), 'Left', 'turning does not change a read-only value'); e.key('OK', 30);
   eq(e.mode, 'menu', 'OK on the view page goes back'); eq(e.rows(30)[1], 'Arrow       Left', 'read-only row shows its value');
-  e.key('OK', 32); eq(e.mode, 'view', 'opened again'); e.key('BACK', 34); eq(e.mode, 'menu', 'BACK on the view page goes back');
+  e.key('OK', 32); eq(e.mode, 'view', 'opened again'); e.key('CANCEL', 34); eq(e.mode, 'menu', 'CANCEL on the view page goes back');
   e.key('OK', 36); e.physical('arrow', 1, 38); eq(e.mode, 'status', 'a physical change closes the view page'); e.physical('arrow', 0, 39);
   e.key('OK', 39); e.key('OK', 39.5); e.key('OK', 39.6);
   e.physical('casino', 1, 40); eq(e.mode, 'status', 'a slide switch while browsing goes to the status page');
@@ -258,8 +258,8 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   log.length = 0; e.key('OK', 2); eq(log, [], 'applying the same preset again calls nothing'); eq(e.batches.length, 1, 'and writes nothing');
   e.turn(1, false, 3); e.key('OK', 4); eq(log, ['cbA:a:5'], 'default keyword restores the default'); eq(e.batches.length, 2, 'second batch');
   e.turn(1, false, 5); e.key('OK', 6);
-  eq(e.mode, 'confirm', 'a confirm preset waits'); eq(e.rows(6), ['All?            ', 'OK=yes BACK=no  '], 'confirm rows');
-  e.key('BACK', 7); eq(e.mode, 'menu', 'BACK cancels the confirm'); eq(e.getPos('c'), 2, 'nothing applied after cancel');
+  eq(e.mode, 'confirm', 'a confirm preset waits'); eq(e.rows(6), ['All?            ', 'OK=yes CANCEL=no'], 'confirm rows');
+  e.key('CANCEL', 7); eq(e.mode, 'menu', 'CANCEL cancels the confirm'); eq(e.getPos('c'), 2, 'nothing applied after cancel');
   e.key('OK', 8); e.key('OK', 9);
   eq(e.mode, 'menu', 'OK on the confirm page applies and returns'); eq(e.text('c'), 'x', 'setAll default restored c'); eq(e.get('b'), 0, 'setAll default restored b');
   eq(e.batches[e.batches.length - 1], ['b', 'c'], 'batch lists only the stored properties that changed');
@@ -326,7 +326,7 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   const t = 'ABCDEFGHIJKLMNOPQRSTUV';
   eq(core.fit(t, '', 1000 + 6 * 400 + 500, 0), 'GHIJKLMNOPQRSTUV', 'marquee holds the last window and does not run past the end');
   const e = eng();
-  e.key('OK', 0); eq(e.mode, 'menu', 'opened'); e.key('BACK', 10); eq(e.mode, 'status', 'BACK at the root leaves the menu');
+  e.key('OK', 0); eq(e.mode, 'menu', 'opened'); e.key('CANCEL', 10); eq(e.mode, 'status', 'CANCEL at the root leaves the menu');
   e.key('OK', 20); e.turn(10, false, 30); e.turn(1, false, 40000); eq(e.rows(40000)[0], 'Menu         60s', 'turning against the end of the list still counts as input');
   const f = eng(), log = [];
   f.opts.onCallback = (cb) => log.push(cb);
@@ -370,7 +370,7 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   e.turn(-1, false, 1600); e.turn(1, false, 1650); eq(e.rows(1700)[1], 'rrow speed: 1.00', 'a move away and straight back within 300 ms keeps the scroll of the item');
   e.turn(-1, false, 2000); e.turn(1, false, 2400); eq(e.rows(2400)[1], 'Arrow speed: 1.0', 'a return after more than 300 ms restarts the scroll');
   e.turn(-1, false, 7000); e.turn(-1, false, 7100); eq(e.rows(7100)[1], 'Frame speed: 1.0', 'two moves in a row are not a bounce: the new item starts from the beginning');
-  e.turn(1, false, 7200); e.turn(-1, false, 9000); e.key('OK', 9001); e.key('BACK', 9002); e.turn(1, false, 9100); eq(e.rows(9100)[1], 'Letters speed: 1', 'a key press forgets the bounce memory');
+  e.turn(1, false, 7200); e.turn(-1, false, 9000); e.key('OK', 9001); e.key('CANCEL', 9002); e.turn(1, false, 9100); eq(e.rows(9100)[1], 'Letters speed: 1', 'a key press forgets the bounce memory');
 }
 // ---- effects: one value in several places, live preview, cancel restores
 {
@@ -382,15 +382,15 @@ function eng() { const e = new core.Engine(core.build(clone(V2))); return e; }
   e.turn(-1, false, 50); e.key('OK', 60);
   eq(e.rows(60), ['Letters effect  ', '> 1 Breathe     '], 'edit page of an effect: number first, then the name');
   e.turn(2, false, 70); eq(e.rows(70)[1], '> 3 Typewriter  ', 'live value text while turning'); eq(log, ['effectLettersChanged:lettersEffect'], 'a turn calls the callback at once');
-  e.key('BACK', 80); eq(e.text('lettersEffect'), '1 Breathe', 'BACK restores the value from the start of editing'); eq(log.length, 2, 'and calls the callback again, so the effect goes back too'); eq(e.batches, [], 'nothing saved after cancel');
+  e.key('CANCEL', 80); eq(e.text('lettersEffect'), '1 Breathe', 'CANCEL restores the value from the start of editing'); eq(log.length, 2, 'and calls the callback again, so the effect goes back too'); eq(e.batches, [], 'nothing saved after cancel');
   e.key('OK', 90); e.turn(3, false, 100); e.key('OK', 110); eq(e.text('lettersEffect'), '4 Ignite', 'OK keeps the value'); eq(e.batches.length, 1, 'and saves it once');
-  e.key('OK', 130); e.turn(-10, false, 140); eq(e.text('lettersEffect'), 'Random', 'effects stop at 0 = random (no wrap)'); e.turn(40, false, 150); eq(e.text('lettersEffect'), '15 Marquee', 'and at 15 (no wrap)'); e.key('BACK', 160);
+  e.key('OK', 130); e.turn(-10, false, 140); eq(e.text('lettersEffect'), 'Random', 'effects stop at 0 = random (no wrap)'); e.turn(40, false, 150); eq(e.text('lettersEffect'), '15 Marquee', 'and at 15 (no wrap)'); e.key('CANCEL', 160);
   // the same property under the Letters menu
-  e.key('BACK', 170); e.turn(1, false, 180); eq(e.rows(180)[1], 'Speed          >', 'back at the root'); e.turn(2, false, 190); e.key('OK', 200);
+  e.key('CANCEL', 170); e.turn(1, false, 180); eq(e.rows(180)[1], 'Speed          >', 'back at the root'); e.turn(2, false, 190); e.key('OK', 200);
   eq(e.rows(200)[0], 'Letters         ', 'Letters menu'); eq(e.rows(200)[1], 'Letters effect: ', 'its first row is the letters effect'); e.key('OK', 210); eq(e.rows(210)[1], '> 4 Ignite      ', 'same value as under Effects');
-  e.key('BACK', 220);
+  e.key('CANCEL', 220);
   // Frame menu: effect first, then speed
-  e.key('BACK', 230); e.turn(-1, false, 240); e.key('OK', 250); eq(e.rows(250)[1], 'Frame effect: 1 ', 'Frame menu starts with the frame effect'); e.turn(1, false, 260); eq(e.rows(260)[1], 'Frame speed: 1.0', 'then the frame speed');
+  e.key('CANCEL', 230); e.turn(-1, false, 240); e.key('OK', 250); eq(e.rows(250)[1], 'Frame effect: 1 ', 'Frame menu starts with the frame effect'); e.turn(1, false, 260); eq(e.rows(260)[1], 'Frame speed: 1.0', 'then the frame speed');
   // Restore defaults sets both effects back to 1
   const f = new core.Engine(core.build(V2)); f.set('frameEffect', 9); f.set('lettersEffect', 0);
   f.key('OK', 0); f.turn(7, false, 5); f.key('OK', 10); f.key('OK', 20); eq([f.getPos('frameEffect'), f.getPos('lettersEffect')], [1, 1], 'Restore defaults puts both effects back to 1');
