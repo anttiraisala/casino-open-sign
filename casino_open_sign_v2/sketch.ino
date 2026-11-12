@@ -78,9 +78,9 @@
  *   9 chase (one dim letter runs through each word)  10 pulse (heartbeat)
  *   11 converge (each word lights from both ends towards the middle)  12 words swap (the words breathe in opposite phase)
  *   13 slot machine (letters flicker like reels and lock in one by one)  14 twin chase (two dim spots run in opposite directions)
- *   15 grey bands (always grey: four grey levels in moving bands, three phases of 6 s; the neon flicker runs on top)
+ *   15 grey bands (always grey: only off, half and full; all lit now and then, moving patterns between; the neon flicker runs on top)
  * frame (white): 1 bar  2 comet  3 fill  4 ignite  5 sides blink  6 odd even  7 ping-pong  8 twinkle  9 runner
- *   10 heartbeat  11 corners  12 edges swap  13 slot machine  14 twin comets  15 grey bands (always grey, four phases of 36 steps, a broken pixel flickers now and then; see frameLevel())
+ *   10 heartbeat  11 corners  12 edges swap  13 slot machine  14 twin comets  15 grey bands (always grey: off, half, full; four phases of 36 steps, all lit at the start of each, a broken pixel flickers; see frameLevel())
  * Frame and letters are chosen independently. Random (0): the group picks a pattern, never the same twice in a row;
  * one shared timer (menu Effects > Random delay, default 2 minutes, 0 = 1..30 minutes at random) changes every group that
  * is set to random at the same moment. Patterns 1, 2, 3, 7, 9, 14 and 15 of the frame follow the arrow direction.
@@ -264,6 +264,7 @@ constexpr uint16_t LETTER_SLOT_HOLD_END_MS = 7200;    // slot machine: all lette
 constexpr uint16_t LETTER_SLOT_PERIOD_MS = 8000;      // ... and the cycle restarts at this time
 constexpr uint16_t LETTER_TWIN_STEP_MS = 250;     // twin chase: time the dim spots stay on a letter
 constexpr uint16_t LETTER_GREY_PHASE_MS = 6000;   // grey bands: length of one of the three phases
+constexpr uint16_t LETTER_GREY_ALL_MS = 1000;     // grey bands: all letters lit at the start of every phase
 constexpr uint16_t LETTER_GREY_BAND_MS = 250;     // grey bands, phase 0: time per step of the scrolling bands
 constexpr uint16_t LETTER_GREY_WORDS_MS = 400;    // grey bands, phase 1: time per step of the two opposite words
 constexpr uint16_t LETTER_GREY_BLOCK_MS = 200;    // grey bands, phase 2: time per step of the bouncing block
@@ -323,7 +324,7 @@ constexpr uint8_t MODE_CONVERGE = 10;    // each word lights up from both ends t
 constexpr uint8_t MODE_WORDS_SWAP = 11;  // the two words breathe in opposite phase
 constexpr uint8_t MODE_SLOT = 12;        // letters flicker like slot machine reels and lock in one by one
 constexpr uint8_t MODE_TWIN_CHASE = 13;  // two dim spots run through all letters in opposite directions
-constexpr uint8_t MODE_GREY_BANDS = 14;  // always grey: four grey levels in moving bands (three phases)
+constexpr uint8_t MODE_GREY_BANDS = 14;  // always grey: off, half and full in moving patterns (three phases)
 constexpr uint8_t PATTERN_MODE_COUNT = 15;  // patterns 0..14 = effects 1..15 of the menu; effect 0 = random (menu "Random delay")
 
 // The ignite cycle: off, letters start one by one, hold, off again.
@@ -1445,7 +1446,7 @@ uint8_t pulseBump(uint16_t u, uint16_t start, uint16_t length) {
 //   7 random twinkle                                                8 one lit pixel in three runs round the frame (3)
 //   9 heartbeat of the whole frame (10)                             10 corners light first, then the edges fill in (8)
 //   11 long edges and side edges alternate (10)                     12 slot machine: pixels spin, then lock one by one (40)
-//   13 twin comets run apart from the start corner (18)             14 grey bands: four grey levels, four phases (144)
+//   13 twin comets run apart from the start corner (18)             14 grey bands: off/half/full, four phases (144)
 constexpr uint8_t FRAME_CORNERS[4] = {FRAME_LOWER_LEFT, FRAME_LOWER_RIGHT, FRAME_UPPER_RIGHT, FRAME_UPPER_LEFT};
 
 uint8_t frameLevel(uint16_t i, bool arrowRight, uint8_t mode, uint16_t t) {
@@ -1517,23 +1518,25 @@ uint8_t frameLevel(uint16_t i, bool arrowRight, uint8_t mode, uint16_t t) {
       return l1 > l2 ? l1 : l2;
     }
     case 14: {
-      // Grey bands: four grey levels (0, 70, 150, 255), four phases of 36 steps, always grey.
-      //   0 an 8-step ramp scrolls along the frame   1 the same ramp scrolls the other way
-      //   2 even pixels run one way, odd pixels the other   3 wide blocks of three pixels scroll
-      static const uint8_t BANDS[8] = {255, 255, 150, 70, 0, 0, 70, 150};
-      static const uint8_t RAMP[4] = {255, 150, 70, 0};
-      static const uint8_t BLOCKS[4] = {255, 70, 150, 0};
+      // Grey bands: only off, half (128) and full (255), always grey. Four phases of 36 steps; every phase starts with 8 steps
+      // all lit (the second phase all half lit), then:
+      //   0 a pattern of two full, two half, two dark pixels scrolls along the frame   1 the same the other way
+      //   2 even pixels run one way, odd pixels the other   3 wide blocks (full, half, dark, half) of three pixels scroll
+      static const uint8_t RAMP6[6] = {255, 255, 128, 128, 0, 0};
+      static const uint8_t RAMP3[3] = {255, 128, 0};
+      static const uint8_t BLOCKS[4] = {255, 128, 0, 128};
       const uint8_t phase = (uint8_t)((t / 36) % 4);
       uint8_t level;
-      if (phase == 0) level = BANDS[(t + 8 - q % 8) % 8];
-      else if (phase == 1) level = BANDS[(t + q) % 8];
-      else if (phase == 2) level = (i & 1) ? RAMP[(t + i / 2) % 4] : RAMP[(t + 4 - (i / 2) % 4) % 4];
+      if (t % 36 < 8) level = phase == 1 ? 128 : 255;
+      else if (phase == 0) level = RAMP6[(t + 6 - q % 6) % 6];
+      else if (phase == 1) level = RAMP6[(t + q) % 6];
+      else if (phase == 2) level = (i & 1) ? RAMP3[(t + i / 2) % 3] : RAMP3[(t + 3 - (i / 2) % 3) % 3];
       else level = BLOCKS[((q + t / 2) / 3) % 4];
       // A broken pixel: in the first 8 steps of every 50-step slot (one slot in three) one pixel flickers.
       const uint16_t slot = t / 50;
       if (t % 50 < 8 && hash16(slot, 77) % 3 == 0 && i == hash16(slot, 5) % FRAME_PIXELS) {
         const uint8_t pick = (uint8_t)(hash16(i, t) % 3);
-        level = pick == 0 ? 0 : (pick == 1 ? 70 : 255);
+        level = pick == 0 ? 0 : (pick == 1 ? 128 : 255);
       }
       return level;
     }
@@ -1628,26 +1631,28 @@ uint8_t baseLetterLevel(uint8_t letter, unsigned long t) {
       return (letter == step || letter == LETTER_COUNT - 1 - step) ? 30 : 230;
     }
     case MODE_GREY_BANDS: {
-      // Four grey levels only (0, 70, 150, 255); the movement is the point. Three phases of 6 s:
-      //   0 bands of the 8-step ramp scroll along the letters   1 the two words run in opposite directions
-      //   2 a block of three grey steps bounces from the first to the last letter and back
-      static const uint8_t BANDS[8] = {255, 255, 150, 70, 0, 0, 70, 150};
-      static const uint8_t WORD_RAMP[4] = {255, 150, 70, 0};
+      // Three levels only: off, half (128) and full (255); the movement is the point. Three phases of 6 s, each starts
+      // with all letters lit for 1 s (the second phase with all half lit):
+      //   0 a pattern of two full, two half, two dark letters scrolls along the letters   1 the two words run in opposite directions
+      //   2 a block bounces from the first to the last letter and back (full head, half next to it)
+      static const uint8_t RAMP6[6] = {255, 255, 128, 128, 0, 0};
+      static const uint8_t RAMP3[3] = {255, 128, 0};
       const uint8_t phase = (uint8_t)((t / LETTER_GREY_PHASE_MS) % 3);
       const uint16_t local = (uint16_t)(t % LETTER_GREY_PHASE_MS);  // time since the phase began: every phase starts from its beginning
+      if (local < LETTER_GREY_ALL_MS) return phase == 1 ? 128 : 255;
       if (phase == 0) {
-        const uint8_t step = (uint8_t)((local / LETTER_GREY_BAND_MS) % 8);
-        return BANDS[(uint8_t)((step + 8 - (letter & 7)) & 7)];
+        const uint8_t step = (uint8_t)((local / LETTER_GREY_BAND_MS) % 6);
+        return RAMP6[(uint8_t)((step + 6 - letter % 6) % 6)];
       }
       if (phase == 1) {
-        const uint8_t step = (uint8_t)((local / LETTER_GREY_WORDS_MS) % 4);
-        if (letter < FIRST_WORD_LETTERS) return WORD_RAMP[(uint8_t)((step + 4 - letter % 4) % 4)];
-        return WORD_RAMP[(uint8_t)((step + (letter - FIRST_WORD_LETTERS)) % 4)];
+        const uint8_t step = (uint8_t)((local / LETTER_GREY_WORDS_MS) % 3);
+        if (letter < FIRST_WORD_LETTERS) return RAMP3[(uint8_t)((step + 3 - letter % 3) % 3)];
+        return RAMP3[(uint8_t)((step + (letter - FIRST_WORD_LETTERS)) % 3)];
       }
       const uint8_t tri = (uint8_t)((local / LETTER_GREY_BLOCK_MS) % 18);
       const uint8_t head = tri < 10 ? tri : (uint8_t)(18 - tri);
       const uint8_t distance = letter > head ? (uint8_t)(letter - head) : (uint8_t)(head - letter);
-      return distance == 0 ? 255 : (distance == 1 ? 150 : (distance == 2 ? 70 : 0));
+      return distance == 0 ? 255 : (distance == 1 ? 128 : 0);
     }
     default: break;
   }

@@ -140,11 +140,13 @@ jokainen LED näyttää värin sijasta harmaan: kolmesta värikanavasta (R, G, B
 kirkkauskäyriä. Asetus vaikuttaa heti, kun painat OK. Brightness test ja käynnistyksen LED-testi pysyvät värillisinä. HUOM: uusi tallennettava
 asetus muuttaa EEPROMin asetteluttunnisteen, joten tämän version ensimmäisellä käynnistyksellä kaikki tallennetut valikkoarvot palaavat kerran
 oletuksiin (sen jälkeen kaikki tallentuu taas normaalisti).
-Efekti 15 (Grey bands, reunus ja kirjaimet) on aina harmaa Monochromesta riippumatta ja käyttää vain neljää harmaan tasoa (0, 70, 150, 255):
-liike on pääasia. Reunus: neljä vaihetta, 36 askelta kukin (8 askeleen porras vierii reunuksella; sama porras toiseen suuntaan; parilliset ja
-parittomat pikselit juoksevat vastakkain; kolmen pikselin leveät lohkot vierivät). Rikkinäinen pikseli välkkyy silloin tällöin (8 askeleen purske
-jokaisessa 50 askeleen jaksossa, yksi jakso kolmesta, yksi pikseli). Kirjaimet: kolme 6 s vaihetta (porras vierii kirjainten yli; sanat juoksevat
-vastakkain; kolmen harmaan askeleen lohko pomppii ensimmäisestä viimeiseen kirjaimeen ja takaisin); tavallinen neonvälkyntä (yksi kirjain) jatkuu päällä.
+Efekti 15 (Grey bands, reunus ja kirjaimet) on aina harmaa Monochromesta riippumatta ja käyttää vain kolmea tasoa: pois, puolet (128) ja täysi (255):
+liike on pääasia. Reunus: neljä vaihetta, 36 askelta kukin; jokainen alkaa 8 askeleella, jolloin kaikki palaa (toisessa vaiheessa kaikki puolella), sitten
+kuvio kaksi täyttä, kaksi puolikasta ja kaksi sammunutta pikseliä vierii reunuksella; sama toiseen suuntaan; parilliset ja parittomat pikselit juoksevat
+vastakkain; kolmen pikselin leveät lohkot vierivät. Rikkinäinen pikseli välkkyy silloin tällöin (8 askeleen purske jokaisessa 50 askeleen jaksossa, yksi
+jakso kolmesta, yksi pikseli). Kirjaimet: kolme 6 s vaihetta, jokainen alkaa 1 s ajalla jolloin kaikki palaa (toinen vaihe kaikki puolella): kaksi täyttä, kaksi
+puolikasta ja kaksi sammunutta kirjainta vierii kirjainten yli; sanat juoksevat vastakkain; lohko pomppii ensimmäisestä viimeiseen kirjaimeen ja takaisin;
+tavallinen neonvälkyntä (yksi kirjain) jatkuu päällä.
 Reunuskuviot ovat valkoisia ja seuraavat nuolen aloituskulmaa efekteissä 1, 2, 3, 7, 9, 14 ja 15. Molemmat ovat ensimmäisiä versioita,
 joita arvioidaan livenä kyltissä (RDD-IDEAS.md IDEA-015, IDEA-016). Testattu vain koneella, ei vielä laitteistolla.
 

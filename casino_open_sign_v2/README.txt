@@ -142,11 +142,12 @@ light shows a grey instead of its colour: the brightest of the three colour chan
 curves apply. It takes effect at once when you press OK. The Brightness test and the power-on LED test stay coloured. NOTE: adding this stored
 property changes the EEPROM layout tag, so on the first start after uploading this version all saved menu values go back to their defaults once
 (then everything is saved normally again).
-Effect 15 (Grey bands, frame and letters) is always grey, whatever Monochrome says, and uses only four grey levels (0, 70, 150, 255): the point is
-the movement. Frame: four phases of 36 steps (an 8-step ramp scrolls along the frame; the same ramp the other way; even and odd pixels run
-opposite ways; wide blocks of three pixels scroll). A broken pixel flickers now and then (a burst of 8 steps in every 50-step slot, one slot in
-three, one pixel). Letters: three phases of 6 s (the ramp scrolls along the letters; the two words run in opposite directions; a block of
-three grey steps bounces from the first to the last letter and back); the usual neon flicker of one letter runs on top.
+Effect 15 (Grey bands, frame and letters) is always grey, whatever Monochrome says, and uses only three levels: off, half (128) and full (255);
+the point is the movement. Frame: four phases of 36 steps, each starting with 8 steps all lit (the second phase all half lit), then a pattern of
+two full, two half and two dark pixels scrolls along the frame; the same the other way; even and odd pixels run opposite ways; wide blocks of three
+pixels scroll. A broken pixel flickers now and then (a burst of 8 steps in every 50-step slot, one slot in three, one pixel). Letters: three phases of
+6 s, each starting with 1 s all lit (the second all half lit): a pattern of two full, two half and two dark letters scrolls along the letters; the two
+words run in opposite directions; a block bounces from the first to the last letter and back; the usual neon flicker of one letter runs on top.
 The frame patterns are white and follow the arrow's start corner in effects 1, 2, 3, 7, 9, 14 and 15. Both are first versions to be
 judged live on the sign (RDD-IDEAS.md IDEA-015, IDEA-016). Tested on the host only, not yet on hardware.
 

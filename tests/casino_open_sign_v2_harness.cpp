@@ -180,25 +180,26 @@ int main(int argc, char **argv) {
     }
     // frame program 14 (grey bands) has its own step list: the four phases of 36 steps, the phase edges and the broken-pixel bursts
     {
-      static const int GSTEPS[25] = {0, 1, 2, 3, 7, 8, 17, 35, 36, 37, 40, 53, 71, 72, 73, 100, 107, 108, 109, 143, 144, 145, 2602, 2605, 2609};
-      struct GreyExpect { bool right; const char *rows[25]; };
+      static const int GSTEPS[30] = {0, 1, 2, 3, 7, 8, 17, 35, 36, 37, 43, 44, 53, 71, 72, 73, 79, 80, 100, 107, 108, 109, 115, 116, 143, 144, 145, 2602, 2605, 2609};
+      struct GreyExpect { bool right; const char *rows[30]; };
       static const GreyExpect GREY[] = {
-      {true, {"964600004696ffff964600004696ff96ffff", "4600004696ffff964600004696ffffff0096", "00004696ffff964600004696ffff96ff4646", "004696ffff964600004696ffff9646960000", "ff964600004696ffff9646000046964600ff", "964600004696ffff964600004696ff96ffff", "4600004696ffff964600004696ffffffff96", "004696ffff964600004696ffff9646964600", "96ffff964600004696ffff96460000000046", "4696ffff964600004696ffff964600460000", "4600004696ffff964600004696ffffffff96", "4696ffff964600004696ffff964600460000", "00004696ffff964600004696ffff96ff9646", "ffff009646469600ffff009646469600ffff", "9696ff46000046ff9696ff46000046ff9696", "ffff009646469600ffff009646469600ffff", "000046ff9696ff46000046ff9696ff460000", "969696464646ffffff000000969696000000", "969696464646ffffff000000969696000000", "ffff000000969696464646ffffff004646ff", "964600004696ffff964600004696ff96ffff", "4600004696ffff964600004696ffffffff96", "00004696ffff964600004696ffff46ff9646", "96ffff964600004696ffff964600ff000046", "4600004696ffff964600004696ffffffff96"}},
-      {false, {"964600004696ffff96ff964600004696ffff", "ff964600004696ffffffff964600004600ff", "ffff964600004696ff96ffff964600004696", "96ffff9646000046964696ffff9646000046", "4600004696ffff9646964600004696ff0096", "964600004696ffff96ff964600004696ffff", "ff964600004696ffffffff964600004696ff", "96ffff9646000046964696ffff9646000046", "004696ffff9646000000004696ffff964600", "4696ffff9646000046004696ffff96460000", "ff964600004696ffffffff964600004696ff", "4696ffff9646000046004696ffff96460000", "ffff964600004696ff96ffff964600004696", "ffff009646469600ffff009646469600ffff", "9696ff46000046ff9696ff46000046ff9696", "ffff009646469600ffff009646469600ffff", "000046ff9696ff46000046ff9696ff460000", "464646969696000000969696000000ffffff", "464646969696000000969696000000ffffff", "96000000ffffff464600ffffff4646469696", "964600004696ffff96ff964600004696ffff", "ff964600004696ffffffff964600004696ff", "ffff964600004696ff96ffff964646004696", "004696ffff9646000000004696ffff964600", "ff964600004696ffffffff964600004696ff"}},
+      {true, {"ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffff00ff", "ffffffffffffffffffffffffffffffff80ff", "ffffffffffffffffffffffffffffffff00ff", "ffffffffffffffffffffffffffffffff00ff", "ffff80800000ffff80800000ffff80800000", "800000ffff80800000ffff80800000ffff80", "800000ffff80800000ffff80800000ffff80", "808080808080808080808080808080808080", "808080808080808080808080808080808080", "808080808080808080808080808080808080", "008080ffff00008080ffff00008080ffff00", "ffff00008080ffff00008080ffff00008080", "ffff00008080ffff00008080ffff00008080", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000080ffff80000080ffff80000080ffff80", "8080ff0000ff8080ff0000ff8080ff0000ff", "000080ffff80000080ffff80000080ffff80", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ff808080000000808080ffffff808080ffff", "ffff808080000000808080ffffff808080ff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "80800000ffff80800000ffff80808000ffff", "00ffff80800000ffff80800000ffff808000", "800000ffff80800000ffff80800000ffff80"}},
+      {false, {"ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffff00ff", "ffffffffffffffffffffffffffffffff80ff", "ffffffffffffffffffffffffffffffff00ff", "ffffffffffffffffffffffffffffffff00ff", "00008080ffff00008080ffff00008080ffff", "80ffff00008080ffff00008080ffff000080", "80ffff00008080ffff00008080ffff000080", "808080808080808080808080808080808080", "808080808080808080808080808080808080", "808080808080808080808080808080808080", "00ffff80800000ffff80800000ffff808000", "80800000ffff80800000ffff80800000ffff", "80800000ffff80800000ffff80800000ffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "000080ffff80000080ffff80000080ffff80", "8080ff0000ff8080ff0000ff8080ff0000ff", "000080ffff80000080ffff80000080ffff80", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "0000808080ffffff808080ffffff80808000", "00808080ffffff808080ffffff8080800000", "ffffffffffffffffffffffffffffffffffff", "ffffffffffffffffffffffffffffffffffff", "ffff00008080ffff00008080ffff80008080", "008080ffff00008080ffff000080ffffff00", "80ffff00008080ffff00008080ffff000080"}},
       };
-      for (const GreyExpect &e : GREY) for (int k = 0; k < 25; k++) {
+      for (const GreyExpect &e : GREY) for (int k = 0; k < 30; k++) {
         std::string got; char b[4];
         for (uint16_t i = 0; i < 18; i++) { snprintf(b, sizeof b, "%02x", frameLevel(i, e.right, 14, (uint16_t)GSTEPS[k])); got += b; }
         if (got != e.rows[k]) { printf("FAIL: frame program 14 arrow %s step %d: got %s expected %s\n", e.right ? "right" : "left", GSTEPS[k], got.c_str(), e.rows[k]); fails++; }
       }
-      // only the four grey levels, always
+      // only off, half and full, always
       bool levelsOk = true;
-      for (int t = 0; t < 3600; t++) for (uint16_t i = 0; i < 18; i++) { const uint8_t v = frameLevel(i, t % 2 == 0, 14, (uint16_t)t); if (v != 0 && v != 70 && v != 150 && v != 255) levelsOk = false; }
-      CHECK(levelsOk, "frame program 14: only the grey levels 0, 70, 150, 255");
-      // outside the bursts (steps 8..35 of slot 0) phase 0 is the plain scrolling ramp
-      for (int t = 8; t < 36; t += 3) for (uint16_t i = 0; i < 18; i++) {
-        const int q = (14 + 18 - (int)i) % 18; static const int B[8] = {255, 255, 150, 70, 0, 0, 70, 150};
-        CHECK(frameLevel(i, true, 14, (uint16_t)t) == B[((t - q) % 8 + 8) % 8], "frame program 14: phase 0 is the plain scrolling ramp outside the bursts"); }
+      for (int t = 0; t < 3600; t++) for (uint16_t i = 0; i < 18; i++) { const uint8_t v = frameLevel(i, t % 2 == 0, 14, (uint16_t)t); if (v != 0 && v != 128 && v != 255) levelsOk = false; }
+      CHECK(levelsOk, "frame program 14: only the levels 0, 128, 255");
+      // every phase starts with 8 steps all lit (full, in phase 1 half); 1728 is a multiple of 144, so phase ph starts at 1728 + 36 * ph
+      for (int ph = 0; ph < 4; ph++) for (int k = 0; k < 8; k++) for (uint16_t i = 0; i < 18; i++) {
+        const int t = 1728 + ph * 36 + k;
+        if (t % 50 < 8) continue;                               // inside a burst one pixel may differ
+        CHECK(frameLevel(i, true, 14, (uint16_t)t) == (ph == 1 ? 128 : 255), "frame program 14: every phase starts with all pixels lit (half in phase 1)"); }
     }
     // frame program 3: steady until step 29, dark from step 30
     for (int right = 0; right < 2; right++) for (uint16_t i = 0; i < 18; i++) {
@@ -263,26 +264,28 @@ int main(int argc, char **argv) {
         const bool dim = (l == step || l == 9 - step);
         CHECK(lv(13, (unsigned long)step * 250 + 10, l) == (dim ? 30 : 230), "twin chase: the two dim letters run in opposite directions"); }
       CHECK(lv(13, 2500, 0) == 30 && lv(13, 2500, 9) == 30 && lv(13, 2500, 4) == 230, "twin chase: the cycle repeats after 10 steps"); }
-    // 14 grey bands: only 255/150/70/0; phase 0 (0..5999 ms): ramp 255 255 150 70 0 0 70 150 scrolls one letter per 250 ms;
-    // phase 1 (6000..11999): words run opposite ways in steps of 400 ms (ramp 255 150 70 0); phase 2 (12000..17999): a block bounces (200 ms steps); repeats every 18000 ms
-    { static const int RAMP8[8] = {255, 255, 150, 70, 0, 0, 70, 150};
-      static const int RAMP4[4] = {255, 150, 70, 0};
+    // 14 grey bands: only 0/128/255. Phases of 6000 ms (repeat after 18000 ms), each starts with 1000 ms all lit (phase 1: all half);
+    // phase 0: pattern 255 255 128 128 0 0 scrolls one letter per 250 ms; phase 1: words run opposite ways in steps of 400 ms (ramp 255 128 0);
+    // phase 2: a block bounces (200 ms steps): 255 at the head, 128 next to it, else 0
+    { static const int RAMP6[6] = {255, 255, 128, 128, 0, 0};
+      static const int RAMP3[3] = {255, 128, 0};
       bool levelsOk = true;
-      // phase 0, exact rows
-      for (int step = 0; step < 16; step++) for (int l = 0; l < 10; l++) {
-        const int want = RAMP8[((step - l) % 8 + 8) % 8];
-        CHECK(lv(14, (unsigned long)step * 250 + 7, l) == want, "grey bands phase 0: the ramp scrolls one letter per 250 ms");
-        CHECK(lv(14, 18000UL + (unsigned long)step * 250 + 7, l) == want, "grey bands: repeats every 18000 ms"); }
-      // phase 1, exact rows: first word letter l: RAMP4[(step - l) mod 4]; second word letter l (6..9): RAMP4[(step + l - 6) mod 4]
-      for (int step = 0; step < 8; step++) for (int l = 0; l < 10; l++) {
-        const int want = l < 6 ? RAMP4[((step - l) % 4 + 4) % 4] : RAMP4[(step + l - 6) % 4];
+      for (int ph = 0; ph < 3; ph++) for (unsigned long ms = 0; ms < 1000; ms += 100) for (int l = 0; l < 10; l++)
+        CHECK(lv(14, (unsigned long)ph * 6000 + ms, l) == (ph == 1 ? 128 : 255), "grey bands: every phase starts with all letters lit (half in phase 1)");
+      for (int step = 4; step < 24; step++) for (int l = 0; l < 10; l++) {
+        const unsigned long t = (unsigned long)step * 250 + 7;           // phase 0 lasts 24 steps of 250 ms
+        CHECK(lv(14, t, l) == RAMP6[((step % 6) - l % 6 + 6) % 6], "grey bands phase 0: the pattern scrolls one letter per 250 ms");
+        CHECK(lv(14, 18000UL + t, l) == lv(14, t, l), "grey bands: repeats every 18000 ms"); }
+      // phase 1 (after the first second): first word letter l: RAMP3[(step - l) mod 3]; second word letter l (6..9): RAMP3[(step + l - 6) mod 3]; step = local / 400
+      for (int step = 3; step < 15; step++) for (int l = 0; l < 10; l++) {
+        const int want = l < 6 ? RAMP3[((step % 3) - l % 3 + 3) % 3] : RAMP3[(step % 3 + l - 6) % 3];
         CHECK(lv(14, 6000UL + (unsigned long)step * 400 + 9, l) == want, "grey bands phase 1: the two words run in opposite directions"); }
-      // phase 2: head moves 0..9 then 8..1 (period 18 steps of 200 ms); 255 at the head, 150 next to it, 70 two away, else 0
-      for (int step = 0; step < 30; step++) { const int tri = step % 18, head = tri < 10 ? tri : 18 - tri;
-        for (int l = 0; l < 10; l++) { const int d = l > head ? l - head : head - l; const int want = d == 0 ? 255 : (d == 1 ? 150 : (d == 2 ? 70 : 0));
+      // phase 2: head moves 0..9 then 8..1 (period 18 steps of 200 ms)
+      for (int step = 5; step < 30; step++) { const int tri = step % 18, head = tri < 10 ? tri : 18 - tri;
+        for (int l = 0; l < 10; l++) { const int d = l > head ? l - head : head - l; const int want = d == 0 ? 255 : (d == 1 ? 128 : 0);
           CHECK(lv(14, 12000UL + (unsigned long)step * 200 + 3, l) == want, "grey bands phase 2: a block bounces along the letters"); } }
-      for (unsigned long t = 0; t < 36000; t += 50) for (int l = 0; l < 10; l++) { const int v = lv(14, t, l); if (v != 0 && v != 70 && v != 150 && v != 255) levelsOk = false; }
-      CHECK(levelsOk, "grey bands: only the grey levels 0, 70, 150, 255"); }
+      for (unsigned long t = 0; t < 36000; t += 50) for (int l = 0; l < 10; l++) { const int v = lv(14, t, l); if (v != 0 && v != 128 && v != 255) levelsOk = false; }
+      CHECK(levelsOk, "grey bands: only the levels 0, 128, 255"); }
     activeLetters = saved;
   }
 

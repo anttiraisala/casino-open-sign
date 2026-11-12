@@ -15,16 +15,19 @@ def hash16(a,b):
     h=(h*2654435761)&0xffffffff
     h^=h>>13
     return (h>>8)&0xffff
-BANDS=[255,255,150,70,0,0,70,150]
+R6=[255,255,128,128,0,0]
+R3=[255,128,0]
+BL=[255,128,0,128]
 def grey_bands(i,q,t):
     ph=(t//36)%4
-    if ph==0: v=BANDS[(t-q)%8]
-    elif ph==1: v=BANDS[(t+q)%8]
-    elif ph==2: v=[255,150,70,0][(t+i//2)%4] if i%2 else [255,150,70,0][(t-i//2)%4]
-    else: v=[255,70,150,0][((q+t//2)//3)%4]
+    if t%36<8: v=128 if ph==1 else 255
+    elif ph==0: v=R6[(t-q)%6]
+    elif ph==1: v=R6[(t+q)%6]
+    elif ph==2: v=R3[(t+i//2)%3] if i%2 else R3[(t-i//2)%3]
+    else: v=BL[((q+t//2)//3)%4]
     slot=t//50
     if t%50<8 and hash16(slot,77)%3==0 and i==hash16(slot,5)%18:
-        v=[0,70,255][hash16(i,t)%3]
+        v=[0,128,255][hash16(i,t)%3]
     return v
 def level(i,right,mode,t):
     q=path(right).index(i)
@@ -71,7 +74,7 @@ print('STEPS', steps)
 burst=[t for t in range(3600) if t%50<8 and hash16(t//50,77)%3==0]
 slot0=burst[0]//50*50
 slot1=burst[len(burst)//2]//50*50
-gsteps=[0,1,2,3,7,8,17,35,36,37,40,53,71,72,73,100,107,108,109,143,144,145,slot0,slot0+1,slot0+3,slot0+7,slot0+8,slot1+2,slot1+5,slot1+9]
+gsteps=[0,1,2,3,7,8,17,35,36,37,43,44,53,71,72,73,79,80,100,107,108,109,115,116,143,144,145,slot0,slot0+1,slot0+3,slot0+7,slot0+8,slot1+2,slot1+5,slot1+9]
 gsteps=sorted(set(gsteps))
 print('GREY STEPS', gsteps, 'slots', slot0, slot1, 'broken pixels', hash16(slot0//50,5)%18, hash16(slot1//50,5)%18)
 for right in (True,False):
