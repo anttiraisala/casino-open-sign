@@ -111,6 +111,8 @@ alivalikossa ei ole aikakatkaisua.
 Ominaisuusrivi näyttää "Nimi  arvo" (arvo oikeassa reunassa); jos ne eivät mahdu 16 merkkiin, rivi vierii yhtenä tekstinä "Nimi: arvo"
 (tauko alussa, yksi merkki askeleessa, tauko viimeisen merkin ollessa oikeassa reunassa). OK vain luettavan arvon kohdalla avaa saman sivun kuin
 muokkaus (nimi, sitten lukko ja arvo), mutta mitään ei voi muuttaa; CANCEL tai OK palaa.
+Tallennetut asetukset: valikon arvot tallennetaan Megan EEPROMiin. Sketchin lataus USB:n kautta EI tyhjennä EEPROMia, joten asetukset säilyvät latauksessa
+(jos uuden version valikkorakenne on eri, kyltti huomaa sen ja aloittaa oletusarvoilla). Aidosti tyhjä EEPROM: lataa ../eeprom_clear/sketch.ino kerran.
 Valikkokytkin SW3 on vapaasti pyörivä ja SUHTEELLINEN: koodin muutos on askel (1..7 eteen, 9..15 taakse, tasan 8 ohitetaan).
 Tässä sketchissä käytetty valikon määrittely on tallennettu tähän tiedostoon menu-v2.json (tarkka kopio tiedostosta tools/menu-editor/menu-v2.json;
 tools/generate_v2_menu.js kirjoittaa sen sketch.ino:n valikkolohkon kanssa; avaa se Menu Editorissa nähdäksesi tai muuttaaksesi valikkoa).

@@ -113,6 +113,8 @@ there is no timeout inside the submenu.
 A property row shows "Name  value" (value at the right edge); if the two do not fit in 16 characters the row scrolls as one text "Name: value"
 (pause at the start, one character per step, pause with the last character at the right edge). OK on a read-only value opens the same page as
 an edit (name, then a padlock and the value) but nothing can be changed; CANCEL or OK returns.
+Saved settings: the menu values are saved in the Mega's EEPROM. Uploading the sketch over USB does NOT clear the EEPROM, so the settings survive an upload
+(if the menu layout of a new version differs, the sign notices it and starts with the defaults). For a really empty EEPROM upload ../eeprom_clear/sketch.ino once.
 The menu switch SW3 is free-running and RELATIVE: the change of its code is a step (1..7 forward, 9..15 back, exactly 8 ignored).
 The menu definition used for this sketch is stored here as menu-v2.json (an exact copy of tools/menu-editor/menu-v2.json, written by
 tools/generate_v2_menu.js together with the menu block of sketch.ino; open it in the Menu Editor to see or change the menu).
